@@ -4,15 +4,17 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 1 — Project Scaffold
+## ✅ Group 1 — Project Scaffold
 
-1. Initialize `frontend/` with Vite + React + TypeScript (`pnpm create vite`)
-2. Initialize `backend/` with FastAPI + uv (`pyproject.toml`, `app/` structure)
-3. Write `docker-compose.yml` with three services: `db` (postgres:16), `backend`, `frontend`
-4. Configure `backend` to connect to PostgreSQL via `DATABASE_URL` env var
-5. Run Alembic init; confirm migrations apply cleanly against the Dockerized DB
-6. Add `docker-compose.prod.yml` override (no volume mounts, pinned images)
-7. Confirm `docker compose up` starts all three services and frontend loads in browser
+1. ✅ Initialize `frontend/` with Vite 5 + React + TypeScript (pnpm)
+2. ✅ Initialize `backend/` with FastAPI + uv (`pyproject.toml`, `app/` structure)
+3. ✅ Write `docker-compose.yml` with three services: `db` (postgres:16), `backend`, `frontend`
+4. ✅ Configure `backend` to connect to PostgreSQL via `DATABASE_URL` env var
+5. ✅ Run Alembic init; env.py wired to async SQLAlchemy + model metadata
+6. ✅ Add `docker-compose.prod.yml` override (no volume mounts, pinned images)
+7. ✅ `docker compose up --build` verified: all three containers start, `GET /api/health` returns `{"status":"ok"}` through the nginx proxy
+
+> **Note:** Vite pinned to v5.4 (Node 20.17 in dev is below Vite 6's 20.19+ requirement). The Docker builder image uses `node:20-slim` which pulls a compatible version.
 
 ---
 
