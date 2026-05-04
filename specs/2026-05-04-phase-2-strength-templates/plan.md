@@ -14,7 +14,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 2 — Template CRUD API
+## Group 2 — Template CRUD API ✅ DONE
 
 1. `POST /templates/strength` — create a template with nested exercises and sets in one transaction
 2. `GET /templates/strength` — list all templates for the current user (name + exercise count)

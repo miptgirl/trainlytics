@@ -6,12 +6,12 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Template CRUD
 
-- [ ] Can create a template with a name, multiple exercises, and multiple sets per exercise — *verified by `test_create_strength_template`*
+- [x] Can create a template with a name, multiple exercises, and multiple sets per exercise — *verified by `test_create_strength_template`*
 - [ ] Created template appears in the list immediately with correct exercise count — *React Query invalidates `['templates', 'strength']` on create*
-- [ ] Can retrieve full template detail with nested exercises and sets — *verified by `test_get_strength_template`*
-- [ ] Can edit a template (change name, add/remove exercises, change sets/reps/weight) — *verified by `test_patch_strength_template`*
-- [ ] Can delete a template; the exercises in the user's library are unaffected — *verified by `test_delete_strength_template`*
-- [ ] User A cannot read, edit, or delete User B's templates — *verified by `test_template_user_isolation`*
+- [x] Can retrieve full template detail with nested exercises and sets — *verified by `test_get_strength_template`*
+- [x] Can edit a template (change name, add/remove exercises, change sets/reps/weight) — *verified by `test_patch_strength_template`*
+- [x] Can delete a template; the exercises in the user's library are unaffected — *verified by `test_delete_strength_template`*
+- [x] User A cannot read, edit, or delete User B's templates — *verified by `test_template_user_isolation`*
 
 ---
 
@@ -52,5 +52,5 @@ The implementation is complete and mergeable when all of the following pass.
 ## Regression
 
 - [ ] Logging a strength session **without** a template still works exactly as before
-- [ ] All Phase 1 backend tests pass (`pytest backend/tests/`)
+- [x] All Phase 1 backend tests pass (`pytest backend/tests/`)
 - [ ] Existing history and session detail views are unaffected
