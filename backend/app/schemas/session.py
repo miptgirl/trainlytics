@@ -58,3 +58,61 @@ class CardioSessionOut(BaseModel):
     notes: str | None
     created_at: datetime
     segments: list[CardioSegmentOut]
+
+
+# ── Strength ──────────────────────────────────────────────────────────────────
+
+class StrengthSetCreate(BaseModel):
+    set_number: int
+    reps: int | None = None
+    weight: float | None = None
+    notes: str | None = None
+
+
+class StrengthSetOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    set_number: int
+    reps: int | None
+    weight: float | None
+    notes: str | None
+
+
+class StrengthExerciseEntryCreate(BaseModel):
+    exercise_id: int
+    order: int
+    sets: list[StrengthSetCreate]
+
+
+class StrengthExerciseEntryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    exercise_id: int
+    exercise_name: str
+    order: int
+    sets: list[StrengthSetOut]
+
+
+class StrengthSessionCreate(BaseModel):
+    date: DateType
+    notes: str | None = None
+    exercises: list[StrengthExerciseEntryCreate]
+
+
+class StrengthSessionPatch(BaseModel):
+    date: Optional[DateType] = None
+    notes: str | None = None
+    exercises: list[StrengthExerciseEntryCreate] | None = None
+
+
+class StrengthSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    type: str
+    date: DateType
+    notes: str | None
+    created_at: datetime
+    exercises: list[StrengthExerciseEntryOut]

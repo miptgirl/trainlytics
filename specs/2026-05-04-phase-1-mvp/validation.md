@@ -46,13 +46,13 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Strength Logging
 
-- [ ] Can log a strength session with one exercise and multiple sets
-- [ ] Can log a strength session with multiple exercises, each with different numbers of sets
-- [ ] Exercise picker shows the user's library (not a global catalog)
-- [ ] Session appears in history immediately after logging
-- [ ] Session detail view shows all exercises and their sets with reps and weight
-- [ ] Can edit a session (add/remove exercises and sets, change weights/reps)
-- [ ] Can delete a session
+- [x] Can log a strength session with one exercise and multiple sets — *verified by `test_create_strength_session`*
+- [x] Can log a strength session with multiple exercises, each with different numbers of sets — *verified by `test_create_strength_session_multiple_exercises`*
+- [x] Exercise picker shows the user's library (not a global catalog) — *`LogStrengthPage` fetches `/exercises` for the current user; invalid exercise IDs rejected with 400*
+- [ ] Session appears in history immediately after logging — *pending Group 7 (history page)*
+- [x] Session detail view shows all exercises and their sets with reps and weight — *`StrengthSessionDetailPage` renders exercises + sets from `GET /sessions/{id}`*
+- [x] Can edit a session (add/remove exercises and sets, change weights/reps) — *verified by `test_patch_strength_session`; `StrengthSessionDetailPage` edit form*
+- [x] Can delete a session — *verified by `test_delete_strength_session`; delete button navigates home*
 
 ---
 
@@ -76,6 +76,6 @@ The implementation is complete and mergeable when all of the following pass.
 ## Automated Tests
 
 - [x] Backend: pytest suite covers auth endpoints (login, refresh, logout, 401 on invalid token) — *9 tests passing*
-- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests, cardio types: 9 tests, sessions: 8 tests — 37 total passing; strength sessions pending*
+- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests, cardio types: 9 tests, sessions: 8 cardio + 7 strength = 44 total passing*
 - [x] Backend: a test confirms users cannot access each other's data — *`test_user_isolation`, `test_user_cannot_edit_other_users_exercise`, `test_cardio_type_user_isolation`, `test_cardio_type_cannot_edit_other_users` all passing*
 - [x] Frontend: Vitest covers the login form (validation, error display) — *4 tests passing*

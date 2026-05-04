@@ -64,17 +64,17 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 6 — Strength Logging
+## ✅ Group 6 — Strength Logging
 
-1. `StrengthSession` model: `id`, `session_id`
-2. `StrengthExerciseEntry` model: `id`, `strength_session_id`, `exercise_id`, `order`
-3. `StrengthSet` model: `id`, `exercise_entry_id`, `set_number`, `reps`, `weight`, `notes`
-4. Alembic migration for the above tables
-5. `POST /sessions/strength` — create session + exercises + sets in one transaction
-6. `GET /sessions/{id}` extended to handle strength session shape
-7. `PATCH /sessions/{id}` and `DELETE /sessions/{id}` for strength sessions
-8. Frontend: Log Strength form — date, notes, dynamic exercise list (pick from library), dynamic set rows per exercise
-9. Frontend: Strength session detail view
+1. ✅ `StrengthSession` model: `id`, `session_id`
+2. ✅ `StrengthExerciseEntry` model: `id`, `strength_session_id`, `exercise_id`, `order`
+3. ✅ `StrengthSet` model: `id`, `exercise_entry_id`, `set_number`, `reps`, `weight`, `notes`
+4. ✅ Alembic migration for the above tables
+5. ✅ `POST /sessions/strength` — create session + exercises + sets in one transaction
+6. ✅ `GET /sessions/{id}` extended to handle strength session shape
+7. ✅ `PATCH /sessions/{id}` and `DELETE /sessions/{id}` for strength sessions
+8. ✅ Frontend: Log Strength form — date, notes, dynamic exercise list (pick from library), dynamic set rows per exercise
+9. ✅ Frontend: Strength session detail view
 
 ---
 
