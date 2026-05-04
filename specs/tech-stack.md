@@ -89,6 +89,26 @@ docker compose exec backend uv run alembic upgrade head
 
 ---
 
+### Deploying to production
+
+**Prerequisites:** A Linux server with Docker, Docker Compose, and Git installed, plus a populated `.env` file.
+
+A convenience script at `scripts/deploy.sh` handles the full deploy lifecycle:
+
+```bash
+bash scripts/deploy.sh
+```
+
+What the script does (in order):
+
+1. **`git pull`** — fetch and apply the latest commits from the current branch.
+2. **`docker compose -f docker-compose.prod.yml up --build -d`** — rebuild images and restart all containers in detached mode.
+3. **`alembic upgrade head`** — run any pending database migrations inside the running backend container.
+
+The script exits immediately on any failure (`set -euo pipefail`). It is idempotent — safe to run on an already up-to-date deployment.
+
+---
+
 > **Note:** The `.env` file is gitignored. Never commit real credentials.
 
 ## Tooling
