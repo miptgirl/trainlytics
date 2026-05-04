@@ -15,6 +15,14 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <NavLink
+                to="/history"
+                className={({ isActive }) =>
+                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                }
+              >
+                History
+              </NavLink>
+              <NavLink
                 to="/exercises"
                 className={({ isActive }) =>
                   isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'

@@ -78,9 +78,9 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 7 — Workout History
+## ✅ Group 7 — Workout History
 
-1. `GET /sessions` — paginated list, filters: `type` (cardio/strength), `date_from`, `date_to`
-2. Frontend: History page — list of sessions with date, type, and summary metric
-3. Filter controls: type selector, date range picker
-4. Link each row to its detail view
+1. ✅ `GET /sessions` — paginated list, filters: `type` (cardio/strength), `date_from`, `date_to`
+2. ✅ Frontend: History page — list of sessions with date, type, and summary metric
+3. ✅ Filter controls: type selector, date range picker
+4. ✅ Link each row to its detail view

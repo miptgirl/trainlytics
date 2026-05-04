@@ -1,7 +1,7 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -20,6 +20,8 @@ from app.schemas.session import (
     CardioSessionCreate,
     CardioSessionOut,
     CardioSessionPatch,
+    SessionListOut,
+    SessionSummaryOut,
     StrengthExerciseEntryOut,
     StrengthSessionCreate,
     StrengthSessionOut,
@@ -100,6 +102,87 @@ async def _load_strength_ws(db: AsyncSession, session_id: int, user: str) -> Wor
     if ws.type != "strength":
         raise HTTPException(status_code=400, detail="Not a strength session")
     return ws
+
+
+# ── history list ──────────────────────────────────────────────────────────────
+
+@router.get("", response_model=SessionListOut)
+async def list_sessions(
+    type: str | None = Query(None, description="cardio or strength"),
+    date_from: str | None = Query(None, description="ISO date, inclusive"),
+    date_to: str | None = Query(None, description="ISO date, inclusive"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> SessionListOut:
+    from datetime import date as DateType
+
+    q = select(WorkoutSession).where(WorkoutSession.user_id == user)
+
+    if type is not None:
+        q = q.where(WorkoutSession.type == type)
+    if date_from is not None:
+        q = q.where(WorkoutSession.date >= DateType.fromisoformat(date_from))
+    if date_to is not None:
+        q = q.where(WorkoutSession.date <= DateType.fromisoformat(date_to))
+
+    count_result = await db.execute(select(func.count()).select_from(q.subquery()))
+    total = count_result.scalar_one()
+
+    q = (
+        q.order_by(WorkoutSession.date.desc(), WorkoutSession.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .options(
+            _CARDIO_LOAD,
+            selectinload(WorkoutSession.strength_session)
+            .selectinload(StrengthSession.exercise_entries)
+            .selectinload(StrengthExerciseEntry.sets),
+        )
+    )
+
+    rows = (await db.execute(q)).scalars().all()
+
+    items: list[SessionSummaryOut] = []
+    for ws in rows:
+        if ws.type == "cardio" and ws.cardio_session:
+            cs = ws.cardio_session
+            items.append(
+                SessionSummaryOut(
+                    id=ws.id,
+                    type=ws.type,
+                    date=ws.date,
+                    notes=ws.notes,
+                    created_at=ws.created_at,
+                    total_duration_seconds=cs.total_duration_seconds,
+                )
+            )
+        elif ws.type == "strength" and ws.strength_session:
+            ss = ws.strength_session
+            total_sets = sum(len(e.sets) for e in ss.exercise_entries)
+            items.append(
+                SessionSummaryOut(
+                    id=ws.id,
+                    type=ws.type,
+                    date=ws.date,
+                    notes=ws.notes,
+                    created_at=ws.created_at,
+                    total_sets=total_sets,
+                )
+            )
+        else:
+            items.append(
+                SessionSummaryOut(
+                    id=ws.id,
+                    type=ws.type,
+                    date=ws.date,
+                    notes=ws.notes,
+                    created_at=ws.created_at,
+                )
+            )
+
+    return SessionListOut(items=items, total=total, page=page, page_size=page_size)
 
 
 # ── cardio ────────────────────────────────────────────────────────────────────

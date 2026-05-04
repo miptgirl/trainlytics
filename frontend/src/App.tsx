@@ -11,6 +11,7 @@ import LogCardioPage from './pages/LogCardioPage'
 import LogStrengthPage from './pages/LogStrengthPage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
+import HistoryPage from './pages/HistoryPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -25,11 +26,7 @@ function SessionDetailRouter() {
 }
 
 function Dashboard() {
-  return (
-    <Layout>
-      <p className="text-gray-500 text-sm">Dashboard — coming soon</p>
-    </Layout>
-  )
+  return <Navigate to="/history" replace />
 }
 
 function AppRoutes() {
@@ -85,6 +82,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <SessionDetailRouter />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <HistoryPage />
             </ProtectedRoute>
           }
         />

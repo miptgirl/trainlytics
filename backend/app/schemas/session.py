@@ -116,3 +116,24 @@ class StrengthSessionOut(BaseModel):
     notes: str | None
     created_at: datetime
     exercises: list[StrengthExerciseEntryOut]
+
+
+class SessionSummaryOut(BaseModel):
+    """Lightweight session row for the history list."""
+
+    id: int
+    type: str
+    date: DateType
+    notes: str | None
+    created_at: datetime
+    # cardio summary
+    total_duration_seconds: int | None = None
+    # strength summary
+    total_sets: int | None = None
+
+
+class SessionListOut(BaseModel):
+    items: list[SessionSummaryOut]
+    total: int
+    page: int
+    page_size: int
