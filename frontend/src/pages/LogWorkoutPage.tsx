@@ -211,6 +211,7 @@ function toTemplatePayload(data: StrengthFormValues) {
 function CardioForm() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const [titleTouched, setTitleTouched] = useState(false)
 
   const { data: cardioTypes = [] } = useQuery({
     queryKey: ['cardio-types'],
@@ -221,6 +222,8 @@ function CardioForm() {
     register,
     handleSubmit,
     control,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CardioFormValues>({
     defaultValues: {
@@ -233,6 +236,21 @@ function CardioForm() {
       segments: [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
     },
   })
+
+  const watchedActivityTypeId = watch('activity_type_id')
+  const watchedSegments = watch('segments')
+
+  useEffect(() => {
+    if (titleTouched) return
+    const activityType = cardioTypes.find((t) => String(t.id) === watchedActivityTypeId)
+    const totalKm = watchedSegments.reduce((sum, seg) => {
+      const km = parseFloat(seg.distance_km)
+      return sum + (isNaN(km) ? 0 : km)
+    }, 0)
+    const kmStr = totalKm % 1 === 0 ? String(totalKm) : totalKm.toFixed(2).replace(/\.?0+$/, '')
+    const newTitle = activityType ? `${activityType.name} – ${kmStr} km` : `– ${kmStr} km`
+    setValue('title', newTitle)
+  }, [watchedActivityTypeId, watchedSegments, cardioTypes, titleTouched, setValue])
 
   const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
 
@@ -275,7 +293,9 @@ function CardioForm() {
             type="text"
             placeholder="Optional session title…"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('title')}
+            {...register('title', {
+              onChange: () => setTitleTouched(true),
+            })}
           />
         </div>
 

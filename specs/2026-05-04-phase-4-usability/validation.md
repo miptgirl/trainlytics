@@ -95,9 +95,9 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Cardio Auto-fill Title
 
-- [ ] Opening the cardio log form pre-fills the title with `"<Activity type> – <X> km"` using the default activity type and 0 km
-- [ ] Changing the activity type updates the title (if not manually edited)
-- [ ] Changing the distance updates the title (if not manually edited)
+- [x] Opening the cardio log form pre-fills the title with `"<Activity type> – <X> km"` using the default activity type and 0 km
+- [x] Changing the activity type updates the title (if not manually edited)
+- [x] Changing the distance updates the title (if not manually edited)
 - [ ] Manually editing the title field prevents further auto-updates
 
 ---

@@ -87,7 +87,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 8 — Cardio Auto-fill Session Title
+## Group 8 — Cardio Auto-fill Session Title ✅ DONE
 
 1. In the cardio log form, compute a default title as `"<Activity type name> – <distance> km"` (e.g. `"Run – 8 km"`).
 2. Update the default live (via `useEffect` or derived state) whenever the selected activity type or total distance changes — but only if the user has not manually edited the title field yet.
