@@ -22,6 +22,14 @@ export function Layout({ children }: { children: ReactNode }) {
               >
                 Exercises
               </NavLink>
+              <NavLink
+                to="/cardio-types"
+                className={({ isActive }) =>
+                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                }
+              >
+                Activity Types
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">

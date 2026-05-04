@@ -12,7 +12,7 @@ The implementation is complete and mergeable when all of the following pass.
 - [x] Accessing any protected page while logged out redirects to `/login` — *verified by `test_exercise_requires_auth` + `ProtectedRoute`*
 - [x] After access token expiry, a page reload silently refreshes the token using the cookie and stays logged in — *`AuthProvider` calls `/auth/refresh` on mount; `/auth/refresh` endpoint verified by `test_refresh_with_valid_cookie`*
 - [ ] Logout clears the cookie and redirects to `/login`; back-button does not restore the session — *needs browser verification*
-- [x] Two different env accounts can log in independently and see only their own data — *verified by `test_user_isolation` + `test_user_cannot_edit_other_users_exercise`*
+- [x] Two different env accounts can log in independently and see only their own data — *verified by `test_user_isolation` + `test_user_cannot_edit_other_users_exercise` + `test_cardio_type_user_isolation`*
 
 ---
 
@@ -27,8 +27,8 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Cardio Activity Types
 
-- [ ] Can create, rename, and delete cardio activity types
-- [ ] Deleted types that are referenced by sessions are handled without data loss (session retains type name or is shown as "deleted type")
+- [x] Can create, rename, and delete cardio activity types — *verified by `test_create_cardio_type`, `test_rename_cardio_type`, `test_delete_cardio_type`*
+- [ ] Deleted types that are referenced by sessions are handled without data loss — *FK strategy (SET NULL on cardio sessions) implemented in Group 5 migration*
 
 ---
 
@@ -76,6 +76,6 @@ The implementation is complete and mergeable when all of the following pass.
 ## Automated Tests
 
 - [x] Backend: pytest suite covers auth endpoints (login, refresh, logout, 401 on invalid token) — *9 tests passing*
-- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests passing; remaining groups pending*
-- [x] Backend: a test confirms users cannot access each other's data — *`test_user_isolation` + `test_user_cannot_edit_other_users_exercise` passing*
+- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests, cardio types: 9 tests — 29 total passing; sessions pending*
+- [x] Backend: a test confirms users cannot access each other's data — *`test_user_isolation`, `test_user_cannot_edit_other_users_exercise`, `test_cardio_type_user_isolation`, `test_cardio_type_cannot_edit_other_users` all passing*
 - [x] Frontend: Vitest covers the login form (validation, error display) — *4 tests passing*

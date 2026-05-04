@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import ExercisesPage from './pages/ExercisesPage'
+import CardioTypesPage from './pages/CardioTypesPage'
 
 function Dashboard() {
   return (
@@ -35,6 +36,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <ExercisesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cardio-types"
+          element={
+            <ProtectedRoute>
+              <CardioTypesPage />
             </ProtectedRoute>
           }
         />

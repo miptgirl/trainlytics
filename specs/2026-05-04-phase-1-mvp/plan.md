@@ -41,12 +41,12 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 4 — Cardio Activity Types
+## ✅ Group 4 — Cardio Activity Types
 
-1. `CardioActivityType` model: `id`, `user_id`, `name`, `created_at`
-2. Alembic migration for activity types table
-3. CRUD endpoints: `GET /cardio-types`, `POST /cardio-types`, `PATCH /cardio-types/{id}`, `DELETE /cardio-types/{id}`
-4. Frontend: Activity Types page — list, add, edit, delete types
+1. ✅ `CardioActivityType` model: `id`, `user_id`, `name`, `created_at`
+2. ✅ Alembic migration for activity types table
+3. ✅ CRUD endpoints: `GET /cardio-types`, `POST /cardio-types`, `PATCH /cardio-types/{id}`, `DELETE /cardio-types/{id}`
+4. ✅ Frontend: Activity Types page — list, add, edit, delete types
 
 ---
 
