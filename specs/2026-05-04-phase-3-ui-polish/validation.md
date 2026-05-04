@@ -57,13 +57,13 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Unified Log Screen
 
-- [ ] Navigating to `/log` shows a type selector (Cardio / Strength)
-- [ ] Selecting Cardio renders the cardio log form inline
-- [ ] Selecting Strength renders the strength log form inline
-- [ ] Navigating to `/log?templateId=<id>` auto-selects Strength and pre-fills the template
-- [ ] `/log-cardio` and `/log-strength` routes no longer exist (404)
-- [ ] "Use this template" in the Template Library navigates to `/log?templateId=<id>`
-- [ ] Submitting a session from the unified screen saves correctly and redirects to history
+- [x] Navigating to `/log` shows a type selector (Cardio / Strength)
+- [x] Selecting Cardio renders the cardio log form inline
+- [x] Selecting Strength renders the strength log form inline
+- [x] Navigating to `/log?templateId=<id>` auto-selects Strength and pre-fills the template
+- [x] `/log-cardio` and `/log-strength` routes no longer exist (404)
+- [x] "Use this template" in the Template Library navigates to `/log?templateId=<id>`
+- [x] Submitting a session from the unified screen saves correctly and redirects to history
 
 ---
 

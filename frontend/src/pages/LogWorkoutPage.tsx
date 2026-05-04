@@ -1,0 +1,777 @@
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useFieldArray, useForm } from 'react-hook-form'
+import { Layout } from '../components/Layout'
+import {
+  emptyEntry,
+  ExerciseEntryBlock,
+  type ExerciseEntryFormValues,
+} from '../components/ExerciseEntryBlock'
+import { api } from '../lib/api'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared types
+// ─────────────────────────────────────────────────────────────────────────────
+
+type WorkoutType = 'cardio' | 'strength'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cardio form types & helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface CardioType {
+  id: number
+  name: string
+}
+
+interface SegmentFormValues {
+  duration_seconds: string
+  distance_meters: string
+  pace_seconds_per_km: string
+  heart_rate_avg: string
+}
+
+interface CardioFormValues {
+  activity_type_id: string
+  date: string
+  notes: string
+  total_duration_seconds: string
+  segments: SegmentFormValues[]
+}
+
+function parseSeconds(val: string): number | undefined {
+  const n = parseInt(val, 10)
+  return isNaN(n) || n <= 0 ? undefined : n
+}
+
+function parseFloat_(val: string): number | undefined {
+  const n = parseFloat(val)
+  return isNaN(n) ? undefined : n
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Strength form types & helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface Exercise {
+  id: number
+  name: string
+}
+
+interface TemplateSummary {
+  id: number
+  name: string
+}
+
+export interface TemplateSet {
+  set_number: number
+  reps: number | null
+  weight_kg: number | null
+  notes: string | null
+}
+
+export interface TemplateExercise {
+  exercise_id: number
+  exercise_name: string
+  order: number
+  sets: TemplateSet[]
+}
+
+export interface TemplateSnapshot {
+  id: number
+  name: string
+  exercises: TemplateExercise[]
+}
+
+interface StrengthFormValues {
+  date: string
+  notes: string
+  exercises: ExerciseEntryFormValues[]
+}
+
+interface DiffState {
+  formData: StrengthFormValues
+  changes: string[]
+}
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+const emptyStrengthDefaults = (): StrengthFormValues => ({
+  date: today(),
+  notes: '',
+  exercises: [emptyEntry()],
+})
+
+function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
+  return {
+    date: today(),
+    notes: '',
+    exercises: t.exercises.map((entry) => ({
+      exercise_id: String(entry.exercise_id),
+      sets: entry.sets.map((s) => ({
+        reps: s.reps != null ? String(s.reps) : '',
+        weight: s.weight_kg != null ? String(s.weight_kg) : '',
+        notes: s.notes ?? '',
+        done: false,
+      })),
+    })),
+  }
+}
+
+function computeDiff(
+  snapshot: TemplateSnapshot,
+  formData: StrengthFormValues,
+  exerciseMap: Map<number, string>,
+): string[] {
+  const changes: string[] = []
+  const tmpl = snapshot.exercises
+  const form = formData.exercises
+  const len = Math.max(tmpl.length, form.length)
+
+  for (let i = 0; i < len; i++) {
+    const te = tmpl[i]
+    const fe = form[i]
+
+    if (!te && fe) {
+      const name = exerciseMap.get(parseInt(fe.exercise_id, 10)) ?? 'Unknown exercise'
+      changes.push(`Added ${name}`)
+      continue
+    }
+    if (te && !fe) {
+      changes.push(`Removed ${te.exercise_name}`)
+      continue
+    }
+
+    const feId = parseInt(fe!.exercise_id, 10)
+    if (feId !== te!.exercise_id) {
+      const newName = exerciseMap.get(feId) ?? 'Unknown exercise'
+      changes.push(`Replaced ${te!.exercise_name} with ${newName}`)
+      continue
+    }
+
+    const name = te!.exercise_name
+    const tSets = te!.sets
+    const fSets = fe!.sets
+
+    if (fSets.length !== tSets.length) {
+      const diff = fSets.length - tSets.length
+      if (diff > 0) {
+        changes.push(`Added ${diff} set${diff > 1 ? 's' : ''} to ${name}`)
+      } else {
+        changes.push(`Removed ${-diff} set${-diff > 1 ? 's' : ''} from ${name}`)
+      }
+    }
+
+    const minSets = Math.min(tSets.length, fSets.length)
+    for (let j = 0; j < minSets; j++) {
+      const ts = tSets[j]
+      const fs = fSets[j]
+      const fReps = fs.reps ? parseInt(fs.reps, 10) : null
+      const fWeight = fs.weight ? parseFloat(fs.weight) : null
+      const fNotes = fs.notes || null
+      if (fReps !== ts.reps) changes.push(`Changed reps on ${name} set ${j + 1}`)
+      if (fWeight !== ts.weight_kg) changes.push(`Changed weight on ${name} set ${j + 1}`)
+      if (fNotes !== ts.notes) changes.push(`Changed notes on ${name} set ${j + 1}`)
+    }
+  }
+
+  return changes
+}
+
+function toTemplatePayload(data: StrengthFormValues) {
+  return {
+    exercises: data.exercises.map((entry, i) => ({
+      exercise_id: parseInt(entry.exercise_id, 10),
+      order: i + 1,
+      sets: entry.sets.map((s, si) => ({
+        set_number: si + 1,
+        reps: s.reps ? parseInt(s.reps, 10) : null,
+        weight_kg: s.weight ? parseFloat(s.weight) : null,
+        notes: s.notes || null,
+      })),
+    })),
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cardio Form
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CardioForm() {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+
+  const { data: cardioTypes = [] } = useQuery({
+    queryKey: ['cardio-types'],
+    queryFn: () => api.get<CardioType[]>('/cardio-types'),
+  })
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<CardioFormValues>({
+    defaultValues: {
+      activity_type_id: '',
+      date: today(),
+      notes: '',
+      total_duration_seconds: '',
+      segments: [{ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' }],
+    },
+  })
+
+  const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
+
+  const createMutation = useMutation({
+    mutationFn: (data: CardioFormValues) => {
+      const payload = {
+        activity_type_id: data.activity_type_id ? parseInt(data.activity_type_id, 10) : null,
+        date: data.date,
+        notes: data.notes || null,
+        total_duration_seconds: parseSeconds(data.total_duration_seconds) ?? null,
+        segments: data.segments.map((seg, i) => ({
+          order: i + 1,
+          duration_seconds: parseInt(seg.duration_seconds, 10),
+          distance_meters: parseFloat_(seg.distance_meters) ?? null,
+          pace_seconds_per_km: parseFloat_(seg.pace_seconds_per_km) ?? null,
+          heart_rate_avg: parseSeconds(seg.heart_rate_avg) ?? null,
+        })),
+      }
+      return api.post<{ id: number }>('/sessions/cardio', payload)
+    },
+    onSuccess: (session) => {
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      navigate(`/sessions/${session.id}`)
+    },
+  })
+
+  return (
+    <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
+      {/* Basic fields */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+          <select
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('activity_type_id')}
+          >
+            <option value="">— select type —</option>
+            {cardioTypes.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <input
+            type="date"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('date', { required: 'Date is required' })}
+          />
+          {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (seconds, optional override)</label>
+          <input
+            type="number"
+            min="0"
+            placeholder="e.g. 3600"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('total_duration_seconds')}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <textarea
+            rows={2}
+            placeholder="Optional notes…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            {...register('notes')}
+          />
+        </div>
+      </div>
+
+      {/* Segments */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-medium text-gray-900">Segments</h2>
+          <button
+            type="button"
+            onClick={() => append({ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            + Add Segment
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {fields.map((field, index) => (
+            <div key={field.id} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Segment {index + 1}</span>
+                {fields.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => remove(index)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Duration (sec) *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="e.g. 1800"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.duration_seconds`, { required: 'Required' })}
+                  />
+                  {errors.segments?.[index]?.duration_seconds && (
+                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_seconds?.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Distance (m)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 5000"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.distance_meters`)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Pace (sec/km)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 360"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.pace_seconds_per_km`)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Avg Heart Rate (bpm)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 145"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.heart_rate_avg`)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {createMutation.error && (
+        <p className="text-sm text-red-600">{createMutation.error.message}</p>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          type="submit"
+          disabled={createMutation.isPending}
+          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg text-sm"
+        >
+          {createMutation.isPending ? 'Saving…' : 'Save Session'}
+        </button>
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Strength Form
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
+  const [templateSnapshot, setTemplateSnapshot] = useState<TemplateSnapshot | null>(null)
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
+  const [diffState, setDiffState] = useState<DiffState | null>(null)
+
+  const { data: exercises = [] } = useQuery({
+    queryKey: ['exercises'],
+    queryFn: () => api.get<Exercise[]>('/exercises'),
+  })
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ['templates', 'strength'],
+    queryFn: () => api.get<TemplateSummary[]>('/templates/strength'),
+  })
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
+
+  const {
+    fields: exerciseFields,
+    append: appendExercise,
+    remove: removeExercise,
+  } = useFieldArray({ control, name: 'exercises' })
+
+  useEffect(() => {
+    if (initialTemplateId) applyTemplate(initialTemplateId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTemplateId])
+
+  async function applyTemplate(id: number) {
+    setIsLoadingTemplate(true)
+    try {
+      const detail = await api.get<TemplateSnapshot>(`/templates/strength/${id}`)
+      setSelectedTemplateId(id)
+      setTemplateSnapshot(detail)
+      reset(templateToFormValues(detail))
+    } finally {
+      setIsLoadingTemplate(false)
+    }
+  }
+
+  function handleTemplateSelect(value: string) {
+    if (!value) {
+      setSelectedTemplateId(null)
+      setTemplateSnapshot(null)
+      reset(emptyStrengthDefaults())
+    } else {
+      applyTemplate(parseInt(value, 10))
+    }
+  }
+
+  const createMutation = useMutation({
+    mutationFn: (data: StrengthFormValues) =>
+      api.post<{ id: number }>('/sessions/strength', {
+        date: data.date,
+        notes: data.notes || null,
+        exercises: data.exercises.map((entry, i) => ({
+          exercise_id: parseInt(entry.exercise_id, 10),
+          order: i + 1,
+          sets: entry.sets.map((s, si) => ({
+            set_number: si + 1,
+            reps: s.reps ? parseInt(s.reps, 10) : null,
+            weight: s.weight ? parseFloat(s.weight) : null,
+            notes: s.notes || null,
+          })),
+        })),
+      }),
+    onSuccess: (session) => {
+      qc.invalidateQueries({ queryKey: ['sessions'] })
+      navigate(`/sessions/${session.id}`)
+    },
+  })
+
+  const patchTemplateMutation = useMutation({
+    mutationFn: (data: StrengthFormValues) =>
+      api.patch(`/templates/strength/${templateSnapshot!.id}`, toTemplatePayload(data)),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates', 'strength'] })
+    },
+  })
+
+  function handleFormSubmit(data: StrengthFormValues) {
+    if (!templateSnapshot) {
+      createMutation.mutate(data)
+      return
+    }
+    const exerciseMap = new Map(exercises.map((e) => [e.id, e.name]))
+    const changes = computeDiff(templateSnapshot, data, exerciseMap)
+    if (changes.length === 0) {
+      createMutation.mutate(data)
+      return
+    }
+    setDiffState({ formData: data, changes })
+  }
+
+  async function handleYesUpdateTemplate() {
+    if (!diffState) return
+    try {
+      await patchTemplateMutation.mutateAsync(diffState.formData)
+      setDiffState(null)
+      createMutation.mutate(diffState.formData)
+    } catch {
+      // patchTemplateMutation.isError shows the error in the modal
+    }
+  }
+
+  function handleNoKeepTemplate() {
+    if (!diffState) return
+    const data = diffState.formData
+    setDiffState(null)
+    createMutation.mutate(data)
+  }
+
+  return (
+    <>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {/* Template selector */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Start from template
+          </label>
+          <select
+            value={selectedTemplateId ?? ''}
+            onChange={(e) => handleTemplateSelect(e.target.value)}
+            disabled={isLoadingTemplate}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <option value="">— no template —</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+          {isLoadingTemplate && (
+            <p className="mt-1 text-xs text-gray-400">Loading template…</p>
+          )}
+          {templateSnapshot && !isLoadingTemplate && (
+            <p className="mt-1 text-xs text-gray-500">
+              Pre-filled from <span className="font-medium">{templateSnapshot.name}</span> — all fields are editable.
+            </p>
+          )}
+        </div>
+
+        {/* Basic fields */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input
+              type="date"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register('date', { required: 'Date is required' })}
+            />
+            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <textarea
+              rows={2}
+              placeholder="Optional notes…"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              {...register('notes')}
+            />
+          </div>
+        </div>
+
+        {/* Exercises */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-medium text-gray-900">Exercises</h2>
+            <button
+              type="button"
+              onClick={() => appendExercise(emptyEntry())}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              + Add Exercise
+            </button>
+          </div>
+          <div className="space-y-4">
+            {exerciseFields.map((exField, exIndex) => (
+              <ExerciseEntryBlock
+                key={exField.id}
+                exIndex={exIndex}
+                register={register}
+                control={control}
+                exercises={exercises}
+                canRemove={exerciseFields.length > 1}
+                onRemove={() => removeExercise(exIndex)}
+                errors={errors}
+                showDone={templateSnapshot !== null}
+              />
+            ))}
+          </div>
+        </div>
+
+        {createMutation.isError && (
+          <p className="text-sm text-red-600">Failed to save session. Please try again.</p>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            {createMutation.isPending ? 'Saving…' : 'Save Session'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      {/* Diff modal */}
+      {diffState && (
+        <DiffModal
+          templateName={templateSnapshot!.name}
+          changes={diffState.changes}
+          onYes={handleYesUpdateTemplate}
+          onNo={handleNoKeepTemplate}
+          onCancel={() => setDiffState(null)}
+          isPending={patchTemplateMutation.isPending || createMutation.isPending}
+          isError={patchTemplateMutation.isError}
+        />
+      )}
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Diff modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DiffModal({
+  templateName,
+  changes,
+  onYes,
+  onNo,
+  onCancel,
+  isPending,
+  isError,
+}: {
+  templateName: string
+  changes: string[]
+  onYes: () => void
+  onNo: () => void
+  onCancel: () => void
+  isPending: boolean
+  isError: boolean
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={!isPending ? onCancel : undefined} />
+      <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+        <h2 className="text-base font-semibold text-gray-900">
+          Update template "{templateName}"?
+        </h2>
+        <p className="text-sm text-gray-600">
+          Your session differs from the template:
+        </p>
+        <ul className="space-y-1">
+          {changes.map((c, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+              <span className="mt-0.5 text-gray-400">·</span>
+              <span>{c}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm text-gray-600">
+          Save these changes back to the template?
+        </p>
+
+        {isError && (
+          <p className="text-sm text-red-600">Failed to update template. Try again.</p>
+        )}
+
+        <div className="flex flex-col gap-2 pt-1">
+          <button
+            onClick={onYes}
+            disabled={isPending}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl"
+          >
+            {isPending ? 'Saving…' : 'Yes, update template'}
+          </button>
+          <button
+            onClick={onNo}
+            disabled={isPending}
+            className="w-full bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-gray-800 text-sm font-medium py-2.5 rounded-xl"
+          >
+            No, keep template as-is
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={isPending}
+            className="w-full text-gray-500 hover:text-gray-700 disabled:opacity-50 text-sm py-2"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Page
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function LogWorkoutPage() {
+  const [searchParams] = useSearchParams()
+  const templateIdParam = searchParams.get('templateId')
+
+  const [workoutType, setWorkoutType] = useState<WorkoutType | null>(
+    templateIdParam ? 'strength' : null,
+  )
+
+  return (
+    <Layout>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Log Workout</h1>
+      </div>
+
+      {/* Type selector */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <button
+          type="button"
+          onClick={() => setWorkoutType('cardio')}
+          className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
+            workoutType === 'cardio'
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+          }`}
+        >
+          <span className="text-3xl">🏃</span>
+          <span className="text-base font-semibold">Cardio</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setWorkoutType('strength')}
+          className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
+            workoutType === 'strength'
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+          }`}
+        >
+          <span className="text-3xl">🏋️</span>
+          <span className="text-base font-semibold">Strength</span>
+        </button>
+      </div>
+
+      {/* Form */}
+      {workoutType === 'cardio' && <CardioForm />}
+      {workoutType === 'strength' && (
+        <StrengthForm
+          initialTemplateId={templateIdParam ? parseInt(templateIdParam, 10) : undefined}
+        />
+      )}
+    </Layout>
+  )
+}

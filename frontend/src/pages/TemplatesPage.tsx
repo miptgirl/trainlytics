@@ -191,7 +191,7 @@ function TemplateList({
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
-                      onClick={() => navigate(`/log/strength?templateId=${t.id}`)}
+                      onClick={() => navigate(`/log?templateId=${t.id}`)}
                       className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                       Use

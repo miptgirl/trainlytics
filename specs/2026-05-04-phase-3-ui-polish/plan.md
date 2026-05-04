@@ -53,7 +53,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 5 — Unified Log Screen
+## Group 5 — Unified Log Screen ✅
 
 1. Create `/log` route in `App.tsx`; accept optional `?templateId=<id>` query param.
 2. Create `LogWorkoutPage.tsx`:

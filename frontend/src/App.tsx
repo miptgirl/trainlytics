@@ -6,8 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
-import LogCardioPage from './pages/LogCardioPage'
-import LogStrengthPage from './pages/LogStrengthPage'
+import LogWorkoutPage from './pages/LogWorkoutPage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import HistoryPage from './pages/HistoryPage'
@@ -54,18 +53,10 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/log/cardio"
+          path="/log"
           element={
             <ProtectedRoute>
-              <LogCardioPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/log/strength"
-          element={
-            <ProtectedRoute>
-              <LogStrengthPage />
+              <LogWorkoutPage />
             </ProtectedRoute>
           }
         />

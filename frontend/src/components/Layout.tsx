@@ -21,8 +21,7 @@ export function Layout({ children }: { children: ReactNode }) {
             </Link>
             <nav className="flex items-center gap-5 text-sm">
               <NavLink to="/history" className={navLinkClass}>History</NavLink>
-              <NavLink to="/log/cardio" className={navLinkClass}>Log Cardio</NavLink>
-              <NavLink to="/log/strength" className={navLinkClass}>Log Strength</NavLink>
+              <NavLink to="/log" className={navLinkClass}>Log Workout</NavLink>
               <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
               <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
             </nav>
