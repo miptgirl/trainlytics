@@ -95,7 +95,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 9 — Exercise Types in Settings UI
+## Group 9 — Exercise Types in Settings UI ✅ DONE
 
 1. In `SettingsPage.tsx`, add a third section: **Exercise Types** — CRUD list identical in layout to Activity Types.
 2. In the exercise create/edit form (in Settings), add a multi-select tag input for types:

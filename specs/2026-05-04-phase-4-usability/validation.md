@@ -104,7 +104,7 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Exercise Types in Settings
 
-- [ ] The Settings page has an **Exercise Types** section with the same create/edit/delete UI as Activity Types
-- [ ] The exercise create/edit form includes a multi-select for exercise types
-- [ ] Selecting types on an exercise saves them correctly (`type_ids` sent in create/patch)
-- [ ] Deleting an exercise type from Settings is reflected immediately in the exercise picker (no stale data)
+- [x] The Settings page has an **Exercise Types** section with the same create/edit/delete UI as Activity Types
+- [x] The exercise create/edit form includes a multi-select for exercise types
+- [x] Selecting types on an exercise saves them correctly (`type_ids` sent in create/patch)
+- [x] Deleting an exercise type from Settings is reflected immediately in the exercise picker (no stale data)
