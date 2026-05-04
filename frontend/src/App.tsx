@@ -6,6 +6,8 @@ import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import ExercisesPage from './pages/ExercisesPage'
 import CardioTypesPage from './pages/CardioTypesPage'
+import LogCardioPage from './pages/LogCardioPage'
+import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 
 function Dashboard() {
   return (
@@ -44,6 +46,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <CardioTypesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/log/cardio"
+          element={
+            <ProtectedRoute>
+              <LogCardioPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sessions/:id"
+          element={
+            <ProtectedRoute>
+              <CardioSessionDetailPage />
             </ProtectedRoute>
           }
         />

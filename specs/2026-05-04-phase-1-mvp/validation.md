@@ -28,19 +28,19 @@ The implementation is complete and mergeable when all of the following pass.
 ## Cardio Activity Types
 
 - [x] Can create, rename, and delete cardio activity types — *verified by `test_create_cardio_type`, `test_rename_cardio_type`, `test_delete_cardio_type`*
-- [ ] Deleted types that are referenced by sessions are handled without data loss — *FK strategy (SET NULL on cardio sessions) implemented in Group 5 migration*
+- [x] Deleted types that are referenced by sessions are handled without data loss — *`activity_type_id` FK uses `SET NULL` (migration 0003)*
 
 ---
 
 ## Cardio Logging
 
-- [ ] Can log a cardio session with one segment (e.g. a 30-minute run)
-- [ ] Can log a cardio session with multiple segments (e.g. 10-min walk → 20-min run → 5-min walk)
-- [ ] Segment fields (duration, distance, pace, heart rate) are all optional except duration
-- [ ] Session appears in history immediately after logging
-- [ ] Session detail view shows all segments in order with their metrics
-- [ ] Can edit a session (change date, notes, add/remove/reorder segments)
-- [ ] Can delete a session; it disappears from history
+- [x] Can log a cardio session with one segment (e.g. a 30-minute run) — *verified by `test_create_cardio_session_single_segment`*
+- [x] Can log a cardio session with multiple segments (e.g. 10-min walk → 20-min run → 5-min walk) — *verified by `test_create_cardio_session`*
+- [x] Segment fields (duration, distance, pace, heart rate) are all optional except duration — *verified by `test_create_cardio_session_single_segment`*
+- [ ] Session appears in history immediately after logging — *pending Group 7 (history page)*
+- [x] Session detail view shows all segments in order with their metrics — *`CardioSessionDetailPage` renders segments from `GET /sessions/{id}`*
+- [x] Can edit a session (change date, notes, add/remove/reorder segments) — *verified by `test_patch_cardio_session`; `CardioSessionDetailPage` edit form*
+- [x] Can delete a session; it disappears from history — *verified by `test_delete_cardio_session`; delete button in detail view navigates home*
 
 ---
 
@@ -76,6 +76,6 @@ The implementation is complete and mergeable when all of the following pass.
 ## Automated Tests
 
 - [x] Backend: pytest suite covers auth endpoints (login, refresh, logout, 401 on invalid token) — *9 tests passing*
-- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests, cardio types: 9 tests — 29 total passing; sessions pending*
+- [x] Backend: pytest covers CRUD for exercises, activity types, cardio sessions, and strength sessions — *exercises: 11 tests, cardio types: 9 tests, sessions: 8 tests — 37 total passing; strength sessions pending*
 - [x] Backend: a test confirms users cannot access each other's data — *`test_user_isolation`, `test_user_cannot_edit_other_users_exercise`, `test_cardio_type_user_isolation`, `test_cardio_type_cannot_edit_other_users` all passing*
 - [x] Frontend: Vitest covers the login form (validation, error display) — *4 tests passing*

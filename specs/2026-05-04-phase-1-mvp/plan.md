@@ -50,17 +50,17 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 5 — Cardio Logging
+## ✅ Group 5 — Cardio Logging
 
-1. `WorkoutSession` model: `id`, `user_id`, `type` (enum: cardio/strength), `date`, `notes`, `created_at`
-2. `CardioSession` model: `id`, `session_id`, `activity_type_id`, `total_duration_seconds`
-3. `CardioSegment` model: `id`, `cardio_session_id`, `order`, `duration_seconds`, `distance_meters`, `pace_seconds_per_km`, `heart_rate_avg`
-4. Alembic migration for the above tables
-5. `POST /sessions/cardio` — create session + segments in one transaction
-6. `GET /sessions/{id}` — return full session with nested segments
-7. `PATCH /sessions/{id}` and `DELETE /sessions/{id}`
-8. Frontend: Log Cardio form — activity type picker, date, notes, dynamic segment list (add/remove rows)
-9. Frontend: Cardio session detail view
+1. ✅ `WorkoutSession` model: `id`, `user_id`, `type` (enum: cardio/strength), `date`, `notes`, `created_at`
+2. ✅ `CardioSession` model: `id`, `session_id`, `activity_type_id`, `total_duration_seconds`
+3. ✅ `CardioSegment` model: `id`, `cardio_session_id`, `order`, `duration_seconds`, `distance_meters`, `pace_seconds_per_km`, `heart_rate_avg`
+4. ✅ Alembic migration for the above tables
+5. ✅ `POST /sessions/cardio` — create session + segments in one transaction
+6. ✅ `GET /sessions/{id}` — return full session with nested segments
+7. ✅ `PATCH /sessions/{id}` and `DELETE /sessions/{id}`
+8. ✅ Frontend: Log Cardio form — activity type picker, date, notes, dynamic segment list (add/remove rows)
+9. ✅ Frontend: Cardio session detail view
 
 ---
 
