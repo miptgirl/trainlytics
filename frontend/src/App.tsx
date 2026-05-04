@@ -2,7 +2,17 @@ import { useCallback } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
+import ExercisesPage from './pages/ExercisesPage'
+
+function Dashboard() {
+  return (
+    <Layout>
+      <p className="text-gray-500 text-sm">Dashboard — coming soon</p>
+    </Layout>
+  )
+}
 
 function AppRoutes() {
   const navigate = useNavigate()
@@ -16,9 +26,15 @@ function AppRoutes() {
           path="/"
           element={
             <ProtectedRoute>
-              <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <p className="text-gray-500 text-sm">Dashboard — coming soon</p>
-              </div>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/exercises"
+          element={
+            <ProtectedRoute>
+              <ExercisesPage />
             </ProtectedRoute>
           }
         />

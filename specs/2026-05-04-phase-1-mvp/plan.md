@@ -32,12 +32,12 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 3 — Exercise Library
+## ✅ Group 3 — Exercise Library
 
-1. `Exercise` model: `id`, `user_id`, `name`, `notes`, `created_at`
-2. Alembic migration for exercises table
-3. CRUD endpoints: `GET /exercises`, `POST /exercises`, `PATCH /exercises/{id}`, `DELETE /exercises/{id}`
-4. Frontend: Exercise Library page — list, add, edit, delete exercises
+1. ✅ `Exercise` model: `id`, `user_id`, `name`, `notes`, `created_at`
+2. ✅ Alembic migration for exercises table
+3. ✅ CRUD endpoints: `GET /exercises`, `POST /exercises`, `PATCH /exercises/{id}`, `DELETE /exercises/{id}`
+4. ✅ Frontend: Exercise Library page — list, add, edit, delete exercises
 
 ---
 
