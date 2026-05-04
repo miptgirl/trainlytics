@@ -44,6 +44,53 @@ All services run as Docker containers, orchestrated with Docker Compose for both
 
 A single `docker-compose.yml` at the repo root covers local dev (with volume mounts for hot reload). A `docker-compose.prod.yml` override locks versions and disables dev tooling.
 
+### Running locally
+
+**Prerequisites:** Docker and Docker Compose installed.
+
+**1. Create a `.env` file** in the repo root:
+
+```
+SECRET_KEY=<a long random string>
+USERS=<username>:<bcrypt_hash>
+```
+
+To generate a bcrypt hash for a password, run:
+
+```bash
+docker compose run --rm backend uv run python -c \
+  "import bcrypt; print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())"
+```
+
+Example `.env`:
+```
+SECRET_KEY=super-secret-dev-key-change-in-production
+USERS=alice:$2b$12$...
+```
+
+Multiple accounts are supported — separate them with commas:
+```
+USERS=alice:$2b$12$...,bob:$2b$12$...
+```
+
+**2. Start all containers:**
+
+```bash
+docker compose up --build
+```
+
+**3. Run database migrations** (only needed on first start or after schema changes):
+
+```bash
+docker compose exec backend uv run alembic upgrade head
+```
+
+**4. Open the app** at [http://localhost:5173](http://localhost:5173) and log in with the credentials from your `.env`.
+
+---
+
+> **Note:** The `.env` file is gitignored. Never commit real credentials.
+
 ## Tooling
 
 | Concern | Choice |
