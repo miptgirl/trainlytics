@@ -495,7 +495,8 @@ async def test_training_trends_returns_n_weeks(db_session, auth_client: AsyncCli
     resp = await auth_client.get("/api/sessions/training-trends?weeks=12")
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) == 12
+    # API returns the last N full weeks + the current in-progress week = N+1
+    assert len(data) == 13
 
 
 @pytest.mark.asyncio
