@@ -17,7 +17,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 2 — Backend Schema & API Updates
+## Group 2 — Backend Schema & API Updates ✅
 
 1. Update `CardioSessionCreate` / `CardioSessionPatch` / `CardioSessionOut`: `date` becomes `datetime`, add `title`, add `calories`.
 2. Update `StrengthSessionCreate` / `StrengthSessionPatch` / `StrengthSessionOut`: `date` becomes `datetime`, add `title`, add `calories`, add `duration_seconds`.

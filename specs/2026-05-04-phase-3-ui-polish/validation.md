@@ -17,21 +17,21 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Backend API
 
-- [ ] `POST /sessions/cardio` accepts `datetime`, `title`, and `calories`; returns them in the response
-- [ ] `PATCH /sessions/cardio/{id}` accepts and persists `datetime`, `title`, `calories`
-- [ ] `GET /sessions/cardio/{id}` returns `datetime`, `title`, `calories`, and segment `title` fields
-- [ ] Same three checks pass for all strength session endpoints
-- [ ] `POST /sessions/strength` accepts and persists `duration_seconds`; `GET` returns it
-- [ ] `POST /sessions/cardio` with segment `title` persists and returns the segment title
-- [ ] `GET /sessions/weekly-summary?week_start=2026-05-04` returns `{ cardio: { minutes, calories }, strength: { minutes, calories } }` for the correct week
-- [ ] Weekly summary excludes sessions outside the Mon–Sun window
-- [ ] Weekly summary `calories` sums only non-null values; sessions with `calories=null` are ignored
-- [ ] Weekly summary returns zeros for a week with no sessions (not an error)
-- [ ] User A's weekly summary does not include User B's sessions — *verified by `test_weekly_summary_user_isolation`*
-- [ ] `GET /sessions/training-trends?weeks=12` returns 12 data points ordered chronologically, each with `week_start`, `cardio_minutes`, `strength_minutes`, `cardio_calories`, `strength_calories`
-- [ ] Weeks with no sessions appear as zero-value entries (not omitted)
-- [ ] Training trends are user-scoped — *verified by `test_training_trends_user_isolation`*
-- [ ] All existing session tests still pass with the updated schemas
+- [x] `POST /sessions/cardio` accepts `datetime`, `title`, and `calories`; returns them in the response
+- [x] `PATCH /sessions/cardio/{id}` accepts and persists `datetime`, `title`, `calories`
+- [x] `GET /sessions/cardio/{id}` returns `datetime`, `title`, `calories`, and segment `title` fields
+- [x] Same three checks pass for all strength session endpoints
+- [x] `POST /sessions/strength` accepts and persists `duration_seconds`; `GET` returns it
+- [x] `POST /sessions/cardio` with segment `title` persists and returns the segment title
+- [x] `GET /sessions/weekly-summary?week_start=2026-05-04` returns `{ cardio: { minutes, calories }, strength: { minutes, calories } }` for the correct week
+- [x] Weekly summary excludes sessions outside the Mon–Sun window
+- [x] Weekly summary `calories` sums only non-null values; sessions with `calories=null` are ignored
+- [x] Weekly summary returns zeros for a week with no sessions (not an error)
+- [x] User A's weekly summary does not include User B's sessions — *verified by `test_weekly_summary_user_isolation`*
+- [x] `GET /sessions/training-trends?weeks=12` returns 12 data points ordered chronologically, each with `week_start`, `cardio_minutes`, `strength_minutes`, `cardio_calories`, `strength_calories`
+- [x] Weeks with no sessions appear as zero-value entries (not omitted)
+- [x] Training trends are user-scoped — *verified by `test_training_trends_user_isolation`*
+- [x] All existing session tests still pass with the updated schemas
 
 ---
 

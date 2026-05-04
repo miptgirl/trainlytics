@@ -11,6 +11,7 @@ class CardioSegmentCreate(BaseModel):
     distance_meters: float | None = None
     pace_seconds_per_km: float | None = None
     heart_rate_avg: int | None = None
+    title: str | None = None
 
 
 class CardioSegmentPatch(BaseModel):
@@ -19,6 +20,7 @@ class CardioSegmentPatch(BaseModel):
     distance_meters: float | None = None
     pace_seconds_per_km: float | None = None
     heart_rate_avg: int | None = None
+    title: str | None = None
 
 
 class CardioSegmentOut(BaseModel):
@@ -30,21 +32,26 @@ class CardioSegmentOut(BaseModel):
     distance_meters: float | None
     pace_seconds_per_km: float | None
     heart_rate_avg: int | None
+    title: str | None = None
 
 
 class CardioSessionCreate(BaseModel):
     activity_type_id: int | None = None
     total_duration_seconds: int | None = None
-    date: DateType
+    date: datetime
     notes: str | None = None
+    title: str | None = None
+    calories: int | None = None
     segments: list[CardioSegmentCreate]
 
 
 class CardioSessionPatch(BaseModel):
     activity_type_id: int | None = None
     total_duration_seconds: int | None = None
-    date: Optional[DateType] = None
+    date: Optional[datetime] = None
     notes: str | None = None
+    title: str | None = None
+    calories: int | None = None
     segments: list[CardioSegmentCreate] | None = None
 
 
@@ -54,8 +61,10 @@ class CardioSessionOut(BaseModel):
     id: int
     activity_type_id: int | None
     total_duration_seconds: int | None
-    date: DateType
+    date: datetime
     notes: str | None
+    title: str | None = None
+    calories: int | None = None
     created_at: datetime
     segments: list[CardioSegmentOut]
 
@@ -96,14 +105,20 @@ class StrengthExerciseEntryOut(BaseModel):
 
 
 class StrengthSessionCreate(BaseModel):
-    date: DateType
+    date: datetime
     notes: str | None = None
+    title: str | None = None
+    calories: int | None = None
+    duration_seconds: int | None = None
     exercises: list[StrengthExerciseEntryCreate]
 
 
 class StrengthSessionPatch(BaseModel):
-    date: Optional[DateType] = None
+    date: Optional[datetime] = None
     notes: str | None = None
+    title: str | None = None
+    calories: int | None = None
+    duration_seconds: int | None = None
     exercises: list[StrengthExerciseEntryCreate] | None = None
 
 
@@ -112,8 +127,11 @@ class StrengthSessionOut(BaseModel):
 
     id: int
     type: str
-    date: DateType
+    date: datetime
     notes: str | None
+    title: str | None = None
+    calories: int | None = None
+    duration_seconds: int | None = None
     created_at: datetime
     exercises: list[StrengthExerciseEntryOut]
 
@@ -123,13 +141,16 @@ class SessionSummaryOut(BaseModel):
 
     id: int
     type: str
-    date: DateType
+    date: datetime
     notes: str | None
+    title: str | None = None
+    calories: int | None = None
     created_at: datetime
     # cardio summary
     total_duration_seconds: int | None = None
     # strength summary
     total_sets: int | None = None
+    duration_seconds: int | None = None
 
 
 class SessionListOut(BaseModel):
@@ -137,3 +158,23 @@ class SessionListOut(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+# ── Analytics ─────────────────────────────────────────────────────────────────
+
+class WeeklyActivitySummary(BaseModel):
+    minutes: int
+    calories: int
+
+
+class WeeklySummaryOut(BaseModel):
+    cardio: WeeklyActivitySummary
+    strength: WeeklyActivitySummary
+
+
+class TrainingTrendPoint(BaseModel):
+    week_start: DateType
+    cardio_minutes: int
+    strength_minutes: int
+    cardio_calories: int
+    strength_calories: int

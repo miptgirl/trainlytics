@@ -5,8 +5,10 @@ from httpx import AsyncClient
 CARDIO_PAYLOAD = {
     "activity_type_id": None,
     "total_duration_seconds": 3600,
-    "date": "2026-05-01",
+    "date": "2026-05-01T07:00:00Z",
     "notes": "Morning run",
+    "title": "Morning 10k",
+    "calories": 400,
     "segments": [
         {
             "order": 1,
@@ -14,6 +16,7 @@ CARDIO_PAYLOAD = {
             "distance_meters": 5000.0,
             "pace_seconds_per_km": 360.0,
             "heart_rate_avg": 145,
+            "title": "Warm-up",
         },
         {
             "order": 2,
@@ -31,18 +34,22 @@ async def test_create_cardio_session(db_session, auth_client: AsyncClient):
     resp = await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
     assert resp.status_code == 201
     data = resp.json()
-    assert data["date"] == "2026-05-01"
+    assert data["date"].startswith("2026-05-01")
     assert data["notes"] == "Morning run"
+    assert data["title"] == "Morning 10k"
+    assert data["calories"] == 400
     assert data["total_duration_seconds"] == 3600
     assert len(data["segments"]) == 2
     assert data["segments"][0]["order"] == 1
+    assert data["segments"][0]["title"] == "Warm-up"
     assert data["segments"][1]["order"] == 2
+    assert data["segments"][1]["title"] is None
 
 
 @pytest.mark.asyncio
 async def test_create_cardio_session_single_segment(db_session, auth_client: AsyncClient):
     payload = {
-        "date": "2026-05-02",
+        "date": "2026-05-02T08:30:00Z",
         "notes": None,
         "segments": [
             {"order": 1, "duration_seconds": 1800},
@@ -54,6 +61,8 @@ async def test_create_cardio_session_single_segment(db_session, auth_client: Asy
     assert len(data["segments"]) == 1
     assert data["segments"][0]["distance_meters"] is None
     assert data["segments"][0]["heart_rate_avg"] is None
+    assert data["title"] is None
+    assert data["calories"] is None
 
 
 @pytest.mark.asyncio
@@ -66,6 +75,9 @@ async def test_get_cardio_session(db_session, auth_client: AsyncClient):
     data = resp.json()
     assert data["id"] == session_id
     assert len(data["segments"]) == 2
+    assert data["title"] == "Morning 10k"
+    assert data["calories"] == 400
+    assert data["segments"][0]["title"] == "Warm-up"
 
 
 @pytest.mark.asyncio
@@ -83,12 +95,16 @@ async def test_patch_cardio_session(db_session, auth_client: AsyncClient):
         f"/api/sessions/{session_id}",
         json={
             "notes": "Updated notes",
+            "title": "Evening run",
+            "calories": 500,
             "segments": [{"order": 1, "duration_seconds": 2400, "distance_meters": 8000.0}],
         },
     )
     assert patch.status_code == 200
     data = patch.json()
     assert data["notes"] == "Updated notes"
+    assert data["title"] == "Evening run"
+    assert data["calories"] == 500
     assert len(data["segments"]) == 1
     assert data["segments"][0]["duration_seconds"] == 2400
 
@@ -116,11 +132,9 @@ async def test_cardio_session_user_isolation(db_session, auth_client: AsyncClien
     create = await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
     session_id = create.json()["id"]
 
-    # User 2 cannot read user 1's session
     resp = await auth_client_2.get(f"/api/sessions/{session_id}")
     assert resp.status_code == 404
 
-    # User 2 cannot delete user 1's session
     resp = await auth_client_2.delete(f"/api/sessions/{session_id}")
     assert resp.status_code == 404
 
@@ -134,8 +148,11 @@ async def _create_exercise(client, name: str = "Bench Press") -> int:
 
 
 STRENGTH_PAYLOAD_FACTORY = lambda ex_id: {
-    "date": "2026-05-04",
+    "date": "2026-05-04T06:00:00Z",
     "notes": "Morning lift",
+    "title": "Push day",
+    "calories": 350,
+    "duration_seconds": 3600,
     "exercises": [
         {
             "exercise_id": ex_id,
@@ -159,8 +176,11 @@ async def test_create_strength_session(db_session, auth_client: AsyncClient):
     assert resp.status_code == 201
     data = resp.json()
     assert data["type"] == "strength"
-    assert data["date"] == "2026-05-04"
+    assert data["date"].startswith("2026-05-04")
     assert data["notes"] == "Morning lift"
+    assert data["title"] == "Push day"
+    assert data["calories"] == 350
+    assert data["duration_seconds"] == 3600
     assert len(data["exercises"]) == 1
     assert len(data["exercises"][0]["sets"]) == 3
     assert data["exercises"][0]["sets"][0]["reps"] == 10
@@ -172,7 +192,7 @@ async def test_create_strength_session_multiple_exercises(db_session, auth_clien
     ex1_id = await _create_exercise(auth_client, "Squat")
     ex2_id = await _create_exercise(auth_client, "Deadlift")
     payload = {
-        "date": "2026-05-04",
+        "date": "2026-05-04T09:00:00Z",
         "notes": None,
         "exercises": [
             {
@@ -213,6 +233,9 @@ async def test_get_strength_session(db_session, auth_client: AsyncClient):
     data = resp.json()
     assert data["id"] == session_id
     assert data["type"] == "strength"
+    assert data["title"] == "Push day"
+    assert data["calories"] == 350
+    assert data["duration_seconds"] == 3600
     assert len(data["exercises"]) == 1
     assert data["exercises"][0]["exercise_name"] == "Bench Press"
 
@@ -227,6 +250,9 @@ async def test_patch_strength_session(db_session, auth_client: AsyncClient):
         f"/api/sessions/{session_id}",
         json={
             "notes": "Updated",
+            "title": "Pull day",
+            "calories": 300,
+            "duration_seconds": 2700,
             "exercises": [
                 {
                     "exercise_id": ex_id,
@@ -241,6 +267,9 @@ async def test_patch_strength_session(db_session, auth_client: AsyncClient):
     assert patch_resp.status_code == 200
     data = patch_resp.json()
     assert data["notes"] == "Updated"
+    assert data["title"] == "Pull day"
+    assert data["calories"] == 300
+    assert data["duration_seconds"] == 2700
     assert len(data["exercises"][0]["sets"]) == 1
     assert data["exercises"][0]["sets"][0]["reps"] == 12
 
@@ -324,16 +353,16 @@ async def test_list_sessions_filter_by_type(db_session, auth_client: AsyncClient
 
 @pytest.mark.asyncio
 async def test_list_sessions_filter_by_date_range(db_session, auth_client: AsyncClient):
-    payload_early = {**CARDIO_PAYLOAD, "date": "2026-01-01"}
-    payload_late = {**CARDIO_PAYLOAD, "date": "2026-06-01"}
+    payload_early = {**CARDIO_PAYLOAD, "date": "2026-01-01T00:00:00Z"}
+    payload_late = {**CARDIO_PAYLOAD, "date": "2026-06-01T00:00:00Z"}
     await auth_client.post("/api/sessions/cardio", json=payload_early)
     await auth_client.post("/api/sessions/cardio", json=payload_late)
 
-    resp = await auth_client.get("/api/sessions?date_from=2026-05-01&date_to=2026-12-31")
+    resp = await auth_client.get("/api/sessions?date_from=2026-05-01T00:00:00Z&date_to=2026-12-31T23:59:59Z")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
-    assert data["items"][0]["date"] == "2026-06-01"
+    assert data["items"][0]["date"].startswith("2026-06-01")
 
 
 @pytest.mark.asyncio
@@ -348,7 +377,12 @@ async def test_list_sessions_summary_metrics(db_session, auth_client: AsyncClien
     cardio_item = next(s for s in items if s["type"] == "cardio")
     strength_item = next(s for s in items if s["type"] == "strength")
     assert cardio_item["total_duration_seconds"] == 3600
+    assert cardio_item["title"] == "Morning 10k"
+    assert cardio_item["calories"] == 400
     assert strength_item["total_sets"] == 3
+    assert strength_item["title"] == "Push day"
+    assert strength_item["calories"] == 350
+    assert strength_item["duration_seconds"] == 3600
 
 
 @pytest.mark.asyncio
@@ -363,7 +397,7 @@ async def test_list_sessions_user_isolation(db_session, auth_client: AsyncClient
 @pytest.mark.asyncio
 async def test_list_sessions_pagination(db_session, auth_client: AsyncClient):
     for i in range(5):
-        await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": f"2026-0{i+1}-01"})
+        await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": f"2026-0{i+1}-01T00:00:00Z"})
 
     resp = await auth_client.get("/api/sessions?page=1&page_size=3")
     assert resp.status_code == 200
@@ -377,10 +411,127 @@ async def test_list_sessions_pagination(db_session, auth_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_list_sessions_reverse_chronological(db_session, auth_client: AsyncClient):
-    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-01-01"})
-    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-06-01"})
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-01-01T00:00:00Z"})
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-06-01T00:00:00Z"})
 
     resp = await auth_client.get("/api/sessions")
     data = resp.json()
-    assert data["items"][0]["date"] == "2026-06-01"
-    assert data["items"][1]["date"] == "2026-01-01"
+    assert data["items"][0]["date"].startswith("2026-06-01")
+    assert data["items"][1]["date"].startswith("2026-01-01")
+
+
+# ── weekly summary ────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_weekly_summary_empty(db_session, auth_client: AsyncClient):
+    resp = await auth_client.get("/api/sessions/weekly-summary?week_start=2026-05-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data == {
+        "cardio": {"minutes": 0, "calories": 0},
+        "strength": {"minutes": 0, "calories": 0},
+    }
+
+
+@pytest.mark.asyncio
+async def test_weekly_summary_aggregates_correctly(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    # Cardio: Mon 2026-05-04, 3600s = 60 mins, 400 cal
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-05-04T07:00:00Z"})
+    # Strength: Tue 2026-05-05, 3600s = 60 mins, 350 cal
+    strength_payload = STRENGTH_PAYLOAD_FACTORY(ex_id)
+    await auth_client.post("/api/sessions/strength", json={**strength_payload, "date": "2026-05-05T07:00:00Z"})
+
+    resp = await auth_client.get("/api/sessions/weekly-summary?week_start=2026-05-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["cardio"]["minutes"] == 60
+    assert data["cardio"]["calories"] == 400
+    assert data["strength"]["minutes"] == 60
+    assert data["strength"]["calories"] == 350
+
+
+@pytest.mark.asyncio
+async def test_weekly_summary_excludes_outside_week(db_session, auth_client: AsyncClient):
+    # Session from the previous week (Sun 2026-04-26)
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-04-26T07:00:00Z"})
+    # Session from next week (Mon 2026-05-11)
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-05-11T07:00:00Z"})
+
+    resp = await auth_client.get("/api/sessions/weekly-summary?week_start=2026-05-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["cardio"]["minutes"] == 0
+
+
+@pytest.mark.asyncio
+async def test_weekly_summary_ignores_null_calories(db_session, auth_client: AsyncClient):
+    # Session with no calories
+    no_cal_payload = {**CARDIO_PAYLOAD, "date": "2026-05-04T07:00:00Z", "calories": None}
+    await auth_client.post("/api/sessions/cardio", json=no_cal_payload)
+
+    resp = await auth_client.get("/api/sessions/weekly-summary?week_start=2026-05-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["cardio"]["calories"] == 0
+    assert data["cardio"]["minutes"] == 60
+
+
+@pytest.mark.asyncio
+async def test_weekly_summary_user_isolation(db_session, auth_client: AsyncClient, auth_client_2: AsyncClient):
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": "2026-05-04T07:00:00Z"})
+
+    resp = await auth_client_2.get("/api/sessions/weekly-summary?week_start=2026-05-04")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["cardio"]["minutes"] == 0
+    assert data["cardio"]["calories"] == 0
+
+
+# ── training trends ───────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_training_trends_returns_n_weeks(db_session, auth_client: AsyncClient):
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=12")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 12
+
+
+@pytest.mark.asyncio
+async def test_training_trends_empty_weeks_are_zeros(db_session, auth_client: AsyncClient):
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=4")
+    assert resp.status_code == 200
+    data = resp.json()
+    for point in data:
+        assert point["cardio_minutes"] == 0
+        assert point["strength_minutes"] == 0
+        assert point["cardio_calories"] == 0
+        assert point["strength_calories"] == 0
+
+
+@pytest.mark.asyncio
+async def test_training_trends_ordered_chronologically(db_session, auth_client: AsyncClient):
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=4")
+    assert resp.status_code == 200
+    data = resp.json()
+    week_starts = [p["week_start"] for p in data]
+    assert week_starts == sorted(week_starts)
+
+
+@pytest.mark.asyncio
+async def test_training_trends_user_isolation(
+    db_session, auth_client: AsyncClient, auth_client_2: AsyncClient
+):
+    from datetime import date, timedelta
+
+    today = date.today()
+    last_monday = today - timedelta(days=today.weekday()) - timedelta(weeks=1)
+    session_date = f"{last_monday.isoformat()}T07:00:00Z"
+
+    await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "date": session_date})
+
+    resp = await auth_client_2.get("/api/sessions/training-trends?weeks=4")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert all(p["cardio_minutes"] == 0 for p in data)
