@@ -4,7 +4,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 1 — Exercise Types: Database & Backend
+## Group 1 — Exercise Types: Database & Backend ✅ DONE
 
 1. Add Alembic migration: create `exercise_types` table (`id`, `user_id VARCHAR NOT NULL`, `name VARCHAR(255) NOT NULL`, `created_at TIMESTAMPTZ`).
 2. Add Alembic migration: create `exercise_exercise_types` join table (`exercise_id INTEGER → exercises.id ON DELETE CASCADE`, `exercise_type_id INTEGER → exercise_types.id ON DELETE CASCADE`, primary key on both columns).
@@ -34,7 +34,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
    echo "Deploy complete."
    ```
 3. Make the script executable (`chmod +x scripts/deploy.sh`).
-4. Add a **Deployment** section to `README.md` documenting the script and prerequisites.
+4. Add a **Deployment** section to `README.md` and `tech-stack.md` documenting the script and prerequisites.
 
 ---
 

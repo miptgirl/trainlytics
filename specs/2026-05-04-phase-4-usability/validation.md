@@ -6,32 +6,32 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Database Migrations
 
-- [ ] `exercise_types` table exists with columns: `id`, `user_id`, `name`, `created_at`
-- [ ] `exercise_exercise_types` join table exists with foreign keys to `exercises` and `exercise_types`, both with `ON DELETE CASCADE`
-- [ ] All Alembic migrations apply cleanly on a fresh database (`alembic upgrade head`)
-- [ ] Deleting an exercise also removes its rows from `exercise_exercise_types`
-- [ ] Deleting an exercise type also removes its rows from `exercise_exercise_types`
+- [x] `exercise_types` table exists with columns: `id`, `user_id`, `name`, `created_at`
+- [x] `exercise_exercise_types` join table exists with foreign keys to `exercises` and `exercise_types`, both with `ON DELETE CASCADE`
+- [x] All Alembic migrations apply cleanly on a fresh database (`alembic upgrade head`)
+- [x] Deleting an exercise also removes its rows from `exercise_exercise_types`
+- [x] Deleting an exercise type also removes its rows from `exercise_exercise_types`
 
 ---
 
 ## Backend — Exercise Types API
 
-- [ ] `GET /exercise-types` returns only the current user's exercise types
-- [ ] `POST /exercise-types` creates a type scoped to the current user; returns `id`, `name`, `created_at`
-- [ ] `PATCH /exercise-types/{id}` updates the name; returns 404 if the type belongs to another user
-- [ ] `DELETE /exercise-types/{id}` removes the type; returns 404 if the type belongs to another user
-- [ ] User A cannot see, edit, or delete User B's exercise types — *verified by `test_exercise_types_user_isolation`*
+- [x] `GET /exercise-types` returns only the current user's exercise types
+- [x] `POST /exercise-types` creates a type scoped to the current user; returns `id`, `name`, `created_at`
+- [x] `PATCH /exercise-types/{id}` updates the name; returns 404 if the type belongs to another user
+- [x] `DELETE /exercise-types/{id}` removes the type; returns 404 if the type belongs to another user
+- [x] User A cannot see, edit, or delete User B's exercise types — *verified by `test_exercise_types_user_isolation`*
 
 ---
 
 ## Backend — Exercise API Updates
 
-- [ ] `POST /exercises` with `type_ids: [1, 2]` creates the exercise and links both types
-- [ ] `GET /exercises` response includes `types: [{ id, name }]` for each exercise
-- [ ] `PATCH /exercises/{id}` with `type_ids: [3]` replaces the previous type associations
-- [ ] `PATCH /exercises/{id}` with `type_ids: []` removes all type associations
-- [ ] Passing a `type_id` belonging to another user returns a 400 or 404 error
-- [ ] All existing exercise tests still pass
+- [x] `POST /exercises` with `type_ids: [1, 2]` creates the exercise and links both types
+- [x] `GET /exercises` response includes `types: [{ id, name }]` for each exercise
+- [x] `PATCH /exercises/{id}` with `type_ids: [3]` replaces the previous type associations
+- [x] `PATCH /exercises/{id}` with `type_ids: []` removes all type associations
+- [x] Passing a `type_id` belonging to another user returns a 400 or 404 error
+- [x] All existing exercise tests still pass
 
 ---
 
