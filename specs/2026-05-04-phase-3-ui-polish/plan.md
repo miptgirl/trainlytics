@@ -4,7 +4,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 1 — Database Migrations
+## Group 1 — Database Migrations ✅
 
 1. Add Alembic migration: change `workout_sessions.date` from `Date` to `DateTime(timezone=True)`; default existing rows to `date + 00:00:00 UTC`.
 2. Add Alembic migration: add `calories INTEGER NULL` column to `workout_sessions`.

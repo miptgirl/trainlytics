@@ -6,12 +6,12 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Database Migrations
 
-- [ ] `workout_sessions.date` is a `DateTime(timezone=True)` column; all existing rows were migrated to `date + 00:00:00 UTC`
-- [ ] `workout_sessions.calories` column exists as a nullable integer
-- [ ] `workout_sessions.title` column exists as a nullable text field
-- [ ] `cardio_segments.title` column exists as a nullable text field
-- [ ] `strength_sessions.duration_seconds` column exists as a nullable integer
-- [ ] All Alembic migrations apply cleanly on a fresh database (`alembic upgrade head`)
+- [x] `workout_sessions.date` is a `DateTime(timezone=True)` column; all existing rows were migrated to `date + 00:00:00 UTC`
+- [x] `workout_sessions.calories` column exists as a nullable integer
+- [x] `workout_sessions.title` column exists as a nullable text field
+- [x] `cardio_segments.title` column exists as a nullable text field
+- [x] `strength_sessions.duration_seconds` column exists as a nullable integer
+- [x] All Alembic migrations apply cleanly on a fresh database (`alembic upgrade head`)
 
 ---
 
