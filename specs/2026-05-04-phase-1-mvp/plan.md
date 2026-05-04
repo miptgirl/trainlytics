@@ -18,17 +18,17 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 2 — Auth
+## ✅ Group 2 — Auth
 
-1. Define user loading from env var (`USERS=name:bcrypt_hash,...`)
-2. Write `/auth/login` endpoint: validate credentials, return JWT access token + set refresh cookie
-3. Write `/auth/refresh` endpoint: accept refresh cookie, return new access token
-4. Write `/auth/logout` endpoint: clear refresh cookie
-5. Write FastAPI dependency `get_current_user` — validates JWT, raises 401 if invalid
-6. Apply `get_current_user` as default dependency to all routers
-7. Build login page in React (username + password form, React Hook Form)
-8. Store access token in memory (React state / context); on 401, redirect to `/login`
-9. Wire up silent token refresh on page load using the refresh cookie
+1. ✅ Define user loading from env var (`USERS=name:bcrypt_hash,...`)
+2. ✅ Write `/auth/login` endpoint: validate credentials, return JWT access token + set refresh cookie
+3. ✅ Write `/auth/refresh` endpoint: accept refresh cookie, return new access token
+4. ✅ Write `/auth/logout` endpoint: clear refresh cookie
+5. ✅ Write FastAPI dependency `get_current_user` — validates JWT, raises 401 if invalid
+6. ✅ Apply `get_current_user` as default dependency to all routers
+7. ✅ Build login page in React (username + password form, React Hook Form)
+8. ✅ Store access token in memory (React state / context); on 401, redirect to `/login`
+9. ✅ Wire up silent token refresh on page load using the refresh cookie
 
 ---
 

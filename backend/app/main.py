@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import auth as auth_module
+
 app = FastAPI(title="Trainlytics API")
 
 app.add_middleware(
@@ -10,6 +12,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_module.router, prefix="/api")
 
 
 @app.get("/api/health")
