@@ -37,9 +37,9 @@ function groupExercises(exercises: ExerciseOption[]): { label: string; items: Ex
   for (const ex of exercises) {
     const tags = ex.types && ex.types.length > 0 ? ex.types : null
     if (!tags) {
-      const bucket = map.get('Uncategorised') ?? []
+      const bucket = map.get('Other') ?? []
       bucket.push(ex)
-      map.set('Uncategorised', bucket)
+      map.set('Other', bucket)
     } else {
       for (const tag of tags) {
         const bucket = map.get(tag.name) ?? []
@@ -50,8 +50,8 @@ function groupExercises(exercises: ExerciseOption[]): { label: string; items: Ex
   }
   const groups: { label: string; items: ExerciseOption[] }[] = []
   const sorted = [...map.entries()].sort(([a], [b]) => {
-    if (a === 'Uncategorised') return 1
-    if (b === 'Uncategorised') return -1
+    if (a === 'Other') return 1
+    if (b === 'Other') return -1
     return a.localeCompare(b)
   })
   for (const [label, items] of sorted) {
@@ -61,7 +61,9 @@ function groupExercises(exercises: ExerciseOption[]): { label: string; items: Ex
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Custom grouped exercise picker
+// Custom two-level exercise picker
+// Level 1: category list with exercise counts
+// Level 2: exercises within a selected category (back button returns to level 1)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ExercisePickerDropdown({
@@ -76,35 +78,50 @@ function ExercisePickerDropdown({
   hasError: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [activeGroup, setActiveGroup] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const selected = exercises.find((e) => String(e.id) === value)
   const groups = groupExercises(exercises)
 
-  // Close on outside click
+  // Close on outside click; reset level on close
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false)
+        setActiveGroup(null)
       }
     }
     if (open) document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+  function openDropdown() {
+    // When reopening, pre-select the group of the currently selected exercise
+    if (!open && value) {
+      const group = groups.find((g) => g.items.some((ex) => String(ex.id) === value))
+      setActiveGroup(group?.label ?? null)
+    } else if (!open) {
+      setActiveGroup(null)
+    }
+    setOpen((o) => !o)
+  }
+
   function select(id: string) {
     onChange(id)
     setOpen(false)
+    setActiveGroup(null)
   }
 
   const borderClass = hasError ? 'border-red-400' : 'border-gray-300'
+  const currentGroupItems = activeGroup ? groups.find((g) => g.label === activeGroup)?.items ?? [] : []
 
   return (
     <div ref={containerRef} className="relative">
       {/* Trigger */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={openDropdown}
         className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left`}
       >
         <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
@@ -120,26 +137,61 @@ function ExercisePickerDropdown({
         </svg>
       </button>
 
-      {/* Dropdown panel */}
       {open && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
-          {groups.length === 0 && (
-            <p className="px-4 py-3 text-sm text-gray-400">No exercises yet.</p>
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+
+          {/* ── Level 1: category list ── */}
+          {activeGroup === null && (
+            <ul className="py-1">
+              {groups.length === 0 && (
+                <li className="px-4 py-3 text-sm text-gray-400">No exercises yet.</li>
+              )}
+              {groups.map((group) => (
+                <li key={group.label}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveGroup(group.label)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                  >
+                    <span className="font-medium">{group.label}</span>
+                    <span className="flex items-center gap-1.5 text-gray-400 text-xs">
+                      <span>{group.items.length} {group.items.length === 1 ? 'exercise' : 'exercises'}</span>
+                      <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                      </svg>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
-          {groups.map((group, gi) => (
-            <div key={group.label}>
-              {/* Group header */}
-              <div className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 ${gi > 0 ? 'border-t border-gray-100' : ''}`}>
-                {group.label}
+
+          {/* ── Level 2: exercises in selected category ── */}
+          {activeGroup !== null && (
+            <div>
+              {/* Back header */}
+              <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setActiveGroup(null)}
+                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                  </svg>
+                  All categories
+                </button>
+                <span className="text-xs text-gray-400 mx-1">·</span>
+                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{activeGroup}</span>
               </div>
-              {/* Items */}
-              <ul>
-                {group.items.map((ex) => (
+              {/* Exercise list */}
+              <ul className="py-1 max-h-56 overflow-y-auto">
+                {currentGroupItems.map((ex) => (
                   <li key={ex.id}>
                     <button
                       type="button"
                       onClick={() => select(String(ex.id))}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors ${String(ex.id) === value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors ${String(ex.id) === value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800'}`}
                     >
                       {ex.name}
                     </button>
@@ -147,7 +199,8 @@ function ExercisePickerDropdown({
                 ))}
               </ul>
             </div>
-          ))}
+          )}
+
         </div>
       )}
     </div>
