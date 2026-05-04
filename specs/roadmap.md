@@ -75,7 +75,29 @@ A user can open the app, immediately feel at home with a clean blue-accented Mon
 
 ---
 
-## Phase 4 — Planning & Weekly Overview
+## Phase 4 — Usability & Mobile Polish
+
+**Goal:** The app works smoothly on mobile, daily logging flows are faster and more intuitive, and deployment is straightforward.
+
+### Deliverables
+
+- [ ] **Mobile header fix** — nav bar is usable on small screens; "Log Workout" and "Sign Out" no longer clash or overlap
+- [ ] **Deployment script** — single script to pull the latest build, run `docker compose up`, and apply any pending Alembic migrations; covers both initial setup and incremental updates
+- [ ] **Exercise type badges** — exercises can carry one or more type tags (e.g. *core*, *lower body*, *upper body*); badges are displayed in the Settings / Manage Exercises screen
+- [ ] **Exercise picker grouped by type** — when selecting an exercise in the template editor or the strength log form, exercises are grouped by their type badge for easier navigation
+- [ ] **Template form: add exercise at bottom** — the "Add Exercise" button moves to the bottom of the exercise list for natural top-to-bottom flow
+- [ ] **Collapsible exercises** — in both the template editor and the strength log form, individual exercises can be collapsed/expanded; exercises auto-collapse when all their sets are marked done
+- [ ] **Green set completion label** — completed sets are highlighted in green instead of muted/greyed out for better visibility
+- [ ] **Auto-fill session title** — when logging strength from a template, the title field defaults to the template name; without a template it defaults to *"Strength session"*; for cardio the title defaults to *"&lt;Activity type&gt; – &lt;X&gt; km"* (e.g. *"Run – 8 km"*)
+- [ ] **Human-readable duration & pace inputs** — duration and pace fields accept and display `h:mm:ss` / `m:ss` format instead of raw numbers
+
+### Definition of Done
+
+A user on a mobile device can navigate the full app without UI collisions, log a strength session from a template with the title pre-filled, collapse finished exercises as they go, and enter cardio duration in a natural time format.
+
+---
+
+## Phase 5 — Planning & Weekly Overview (previously Phase 4)
 
 **Goal:** A user can plan their training week in advance and log against that plan.
 
@@ -91,7 +113,7 @@ A user can build a training week, log sessions against it, and see at a glance h
 
 ---
 
-## Phase 5 — Analytics & Export
+## Phase 6 — Analytics & Export (previously Phase 5)
 
 **Goal:** A user can understand their progress over time and share it externally.
 
