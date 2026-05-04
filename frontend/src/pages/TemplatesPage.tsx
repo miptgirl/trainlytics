@@ -61,6 +61,7 @@ function detailToFormValues(t: TemplateDetail): TemplateFormValues {
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: s.notes ?? '',
+        done: false,
       })),
     })),
   }
