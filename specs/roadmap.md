@@ -4,7 +4,7 @@ The roadmap is organized around three phases. Each phase produces a usable, ship
 
 ---
 
-## Phase 1 — MVP: Core Activity Logging
+## ✅ Phase 1 — MVP: Core Activity Logging *(completed)*
 
 **Goal:** A user can securely log in from any device and record any workout.
 
@@ -12,18 +12,18 @@ This is the foundation everything else builds on. Auth comes first — all data 
 
 ### Deliverables
 
-- [ ] Project scaffold: React frontend + FastAPI backend + PostgreSQL + Docker Compose
-- [ ] **Auth** — accounts defined via environment variables (no registration UI), login/logout, JWT access token + HTTP-only refresh token cookie; multiple accounts supported
-- [ ] **Protected routes** — all API endpoints require auth; frontend redirects to login on 401
-- [ ] **Cardio logging** — log a session with: activity type, date, total duration, notes; a session is composed of one or more segments (e.g. walk → run → walk), each with its own duration, distance, pace, and heart rate
-- [ ] **Strength logging** — log a session with: date, exercises, sets × reps × weight, notes
-- [ ] **Workout history** — list of all logged sessions, filterable by type and date range
-- [ ] **Session detail view** — full breakdown of a single logged workout
-- [ ] **Edit / delete** a logged session
+- [x] Project scaffold: React frontend + FastAPI backend + PostgreSQL + Docker Compose
+- [x] **Auth** — accounts defined via environment variables (no registration UI), login/logout, JWT access token + HTTP-only refresh token cookie; multiple accounts supported
+- [x] **Protected routes** — all API endpoints require auth; frontend redirects to login on 401
+- [x] **Cardio logging** — log a session with: activity type, date, total duration, notes; a session is composed of one or more segments (e.g. walk → run → walk), each with its own duration, distance, pace, and heart rate
+- [x] **Strength logging** — log a session with: date, exercises, sets × reps × weight, notes
+- [x] **Workout history** — list of all logged sessions, filterable by type and date range
+- [x] **Session detail view** — full breakdown of a single logged workout
+- [x] **Edit / delete** a logged session
 
 ### Definition of Done
 
-A user can log in on both desktop and mobile, log a run and a gym session, and see both in their history with full detail. Unauthenticated requests are rejected.
+A user can log in on both desktop and mobile, log a run and a gym session, and see both in their history with full detail. Unauthenticated requests are rejected. ✅ **Achieved.**
 
 ---
 
