@@ -45,9 +45,9 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Mobile Header
 
-- [ ] On a 375 px wide viewport, all nav links and the Sign Out button are accessible without horizontal scrolling or element overlap
-- [ ] The logo is visible and not clipped on mobile
-- [ ] On a desktop viewport (≥ 1024 px), the nav layout is unchanged from Phase 3
+- [x] On a 375 px wide viewport, all nav links and the Sign Out button are accessible without horizontal scrolling or element overlap
+- [x] The logo is visible and not clipped on mobile
+- [x] On a desktop viewport (≥ 1024 px), the nav layout is unchanged from Phase 3
 
 ---
 

@@ -38,7 +38,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 3 — Mobile Header Fix
+## Group 3 — Mobile Header Fix ✅ DONE
 
 1. Audit `Layout.tsx` on a 375 px viewport — identify the exact overflow/overlap.
 2. Implement a responsive nav: on mobile, collapse nav links behind a hamburger button; on desktop (≥ `md` breakpoint) keep the current horizontal layout.
