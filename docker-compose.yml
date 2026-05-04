@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trainlytics
+      POSTGRES_PASSWORD: trainlytics
+      POSTGRES_DB: trainlytics
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trainlytics"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://trainlytics:trainlytics@db:5432/trainlytics
+      UV_LINK_MODE: copy
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - backend_venv:/app/.venv  # isolates the Linux venv from the macOS host venv
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude .venv
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_venv:

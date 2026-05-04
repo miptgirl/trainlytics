@@ -13,7 +13,7 @@ This is the foundation everything else builds on. Auth comes first — all data 
 ### Deliverables
 
 - [ ] Project scaffold: React frontend + FastAPI backend + PostgreSQL + Docker Compose
-- [ ] **Auth** — register (one-time), login/logout, JWT access token + HTTP-only refresh token cookie
+- [ ] **Auth** — accounts defined via environment variables (no registration UI), login/logout, JWT access token + HTTP-only refresh token cookie; multiple accounts supported
 - [ ] **Protected routes** — all API endpoints require auth; frontend redirects to login on 401
 - [ ] **Cardio logging** — log a session with: activity type, date, total duration, notes; a session is composed of one or more segments (e.g. walk → run → walk), each with its own duration, distance, pace, and heart rate
 - [ ] **Strength logging** — log a session with: date, exercises, sets × reps × weight, notes
