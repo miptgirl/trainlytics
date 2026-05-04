@@ -28,11 +28,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Log from Template
 
-- [ ] Log Strength page shows a "Start from template" dropdown listing all user templates
-- [ ] Selecting a template pre-fills all exercises, sets, reps, and weights in the form
-- [ ] Pre-filled fields are fully editable before submitting
-- [ ] Navigating to Log Strength with `?templateId=<id>` auto-selects and pre-fills the template on mount
-- [ ] Clearing the template selector resets the form to empty
+- [x] Log Strength page shows a "Start from template" dropdown listing all user templates
+- [x] Selecting a template pre-fills all exercises, sets, reps, and weights in the form
+- [x] Pre-filled fields are fully editable before submitting
+- [x] Navigating to Log Strength with `?templateId=<id>` auto-selects and pre-fills the template on mount
+- [x] Clearing the template selector resets the form to empty
 
 ---
 
@@ -51,6 +51,6 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Regression
 
-- [ ] Logging a strength session **without** a template still works exactly as before
+- [x] Logging a strength session **without** a template still works exactly as before
 - [x] All Phase 1 backend tests pass (`pytest backend/tests/`)
 - [ ] Existing history and session detail views are unaffected

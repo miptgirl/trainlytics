@@ -37,7 +37,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 4 — Log from Template (Pre-fill)
+## Group 4 — Log from Template (Pre-fill) ✅ DONE
 
 1. Add a "Start from template" dropdown at the top of the Log Strength page; fetches `GET /templates/strength`
 2. On selection, populate all exercise and set fields from the template (fully editable)
