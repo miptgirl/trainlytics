@@ -47,11 +47,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Settings Tab
 
-- [ ] A **Settings** link appears in the main nav and navigates to `/settings`
-- [ ] `/settings` shows both Activity Types and Exercises management sections
-- [ ] Old standalone Activity Types and Exercises nav links are removed
-- [ ] Activity types can be created, edited, and deleted from the Settings page
-- [ ] Exercises can be created, edited, and deleted from the Settings page
+- [x] A **Settings** link appears in the main nav and navigates to `/settings`
+- [x] `/settings` shows both Activity Types and Exercises management sections
+- [x] Old standalone Activity Types and Exercises nav links are removed
+- [x] Activity types can be created, edited, and deleted from the Settings page
+- [x] Exercises can be created, edited, and deleted from the Settings page
 
 ---
 

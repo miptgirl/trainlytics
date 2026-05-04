@@ -44,7 +44,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 4 — Settings Tab
+## Group 4 — Settings Tab ✅
 
 1. Add `/settings` route in `App.tsx`.
 2. Create `SettingsPage.tsx`: two sections — *Activity Types* and *Exercises*; content moved from existing dedicated pages.
