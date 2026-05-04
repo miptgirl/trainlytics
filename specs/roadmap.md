@@ -27,20 +27,21 @@ A user can log in on both desktop and mobile, log a run and a gym session, and s
 
 ---
 
-## Phase 2 — Strength Templates
+## ✅ Phase 2 — Strength Templates *(completed)*
 
 **Goal:** A user can create reusable strength session templates and log against them without having to remember every exercise from scratch.
 
 ### Deliverables
 
-- [ ] **Strength session templates** — create, edit, and delete reusable templates that define exercises, default sets × reps × weight, and notes
-- [ ] **Log from template** — when logging a strength session, optionally select a template; all exercises, sets, reps, and weights are pre-filled from the template and fully editable before committing
-- [ ] **Change detection on commit** — if anything in the logged session differs from the template (exercises added/removed, sets/reps/weight changed), prompt the user: *"Your session differs from the template — do you want to update it?"*
-- [ ] **Template library** — dedicated screen to browse, create, and manage all templates
+- [x] **Strength session templates** — create, edit, and delete reusable templates that define exercises, default sets × reps × weight, and notes
+- [x] **Log from template** — when logging a strength session, optionally select a template; all exercises, sets, reps, and weights are pre-filled from the template and fully editable before committing
+- [x] **Change detection on commit** — if anything in the logged session differs from the template (exercises added/removed, sets/reps/weight changed), prompt the user: *"Your session differs from the template — do you want to update it?"*
+- [x] **Template library** — dedicated screen to browse, create, and manage all templates
+- [x] **Set completion tracking** — while logging from a template, mark individual sets as done with a tick button; completed sets are visually distinguished (muted text + strikethrough); completion state is client-only and never persisted
 
 ### Definition of Done
 
-A user can create a "Push Day" template with their usual exercises, open it when logging, tweak what changed that day, and optionally save those tweaks back to the template.
+A user can create a "Push Day" template with their usual exercises, open it when logging, tweak what changed that day, and optionally save those tweaks back to the template. ✅ **Achieved.**
 
 ### Backlog (deferred from Phase 2)
 
