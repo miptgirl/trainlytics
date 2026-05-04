@@ -4,7 +4,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 1 — Template Data Model & Migrations
+## Group 1 — Template Data Model & Migrations ✅ DONE
 
 1. Add `StrengthTemplate` model: `id`, `user_id`, `name`, `notes`, `created_at`, `updated_at`
 2. Add `StrengthTemplateExercise` model: `id`, `template_id`, `exercise_id`, `order`
