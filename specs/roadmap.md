@@ -42,6 +42,11 @@ A user can log in on both desktop and mobile, log a run and a gym session, and s
 
 A user can create a "Push Day" template with their usual exercises, open it when logging, tweak what changed that day, and optionally save those tweaks back to the template.
 
+### Backlog (deferred from Phase 2)
+
+- **Template versioning** — keep a history of past template states so users can see how a template evolved over time; "last saved state" is sufficient for Phase 2
+- **Unit preference (kg / lb)** — user-level setting to display and enter weights in kg or lb; all weights are stored in kg internally; Phase 2 UI shows kg only
+
 ---
 
 ## Phase 3 — UI Polish & Quality of Life
