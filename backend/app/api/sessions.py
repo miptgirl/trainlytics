@@ -27,6 +27,9 @@ from app.schemas.session import (
     StrengthSessionOut,
     StrengthSessionPatch,
     StrengthSetOut,
+    TrainingTrendPoint,
+    WeeklyActivitySummary,
+    WeeklySummaryOut,
 )
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
@@ -42,6 +45,8 @@ def _build_cardio_out(ws: WorkoutSession) -> CardioSessionOut:
         total_duration_seconds=cs.total_duration_seconds,
         date=ws.date,
         notes=ws.notes,
+        title=ws.title,
+        calories=ws.calories,
         created_at=ws.created_at,
         segments=cs.segments,  # type: ignore[arg-type]
     )
@@ -74,6 +79,9 @@ def _build_strength_out(ws: WorkoutSession) -> StrengthSessionOut:
         type=ws.type,
         date=ws.date,
         notes=ws.notes,
+        title=ws.title,
+        calories=ws.calories,
+        duration_seconds=ws.strength_session.duration_seconds,
         created_at=ws.created_at,
         exercises=exercises_out,
     )
@@ -109,23 +117,23 @@ async def _load_strength_ws(db: AsyncSession, session_id: int, user: str) -> Wor
 @router.get("", response_model=SessionListOut)
 async def list_sessions(
     type: str | None = Query(None, description="cardio or strength"),
-    date_from: str | None = Query(None, description="ISO date, inclusive"),
-    date_to: str | None = Query(None, description="ISO date, inclusive"),
+    date_from: str | None = Query(None, description="ISO date or datetime, inclusive"),
+    date_to: str | None = Query(None, description="ISO date or datetime, inclusive"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> SessionListOut:
-    from datetime import date as DateType
+    from datetime import datetime as dt
 
     q = select(WorkoutSession).where(WorkoutSession.user_id == user)
 
     if type is not None:
         q = q.where(WorkoutSession.type == type)
     if date_from is not None:
-        q = q.where(WorkoutSession.date >= DateType.fromisoformat(date_from))
+        q = q.where(WorkoutSession.date >= dt.fromisoformat(date_from))
     if date_to is not None:
-        q = q.where(WorkoutSession.date <= DateType.fromisoformat(date_to))
+        q = q.where(WorkoutSession.date <= dt.fromisoformat(date_to))
 
     count_result = await db.execute(select(func.count()).select_from(q.subquery()))
     total = count_result.scalar_one()
@@ -148,27 +156,44 @@ async def list_sessions(
     for ws in rows:
         if ws.type == "cardio" and ws.cardio_session:
             cs = ws.cardio_session
+            total_distance = sum(
+                seg.distance_meters for seg in cs.segments if seg.distance_meters is not None
+            ) or None
             items.append(
                 SessionSummaryOut(
                     id=ws.id,
                     type=ws.type,
                     date=ws.date,
                     notes=ws.notes,
+                    title=ws.title,
+                    calories=ws.calories,
                     created_at=ws.created_at,
                     total_duration_seconds=cs.total_duration_seconds,
+                    total_distance_meters=total_distance,
                 )
             )
         elif ws.type == "strength" and ws.strength_session:
             ss = ws.strength_session
             total_sets = sum(len(e.sets) for e in ss.exercise_entries)
+            exercise_count = len(ss.exercise_entries)
+            total_volume = sum(
+                (s.weight or 0) * (s.reps or 0)
+                for e in ss.exercise_entries
+                for s in e.sets
+            ) or None
             items.append(
                 SessionSummaryOut(
                     id=ws.id,
                     type=ws.type,
                     date=ws.date,
                     notes=ws.notes,
+                    title=ws.title,
+                    calories=ws.calories,
                     created_at=ws.created_at,
                     total_sets=total_sets,
+                    exercise_count=exercise_count,
+                    total_volume=total_volume,
+                    duration_seconds=ss.duration_seconds,
                 )
             )
         else:
@@ -178,6 +203,8 @@ async def list_sessions(
                     type=ws.type,
                     date=ws.date,
                     notes=ws.notes,
+                    title=ws.title,
+                    calories=ws.calories,
                     created_at=ws.created_at,
                 )
             )
@@ -193,7 +220,14 @@ async def create_cardio_session(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> CardioSessionOut:
-    ws = WorkoutSession(user_id=user, type="cardio", date=body.date, notes=body.notes)
+    ws = WorkoutSession(
+        user_id=user,
+        type="cardio",
+        date=body.date,
+        notes=body.notes,
+        title=body.title,
+        calories=body.calories,
+    )
     db.add(ws)
     await db.flush()
 
@@ -236,11 +270,18 @@ async def create_strength_session(
     if missing:
         raise HTTPException(status_code=400, detail=f"Exercise(s) not found: {missing}")
 
-    ws = WorkoutSession(user_id=user, type="strength", date=body.date, notes=body.notes)
+    ws = WorkoutSession(
+        user_id=user,
+        type="strength",
+        date=body.date,
+        notes=body.notes,
+        title=body.title,
+        calories=body.calories,
+    )
     db.add(ws)
     await db.flush()
 
-    ss = StrengthSession(session_id=ws.id)
+    ss = StrengthSession(session_id=ws.id, duration_seconds=body.duration_seconds)
     db.add(ss)
     await db.flush()
 
@@ -260,6 +301,142 @@ async def create_strength_session(
 
 
 # ── shared GET / PATCH / DELETE ───────────────────────────────────────────────
+
+@router.get("/weekly-summary", response_model=WeeklySummaryOut)
+async def weekly_summary(
+    week_start: str = Query(..., description="ISO date of the week start (any day in the Mon–Sun week)"),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> WeeklySummaryOut:
+    from datetime import date as DateType, timedelta
+
+    pivot = DateType.fromisoformat(week_start)
+    monday = pivot - timedelta(days=pivot.weekday())
+    sunday_end = monday + timedelta(days=7)  # exclusive upper bound (next Monday 00:00)
+
+    from datetime import datetime as dt, timezone
+    mon_dt = dt(monday.year, monday.month, monday.day, tzinfo=timezone.utc)
+    sun_dt = dt(sunday_end.year, sunday_end.month, sunday_end.day, tzinfo=timezone.utc)
+
+    # Cardio
+    cardio_q = (
+        select(
+            func.coalesce(func.sum(CardioSession.total_duration_seconds), 0).label("dur"),
+            func.coalesce(func.sum(WorkoutSession.calories), 0).label("cal"),
+        )
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.type == "cardio",
+            WorkoutSession.date >= mon_dt,
+            WorkoutSession.date < sun_dt,
+        )
+    )
+    cardio_row = (await db.execute(cardio_q)).one()
+    cardio_minutes = int((cardio_row.dur or 0) // 60)
+    cardio_calories = int(cardio_row.cal or 0)
+
+    # Strength
+    strength_q = (
+        select(
+            func.coalesce(func.sum(StrengthSession.duration_seconds), 0).label("dur"),
+            func.coalesce(func.sum(WorkoutSession.calories), 0).label("cal"),
+        )
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.type == "strength",
+            WorkoutSession.date >= mon_dt,
+            WorkoutSession.date < sun_dt,
+        )
+    )
+    strength_row = (await db.execute(strength_q)).one()
+    strength_minutes = int((strength_row.dur or 0) // 60)
+    strength_calories = int(strength_row.cal or 0)
+
+    return WeeklySummaryOut(
+        cardio=WeeklyActivitySummary(minutes=cardio_minutes, calories=cardio_calories),
+        strength=WeeklyActivitySummary(minutes=strength_minutes, calories=strength_calories),
+    )
+
+
+@router.get("/training-trends", response_model=list[TrainingTrendPoint])
+async def training_trends(
+    weeks: int = Query(12, ge=1, le=52),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[TrainingTrendPoint]:
+    from datetime import date as DateType, timedelta, datetime as dt, timezone
+
+    today = DateType.today()
+    # Start of current week (Monday)
+    current_monday = today - timedelta(days=today.weekday())
+    next_monday = current_monday + timedelta(weeks=1)
+    # Last N full weeks + the current (in-progress) week
+    week_starts = [current_monday - timedelta(weeks=i) for i in range(weeks, 0, -1)] + [current_monday]
+
+    # Fetch all sessions in range (inclusive of the current week)
+    range_start = dt(week_starts[0].year, week_starts[0].month, week_starts[0].day, tzinfo=timezone.utc)
+    range_end = dt(next_monday.year, next_monday.month, next_monday.day, tzinfo=timezone.utc)
+
+    cardio_rows = (
+        await db.execute(
+            select(WorkoutSession.date, CardioSession.total_duration_seconds, WorkoutSession.calories)
+            .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+            .where(
+                WorkoutSession.user_id == user,
+                WorkoutSession.type == "cardio",
+                WorkoutSession.date >= range_start,
+                WorkoutSession.date < range_end,
+            )
+        )
+    ).all()
+
+    strength_rows = (
+        await db.execute(
+            select(WorkoutSession.date, StrengthSession.duration_seconds, WorkoutSession.calories)
+            .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+            .where(
+                WorkoutSession.user_id == user,
+                WorkoutSession.type == "strength",
+                WorkoutSession.date >= range_start,
+                WorkoutSession.date < range_end,
+            )
+        )
+    ).all()
+
+    # Bucket by week
+    def week_of(d: dt) -> DateType:
+        d_date = d.date() if hasattr(d, "date") else d
+        return d_date - timedelta(days=d_date.weekday())
+
+    cardio_by_week: dict[DateType, tuple[int, int]] = {}
+    for row_date, dur, cal in cardio_rows:
+        w = week_of(row_date)
+        prev_dur, prev_cal = cardio_by_week.get(w, (0, 0))
+        cardio_by_week[w] = (prev_dur + (dur or 0), prev_cal + (cal or 0))
+
+    strength_by_week: dict[DateType, tuple[int, int]] = {}
+    for row_date, dur, cal in strength_rows:
+        w = week_of(row_date)
+        prev_dur, prev_cal = strength_by_week.get(w, (0, 0))
+        strength_by_week[w] = (prev_dur + (dur or 0), prev_cal + (cal or 0))
+
+    result = []
+    for ws in week_starts:
+        c_dur, c_cal = cardio_by_week.get(ws, (0, 0))
+        s_dur, s_cal = strength_by_week.get(ws, (0, 0))
+        result.append(
+            TrainingTrendPoint(
+                week_start=ws,
+                cardio_minutes=c_dur // 60,
+                strength_minutes=s_dur // 60,
+                cardio_calories=c_cal,
+                strength_calories=s_cal,
+            )
+        )
+    return result
+
 
 @router.get("/{session_id}", response_model=Any)
 async def get_session(
@@ -324,6 +501,10 @@ async def _patch_cardio(
         ws.date = body.date
     if body.notes is not None:
         ws.notes = body.notes
+    if body.title is not None:
+        ws.title = body.title
+    if body.calories is not None:
+        ws.calories = body.calories
 
     cs = ws.cardio_session
     if body.activity_type_id is not None:
@@ -340,12 +521,12 @@ async def _patch_cardio(
             db.add(CardioSegment(cardio_session_id=cs.id, **seg.model_dump()))
 
     await db.commit()
+    db.expunge_all()
 
     result2 = await db.execute(
         select(WorkoutSession)
-        .where(WorkoutSession.id == ws.id)
+        .where(WorkoutSession.id == session_id)
         .options(_CARDIO_LOAD)
-        .execution_options(populate_existing=True)
     )
     ws = result2.scalar_one()
     return _build_cardio_out(ws)
@@ -360,6 +541,12 @@ async def _patch_strength(
         ws.date = body.date
     if body.notes is not None:
         ws.notes = body.notes
+    if body.title is not None:
+        ws.title = body.title
+    if body.calories is not None:
+        ws.calories = body.calories
+    if body.duration_seconds is not None:
+        ws.strength_session.duration_seconds = body.duration_seconds
 
     if body.exercises is not None:
         exercise_ids = [e.exercise_id for e in body.exercises]
@@ -410,3 +597,4 @@ async def delete_session(
         raise HTTPException(status_code=404, detail="Session not found")
     await db.delete(ws)
     await db.commit()
+

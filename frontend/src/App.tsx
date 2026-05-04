@@ -5,10 +5,8 @@ import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
-import ExercisesPage from './pages/ExercisesPage'
-import CardioTypesPage from './pages/CardioTypesPage'
-import LogCardioPage from './pages/LogCardioPage'
-import LogStrengthPage from './pages/LogStrengthPage'
+import SettingsPage from './pages/SettingsPage'
+import LogWorkoutPage from './pages/LogWorkoutPage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import HistoryPage from './pages/HistoryPage'
@@ -47,34 +45,18 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/exercises"
+          path="/settings"
           element={
             <ProtectedRoute>
-              <ExercisesPage />
+              <SettingsPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/cardio-types"
+          path="/log"
           element={
             <ProtectedRoute>
-              <CardioTypesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/log/cardio"
-          element={
-            <ProtectedRoute>
-              <LogCardioPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/log/strength"
-          element={
-            <ProtectedRoute>
-              <LogStrengthPage />
+              <LogWorkoutPage />
             </ProtectedRoute>
           }
         />

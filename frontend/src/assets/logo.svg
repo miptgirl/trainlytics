@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 56" fill="none">
+  <!-- Icon: simple bar-chart lift symbol -->
+  <rect x="4" y="28" width="8" height="20" rx="2" fill="#3b82f6"/>
+  <rect x="16" y="18" width="8" height="30" rx="2" fill="#2563eb"/>
+  <rect x="28" y="8" width="8" height="40" rx="2" fill="#1d4ed8"/>
+
+  <!-- Wordmark -->
+  <text x="46" y="30" font-family="Montserrat, system-ui, sans-serif" font-weight="700" font-size="20" fill="#1e293b" letter-spacing="-0.5">Trainlytics</text>
+  <!-- Tagline -->
+  <text x="47" y="46" font-family="Montserrat, system-ui, sans-serif" font-weight="400" font-size="9.5" fill="#64748b" letter-spacing="0.5">TRACK · ANALYZE · IMPROVE</text>
+</svg>

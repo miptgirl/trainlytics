@@ -63,7 +63,7 @@ export default function ExercisesPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Exercises</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Exercises</h1>
         {editingId !== 'new' && (
           <button
             onClick={() => setEditingId('new')}

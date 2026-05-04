@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 
 interface Exercise {
   id: number
@@ -30,6 +31,9 @@ interface StrengthSession {
   id: number
   type: string
   date: string
+  title: string | null
+  duration_seconds: number | null
+  calories: number | null
   notes: string | null
   created_at: string
   exercises: StrengthExerciseEntry[]
@@ -49,6 +53,9 @@ interface ExerciseEntryFormValues {
 }
 
 interface EditFormValues {
+  title: string
+  duration_minutes: string
+  calories: string
   date: string
   notes: string
   exercises: ExerciseEntryFormValues[]
@@ -59,7 +66,10 @@ const emptyEntry = (): ExerciseEntryFormValues => ({ exercise_id: '', sets: [emp
 
 function toForm(session: StrengthSession): EditFormValues {
   return {
-    date: session.date,
+    title: session.title ?? '',
+    duration_minutes: session.duration_seconds != null ? String(Math.round(session.duration_seconds / 60)) : '',
+    calories: session.calories?.toString() ?? '',
+    date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
     exercises: session.exercises.map((entry) => ({
       exercise_id: entry.exercise_id.toString(),
@@ -99,9 +109,18 @@ function EditForm({
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
           <input
-            type="date"
+            type="text"
+            placeholder="Optional session title…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('title')}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+          <input
+            type="datetime-local"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('date', { required: 'Date is required' })}
           />
@@ -113,6 +132,27 @@ function EditForm({
             rows={2}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             {...register('notes')}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (mins)</label>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            placeholder="Optional, e.g. 60"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('duration_minutes')}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+          <input
+            type="number"
+            min="0"
+            placeholder="e.g. 500"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('calories')}
           />
         </div>
       </div>
@@ -265,7 +305,10 @@ export default function StrengthSessionDetailPage() {
   const updateMutation = useMutation({
     mutationFn: (data: EditFormValues) => {
       const payload = {
-        date: data.date,
+        title: data.title || null,
+        duration_seconds: data.duration_minutes ? Math.round(parseFloat(data.duration_minutes) * 60) : null,
+        calories: data.calories ? parseInt(data.calories, 10) : null,
+        date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
           exercise_id: parseInt(entry.exercise_id, 10),
@@ -318,9 +361,9 @@ export default function StrengthSessionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Strength Session</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Strength Session</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {new Date(session.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+            {formatSessionDateTime(session.date)}
             {' · '}{totalSets} set{totalSets !== 1 ? 's' : ''}
           </p>
         </div>
@@ -355,6 +398,19 @@ export default function StrengthSessionDetailPage() {
         />
       ) : (
         <div className="space-y-4">
+          {(session.title || session.duration_seconds != null || session.calories != null) && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-1">
+              {session.title && (
+                <p className="text-base font-semibold text-gray-900">{session.title}</p>
+              )}
+              {session.duration_seconds != null && (
+                <p className="text-sm text-gray-500">Duration: {Math.round(session.duration_seconds / 60)} mins</p>
+              )}
+              {session.calories != null && (
+                <p className="text-sm text-gray-500">Calories: {session.calories} kcal</p>
+              )}
+            </div>
+          )}
           {session.notes && (
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-sm text-gray-700">{session.notes}</p>

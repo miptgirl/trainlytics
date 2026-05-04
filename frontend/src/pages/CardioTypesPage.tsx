@@ -60,7 +60,7 @@ export default function CardioTypesPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Activity Types</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Activity Types</h1>
         {editingId !== 'new' && (
           <button
             onClick={() => setEditingId('new')}
