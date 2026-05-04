@@ -12,7 +12,7 @@ services:
   backend:
     build: ./backend
     restart: always
-    env_file: .env.prod
+    env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
