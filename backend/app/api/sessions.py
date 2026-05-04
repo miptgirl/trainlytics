@@ -371,12 +371,13 @@ async def training_trends(
     today = DateType.today()
     # Start of current week (Monday)
     current_monday = today - timedelta(days=today.weekday())
-    # We want the last N *full* weeks, so exclude the current week
-    week_starts = [current_monday - timedelta(weeks=i) for i in range(weeks, 0, -1)]
+    next_monday = current_monday + timedelta(weeks=1)
+    # Last N full weeks + the current (in-progress) week
+    week_starts = [current_monday - timedelta(weeks=i) for i in range(weeks, 0, -1)] + [current_monday]
 
-    # Fetch all cardio sessions in range
+    # Fetch all sessions in range (inclusive of the current week)
     range_start = dt(week_starts[0].year, week_starts[0].month, week_starts[0].day, tzinfo=timezone.utc)
-    range_end = dt(current_monday.year, current_monday.month, current_monday.day, tzinfo=timezone.utc)
+    range_end = dt(next_monday.year, next_monday.month, next_monday.day, tzinfo=timezone.utc)
 
     cardio_rows = (
         await db.execute(

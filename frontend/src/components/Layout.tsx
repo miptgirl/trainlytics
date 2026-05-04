@@ -17,7 +17,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center shrink-0">
-              <img src={logo} alt="Trainlytics" className="h-9 w-auto" />
+              <img src={logo} alt="Trainlytics" className="h-14 w-auto" />
             </Link>
             <nav className="flex items-center gap-5 text-sm">
               <NavLink to="/history" className={navLinkClass}>History</NavLink>

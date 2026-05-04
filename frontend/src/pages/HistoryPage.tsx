@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -146,7 +146,7 @@ function TrainingTrendsChart() {
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
-          12-Week Trends
+          12-Week Trends (incl. this week)
         </h2>
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
           <button
@@ -175,7 +175,17 @@ function TrainingTrendsChart() {
         <p className="text-slate-400 text-sm">Loading…</p>
       ) : chartData ? (
         <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorCardio" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="colorStrength" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
@@ -183,9 +193,9 @@ function TrainingTrendsChart() {
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar dataKey="Cardio" fill="#10b981" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="Strength" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-          </BarChart>
+            <Area type="monotone" dataKey="Cardio" stackId="1" stroke="#10b981" strokeWidth={2} fill="url(#colorCardio)" />
+            <Area type="monotone" dataKey="Strength" stackId="1" stroke="#3b82f6" strokeWidth={2} fill="url(#colorStrength)" />
+          </AreaChart>
         </ResponsiveContainer>
       ) : null}
     </div>

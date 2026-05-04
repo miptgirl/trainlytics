@@ -15,6 +15,7 @@ export interface ExerciseEntryFormValues {
 export interface ExerciseOption {
   id: number
   name: string
+  notes?: string | null
 }
 
 export const emptySet = (): SetFormValues => ({ reps: '', weight: '', notes: '', done: false })
@@ -82,6 +83,9 @@ export function ExerciseEntryBlock({
         </select>
         {errors.exercises?.[exIndex]?.exercise_id && (
           <p className="mt-1 text-xs text-red-600">{errors.exercises[exIndex].exercise_id.message}</p>
+        )}
+        {selectedExercise?.notes && (
+          <p className="mt-1.5 text-xs text-slate-500 italic">📝 {selectedExercise.notes}</p>
         )}
       </div>
 

@@ -105,3 +105,14 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 2. Replace all raw cardio unit displays across `LogCardioPage` (or its successor), `CardioSessionDetailPage`, and `HistoryPage` with the helpers.
 3. Add a **Calories** optional integer input to both the cardio and strength log forms.
 4. Display calories in session detail views (when present).
+
+---
+
+## Post-plan Improvements ✅
+
+Incremental changes applied after the original nine groups were complete.
+
+1. **Training trends includes current week** — `GET /sessions/training-trends` now returns N full weeks *plus* the current in-progress week (N+1 data points total). `range_end` extended to next Monday; `week_starts` list includes `current_monday`. Chart title updated to "12-Week Trends (incl. this week)".
+2. **Stacked area chart** — replaced Recharts `BarChart` / `Bar` with `AreaChart` / `Area` (stacked, `stackId="1"`, `type="monotone"`). SVG gradient fills (`linearGradient`) applied per series for a polished look. Cardio stacks on the bottom (green), Strength on top (blue).
+3. **Exercise notes in Log Strength form** — `ExerciseOption` interface extended with `notes?: string | null`. When an exercise with notes is selected, a small italic hint (📝 …) renders below the dropdown in `ExerciseEntryBlock.tsx`. No backend changes required — `/exercises` already returns the `notes` field.
+4. **Larger logo** — `Layout.tsx` logo height increased from `h-9` (36 px) to `h-14` (56 px) — 1.5× the original size.
