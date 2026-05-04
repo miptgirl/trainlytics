@@ -47,7 +47,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 4 — Shared `TimeInput` Component
+## Group 4 — Shared `TimeInput` Component ✅ DONE
 
 1. Create `frontend/src/components/TimeInput.tsx`:
    - Props: `value: number | null` (seconds), `onChange: (seconds: number | null) => void`, `format: 'duration' | 'pace'`, optional `placeholder`.

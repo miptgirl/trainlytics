@@ -53,13 +53,13 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## `TimeInput` Component
 
-- [ ] Duration fields (cardio segment duration, cardio session total, strength session duration) display values as `h:mm:ss` or `m:ss`
-- [ ] Pace fields display values as `m:ss` per km
-- [ ] Entering `1:05:30` in a duration field submits `3930` seconds to the API
-- [ ] Entering `5:30` in a pace field submits `330` seconds-per-km to the API
-- [ ] Entering an invalid string (e.g. `"abc"`) shows an inline validation error and does not submit
-- [ ] Existing sessions load and display their stored values correctly in the new format
-- [ ] `TimeInput` unit tests pass (valid/invalid parse cases, format round-trip)
+- [x] Duration fields (cardio segment duration, cardio session total, strength session duration) display values as `h:mm:ss` or `m:ss`
+- [x] Pace fields display values as `m:ss` per km
+- [x] Entering `1:05:30` in a duration field submits `3930` seconds to the API
+- [x] Entering `5:30` in a pace field submits `330` seconds-per-km to the API
+- [x] Entering an invalid string (e.g. `"abc"`) shows an inline validation error and does not submit
+- [x] Existing sessions load and display their stored values correctly in the new format
+- [x] `TimeInput` unit tests pass (valid/invalid parse cases, format round-trip)
 
 ---
 

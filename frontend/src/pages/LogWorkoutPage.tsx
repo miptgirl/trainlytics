@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
   emptyEntry,
   ExerciseEntryBlock,
   type ExerciseEntryFormValues,
 } from '../components/ExerciseEntryBlock'
+import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
-import { kmToMetres, minPerKmToSecPerKm, minsToSeconds } from '../lib/unitUtils'
+import { kmToMetres } from '../lib/unitUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -29,9 +30,9 @@ interface CardioType {
 
 interface SegmentFormValues {
   title: string
-  duration_mins: string
+  duration_seconds: number | null
   distance_km: string
-  pace_min_per_km: string
+  pace_seconds_per_km: number | null
   heart_rate_avg: string
 }
 
@@ -40,7 +41,7 @@ interface CardioFormValues {
   activity_type_id: string
   date: string
   notes: string
-  total_duration_mins: string
+  total_duration_seconds: number | null
   calories: string
   segments: SegmentFormValues[]
 }
@@ -86,7 +87,7 @@ export interface TemplateSnapshot {
 
 interface StrengthFormValues {
   title: string
-  duration_minutes: string
+  duration_seconds: number | null
   calories: string
   date: string
   notes: string
@@ -100,7 +101,7 @@ interface DiffState {
 
 const emptyStrengthDefaults = (): StrengthFormValues => ({
   title: '',
-  duration_minutes: '',
+  duration_seconds: null,
   calories: '',
   date: localDateTimeNow(),
   notes: '',
@@ -110,7 +111,7 @@ const emptyStrengthDefaults = (): StrengthFormValues => ({
 function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
     title: '',
-    duration_minutes: '',
+    duration_seconds: null,
     calories: '',
     date: localDateTimeNow(),
     notes: '',
@@ -225,9 +226,9 @@ function CardioForm() {
       activity_type_id: '',
       date: localDateTimeNow(),
       notes: '',
-      total_duration_mins: '',
+      total_duration_seconds: null,
       calories: '',
-      segments: [{ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' }],
+      segments: [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
     },
   })
 
@@ -235,24 +236,21 @@ function CardioForm() {
 
   const createMutation = useMutation({
     mutationFn: (data: CardioFormValues) => {
-      const totalDurMins = parseFloat(data.total_duration_mins)
       const payload = {
         title: data.title || null,
         activity_type_id: data.activity_type_id ? parseInt(data.activity_type_id, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         calories: data.calories ? parseInt(data.calories, 10) : null,
-        total_duration_seconds: !isNaN(totalDurMins) && totalDurMins > 0 ? minsToSeconds(totalDurMins) : null,
+        total_duration_seconds: data.total_duration_seconds ?? null,
         segments: data.segments.map((seg, i) => {
-          const durMins = parseFloat(seg.duration_mins)
           const distKm = parseFloat(seg.distance_km)
-          const paceMpk = parseFloat(seg.pace_min_per_km)
           return {
             order: i + 1,
             title: seg.title || null,
-            duration_seconds: minsToSeconds(durMins),
+            duration_seconds: seg.duration_seconds ?? 0,
             distance_meters: !isNaN(distKm) ? kmToMetres(distKm) : null,
-            pace_seconds_per_km: !isNaN(paceMpk) ? minPerKmToSecPerKm(paceMpk) : null,
+            pace_seconds_per_km: seg.pace_seconds_per_km ?? null,
             heart_rate_avg: parseSeconds(seg.heart_rate_avg) ?? null,
           }
         }),
@@ -303,14 +301,19 @@ function CardioForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (mins, optional override)</label>
-          <input
-            type="number"
-            min="0"
-            step="any"
-            placeholder="e.g. 60"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('total_duration_mins')}
+          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (optional override)</label>
+          <Controller
+            control={control}
+            name="total_duration_seconds"
+            render={({ field }) => (
+              <TimeInput
+                value={field.value}
+                onChange={field.onChange}
+                format="duration"
+                placeholder="h:mm:ss"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
           />
         </div>
 
@@ -342,7 +345,7 @@ function CardioForm() {
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -375,17 +378,22 @@ function CardioForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Duration (mins) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="e.g. 30"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.duration_mins`, { required: 'Required' })}
+                  <label className="block text-xs text-gray-500 mb-1">Duration *</label>
+                  <Controller
+                    control={control}
+                    name={`segments.${index}.duration_seconds`}
+                    rules={{ validate: (v) => v != null || 'Required' }}
+                    render={({ field }) => (
+                      <TimeInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        format="duration"
+                        placeholder="m:ss"
+                      />
+                    )}
                   />
-                  {errors.segments?.[index]?.duration_mins && (
-                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_mins?.message}</p>
+                  {errors.segments?.[index]?.duration_seconds && (
+                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_seconds?.message}</p>
                   )}
                 </div>
                 <div>
@@ -400,14 +408,18 @@ function CardioForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pace (min/km)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="e.g. 6.0"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.pace_min_per_km`)}
+                  <label className="block text-xs text-gray-500 mb-1">Pace (/km)</label>
+                  <Controller
+                    control={control}
+                    name={`segments.${index}.pace_seconds_per_km`}
+                    render={({ field }) => (
+                      <TimeInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        format="pace"
+                        placeholder="m:ss"
+                      />
+                    )}
                   />
                 </div>
                 <div>
@@ -518,7 +530,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     mutationFn: (data: StrengthFormValues) =>
       api.post<{ id: number }>('/sessions/strength', {
         title: data.title || null,
-        duration_seconds: data.duration_minutes ? Math.round(parseFloat(data.duration_minutes) * 60) : null,
+        duration_seconds: data.duration_seconds ?? null,
         calories: data.calories ? parseInt(data.calories, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
@@ -638,14 +650,19 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Duration (mins)</label>
-            <input
-              type="number"
-              min="0"
-              step="any"
-              placeholder="Optional, e.g. 60"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              {...register('duration_minutes')}
+            <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+            <Controller
+              control={control}
+              name="duration_seconds"
+              render={({ field }) => (
+                <TimeInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  format="duration"
+                  placeholder="h:mm:ss (optional)"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
             />
           </div>
           <div>
