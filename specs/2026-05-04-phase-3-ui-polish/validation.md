@@ -105,10 +105,10 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Cardio Units & Calories
 
-- [ ] Cardio duration is displayed in **minutes** everywhere in the UI (not seconds)
-- [ ] Cardio distance is displayed in **km** everywhere in the UI (not metres)
-- [ ] Cardio pace is displayed in **min/km** everywhere in the UI (not seconds/km)
-- [ ] The backend still stores seconds, metres, and seconds-per-km — confirmed by inspecting the DB or API response directly
-- [ ] Log Cardio form accepts distance in km and duration in mins; values are converted before sending to the API
-- [ ] Log Strength form has an optional **Calories** field; value is saved and shown in session detail
-- [ ] Log Cardio form has an optional **Calories** field; value is saved and shown in session detail
+- [x] Cardio duration is displayed in **minutes** everywhere in the UI (not seconds)
+- [x] Cardio distance is displayed in **km** everywhere in the UI (not metres)
+- [x] Cardio pace is displayed in **min/km** everywhere in the UI (not seconds/km)
+- [x] The backend still stores seconds, metres, and seconds-per-km — confirmed by inspecting the DB or API response directly
+- [x] Log Cardio form accepts distance in km and duration in mins; values are converted before sending to the API
+- [x] Log Strength form has an optional **Calories** field; value is saved and shown in session detail
+- [x] Log Cardio form has an optional **Calories** field; value is saved and shown in session detail

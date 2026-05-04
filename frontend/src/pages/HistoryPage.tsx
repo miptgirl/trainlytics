@@ -14,6 +14,7 @@ import {
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { formatSessionDateTime } from '../lib/dateUtils'
+import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 
 interface SessionSummary {
   id: number
@@ -74,13 +75,11 @@ function formatDuration(seconds: number): string {
 }
 
 function formatDistance(meters: number): string {
-  return `${(meters / 1000).toFixed(2)} km`
+  return `${metresToKm(meters).toFixed(2)} km`
 }
 
 function formatPace(secPerKm: number): string {
-  const mins = Math.floor(secPerKm / 60)
-  const secs = Math.round(secPerKm % 60)
-  return `${mins}:${String(secs).padStart(2, '0')} /km`
+  return secPerKmToMinPerKm(secPerKm)
 }
 
 function formatVolume(kg: number): string {

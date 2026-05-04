@@ -5,6 +5,7 @@ import { useFieldArray, useForm } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
+import { kmToMetres, metresToKm, minPerKmToSecPerKm, minsToSeconds, secPerKmToMinPerKm, secondsToMins } from '../lib/unitUtils'
 
 interface CardioType {
   id: number
@@ -28,6 +29,7 @@ interface CardioSession {
   total_duration_seconds: number | null
   date: string
   notes: string | null
+  calories: number | null
   created_at: string
   segments: CardioSegment[]
 }
@@ -41,20 +43,14 @@ function formatDuration(seconds: number): string {
   return `${s}s`
 }
 
-function formatPace(secPerKm: number): string {
-  const m = Math.floor(secPerKm / 60)
-  const s = Math.round(secPerKm % 60)
-  return `${m}:${s.toString().padStart(2, '0')} /km`
-}
-
 // ──────────────────────────────────────────
 // Edit form types (reused from log page)
 // ──────────────────────────────────────────
 interface SegmentFormValues {
   title: string
-  duration_seconds: string
-  distance_meters: string
-  pace_seconds_per_km: string
+  duration_mins: string
+  distance_km: string
+  pace_min_per_km: string
   heart_rate_avg: string
 }
 
@@ -63,7 +59,8 @@ interface EditFormValues {
   activity_type_id: string
   date: string
   notes: string
-  total_duration_seconds: string
+  total_duration_mins: string
+  calories: string
   segments: SegmentFormValues[]
 }
 
@@ -73,20 +70,20 @@ function toForm(session: CardioSession): EditFormValues {
     activity_type_id: session.activity_type_id?.toString() ?? '',
     date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
-    total_duration_seconds: session.total_duration_seconds?.toString() ?? '',
+    total_duration_mins: session.total_duration_seconds != null
+      ? String(Math.round(secondsToMins(session.total_duration_seconds) * 10) / 10)
+      : '',
+    calories: session.calories?.toString() ?? '',
     segments: session.segments.map((seg) => ({
       title: seg.title ?? '',
-      duration_seconds: seg.duration_seconds.toString(),
-      distance_meters: seg.distance_meters?.toString() ?? '',
-      pace_seconds_per_km: seg.pace_seconds_per_km?.toString() ?? '',
+      duration_mins: String(Math.round(secondsToMins(seg.duration_seconds) * 10) / 10),
+      distance_km: seg.distance_meters != null ? String(metresToKm(seg.distance_meters)) : '',
+      pace_min_per_km: seg.pace_seconds_per_km != null
+        ? String(Math.round(secondsToMins(seg.pace_seconds_per_km) * 100) / 100)
+        : '',
       heart_rate_avg: seg.heart_rate_avg?.toString() ?? '',
     })),
   }
-}
-
-function parseNum(val: string): number | null {
-  const n = parseFloat(val)
-  return isNaN(n) ? null : n
 }
 
 function parseIntOrNull(val: string): number | null {
@@ -149,12 +146,22 @@ function EditForm({
           {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (sec override)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (mins override)</label>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('total_duration_mins')}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
           <input
             type="number"
             min="0"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('total_duration_seconds')}
+            {...register('calories')}
           />
         </div>
         <div>
@@ -172,7 +179,7 @@ function EditForm({
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -197,24 +204,24 @@ function EditForm({
                     {...register(`segments.${index}.title`)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Duration (sec) *</label>
+                  <label className="block text-xs text-gray-500 mb-1">Duration (mins) *</label>
                   <input
-                    type="number" min="1"
+                    type="number" min="0" step="any"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.duration_seconds`, { required: 'Required' })}
+                    {...register(`segments.${index}.duration_mins`, { required: 'Required' })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Distance (m)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Distance (km)</label>
                   <input type="number" min="0" step="any"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.distance_meters`)} />
+                    {...register(`segments.${index}.distance_km`)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pace (sec/km)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Pace (min/km)</label>
                   <input type="number" min="0" step="any"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.pace_seconds_per_km`)} />
+                    {...register(`segments.${index}.pace_min_per_km`)} />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Avg HR (bpm)</label>
@@ -267,20 +274,27 @@ export default function CardioSessionDetailPage() {
 
   const updateMutation = useMutation({
     mutationFn: (data: EditFormValues) => {
+      const totalDurMins = parseFloat(data.total_duration_mins)
       const payload = {
         title: data.title || null,
         activity_type_id: data.activity_type_id ? parseIntOrNull(data.activity_type_id) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
-        total_duration_seconds: parseNum(data.total_duration_seconds),
-        segments: data.segments.map((seg, i) => ({
-          order: i + 1,
-          title: seg.title || null,
-          duration_seconds: parseIntOrNull(seg.duration_seconds),
-          distance_meters: parseNum(seg.distance_meters),
-          pace_seconds_per_km: parseNum(seg.pace_seconds_per_km),
-          heart_rate_avg: parseIntOrNull(seg.heart_rate_avg),
-        })),
+        calories: data.calories ? parseInt(data.calories, 10) : null,
+        total_duration_seconds: !isNaN(totalDurMins) ? minsToSeconds(totalDurMins) : null,
+        segments: data.segments.map((seg, i) => {
+          const durMins = parseFloat(seg.duration_mins)
+          const distKm = parseFloat(seg.distance_km)
+          const paceMpk = parseFloat(seg.pace_min_per_km)
+          return {
+            order: i + 1,
+            title: seg.title || null,
+            duration_seconds: !isNaN(durMins) ? minsToSeconds(durMins) : null,
+            distance_meters: !isNaN(distKm) ? kmToMetres(distKm) : null,
+            pace_seconds_per_km: !isNaN(paceMpk) ? minPerKmToSecPerKm(paceMpk) : null,
+            heart_rate_avg: parseIntOrNull(seg.heart_rate_avg),
+          }
+        }),
       }
       return api.patch<CardioSession>(`/sessions/${sessionId}`, payload)
     },
@@ -373,6 +387,12 @@ export default function CardioSessionDetailPage() {
           <span className="text-gray-500">Total Duration</span>
           <span className="font-medium text-gray-900">{formatDuration(totalDur)}</span>
         </div>
+        {session.calories != null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500">Calories</span>
+            <span className="font-medium text-gray-900">{session.calories} kcal</span>
+          </div>
+        )}
         {session.notes && (
           <div className="pt-2 border-t border-gray-100">
             <p className="text-sm text-gray-600">{session.notes}</p>
@@ -396,13 +416,13 @@ export default function CardioSessionDetailPage() {
               {seg.distance_meters != null && (
                 <>
                   <span className="text-gray-500">Distance</span>
-                  <span className="font-medium">{(seg.distance_meters / 1000).toFixed(2)} km</span>
+                  <span className="font-medium">{metresToKm(seg.distance_meters).toFixed(2)} km</span>
                 </>
               )}
               {seg.pace_seconds_per_km != null && (
                 <>
                   <span className="text-gray-500">Pace</span>
-                  <span className="font-medium">{formatPace(seg.pace_seconds_per_km)}</span>
+                  <span className="font-medium">{secPerKmToMinPerKm(seg.pace_seconds_per_km)}</span>
                 </>
               )}
               {seg.heart_rate_avg != null && (

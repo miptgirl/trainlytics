@@ -99,7 +99,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 9 — Cardio Units & Calories Field
+## Group 9 — Cardio Units & Calories Field ✅
 
 1. Create a `unitUtils.ts` helper in `frontend/src/lib/`: `secondsToMins`, `metresToKm`, `secPerKmToMinPerKm`, `minsToSeconds`, `kmToMetres`, `minPerKmToSecPerKm`.
 2. Replace all raw cardio unit displays across `LogCardioPage` (or its successor), `CardioSessionDetailPage`, and `HistoryPage` with the helpers.

@@ -10,6 +10,7 @@ import {
 } from '../components/ExerciseEntryBlock'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
+import { kmToMetres, minPerKmToSecPerKm, minsToSeconds } from '../lib/unitUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -28,9 +29,9 @@ interface CardioType {
 
 interface SegmentFormValues {
   title: string
-  duration_seconds: string
-  distance_meters: string
-  pace_seconds_per_km: string
+  duration_mins: string
+  distance_km: string
+  pace_min_per_km: string
   heart_rate_avg: string
 }
 
@@ -39,18 +40,14 @@ interface CardioFormValues {
   activity_type_id: string
   date: string
   notes: string
-  total_duration_seconds: string
+  total_duration_mins: string
+  calories: string
   segments: SegmentFormValues[]
 }
 
 function parseSeconds(val: string): number | undefined {
   const n = parseInt(val, 10)
   return isNaN(n) || n <= 0 ? undefined : n
-}
-
-function parseFloat_(val: string): number | undefined {
-  const n = parseFloat(val)
-  return isNaN(n) ? undefined : n
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -90,6 +87,7 @@ export interface TemplateSnapshot {
 interface StrengthFormValues {
   title: string
   duration_minutes: string
+  calories: string
   date: string
   notes: string
   exercises: ExerciseEntryFormValues[]
@@ -103,6 +101,7 @@ interface DiffState {
 const emptyStrengthDefaults = (): StrengthFormValues => ({
   title: '',
   duration_minutes: '',
+  calories: '',
   date: localDateTimeNow(),
   notes: '',
   exercises: [emptyEntry()],
@@ -112,6 +111,7 @@ function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
     title: '',
     duration_minutes: '',
+    calories: '',
     date: localDateTimeNow(),
     notes: '',
     exercises: t.exercises.map((entry) => ({
@@ -225,8 +225,9 @@ function CardioForm() {
       activity_type_id: '',
       date: localDateTimeNow(),
       notes: '',
-      total_duration_seconds: '',
-      segments: [{ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' }],
+      total_duration_mins: '',
+      calories: '',
+      segments: [{ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' }],
     },
   })
 
@@ -234,20 +235,27 @@ function CardioForm() {
 
   const createMutation = useMutation({
     mutationFn: (data: CardioFormValues) => {
+      const totalDurMins = parseFloat(data.total_duration_mins)
       const payload = {
         title: data.title || null,
         activity_type_id: data.activity_type_id ? parseInt(data.activity_type_id, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
-        total_duration_seconds: parseSeconds(data.total_duration_seconds) ?? null,
-        segments: data.segments.map((seg, i) => ({
-          order: i + 1,
-          title: seg.title || null,
-          duration_seconds: parseInt(seg.duration_seconds, 10),
-          distance_meters: parseFloat_(seg.distance_meters) ?? null,
-          pace_seconds_per_km: parseFloat_(seg.pace_seconds_per_km) ?? null,
-          heart_rate_avg: parseSeconds(seg.heart_rate_avg) ?? null,
-        })),
+        calories: data.calories ? parseInt(data.calories, 10) : null,
+        total_duration_seconds: !isNaN(totalDurMins) && totalDurMins > 0 ? minsToSeconds(totalDurMins) : null,
+        segments: data.segments.map((seg, i) => {
+          const durMins = parseFloat(seg.duration_mins)
+          const distKm = parseFloat(seg.distance_km)
+          const paceMpk = parseFloat(seg.pace_min_per_km)
+          return {
+            order: i + 1,
+            title: seg.title || null,
+            duration_seconds: minsToSeconds(durMins),
+            distance_meters: !isNaN(distKm) ? kmToMetres(distKm) : null,
+            pace_seconds_per_km: !isNaN(paceMpk) ? minPerKmToSecPerKm(paceMpk) : null,
+            heart_rate_avg: parseSeconds(seg.heart_rate_avg) ?? null,
+          }
+        }),
       }
       return api.post<{ id: number }>('/sessions/cardio', payload)
     },
@@ -295,13 +303,25 @@ function CardioForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (seconds, optional override)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (mins, optional override)</label>
           <input
             type="number"
             min="0"
-            placeholder="e.g. 3600"
+            step="any"
+            placeholder="e.g. 60"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            {...register('total_duration_seconds')}
+            {...register('total_duration_mins')}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+          <input
+            type="number"
+            min="0"
+            placeholder="e.g. 450"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('calories')}
           />
         </div>
 
@@ -322,7 +342,7 @@ function CardioForm() {
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -355,38 +375,39 @@ function CardioForm() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Duration (sec) *</label>
+                  <label className="block text-xs text-gray-500 mb-1">Duration (mins) *</label>
                   <input
                     type="number"
-                    min="1"
-                    placeholder="e.g. 1800"
+                    min="0"
+                    step="any"
+                    placeholder="e.g. 30"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.duration_seconds`, { required: 'Required' })}
+                    {...register(`segments.${index}.duration_mins`, { required: 'Required' })}
                   />
-                  {errors.segments?.[index]?.duration_seconds && (
-                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_seconds?.message}</p>
+                  {errors.segments?.[index]?.duration_mins && (
+                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_mins?.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Distance (m)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Distance (km)</label>
                   <input
                     type="number"
                     min="0"
                     step="any"
-                    placeholder="e.g. 5000"
+                    placeholder="e.g. 5.0"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.distance_meters`)}
+                    {...register(`segments.${index}.distance_km`)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pace (sec/km)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Pace (min/km)</label>
                   <input
                     type="number"
                     min="0"
                     step="any"
-                    placeholder="e.g. 360"
+                    placeholder="e.g. 6.0"
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.pace_seconds_per_km`)}
+                    {...register(`segments.${index}.pace_min_per_km`)}
                   />
                 </div>
                 <div>
@@ -498,6 +519,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
       api.post<{ id: number }>('/sessions/strength', {
         title: data.title || null,
         duration_seconds: data.duration_minutes ? Math.round(parseFloat(data.duration_minutes) * 60) : null,
+        calories: data.calories ? parseInt(data.calories, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
@@ -624,6 +646,16 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
               placeholder="Optional, e.g. 60"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               {...register('duration_minutes')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+            <input
+              type="number"
+              min="0"
+              placeholder="e.g. 500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register('calories')}
             />
           </div>
         </div>
