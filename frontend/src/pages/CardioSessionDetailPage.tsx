@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 
 interface CardioType {
   id: number
@@ -65,7 +66,7 @@ interface EditFormValues {
 function toForm(session: CardioSession): EditFormValues {
   return {
     activity_type_id: session.activity_type_id?.toString() ?? '',
-    date: session.date,
+    date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
     total_duration_seconds: session.total_duration_seconds?.toString() ?? '',
     segments: session.segments.map((seg) => ({
@@ -124,9 +125,9 @@ function EditForm({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
           <input
-            type="date"
+            type="datetime-local"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('date', { required: 'Date is required' })}
           />
@@ -247,7 +248,7 @@ export default function CardioSessionDetailPage() {
     mutationFn: (data: EditFormValues) => {
       const payload = {
         activity_type_id: data.activity_type_id ? parseIntOrNull(data.activity_type_id) : null,
-        date: data.date,
+        date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         total_duration_seconds: parseNum(data.total_duration_seconds),
         segments: data.segments.map((seg, i) => ({
@@ -334,7 +335,7 @@ export default function CardioSessionDetailPage() {
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2 mb-6">
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Date</span>
-          <span className="font-medium text-gray-900">{session.date}</span>
+          <span className="font-medium text-gray-900">{formatSessionDateTime(session.date)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Activity</span>

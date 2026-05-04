@@ -67,7 +67,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 6 — Date & Time Picker
+## Group 6 — Date & Time Picker ✅
 
 1. Update cardio and strength log forms: replace `<input type="date">` with a date+time picker component (e.g. a native `<input type="datetime-local">` or a lightweight library consistent with the design system).
 2. Default the picker value to `new Date()` (current local time) when a new session form is opened.

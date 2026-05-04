@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { formatSessionDateTime } from '../lib/dateUtils'
 
 interface SessionSummary {
   id: number
@@ -139,7 +140,7 @@ export default function HistoryPage() {
                     >
                       {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
                     </span>
-                    <span className="font-medium text-slate-900">{s.date}</span>
+                    <span className="font-medium text-slate-900">{formatSessionDateTime(s.date)}</span>
                     {s.notes && (
                       <span className="text-sm text-slate-500 truncate">{s.notes}</span>
                     )}

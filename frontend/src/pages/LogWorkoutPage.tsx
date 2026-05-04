@@ -9,6 +9,7 @@ import {
   type ExerciseEntryFormValues,
 } from '../components/ExerciseEntryBlock'
 import { api } from '../lib/api'
+import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -95,17 +96,15 @@ interface DiffState {
   changes: string[]
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
-
 const emptyStrengthDefaults = (): StrengthFormValues => ({
-  date: today(),
+  date: localDateTimeNow(),
   notes: '',
   exercises: [emptyEntry()],
 })
 
 function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
-    date: today(),
+    date: localDateTimeNow(),
     notes: '',
     exercises: t.exercises.map((entry) => ({
       exercise_id: String(entry.exercise_id),
@@ -215,7 +214,7 @@ function CardioForm() {
   } = useForm<CardioFormValues>({
     defaultValues: {
       activity_type_id: '',
-      date: today(),
+      date: localDateTimeNow(),
       notes: '',
       total_duration_seconds: '',
       segments: [{ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' }],
@@ -228,7 +227,7 @@ function CardioForm() {
     mutationFn: (data: CardioFormValues) => {
       const payload = {
         activity_type_id: data.activity_type_id ? parseInt(data.activity_type_id, 10) : null,
-        date: data.date,
+        date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         total_duration_seconds: parseSeconds(data.total_duration_seconds) ?? null,
         segments: data.segments.map((seg, i) => ({
@@ -265,9 +264,9 @@ function CardioForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
           <input
-            type="date"
+            type="datetime-local"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('date', { required: 'Date is required' })}
           />
@@ -467,7 +466,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const createMutation = useMutation({
     mutationFn: (data: StrengthFormValues) =>
       api.post<{ id: number }>('/sessions/strength', {
-        date: data.date,
+        date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
           exercise_id: parseInt(entry.exercise_id, 10),
@@ -558,9 +557,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         {/* Basic fields */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
             <input
-              type="date"
+              type="datetime-local"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               {...register('date', { required: 'Date is required' })}
             />

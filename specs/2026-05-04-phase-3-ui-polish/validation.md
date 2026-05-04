@@ -69,11 +69,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Date & Time Picker
 
-- [ ] Log forms show a date + time picker (not date-only)
-- [ ] When opening a new log form the picker defaults to the current local date and time
-- [ ] The saved session's `datetime` in the DB is in UTC
-- [ ] History list shows date and time per session (e.g. "4 May 2026 · 07:30")
-- [ ] Session detail pages show date and time
+- [x] Log forms show a date + time picker (not date-only)
+- [x] When opening a new log form the picker defaults to the current local date and time
+- [x] The saved session's `datetime` in the DB is in UTC
+- [x] History list shows date and time per session (e.g. "4 May 2026 · 07:30")
+- [x] Session detail pages show date and time
 
 ---
 

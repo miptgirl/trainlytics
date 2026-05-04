@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 
 interface Exercise {
   id: number
@@ -59,7 +60,7 @@ const emptyEntry = (): ExerciseEntryFormValues => ({ exercise_id: '', sets: [emp
 
 function toForm(session: StrengthSession): EditFormValues {
   return {
-    date: session.date,
+    date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
     exercises: session.exercises.map((entry) => ({
       exercise_id: entry.exercise_id.toString(),
@@ -99,9 +100,9 @@ function EditForm({
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
           <input
-            type="date"
+            type="datetime-local"
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('date', { required: 'Date is required' })}
           />
@@ -265,7 +266,7 @@ export default function StrengthSessionDetailPage() {
   const updateMutation = useMutation({
     mutationFn: (data: EditFormValues) => {
       const payload = {
-        date: data.date,
+        date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
           exercise_id: parseInt(entry.exercise_id, 10),
@@ -320,7 +321,7 @@ export default function StrengthSessionDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Strength Session</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {new Date(session.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
+            {formatSessionDateTime(session.date)}
             {' · '}{totalSets} set{totalSets !== 1 ? 's' : ''}
           </p>
         </div>
