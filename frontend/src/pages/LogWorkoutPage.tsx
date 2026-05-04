@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFieldArray, useForm, Controller } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
   emptyEntry,
@@ -222,7 +222,6 @@ function CardioForm() {
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<CardioFormValues>({
@@ -237,8 +236,8 @@ function CardioForm() {
     },
   })
 
-  const watchedActivityTypeId = watch('activity_type_id')
-  const watchedSegments = watch('segments')
+  const watchedActivityTypeId = useWatch({ control, name: 'activity_type_id' })
+  const watchedSegments = useWatch({ control, name: 'segments' })
 
   useEffect(() => {
     if (titleTouched) return
