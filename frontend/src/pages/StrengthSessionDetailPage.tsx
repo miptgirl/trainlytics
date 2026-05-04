@@ -318,7 +318,7 @@ export default function StrengthSessionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Strength Session</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Strength Session</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {new Date(session.date).toLocaleDateString(undefined, { dateStyle: 'long' })}
             {' · '}{totalSets} set{totalSets !== 1 ? 's' : ''}

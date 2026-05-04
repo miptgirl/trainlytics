@@ -282,7 +282,7 @@ export default function LogStrengthPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Log Strength Session</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Log Strength Session</h1>
       </div>
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">

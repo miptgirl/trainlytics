@@ -139,7 +139,7 @@ function TemplateList({
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold text-gray-900">Templates</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Templates</h1>
         <button
           onClick={onNew}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
@@ -316,7 +316,7 @@ function TemplateForm({
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

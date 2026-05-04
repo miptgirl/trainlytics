@@ -33,7 +33,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 3 — Branding & Design System
+## Group 3 — Branding & Design System ✅
 
 1. Add `logo.png` to `frontend/src/assets/`.
 2. Update `Layout.tsx`: replace plain app-name text in the header with the `<img>` logo.

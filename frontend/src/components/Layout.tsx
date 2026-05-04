@@ -1,81 +1,46 @@
 import { type ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import logo from '../assets/logo.svg'
 
 export function Layout({ children }: { children: ReactNode }) {
   const { username, logout } = useAuth()
 
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    isActive
+      ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-0.5'
+      : 'text-slate-600 hover:text-blue-600 transition-colors'
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <Link to="/" className="font-bold text-gray-900">
-              Trainlytics
+    <div className="min-h-screen flex flex-col bg-slate-50">
+      <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-8">
+            <Link to="/" className="flex items-center shrink-0">
+              <img src={logo} alt="Trainlytics" className="h-9 w-auto" />
             </Link>
-            <nav className="flex items-center gap-4 text-sm">
-              <NavLink
-                to="/history"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                History
-              </NavLink>
-              <NavLink
-                to="/exercises"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                Exercises
-              </NavLink>
-              <NavLink
-                to="/cardio-types"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                Activity Types
-              </NavLink>
-              <NavLink
-                to="/log/cardio"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                Log Cardio
-              </NavLink>
-              <NavLink
-                to="/log/strength"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                Log Strength
-              </NavLink>
-              <NavLink
-                to="/templates"
-                className={({ isActive }) =>
-                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
-                }
-              >
-                Templates
-              </NavLink>
+            <nav className="flex items-center gap-5 text-sm">
+              <NavLink to="/history" className={navLinkClass}>History</NavLink>
+              <NavLink to="/log/cardio" className={navLinkClass}>Log Cardio</NavLink>
+              <NavLink to="/log/strength" className={navLinkClass}>Log Strength</NavLink>
+              <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
+              <NavLink to="/exercises" className={navLinkClass}>Exercises</NavLink>
+              <NavLink to="/cardio-types" className={navLinkClass}>Activity Types</NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-gray-500">{username}</span>
+            <span className="text-slate-500 font-medium">{username}</span>
             <button
               onClick={logout}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-slate-500 hover:text-blue-600 transition-colors"
             >
               Sign out
             </button>
           </div>
         </div>
       </header>
-      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-6">{children}</main>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6">{children}</main>
     </div>
   )
+
 }

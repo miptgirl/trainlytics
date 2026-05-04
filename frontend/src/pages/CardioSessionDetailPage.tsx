@@ -291,7 +291,7 @@ export default function CardioSessionDetailPage() {
     return (
       <Layout>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900">Edit Session</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Session</h1>
         </div>
         <EditForm
           session={session}
@@ -310,7 +310,7 @@ export default function CardioSessionDetailPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Cardio Session</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Cardio Session</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setEditing(true)}

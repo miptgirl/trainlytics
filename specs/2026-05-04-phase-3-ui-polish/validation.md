@@ -37,11 +37,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Branding & Design System
 
-- [ ] `logo.png` is displayed in the header/nav on every page
-- [ ] The logo is not broken on mobile viewport (responsive sizing)
-- [ ] **Montserrat** font is applied across the entire app (body text, headings, inputs)
-- [ ] Blue-accent colour palette is applied consistently to buttons, active nav links, and interactive elements
-- [ ] No page retains the old flat/bare look (spot-check: Login, History, Log Workout, Templates)
+- [x] `logo.png` is displayed in the header/nav on every page
+- [x] The logo is not broken on mobile viewport (responsive sizing)
+- [x] **Montserrat** font is applied across the entire app (body text, headings, inputs)
+- [x] Blue-accent colour palette is applied consistently to buttons, active nav links, and interactive elements
+- [x] No page retains the old flat/bare look (spot-check: Login, History, Log Workout, Templates)
 
 ---
 

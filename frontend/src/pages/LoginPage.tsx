@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import logo from '../assets/logo.svg'
 
 interface FormValues {
   username: string
@@ -34,10 +35,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Trainlytics</h1>
-        <p className="text-sm text-gray-500 mb-6">Sign in to continue</p>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+        <div className="flex justify-center mb-6">
+          <img src={logo} alt="Trainlytics" className="h-12 w-auto" />
+        </div>
+        <p className="text-sm text-slate-500 text-center mb-6">Sign in to continue</p>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>

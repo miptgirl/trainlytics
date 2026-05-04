@@ -57,17 +57,17 @@ export default function HistoryPage() {
 
   return (
     <Layout>
-      <h1 className="text-xl font-semibold text-gray-900 mb-4">Workout History</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-5">
+      <div className="flex flex-wrap gap-3 mb-6">
         <select
           value={type}
           onChange={(e) => {
             setType(e.target.value as 'all' | 'cardio' | 'strength')
             handleFilterChange()
           }}
-          className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-800 bg-white"
+          className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-800 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All types</option>
           <option value="cardio">Cardio</option>
@@ -75,7 +75,7 @@ export default function HistoryPage() {
         </select>
 
         <div className="flex items-center gap-1.5">
-          <label className="text-sm text-gray-600">From</label>
+          <label className="text-sm text-slate-600">From</label>
           <input
             type="date"
             value={dateFrom}
@@ -83,12 +83,12 @@ export default function HistoryPage() {
               setDateFrom(e.target.value)
               handleFilterChange()
             }}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-800"
+            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div className="flex items-center gap-1.5">
-          <label className="text-sm text-gray-600">To</label>
+          <label className="text-sm text-slate-600">To</label>
           <input
             type="date"
             value={dateTo}
@@ -96,7 +96,7 @@ export default function HistoryPage() {
               setDateTo(e.target.value)
               handleFilterChange()
             }}
-            className="border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-800"
+            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function HistoryPage() {
               setDateTo('')
               setPage(1)
             }}
-            className="text-sm text-gray-500 hover:text-gray-800 underline"
+            className="text-sm text-slate-500 hover:text-blue-600 underline transition-colors"
           >
             Clear filters
           </button>
@@ -117,9 +117,9 @@ export default function HistoryPage() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-slate-400 text-sm">Loading…</p>
       ) : !data || data.items.length === 0 ? (
-        <p className="text-gray-400 text-sm">No sessions found.</p>
+        <p className="text-slate-400 text-sm">No sessions found.</p>
       ) : (
         <>
           <ul className="space-y-2">
@@ -127,24 +127,24 @@ export default function HistoryPage() {
               <li key={s.id}>
                 <Link
                   to={`/sessions/${s.id}`}
-                  className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-4 py-3 hover:border-blue-400 transition-colors"
+                  className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 hover:border-blue-400 hover:shadow-sm transition-all"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span
-                      className={`shrink-0 inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                      className={`shrink-0 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         s.type === 'cardio'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {s.type}
+                      {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
                     </span>
-                    <span className="font-medium text-gray-900">{s.date}</span>
+                    <span className="font-medium text-slate-900">{s.date}</span>
                     {s.notes && (
-                      <span className="text-sm text-gray-500 truncate">{s.notes}</span>
+                      <span className="text-sm text-slate-500 truncate">{s.notes}</span>
                     )}
                   </div>
-                  <div className="shrink-0 text-sm text-gray-500 ml-3">
+                  <div className="shrink-0 text-sm text-slate-500 ml-3">
                     {s.type === 'cardio' && s.total_duration_seconds != null
                       ? formatDuration(s.total_duration_seconds)
                       : null}
@@ -159,11 +159,11 @@ export default function HistoryPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 text-sm text-gray-600">
+            <div className="flex items-center justify-between mt-6 text-sm text-slate-600">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
               >
                 Previous
               </button>
@@ -173,7 +173,7 @@ export default function HistoryPage() {
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 border border-gray-300 rounded disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
               >
                 Next
               </button>
