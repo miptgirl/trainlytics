@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { useFieldArray, useWatch } from 'react-hook-form'
+import { useEffect, useRef, useState } from 'react'
+import { useFieldArray, useWatch, Controller } from 'react-hook-form'
 
 export interface SetFormValues {
   reps: string
@@ -58,6 +58,100 @@ function groupExercises(exercises: ExerciseOption[]): { label: string; items: Ex
     groups.push({ label, items: items.sort((a, b) => a.name.localeCompare(b.name)) })
   }
   return groups
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom grouped exercise picker
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ExercisePickerDropdown({
+  exercises,
+  value,
+  onChange,
+  hasError,
+}: {
+  exercises: ExerciseOption[]
+  value: string
+  onChange: (id: string) => void
+  hasError: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const selected = exercises.find((e) => String(e.id) === value)
+  const groups = groupExercises(exercises)
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    if (open) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  function select(id: string) {
+    onChange(id)
+    setOpen(false)
+  }
+
+  const borderClass = hasError ? 'border-red-400' : 'border-gray-300'
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left`}
+      >
+        <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
+          {selected ? selected.name : '— select exercise —'}
+        </span>
+        <svg
+          className={`h-4 w-4 text-gray-400 shrink-0 ml-2 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+        </svg>
+      </button>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
+          {groups.length === 0 && (
+            <p className="px-4 py-3 text-sm text-gray-400">No exercises yet.</p>
+          )}
+          {groups.map((group, gi) => (
+            <div key={group.label}>
+              {/* Group header */}
+              <div className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 bg-gray-50 ${gi > 0 ? 'border-t border-gray-100' : ''}`}>
+                {group.label}
+              </div>
+              {/* Items */}
+              <ul>
+                {group.items.map((ex) => (
+                  <li key={ex.id}>
+                    <button
+                      type="button"
+                      onClick={() => select(String(ex.id))}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors ${String(ex.id) === value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800'}`}
+                    >
+                      {ex.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function ExerciseEntryBlock({
@@ -154,19 +248,19 @@ export function ExerciseEntryBlock({
         <div className="px-4 pb-4">
           <div className="mb-4">
             <label className="block text-xs text-gray-500 mb-1">Exercise *</label>
-            <select
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              {...register(`exercises.${exIndex}.exercise_id`, { required: 'Select an exercise' })}
-            >
-              <option value="">— select exercise —</option>
-              {groupExercises(exercises).map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.items.map((e) => (
-                    <option key={e.id} value={e.id}>{e.name}</option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <Controller
+              control={control}
+              name={`exercises.${exIndex}.exercise_id`}
+              rules={{ required: 'Select an exercise' }}
+              render={({ field }) => (
+                <ExercisePickerDropdown
+                  exercises={exercises}
+                  value={field.value}
+                  onChange={field.onChange}
+                  hasError={!!errors.exercises?.[exIndex]?.exercise_id}
+                />
+              )}
+            />
             {errors.exercises?.[exIndex]?.exercise_id && (
               <p className="mt-1 text-xs text-red-600">{errors.exercises[exIndex].exercise_id.message}</p>
             )}

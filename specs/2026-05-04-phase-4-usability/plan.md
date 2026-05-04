@@ -62,7 +62,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 ## Group 5 — Exercise Picker Grouped by Type ✅ DONE
 
 1. In `ExerciseEntryBlock.tsx` and the template editor exercise selector, group the options list by `exercise.types[0].name` (alphabetical); exercises with no types go in an `"Uncategorised"` group.
-2. Use `<optgroup>` elements inside the `<select>`, or replicate the grouping in a custom dropdown — keep it consistent with the existing component style.
+2. Use a **custom dropdown** (`ExercisePickerDropdown`) that renders each type group as a labelled list section — a group header row (uppercase, muted) followed by a `<ul>` of clickable exercise items. Closes on outside click; selected item is highlighted.
 3. Exercises with multiple types appear once per group they belong to.
 4. No backend change needed — `GET /exercises` already returns `types` after Group 1.
 
