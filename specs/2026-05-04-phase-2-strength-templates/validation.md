@@ -17,12 +17,12 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Template Library UI
 
-- [ ] Templates nav link is visible and navigates to the Template Library page
-- [ ] Library lists all user templates; each row shows name and exercise count
-- [ ] "New Template" opens a form; submitting creates the template and shows it in the list
-- [ ] Edit template pre-fills all fields; saving updates the template in the list
-- [ ] Delete template shows a confirmation dialog; confirming removes it from the list
-- [ ] "Use this template" button navigates to the Log Strength page with the template pre-filled
+- [x] Templates nav link is visible and navigates to the Template Library page
+- [x] Library lists all user templates; each row shows name and exercise count
+- [x] "New Template" opens a form; submitting creates the template and shows it in the list
+- [x] Edit template pre-fills all fields; saving updates the template in the list
+- [x] Delete template shows a confirmation dialog; confirming removes it from the list
+- [x] "Use this template" button navigates to the Log Strength page with the template pre-filled
 
 ---
 

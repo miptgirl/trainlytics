@@ -26,7 +26,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 3 — Template Library UI
+## Group 3 — Template Library UI ✅ DONE
 
 1. Add **Templates** entry to the main nav
 2. Template Library page: list all templates, each row shows name + exercise count

@@ -12,6 +12,7 @@ import LogStrengthPage from './pages/LogStrengthPage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import HistoryPage from './pages/HistoryPage'
+import TemplatesPage from './pages/TemplatesPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -90,6 +91,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/templates"
+          element={
+            <ProtectedRoute>
+              <TemplatesPage />
             </ProtectedRoute>
           }
         />

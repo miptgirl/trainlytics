@@ -54,6 +54,14 @@ export function Layout({ children }: { children: ReactNode }) {
               >
                 Log Strength
               </NavLink>
+              <NavLink
+                to="/templates"
+                className={({ isActive }) =>
+                  isActive ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900'
+                }
+              >
+                Templates
+              </NavLink>
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
