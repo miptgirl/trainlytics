@@ -47,7 +47,7 @@ Deliver a working, secured fitness logging app. A user can log in, manage their 
 ## Out of Scope for Phase 1
 
 - Workout templates (Phase 2)
-- Weekly planning (Phase 2)
-- Analytics and charts (Phase 3)
-- Export (Phase 3)
+- Weekly planning (Phase 4)
+- Analytics and charts (Phase 5)
+- Export (Phase 5)
 - Unit conversion (kg/lb) — pick one and stick with it for now

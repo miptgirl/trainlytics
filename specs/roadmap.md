@@ -50,25 +50,28 @@ A user can create a "Push Day" template with their usual exercises, open it when
 
 ---
 
-## Phase 3 — UI Polish & Quality of Life
+## ✅ Phase 3 — UI Polish & Quality of Life *(completed)*
 
 **Goal:** The interface is polished, vibrant, and pleasant enough to use every day.
 
 ### Deliverables
 
-- [ ] **Branding** — display the Trainlytics logo and motto prominently in the header/nav
-- [ ] **Colour & visual identity** — apply a cohesive blue-accent design system (primary shades of blue, consistent typography, spacing); replace the current flat/bare look with a more vibrant, modern UI
-- [ ] **Unified log screen** — merge cardio and strength logging into a single *Log Workout* entry point; the user picks the type and the relevant form is shown inline
-- [ ] **Settings tab** — single settings screen for managing activity types (cardio) and exercises (strength); removed from the main nav flow
-- [ ] **Richer history screen** — show key stats for each session in the list (e.g. for strength: total volume, number of exercises; for cardio: distance, duration, pace); make sessions visually distinct by type
-- [ ] **Weekly stats summary** — at the top of the history screen, show a weekly summary card with total minutes and calories split by cardio vs. strength for the current week
-- [ ] **Titles for sessions and segments** — allow users to give a custom title to any strength or cardio session and to individual cardio segments (e.g. "Warmup jog", "Tempo block")
-- [ ] **Date & time picker** — replace date-only input with a date + time picker so sessions can be timestamped precisely
-- [ ] **Cardio units** — switch all cardio units to: duration in **mins**, distance in **km**, pace in **min/km**
+- [x] **Branding** — Trainlytics logo (including motto *"Track. Analyze. Improve"*) displayed in the header/nav on every screen; logo height 56 px
+- [x] **Colour & visual identity** — cohesive blue-accent design system applied via Tailwind CSS (primary blue palette, consistent typography, spacing, subtle shadows, rounded cards); **Montserrat** set as the app-wide typeface via the Tailwind `font-sans` override
+- [x] **Unified log screen** — `/log-cardio` and `/log-strength` replaced by a single `/log` route; user picks Cardio or Strength and the relevant form renders inline; `?templateId=<id>` pre-selects Strength and loads the template
+- [x] **Settings tab** — `/settings` route consolidates Manage Activity Types and Manage Exercises; both removed from top-level nav
+- [x] **Richer history screen** — each session row shows type badge and stat summary (strength: exercise count, total volume, duration; cardio: distance km, duration mins, pace min/km); title shown when present
+- [x] **Weekly stats summary** — summary card at the top of the History screen showing total minutes and calories split by cardio vs. strength for the current Mon–Sun week; backed by `GET /sessions/weekly-summary`
+- [x] **Training trends chart** — stacked area chart (Recharts) below the weekly summary showing cardio and strength minutes (and calories, toggle-able) over the last 12 weeks plus the current in-progress week; backed by `GET /sessions/training-trends`
+- [x] **Titles for sessions and segments** — optional `title` field on strength/cardio sessions and on individual cardio segments; displayed in history list and detail views
+- [x] **Date & time picker** — `workout_sessions.date` migrated from `Date` to `DateTime(timezone=True)`; log forms default to current local time; stored in UTC; displayed as date + time throughout
+- [x] **Cardio units** — all cardio UI shows duration in **mins**, distance in **km**, pace in **min/km**; backend continues to store seconds, metres, seconds-per-km; conversion is frontend-only
+- [x] **Calories field** — optional `calories` integer on both session types; entered at log time; summed in weekly summary (nulls excluded); shown in session detail views
+- [x] **Exercise notes hint** — when logging strength, exercises that have notes show an inline italic hint below the dropdown
 
 ### Definition of Done
 
-A user can open the app, immediately feel at home with a clean blue-accented interface, log a workout from a single entry point, add a title and exact time, browse a history that shows meaningful stats per session, and see a weekly summary card at the top showing minutes and calories split by cardio vs. strength.
+A user can open the app, immediately feel at home with a clean blue-accented Montserrat interface, log a workout from a single entry point, add a title and exact time, browse a history that shows meaningful stats per session, see a weekly summary card at the top, and explore a 12-week training trends chart split by cardio and strength. ✅ **Achieved.**
 
 ---
 
@@ -92,17 +95,19 @@ A user can build a training week, log sessions against it, and see at a glance h
 
 **Goal:** A user can understand their progress over time and share it externally.
 
+> **Note:** Weekly training load trends (cardio vs. strength minutes and calories over 12 weeks) were delivered in Phase 3. Phase 5 covers deeper, exercise-level analytics and export.
+
 ### Deliverables
 
-- [ ] **Progress charts** — volume over time (weekly strength volume, cardio distance/duration), personal records per exercise
-- [ ] **Trend views** — rolling averages, training load over the last 4–12 weeks
-- [ ] **Exercise progression** — chart of weight/reps over time for any exercise
+- [ ] **Exercise progression** — chart of weight/reps over time for any exercise (personal records highlighted)
+- [ ] **Strength volume breakdown** — weekly total volume per exercise or muscle group, beyond the aggregate already shown in Phase 3
+- [ ] **Cardio distance trends** — weekly distance per activity type over time
+- [ ] **Rolling averages & training load** — rolling 4-week and 8-week load views built on top of the existing trends API
 - [ ] **Weekly export** — structured plain-text summary of a selected week (workouts, volume, completion) for AI or coach sharing
-- [ ] **Dashboard** — landing page with key stats, recent activity, and upcoming plan
 
 ### Definition of Done
 
-A user can view a chart of their squat progression, see their training volume trend for the last 8 weeks, and export last week's summary as text.
+A user can view a chart of their squat progression, drill into weekly volume per exercise, and export last week's summary as text.
 
 ---
 
