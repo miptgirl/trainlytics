@@ -47,7 +47,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 5 — Change Detection & Template Update Prompt
+## Group 5 — Change Detection & Template Update Prompt ✅ DONE
 
 1. On Log Strength form submit, if a `template_id` is in state, run a client-side diff against the original template snapshot:
    - Exercises added / removed / reordered

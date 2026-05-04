@@ -7,7 +7,7 @@ The implementation is complete and mergeable when all of the following pass.
 ## Template CRUD
 
 - [x] Can create a template with a name, multiple exercises, and multiple sets per exercise — *verified by `test_create_strength_template`*
-- [ ] Created template appears in the list immediately with correct exercise count — *React Query invalidates `['templates', 'strength']` on create*
+- [x] Created template appears in the list immediately with correct exercise count — *React Query invalidates `['templates', 'strength']` on create*
 - [x] Can retrieve full template detail with nested exercises and sets — *verified by `test_get_strength_template`*
 - [x] Can edit a template (change name, add/remove exercises, change sets/reps/weight) — *verified by `test_patch_strength_template`*
 - [x] Can delete a template; the exercises in the user's library are unaffected — *verified by `test_delete_strength_template`*
@@ -38,14 +38,14 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Change Detection & Template Update
 
-- [ ] Submitting a session that matches the template exactly does **not** show the diff prompt
-- [ ] Adding an exercise triggers the diff prompt and the summary mentions the added exercise
-- [ ] Removing an exercise triggers the diff prompt and the summary mentions the removed exercise
-- [ ] Changing the number of sets on any exercise triggers the diff prompt
-- [ ] Changing reps or weight on any set triggers the diff prompt
-- [ ] Choosing **"Yes, update template"** — the template is updated to match the session, and the session is saved
-- [ ] Choosing **"No, keep template as-is"** — the session is saved and the template is unchanged
-- [ ] Choosing **"Cancel"** — neither the session nor the template is modified; user stays on the form
+- [x] Submitting a session that matches the template exactly does **not** show the diff prompt
+- [x] Adding an exercise triggers the diff prompt and the summary mentions the added exercise
+- [x] Removing an exercise triggers the diff prompt and the summary mentions the removed exercise
+- [x] Changing the number of sets on any exercise triggers the diff prompt
+- [x] Changing reps or weight on any set triggers the diff prompt
+- [x] Choosing **"Yes, update template"** — the template is updated to match the session, and the session is saved
+- [x] Choosing **"No, keep template as-is"** — the session is saved and the template is unchanged
+- [x] Choosing **"Cancel"** — neither the session nor the template is modified; user stays on the form
 
 ---
 
@@ -53,4 +53,4 @@ The implementation is complete and mergeable when all of the following pass.
 
 - [x] Logging a strength session **without** a template still works exactly as before
 - [x] All Phase 1 backend tests pass (`pytest backend/tests/`)
-- [ ] Existing history and session detail views are unaffected
+- [x] Existing history and session detail views are unaffected
