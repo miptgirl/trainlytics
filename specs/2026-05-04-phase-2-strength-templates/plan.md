@@ -47,17 +47,6 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 6 — Set Completion Tracking
-
-1. Add a `done` boolean field to the set form value type in `ExerciseEntryBlock` (defaults to `false`; excluded from session payload)
-2. Accept a `showDone` prop on `ExerciseEntryBlock` (and the set row sub-component); when `false` (default) the toggle is hidden — preserves existing behaviour for free-form logging and template editing
-3. Render a **"Done"** tick button/checkbox on each set row when `showDone` is `true`; toggling it flips the `done` field in local form state only
-4. Apply a visual treatment to done sets (e.g. muted text + strikethrough on reps/weight) so completed sets are distinguishable at a glance
-5. Pass `showDone={true}` from `LogStrengthPage` only when a template is active (`templateSnapshot !== null`); clear all `done` flags when the template is cleared or swapped
-6. Ensure `done` is stripped before building the session POST payload — it must never reach the backend
-
----
-
 ## Group 5 — Change Detection & Template Update Prompt ✅ DONE
 
 1. On Log Strength form submit, if a `template_id` is in state, run a client-side diff against the original template snapshot:
@@ -68,3 +57,14 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 3. If diff detected → show a **diff summary modal** listing each change in plain language
 4. Modal actions: **"Yes, update template"** (PATCH template then submit session) · **"No, keep template as-is"** (submit session only) · **"Cancel"** (close modal, stay on form)
 5. Template PATCH on "Yes" replaces template content with the submitted session's exercise/set structure
+
+---
+
+## Group 6 — Set Completion Tracking ✅ DONE
+
+1. Add a `done` boolean field to the set form value type in `ExerciseEntryBlock` (defaults to `false`; excluded from session payload)
+2. Accept a `showDone` prop on `ExerciseEntryBlock` (and the set row sub-component); when `false` (default) the toggle is hidden — preserves existing behaviour for free-form logging and template editing
+3. Render a **"Done"** tick button/checkbox on each set row when `showDone` is `true`; toggling it flips the `done` field in local form state only
+4. Apply a visual treatment to done sets (e.g. muted text + strikethrough on reps/weight) so completed sets are distinguishable at a glance
+5. Pass `showDone={true}` from `LogStrengthPage` only when a template is active (`templateSnapshot !== null`); clear all `done` flags when the template is cleared or swapped
+6. Ensure `done` is stripped before building the session POST payload — it must never reach the backend

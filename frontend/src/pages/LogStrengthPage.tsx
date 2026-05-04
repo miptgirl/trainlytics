@@ -72,6 +72,7 @@ function templateToFormValues(t: TemplateSnapshot): FormValues {
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: s.notes ?? '',
+        done: false,
       })),
     })),
   }
@@ -356,6 +357,7 @@ export default function LogStrengthPage() {
                 canRemove={exerciseFields.length > 1}
                 onRemove={() => removeExercise(exIndex)}
                 errors={errors}
+                showDone={templateSnapshot !== null}
               />
             ))}
           </div>

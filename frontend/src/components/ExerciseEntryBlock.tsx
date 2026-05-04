@@ -4,6 +4,7 @@ export interface SetFormValues {
   reps: string
   weight: string
   notes: string
+  done: boolean
 }
 
 export interface ExerciseEntryFormValues {
@@ -16,7 +17,7 @@ export interface ExerciseOption {
   name: string
 }
 
-export const emptySet = (): SetFormValues => ({ reps: '', weight: '', notes: '' })
+export const emptySet = (): SetFormValues => ({ reps: '', weight: '', notes: '', done: false })
 export const emptyEntry = (): ExerciseEntryFormValues => ({
   exercise_id: '',
   sets: [emptySet()],
@@ -30,6 +31,7 @@ export function ExerciseEntryBlock({
   canRemove,
   onRemove,
   errors,
+  showDone = false,
 }: {
   exIndex: number
   register: any
@@ -38,6 +40,7 @@ export function ExerciseEntryBlock({
   canRemove: boolean
   onRemove: () => void
   errors: any
+  showDone?: boolean
 }) {
   const { fields: setFields, append: appendSet, remove: removeSet } = useFieldArray({
     control,
@@ -46,6 +49,12 @@ export function ExerciseEntryBlock({
 
   const selectedId = useWatch({ control, name: `exercises.${exIndex}.exercise_id` })
   const selectedExercise = exercises.find((e) => e.id === parseInt(selectedId, 10))
+
+  const setValues = (useWatch({ control, name: `exercises.${exIndex}.sets` }) ?? []) as SetFormValues[]
+
+  const gridCols = showDone
+    ? 'grid-cols-[2rem_1fr_1fr_1fr_2.5rem_2rem]'
+    : 'grid-cols-[2rem_1fr_1fr_1fr_2rem]'
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -88,53 +97,75 @@ export function ExerciseEntryBlock({
           </button>
         </div>
 
-        <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 mb-1 px-1">
+        <div className={`grid ${gridCols} gap-2 mb-1 px-1`}>
           <span className="text-xs text-gray-400">#</span>
           <span className="text-xs text-gray-500">Reps</span>
           <span className="text-xs text-gray-500">Weight (kg)</span>
           <span className="text-xs text-gray-500">Notes</span>
+          {showDone && <span className="text-xs text-gray-500 text-center">Done</span>}
           <span />
         </div>
 
         <div className="space-y-2">
-          {setFields.map((setField, setIndex) => (
-            <div key={setField.id} className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 items-center">
-              <span className="text-xs text-gray-400 text-center">{setIndex + 1}</span>
-              <input
-                type="number"
-                min="0"
-                placeholder="e.g. 10"
-                className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
-              />
-              <input
-                type="number"
-                min="0"
-                step="any"
-                placeholder="e.g. 60"
-                className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
-              />
-              <input
-                type="text"
-                placeholder="optional"
-                className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
-              />
-              {setFields.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => removeSet(setIndex)}
-                  className="text-gray-400 hover:text-red-500 text-sm leading-none"
-                  aria-label="Remove set"
-                >
-                  ✕
-                </button>
-              ) : (
-                <span />
-              )}
-            </div>
-          ))}
+          {setFields.map((setField, setIndex) => {
+            const isDone = showDone && (setValues[setIndex]?.done ?? false)
+            return (
+              <div
+                key={setField.id}
+                className={`grid ${gridCols} gap-2 items-center transition-opacity ${isDone ? 'opacity-40' : ''}`}
+              >
+                <span className="text-xs text-gray-400 text-center">{setIndex + 1}</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 10"
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="e.g. 60"
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
+                />
+                <input
+                  type="text"
+                  placeholder="optional"
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
+                />
+                {showDone && (
+                  <label className="flex items-center justify-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
+                    />
+                    <span
+                      className={`text-lg leading-none select-none transition-colors ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
+                      aria-label={isDone ? 'Mark undone' : 'Mark done'}
+                    >
+                      ✓
+                    </span>
+                  </label>
+                )}
+                {setFields.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => removeSet(setIndex)}
+                    className="text-gray-400 hover:text-red-500 text-sm leading-none"
+                    aria-label="Remove set"
+                  >
+                    ✕
+                  </button>
+                ) : (
+                  <span />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

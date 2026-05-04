@@ -49,6 +49,18 @@ The implementation is complete and mergeable when all of the following pass.
 
 ---
 
+## Set Completion Tracking
+
+- [x] When a template is active, each set row displays a "Done" toggle (✓ tick button)
+- [x] Marking a set as done applies a visual treatment (muted opacity) to distinguish it from pending sets
+- [x] Sets are not marked done by default when the template is loaded
+- [x] The done toggle is only visible when a template is active (`showDone={templateSnapshot !== null}`)
+- [x] Free-form (no-template) logging does not show done toggles
+- [x] The `done` field is stripped before the session POST payload — it is never sent to the backend
+- [x] Clearing or swapping the template resets all `done` flags (form reset via `emptyDefaults()` / `templateToFormValues`)
+
+---
+
 ## Regression
 
 - [x] Logging a strength session **without** a template still works exactly as before
