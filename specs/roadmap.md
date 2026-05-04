@@ -27,25 +27,62 @@ A user can log in on both desktop and mobile, log a run and a gym session, and s
 
 ---
 
-## Phase 2 — Planning & Templates
+## Phase 2 — Strength Templates
+
+**Goal:** A user can create reusable strength session templates and log against them without having to remember every exercise from scratch.
+
+### Deliverables
+
+- [ ] **Strength session templates** — create, edit, and delete reusable templates that define exercises, default sets × reps × weight, and notes
+- [ ] **Log from template** — when logging a strength session, optionally select a template; all exercises, sets, reps, and weights are pre-filled from the template and fully editable before committing
+- [ ] **Change detection on commit** — if anything in the logged session differs from the template (exercises added/removed, sets/reps/weight changed), prompt the user: *"Your session differs from the template — do you want to update it?"*
+- [ ] **Template library** — dedicated screen to browse, create, and manage all templates
+
+### Definition of Done
+
+A user can create a "Push Day" template with their usual exercises, open it when logging, tweak what changed that day, and optionally save those tweaks back to the template.
+
+---
+
+## Phase 3 — UI Polish & Quality of Life
+
+**Goal:** The interface is polished, vibrant, and pleasant enough to use every day.
+
+### Deliverables
+
+- [ ] **Branding** — display the Trainlytics logo and motto prominently in the header/nav
+- [ ] **Colour & visual identity** — apply a cohesive blue-accent design system (primary shades of blue, consistent typography, spacing); replace the current flat/bare look with a more vibrant, modern UI
+- [ ] **Unified log screen** — merge cardio and strength logging into a single *Log Workout* entry point; the user picks the type and the relevant form is shown inline
+- [ ] **Settings tab** — single settings screen for managing activity types (cardio) and exercises (strength); removed from the main nav flow
+- [ ] **Richer history screen** — show key stats for each session in the list (e.g. for strength: total volume, number of exercises; for cardio: distance, duration, pace); make sessions visually distinct by type
+- [ ] **Weekly stats summary** — at the top of the history screen, show a weekly summary card with total minutes and calories split by cardio vs. strength for the current week
+- [ ] **Titles for sessions and segments** — allow users to give a custom title to any strength or cardio session and to individual cardio segments (e.g. "Warmup jog", "Tempo block")
+- [ ] **Date & time picker** — replace date-only input with a date + time picker so sessions can be timestamped precisely
+- [ ] **Cardio units** — switch all cardio units to: duration in **mins**, distance in **km**, pace in **min/km**
+
+### Definition of Done
+
+A user can open the app, immediately feel at home with a clean blue-accented interface, log a workout from a single entry point, add a title and exact time, browse a history that shows meaningful stats per session, and see a weekly summary card at the top showing minutes and calories split by cardio vs. strength.
+
+---
+
+## Phase 4 — Planning & Weekly Overview
 
 **Goal:** A user can plan their training week in advance and log against that plan.
 
 ### Deliverables
 
-- [ ] **Workout templates** — create, edit, and delete reusable strength session templates (predefined exercises and parameters)
-- [ ] **Weekly training plan** — build a week-by-week plan by assigning workouts to days
-- [ ] **Log from template** — start a strength session from a saved template, pre-filled
+- [ ] **Weekly training plan** — build a week-by-week plan by assigning workout templates (or ad-hoc sessions) to days
 - [ ] **Planned vs. completed view** — see which workouts were done, skipped, or modified vs. the plan
 - [ ] **Weekly overview** — summary card showing the week at a glance (volume, completion rate)
 
 ### Definition of Done
 
-A user can build a training week, log sessions against it (from templates or ad hoc), and see at a glance how the week went.
+A user can build a training week, log sessions against it, and see at a glance how the week went.
 
 ---
 
-## Phase 3 — Analytics & Export
+## Phase 5 — Analytics & Export
 
 **Goal:** A user can understand their progress over time and share it externally.
 

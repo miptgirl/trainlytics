@@ -24,8 +24,8 @@ One place to log cardio (duration, distance, pace, HR zones) and strength (exerc
 **2. Data ownership and export**
 Users own their data and can export structured weekly summaries in a format designed for AI analysis or human coaching. No lock-in, no paywalls on your own history.
 
-**3. Flexible planning and reflection**
-A planning layer that lets users build weekly training plans, compare planned vs. completed workouts, and iterate. Training is intentional, not just reactive.
+**3. Templates, planning, and reflection**
+Reusable strength session templates so users never have to reconstruct a workout from memory. A planning layer (built on top of templates) that lets users build weekly training plans, compare planned vs. completed workouts, and iterate. Training is intentional, not just reactive.
 
 ## Who It's For
 
@@ -35,4 +35,4 @@ A planning layer that lets users build weekly training plans, compare planned vs
 
 ## What Success Looks Like
 
-A user can plan their training week, log every session with complete and relevant metrics, review their progress through meaningful charts, and share a structured summary with a coach or AI — all without leaving Trainlytics.
+A user can open the app and immediately feel at home — a polished, vibrant interface with the Trainlytics brand. They pick a strength template, adjust what changed that day, and commit the session in seconds. They can log a cardio run with distance in km, pace in min/km, and an exact timestamp. Their history shows meaningful stats per session at a glance, and a weekly summary at the top of the page breaks down minutes and calories between cardio and strength. Over time, they can plan training weeks, review progress through charts, and export a structured summary to share with a coach or AI — all without leaving Trainlytics.
