@@ -12,10 +12,16 @@ export interface ExerciseEntryFormValues {
   sets: SetFormValues[]
 }
 
+export interface ExerciseTypeTag {
+  id: number
+  name: string
+}
+
 export interface ExerciseOption {
   id: number
   name: string
   notes?: string | null
+  types?: ExerciseTypeTag[]
 }
 
 export const emptySet = (): SetFormValues => ({ reps: '', weight: '', notes: '', done: false })
@@ -23,6 +29,35 @@ export const emptyEntry = (): ExerciseEntryFormValues => ({
   exercise_id: '',
   sets: [emptySet()],
 })
+
+/** Build a list of {label, exercises} groups for the exercise picker. */
+function groupExercises(exercises: ExerciseOption[]): { label: string; items: ExerciseOption[] }[] {
+  const map = new Map<string, ExerciseOption[]>()
+  for (const ex of exercises) {
+    const tags = ex.types && ex.types.length > 0 ? ex.types : null
+    if (!tags) {
+      const bucket = map.get('Uncategorised') ?? []
+      bucket.push(ex)
+      map.set('Uncategorised', bucket)
+    } else {
+      for (const tag of tags) {
+        const bucket = map.get(tag.name) ?? []
+        bucket.push(ex)
+        map.set(tag.name, bucket)
+      }
+    }
+  }
+  const groups: { label: string; items: ExerciseOption[] }[] = []
+  const sorted = [...map.entries()].sort(([a], [b]) => {
+    if (a === 'Uncategorised') return 1
+    if (b === 'Uncategorised') return -1
+    return a.localeCompare(b)
+  })
+  for (const [label, items] of sorted) {
+    groups.push({ label, items: items.sort((a, b) => a.name.localeCompare(b.name)) })
+  }
+  return groups
+}
 
 export function ExerciseEntryBlock({
   exIndex,
@@ -77,8 +112,12 @@ export function ExerciseEntryBlock({
           {...register(`exercises.${exIndex}.exercise_id`, { required: 'Select an exercise' })}
         >
           <option value="">— select exercise —</option>
-          {exercises.map((e) => (
-            <option key={e.id} value={e.id}>{e.name}</option>
+          {groupExercises(exercises).map((group) => (
+            <optgroup key={group.label} label={group.label}>
+              {group.items.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
         {errors.exercises?.[exIndex]?.exercise_id && (
