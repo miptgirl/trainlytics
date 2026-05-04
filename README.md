@@ -61,6 +61,34 @@ As a user, I want to export a weekly training summary in text format, so I can e
 
 ---
 
+## Deployment
+
+**Prerequisites:** A Linux server with Docker, Docker Compose, and Git installed. A `.env` file in the repo root with `SECRET_KEY` and `USERS` set (see [tech-stack.md](./specs/tech-stack.md) for details).
+
+**First-time setup:**
+
+```bash
+git clone <repo-url>
+cd trainlytics
+cp .env.example .env   # fill in SECRET_KEY and USERS
+bash scripts/deploy.sh
+```
+
+**Subsequent deploys** (pull latest code, rebuild containers, run migrations):
+
+```bash
+bash scripts/deploy.sh
+```
+
+The script performs three steps in order:
+1. `git pull` — fetch the latest code from the current branch.
+2. `docker compose -f docker-compose.prod.yml up --build -d` — rebuild images and restart containers.
+3. `alembic upgrade head` — apply any pending database migrations.
+
+The script is idempotent — safe to run multiple times.
+
+---
+
 ## Target User
 
 Fitness Tracker is designed for:

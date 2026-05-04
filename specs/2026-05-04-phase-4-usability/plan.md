@@ -21,7 +21,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 2 — Deployment Script
+## Group 2 — Deployment Script ✅ DONE
 
 1. Create `scripts/` directory at the repo root.
 2. Create `scripts/deploy.sh`:

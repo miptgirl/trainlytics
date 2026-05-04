@@ -37,9 +37,9 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Deployment Script
 
-- [ ] `scripts/deploy.sh` exists and is executable
-- [ ] Running the script on a clean checkout performs: `git pull`, `docker compose ... up --build -d`, `alembic upgrade head` — in that order
-- [ ] `README.md` contains a **Deployment** section documenting the script
+- [x] `scripts/deploy.sh` exists and is executable
+- [x] Running the script on a clean checkout performs: `git pull`, `docker compose ... up --build -d`, `alembic upgrade head` — in that order
+- [x] `README.md` contains a **Deployment** section documenting the script
 
 ---
 
