@@ -91,6 +91,6 @@ All API routes are protected by default. The frontend redirects to login on 401.
 
 ## Key Constraints
 
-- Single-user app — no multi-tenancy; one account, multiple devices
+- Accounts are defined via environment variables — no registration UI; multiple accounts supported but managed at the infrastructure level, not through the app
 - No external dependencies for core functionality (no third-party fitness APIs)
 - All data stays local or on a user-controlled server
