@@ -31,6 +31,8 @@ interface StrengthSession {
   id: number
   type: string
   date: string
+  title: string | null
+  duration_seconds: number | null
   notes: string | null
   created_at: string
   exercises: StrengthExerciseEntry[]
@@ -50,6 +52,8 @@ interface ExerciseEntryFormValues {
 }
 
 interface EditFormValues {
+  title: string
+  duration_minutes: string
   date: string
   notes: string
   exercises: ExerciseEntryFormValues[]
@@ -60,6 +64,8 @@ const emptyEntry = (): ExerciseEntryFormValues => ({ exercise_id: '', sets: [emp
 
 function toForm(session: StrengthSession): EditFormValues {
   return {
+    title: session.title ?? '',
+    duration_minutes: session.duration_seconds != null ? String(Math.round(session.duration_seconds / 60)) : '',
     date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
     exercises: session.exercises.map((entry) => ({
@@ -100,6 +106,15 @@ function EditForm({
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            placeholder="Optional session title…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('title')}
+          />
+        </div>
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
           <input
             type="datetime-local"
@@ -114,6 +129,17 @@ function EditForm({
             rows={2}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
             {...register('notes')}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (mins)</label>
+          <input
+            type="number"
+            min="0"
+            step="any"
+            placeholder="Optional, e.g. 60"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('duration_minutes')}
           />
         </div>
       </div>
@@ -266,6 +292,8 @@ export default function StrengthSessionDetailPage() {
   const updateMutation = useMutation({
     mutationFn: (data: EditFormValues) => {
       const payload = {
+        title: data.title || null,
+        duration_seconds: data.duration_minutes ? Math.round(parseFloat(data.duration_minutes) * 60) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
@@ -356,6 +384,16 @@ export default function StrengthSessionDetailPage() {
         />
       ) : (
         <div className="space-y-4">
+          {(session.title || session.duration_seconds != null) && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-1">
+              {session.title && (
+                <p className="text-base font-semibold text-gray-900">{session.title}</p>
+              )}
+              {session.duration_seconds != null && (
+                <p className="text-sm text-gray-500">Duration: {Math.round(session.duration_seconds / 60)} mins</p>
+              )}
+            </div>
+          )}
           {session.notes && (
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <p className="text-sm text-gray-700">{session.notes}</p>

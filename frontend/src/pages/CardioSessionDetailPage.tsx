@@ -14,6 +14,7 @@ interface CardioType {
 interface CardioSegment {
   id: number
   order: number
+  title: string | null
   duration_seconds: number
   distance_meters: number | null
   pace_seconds_per_km: number | null
@@ -23,6 +24,7 @@ interface CardioSegment {
 interface CardioSession {
   id: number
   activity_type_id: number | null
+  title: string | null
   total_duration_seconds: number | null
   date: string
   notes: string | null
@@ -49,6 +51,7 @@ function formatPace(secPerKm: number): string {
 // Edit form types (reused from log page)
 // ──────────────────────────────────────────
 interface SegmentFormValues {
+  title: string
   duration_seconds: string
   distance_meters: string
   pace_seconds_per_km: string
@@ -56,6 +59,7 @@ interface SegmentFormValues {
 }
 
 interface EditFormValues {
+  title: string
   activity_type_id: string
   date: string
   notes: string
@@ -65,11 +69,13 @@ interface EditFormValues {
 
 function toForm(session: CardioSession): EditFormValues {
   return {
+    title: session.title ?? '',
     activity_type_id: session.activity_type_id?.toString() ?? '',
     date: toDatetimeLocal(session.date),
     notes: session.notes ?? '',
     total_duration_seconds: session.total_duration_seconds?.toString() ?? '',
     segments: session.segments.map((seg) => ({
+      title: seg.title ?? '',
       duration_seconds: seg.duration_seconds.toString(),
       distance_meters: seg.distance_meters?.toString() ?? '',
       pace_seconds_per_km: seg.pace_seconds_per_km?.toString() ?? '',
@@ -112,6 +118,15 @@ function EditForm({
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            placeholder="Optional session title…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('title')}
+          />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
           <select
@@ -157,7 +172,7 @@ function EditForm({
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -175,6 +190,12 @@ function EditForm({
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 mb-1">Segment Title</label>
+                  <input type="text" placeholder="Optional title…"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.title`)} />
+                </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Duration (sec) *</label>
                   <input
@@ -247,12 +268,14 @@ export default function CardioSessionDetailPage() {
   const updateMutation = useMutation({
     mutationFn: (data: EditFormValues) => {
       const payload = {
+        title: data.title || null,
         activity_type_id: data.activity_type_id ? parseIntOrNull(data.activity_type_id) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         total_duration_seconds: parseNum(data.total_duration_seconds),
         segments: data.segments.map((seg, i) => ({
           order: i + 1,
+          title: seg.title || null,
           duration_seconds: parseIntOrNull(seg.duration_seconds),
           distance_meters: parseNum(seg.distance_meters),
           pace_seconds_per_km: parseNum(seg.pace_seconds_per_km),
@@ -333,6 +356,11 @@ export default function CardioSessionDetailPage() {
 
       {/* Summary */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2 mb-6">
+        {session.title && (
+          <div className="pb-2 border-b border-gray-100">
+            <p className="text-base font-semibold text-gray-900">{session.title}</p>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Date</span>
           <span className="font-medium text-gray-900">{formatSessionDateTime(session.date)}</span>
@@ -359,7 +387,9 @@ export default function CardioSessionDetailPage() {
       <div className="space-y-3">
         {session.segments.map((seg, i) => (
           <div key={seg.id} className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Segment {i + 1}</p>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+              {seg.title ? seg.title : `Segment ${i + 1}`}
+            </p>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
               <span className="text-gray-500">Duration</span>
               <span className="font-medium">{formatDuration(seg.duration_seconds)}</span>

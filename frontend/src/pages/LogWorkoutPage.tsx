@@ -27,6 +27,7 @@ interface CardioType {
 }
 
 interface SegmentFormValues {
+  title: string
   duration_seconds: string
   distance_meters: string
   pace_seconds_per_km: string
@@ -34,6 +35,7 @@ interface SegmentFormValues {
 }
 
 interface CardioFormValues {
+  title: string
   activity_type_id: string
   date: string
   notes: string
@@ -86,6 +88,8 @@ export interface TemplateSnapshot {
 }
 
 interface StrengthFormValues {
+  title: string
+  duration_minutes: string
   date: string
   notes: string
   exercises: ExerciseEntryFormValues[]
@@ -97,6 +101,8 @@ interface DiffState {
 }
 
 const emptyStrengthDefaults = (): StrengthFormValues => ({
+  title: '',
+  duration_minutes: '',
   date: localDateTimeNow(),
   notes: '',
   exercises: [emptyEntry()],
@@ -104,6 +110,8 @@ const emptyStrengthDefaults = (): StrengthFormValues => ({
 
 function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
+    title: '',
+    duration_minutes: '',
     date: localDateTimeNow(),
     notes: '',
     exercises: t.exercises.map((entry) => ({
@@ -213,11 +221,12 @@ function CardioForm() {
     formState: { errors },
   } = useForm<CardioFormValues>({
     defaultValues: {
+      title: '',
       activity_type_id: '',
       date: localDateTimeNow(),
       notes: '',
       total_duration_seconds: '',
-      segments: [{ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' }],
+      segments: [{ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' }],
     },
   })
 
@@ -226,12 +235,14 @@ function CardioForm() {
   const createMutation = useMutation({
     mutationFn: (data: CardioFormValues) => {
       const payload = {
+        title: data.title || null,
         activity_type_id: data.activity_type_id ? parseInt(data.activity_type_id, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         total_duration_seconds: parseSeconds(data.total_duration_seconds) ?? null,
         segments: data.segments.map((seg, i) => ({
           order: i + 1,
+          title: seg.title || null,
           duration_seconds: parseInt(seg.duration_seconds, 10),
           distance_meters: parseFloat_(seg.distance_meters) ?? null,
           pace_seconds_per_km: parseFloat_(seg.pace_seconds_per_km) ?? null,
@@ -250,6 +261,16 @@ function CardioForm() {
     <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
       {/* Basic fields */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input
+            type="text"
+            placeholder="Optional session title…"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('title')}
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
           <select
@@ -301,7 +322,7 @@ function CardioForm() {
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_seconds: '', distance_meters: '', pace_seconds_per_km: '', heart_rate_avg: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -324,6 +345,15 @@ function CardioForm() {
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-xs text-gray-500 mb-1">Segment Title</label>
+                  <input
+                    type="text"
+                    placeholder="Optional title…"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    {...register(`segments.${index}.title`)}
+                  />
+                </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Duration (sec) *</label>
                   <input
@@ -466,6 +496,8 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const createMutation = useMutation({
     mutationFn: (data: StrengthFormValues) =>
       api.post<{ id: number }>('/sessions/strength', {
+        title: data.title || null,
+        duration_seconds: data.duration_minutes ? Math.round(parseFloat(data.duration_minutes) * 60) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
         exercises: data.exercises.map((entry, i) => ({
@@ -557,6 +589,15 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         {/* Basic fields */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              placeholder="Optional session title…"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register('title')}
+            />
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
             <input
               type="datetime-local"
@@ -572,6 +613,17 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
               placeholder="Optional notes…"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               {...register('notes')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Duration (mins)</label>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              placeholder="Optional, e.g. 60"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {...register('duration_minutes')}
             />
           </div>
         </div>

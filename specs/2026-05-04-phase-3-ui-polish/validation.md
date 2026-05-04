@@ -95,11 +95,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Session & Segment Titles
 
-- [ ] Log Strength form has an optional Title field; value is saved and appears in the session detail
-- [ ] Log Cardio form has an optional Title field; value is saved and appears in the session detail
-- [ ] Each cardio segment row has an optional Title field; value is saved and appears in the segment detail
-- [ ] Log Strength form has an optional **Duration** field (mins); value is stored as `duration_seconds` and displayed in the session detail and history row
-- [ ] Editing an existing session pre-fills the title and duration field(s)
+- [x] Log Strength form has an optional Title field; value is saved and appears in the session detail
+- [x] Log Cardio form has an optional Title field; value is saved and appears in the session detail
+- [x] Each cardio segment row has an optional Title field; value is saved and appears in the segment detail
+- [x] Log Strength form has an optional **Duration** field (mins); value is stored as `duration_seconds` and displayed in the session detail and history row
+- [x] Editing an existing session pre-fills the title and duration field(s)
 
 ---
 

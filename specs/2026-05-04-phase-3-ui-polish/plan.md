@@ -89,7 +89,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 8 — Session & Segment Titles
+## Group 8 — Session & Segment Titles ✅
 
 1. Add an optional **Title** text input to the Log Strength form (maps to `WorkoutSession.title`).
 2. Add an optional **Title** text input to the Log Cardio form (maps to `WorkoutSession.title`).
