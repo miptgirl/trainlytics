@@ -102,7 +102,7 @@ interface DiffState {
 }
 
 const emptyStrengthDefaults = (): StrengthFormValues => ({
-  title: '',
+  title: 'Strength session',
   duration_seconds: null,
   calories: '',
   date: localDateTimeNow(),
@@ -112,7 +112,7 @@ const emptyStrengthDefaults = (): StrengthFormValues => ({
 
 function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
-    title: '',
+    title: t.name,
     duration_seconds: null,
     calories: '',
     date: localDateTimeNow(),
@@ -477,6 +477,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const [diffState, setDiffState] = useState<DiffState | null>(null)
   const [collapsedExercises, setCollapsedExercises] = useState<Set<number>>(new Set())
+  const [titleTouched, setTitleTouched] = useState(false)
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
@@ -493,6 +494,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     handleSubmit,
     control,
     reset,
+    getValues,
     formState: { errors },
   } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
 
@@ -513,7 +515,11 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
       const detail = await api.get<TemplateSnapshot>(`/templates/strength/${id}`)
       setSelectedTemplateId(id)
       setTemplateSnapshot(detail)
-      reset(templateToFormValues(detail))
+      const newValues = templateToFormValues(detail)
+      if (titleTouched) {
+        newValues.title = getValues('title')
+      }
+      reset(newValues)
     } finally {
       setIsLoadingTemplate(false)
     }
@@ -523,7 +529,11 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     if (!value) {
       setSelectedTemplateId(null)
       setTemplateSnapshot(null)
-      reset(emptyStrengthDefaults())
+      const defaults = emptyStrengthDefaults()
+      if (titleTouched) {
+        defaults.title = getValues('title')
+      }
+      reset(defaults)
     } else {
       applyTemplate(parseInt(value, 10))
     }
@@ -631,7 +641,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
               type="text"
               placeholder="Optional session title…"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              {...register('title')}
+              {...register('title', { onChange: () => setTitleTouched(true) })}
             />
           </div>
           <div>

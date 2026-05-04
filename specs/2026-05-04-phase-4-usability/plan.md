@@ -77,7 +77,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 7 — Strength Log UX Polish
+## Group 7 — Strength Log UX Polish ✅ DONE
 
 1. **Green set completion:** In the strength log form, change the completed-set CSS class from the current muted/greyed style to a green highlight (e.g. `text-green-700 line-through` / green background chip). Consistent with the blue-accent design system.
 2. **Auto-fill session title:**

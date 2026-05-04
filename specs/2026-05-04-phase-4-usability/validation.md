@@ -86,10 +86,10 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Strength Log UX Polish
 
-- [ ] Completed sets in the strength log form are highlighted in green (not muted/grey)
-- [ ] Logging from a template pre-fills the title field with the template name
-- [ ] Logging strength without a template pre-fills the title with `"Strength session"`
-- [ ] Manually editing the title field prevents it from being overwritten by the default
+- [x] Completed sets in the strength log form are highlighted in green (not muted/grey)
+- [x] Logging from a template pre-fills the title field with the template name
+- [x] Logging strength without a template pre-fills the title with `"Strength session"`
+- [x] Manually editing the title field prevents it from being overwritten by the default
 
 ---
 
