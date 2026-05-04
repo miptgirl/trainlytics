@@ -68,7 +68,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 6 — Template Form UX: Add Exercise at Bottom + Collapsible Exercises
+## Group 6 — Template Form UX: Add Exercise at Bottom + Collapsible Exercises ✅ DONE
 
 1. **Add Exercise at bottom:** In the template editor form, move the "Add Exercise" button below the last exercise block. No logic change — just DOM reordering.
 2. **Collapsible exercises (template editor):** Add a chevron toggle to each exercise block header. Collapsed state shows exercise name + set count summary. Expanded state is the existing full block. Default: expanded.

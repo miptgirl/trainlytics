@@ -75,12 +75,12 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Template Form UX
 
-- [ ] The "Add Exercise" button appears **below** the last exercise block in the template editor
-- [ ] Each exercise block in the template editor has a chevron toggle that collapses/expands it
-- [ ] Collapsed state shows exercise name and a set-count summary (e.g. "3 sets")
-- [ ] The strength log form also has collapsible exercise blocks
-- [ ] Completing all sets in a strength log exercise block causes it to auto-collapse
-- [ ] Un-ticking a set in a collapsed block re-expands it
+- [x] The "Add Exercise" button appears **below** the last exercise block in the template editor
+- [x] Each exercise block in the template editor has a chevron toggle that collapses/expands it
+- [x] Collapsed state shows exercise name and a set-count summary (e.g. "3 sets")
+- [x] The strength log form also has collapsible exercise blocks
+- [x] Completing all sets in a strength log exercise block causes it to auto-collapse
+- [x] Un-ticking a set in a collapsed block re-expands it
 
 ---
 

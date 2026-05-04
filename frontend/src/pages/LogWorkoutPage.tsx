@@ -476,6 +476,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [templateSnapshot, setTemplateSnapshot] = useState<TemplateSnapshot | null>(null)
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const [diffState, setDiffState] = useState<DiffState | null>(null)
+  const [collapsedExercises, setCollapsedExercises] = useState<Set<number>>(new Set())
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
@@ -683,13 +684,6 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-medium text-gray-900">Exercises</h2>
-            <button
-              type="button"
-              onClick={() => appendExercise(emptyEntry())}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              + Add Exercise
-            </button>
           </div>
           <div className="space-y-4">
             {exerciseFields.map((exField, exIndex) => (
@@ -700,12 +694,48 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
                 control={control}
                 exercises={exercises}
                 canRemove={exerciseFields.length > 1}
-                onRemove={() => removeExercise(exIndex)}
+                onRemove={() => {
+                  removeExercise(exIndex)
+                  setCollapsedExercises((prev) => {
+                    const next = new Set<number>()
+                    for (const idx of prev) {
+                      if (idx < exIndex) next.add(idx)
+                      else if (idx > exIndex) next.add(idx - 1)
+                    }
+                    return next
+                  })
+                }}
                 errors={errors}
                 showDone={templateSnapshot !== null}
+                isCollapsed={collapsedExercises.has(exIndex)}
+                onToggleCollapse={() =>
+                  setCollapsedExercises((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(exIndex)) next.delete(exIndex)
+                    else next.add(exIndex)
+                    return next
+                  })
+                }
+                onAutoCollapse={() =>
+                  setCollapsedExercises((prev) => new Set(prev).add(exIndex))
+                }
+                onAutoExpand={() =>
+                  setCollapsedExercises((prev) => {
+                    const next = new Set(prev)
+                    next.delete(exIndex)
+                    return next
+                  })
+                }
               />
             ))}
           </div>
+          <button
+            type="button"
+            onClick={() => appendExercise(emptyEntry())}
+            className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            + Add Exercise
+          </button>
         </div>
 
         {createMutation.isError && (
