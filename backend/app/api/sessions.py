@@ -156,6 +156,9 @@ async def list_sessions(
     for ws in rows:
         if ws.type == "cardio" and ws.cardio_session:
             cs = ws.cardio_session
+            total_distance = sum(
+                seg.distance_meters for seg in cs.segments if seg.distance_meters is not None
+            ) or None
             items.append(
                 SessionSummaryOut(
                     id=ws.id,
@@ -166,11 +169,18 @@ async def list_sessions(
                     calories=ws.calories,
                     created_at=ws.created_at,
                     total_duration_seconds=cs.total_duration_seconds,
+                    total_distance_meters=total_distance,
                 )
             )
         elif ws.type == "strength" and ws.strength_session:
             ss = ws.strength_session
             total_sets = sum(len(e.sets) for e in ss.exercise_entries)
+            exercise_count = len(ss.exercise_entries)
+            total_volume = sum(
+                (s.weight or 0) * (s.reps or 0)
+                for e in ss.exercise_entries
+                for s in e.sets
+            ) or None
             items.append(
                 SessionSummaryOut(
                     id=ws.id,
@@ -181,6 +191,8 @@ async def list_sessions(
                     calories=ws.calories,
                     created_at=ws.created_at,
                     total_sets=total_sets,
+                    exercise_count=exercise_count,
+                    total_volume=total_volume,
                     duration_seconds=ss.duration_seconds,
                 )
             )

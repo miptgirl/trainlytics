@@ -79,17 +79,17 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Richer History Screen & Weekly Summary Card
 
-- [ ] A weekly summary card appears at the top of the History screen
-- [ ] The card shows cardio minutes, strength minutes, cardio calories, and strength calories for the current week
-- [ ] The card shows `0` (not an error) when there are no sessions that week
-- [ ] A **training trends chart** appears below the weekly summary card
-- [ ] The chart shows 12 weeks of data with cardio and strength series
-- [ ] A "Minutes / Calories" toggle switches the chart between the two views
-- [ ] Weeks with no sessions show as zero (not a gap or error in the chart)
-- [ ] Each session row has a visible type badge (cardio vs. strength)
-- [ ] Strength session rows show exercise count, total volume, and duration (when `duration_seconds` is present)
-- [ ] Cardio session rows show distance (km), duration (mins), and pace (min/km) where available
-- [ ] Session `title` is displayed in the history row when present
+- [x] A weekly summary card appears at the top of the History screen
+- [x] The card shows cardio minutes, strength minutes, cardio calories, and strength calories for the current week
+- [x] The card shows `0` (not an error) when there are no sessions that week
+- [x] A **training trends chart** appears below the weekly summary card
+- [x] The chart shows 12 weeks of data with cardio and strength series
+- [x] A "Minutes / Calories" toggle switches the chart between the two views
+- [x] Weeks with no sessions show as zero (not a gap or error in the chart)
+- [x] Each session row has a visible type badge (cardio vs. strength)
+- [x] Strength session rows show exercise count, total volume, and duration (when `duration_seconds` is present)
+- [x] Cardio session rows show distance (km), duration (mins), and pace (min/km) where available
+- [x] Session `title` is displayed in the history row when present
 
 ---
 

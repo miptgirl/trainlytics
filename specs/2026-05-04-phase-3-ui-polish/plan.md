@@ -76,7 +76,7 @@ Each group is a shippable unit. Complete them in order — later groups depend o
 
 ---
 
-## Group 7 — Richer History Screen & Weekly Summary
+## Group 7 — Richer History Screen & Weekly Summary ✅
 
 1. Update `HistoryPage.tsx`:
    - Add a **weekly summary card** at the top: fetch `GET /sessions/weekly-summary?week_start=<current Monday>`, display cardio minutes, strength minutes, cardio calories, strength calories.

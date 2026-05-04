@@ -148,8 +148,11 @@ class SessionSummaryOut(BaseModel):
     created_at: datetime
     # cardio summary
     total_duration_seconds: int | None = None
+    total_distance_meters: float | None = None
     # strength summary
     total_sets: int | None = None
+    exercise_count: int | None = None
+    total_volume: float | None = None
     duration_seconds: int | None = None
 
 

@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { formatSessionDateTime } from '../lib/dateUtils'
@@ -10,9 +20,17 @@ interface SessionSummary {
   type: 'cardio' | 'strength'
   date: string
   notes: string | null
+  title: string | null
+  calories: number | null
   created_at: string
+  // cardio
   total_duration_seconds: number | null
+  total_distance_meters: number | null
+  // strength
   total_sets: number | null
+  exercise_count: number | null
+  total_volume: number | null
+  duration_seconds: number | null
 }
 
 interface SessionListOut {
@@ -22,14 +40,187 @@ interface SessionListOut {
   page_size: number
 }
 
+interface WeeklyActivitySummary {
+  minutes: number
+  calories: number
+}
+
+interface WeeklySummaryOut {
+  cardio: WeeklyActivitySummary
+  strength: WeeklyActivitySummary
+}
+
+interface TrainingTrendPoint {
+  week_start: string
+  cardio_minutes: number
+  strength_minutes: number
+  cardio_calories: number
+  strength_calories: number
+}
+
+function getMonday(d: Date): string {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = (day === 0 ? -6 : 1 - day)
+  date.setDate(date.getDate() + diff)
+  return date.toISOString().slice(0, 10)
+}
+
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
-  const s = seconds % 60
   if (h > 0) return `${h}h ${m}m`
-  if (m > 0) return `${m}m ${s > 0 ? `${s}s` : ''}`
-  return `${s}s`
+  return `${m}m`
 }
+
+function formatDistance(meters: number): string {
+  return `${(meters / 1000).toFixed(2)} km`
+}
+
+function formatPace(secPerKm: number): string {
+  const mins = Math.floor(secPerKm / 60)
+  const secs = Math.round(secPerKm % 60)
+  return `${mins}:${String(secs).padStart(2, '0')} /km`
+}
+
+function formatVolume(kg: number): string {
+  if (kg >= 1000) return `${(kg / 1000).toFixed(1)}t`
+  return `${Math.round(kg)} kg`
+}
+
+function formatWeekLabel(isoDate: string): string {
+  const d = new Date(isoDate + 'T00:00:00')
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+// ── Weekly Summary Card ────────────────────────────────────────────────────────
+
+function WeeklySummaryCard() {
+  const weekStart = getMonday(new Date())
+  const { data, isLoading } = useQuery<WeeklySummaryOut>({
+    queryKey: ['weekly-summary', weekStart],
+    queryFn: () => api.get<WeeklySummaryOut>(`/sessions/weekly-summary?week_start=${weekStart}`),
+  })
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-5">
+      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
+        This Week
+      </h2>
+      {isLoading ? (
+        <p className="text-slate-400 text-sm">Loading…</p>
+      ) : data ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-emerald-50 rounded-xl p-4">
+            <p className="text-xs font-medium text-emerald-600 mb-2">🏃 Cardio</p>
+            <p className="text-2xl font-bold text-emerald-700">{data.cardio.minutes}<span className="text-sm font-normal ml-1">min</span></p>
+            <p className="text-sm text-emerald-600 mt-1">{data.cardio.calories} kcal</p>
+          </div>
+          <div className="bg-blue-50 rounded-xl p-4">
+            <p className="text-xs font-medium text-blue-600 mb-2">🏋️ Strength</p>
+            <p className="text-2xl font-bold text-blue-700">{data.strength.minutes}<span className="text-sm font-normal ml-1">min</span></p>
+            <p className="text-sm text-blue-600 mt-1">{data.strength.calories} kcal</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+// ── Training Trends Chart ──────────────────────────────────────────────────────
+
+function TrainingTrendsChart() {
+  const [view, setView] = useState<'minutes' | 'calories'>('minutes')
+
+  const { data, isLoading } = useQuery<TrainingTrendPoint[]>({
+    queryKey: ['training-trends'],
+    queryFn: () => api.get<TrainingTrendPoint[]>('/sessions/training-trends?weeks=12'),
+  })
+
+  const chartData = data?.map((p) => ({
+    week: formatWeekLabel(p.week_start),
+    Cardio: view === 'minutes' ? p.cardio_minutes : p.cardio_calories,
+    Strength: view === 'minutes' ? p.strength_minutes : p.strength_calories,
+  }))
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+          12-Week Trends
+        </h2>
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setView('minutes')}
+            className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+              view === 'minutes'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Minutes
+          </button>
+          <button
+            onClick={() => setView('calories')}
+            className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+              view === 'calories'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Calories
+          </button>
+        </div>
+      </div>
+      {isLoading ? (
+        <p className="text-slate-400 text-sm">Loading…</p>
+      ) : chartData ? (
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <Tooltip
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            <Bar dataKey="Cardio" fill="#10b981" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="Strength" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      ) : null}
+    </div>
+  )
+}
+
+// ── Session Row Stats ─────────────────────────────────────────────────────────
+
+function CardioStats({ s }: { s: SessionSummary }) {
+  const parts: string[] = []
+  if (s.total_distance_meters != null) parts.push(formatDistance(s.total_distance_meters))
+  if (s.total_duration_seconds != null) parts.push(formatDuration(s.total_duration_seconds))
+  if (
+    s.total_duration_seconds != null &&
+    s.total_distance_meters != null &&
+    s.total_distance_meters > 0
+  ) {
+    const paceSecPerKm = s.total_duration_seconds / (s.total_distance_meters / 1000)
+    parts.push(formatPace(paceSecPerKm))
+  }
+  if (parts.length === 0) return null
+  return <span>{parts.join(' · ')}</span>
+}
+
+function StrengthStats({ s }: { s: SessionSummary }) {
+  const parts: string[] = []
+  if (s.exercise_count != null) parts.push(`${s.exercise_count} exercise${s.exercise_count !== 1 ? 's' : ''}`)
+  if (s.total_volume != null && s.total_volume > 0) parts.push(formatVolume(s.total_volume))
+  if (s.duration_seconds != null) parts.push(formatDuration(s.duration_seconds))
+  if (parts.length === 0) return null
+  return <span>{parts.join(' · ')}</span>
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
   const [type, setType] = useState<'all' | 'cardio' | 'strength'>('all')
@@ -59,6 +250,9 @@ export default function HistoryPage() {
   return (
     <Layout>
       <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
+
+      <WeeklySummaryCard />
+      <TrainingTrendsChart />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -140,18 +334,24 @@ export default function HistoryPage() {
                     >
                       {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
                     </span>
-                    <span className="font-medium text-slate-900">{formatSessionDateTime(s.date)}</span>
-                    {s.notes && (
+                    <div className="min-w-0">
+                      {s.title ? (
+                        <span className="font-medium text-slate-900 truncate block">{s.title}</span>
+                      ) : null}
+                      <span className={`text-slate-${s.title ? '500' : '900'} ${s.title ? 'text-sm' : 'font-medium'}`}>
+                        {formatSessionDateTime(s.date)}
+                      </span>
+                    </div>
+                    {s.notes && !s.title && (
                       <span className="text-sm text-slate-500 truncate">{s.notes}</span>
                     )}
                   </div>
-                  <div className="shrink-0 text-sm text-slate-500 ml-3">
-                    {s.type === 'cardio' && s.total_duration_seconds != null
-                      ? formatDuration(s.total_duration_seconds)
-                      : null}
-                    {s.type === 'strength' && s.total_sets != null
-                      ? `${s.total_sets} set${s.total_sets !== 1 ? 's' : ''}`
-                      : null}
+                  <div className="shrink-0 text-sm text-slate-500 ml-3 text-right">
+                    {s.type === 'cardio' ? (
+                      <CardioStats s={s} />
+                    ) : (
+                      <StrengthStats s={s} />
+                    )}
                   </div>
                 </Link>
               </li>
