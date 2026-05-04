@@ -25,6 +25,13 @@ Allow users to create reusable strength session templates and log against them. 
   2. **Template Library** — a "Use this template" button on each template.
 - Pre-filled forms are fully editable before submitting.
 
+### Set Completion Tracking
+- When the Log Strength form is pre-filled from a template, each set row displays a **"Done"** toggle (e.g. a checkbox or tick button).
+- Marking a set as done visually distinguishes it from pending sets (e.g. strikethrough, muted colour, or a filled tick icon) so the user can see at a glance what has been completed during the session.
+- The done state is **UI-only** — it is not stored in the backend and is not submitted as part of the session payload.
+- Sets are not marked done by default when the template is loaded; the user marks each one manually as they complete it.
+- The toggle is only shown when a template is active; free-form (no-template) logging does not show done toggles.
+
 ### Change Detection on Commit
 - On form submit, if the session was started from a template, compare the submitted data against the template.
 - **What counts as a change:**
