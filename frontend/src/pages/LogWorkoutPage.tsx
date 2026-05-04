@@ -58,6 +58,8 @@ function parseSeconds(val: string): number | undefined {
 interface Exercise {
   id: number
   name: string
+  notes?: string | null
+  types?: { id: number; name: string }[]
 }
 
 interface TemplateSummary {

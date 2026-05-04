@@ -65,11 +65,11 @@ The implementation is complete and mergeable when all of the following pass.
 
 ## Exercise Picker Grouped by Type
 
-- [ ] In the strength log form, exercises are grouped by type with `<optgroup>` labels (or equivalent)
-- [ ] In the template editor, the same grouping is applied
-- [ ] Exercises with no type appear in an *"Uncategorised"* group
-- [ ] An exercise with two types appears in both groups
-- [ ] Grouping is correct immediately after a new exercise type is created (cache invalidation works)
+- [x] In the strength log form, exercises are grouped by type with `<optgroup>` labels (or equivalent)
+- [x] In the template editor, the same grouping is applied
+- [x] Exercises with no type appear in an *"Uncategorised"* group
+- [x] An exercise with two types appears in both groups
+- [x] Grouping is correct immediately after a new exercise type is created (cache invalidation works)
 
 ---
 

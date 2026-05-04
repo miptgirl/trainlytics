@@ -59,7 +59,7 @@ Each group is a shippable unit. Complete them in order — later groups may depe
 
 ---
 
-## Group 5 — Exercise Picker Grouped by Type
+## Group 5 — Exercise Picker Grouped by Type ✅ DONE
 
 1. In `ExerciseEntryBlock.tsx` and the template editor exercise selector, group the options list by `exercise.types[0].name` (alphabetical); exercises with no types go in an `"Uncategorised"` group.
 2. Use `<optgroup>` elements inside the `<select>`, or replicate the grouping in a custom dropdown — keep it consistent with the existing component style.
