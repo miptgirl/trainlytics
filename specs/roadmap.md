@@ -97,7 +97,7 @@ A user on a mobile device can navigate the full app without UI collisions, log a
 
 ---
 
-## Phase 5 — Mobile Polish & Logging UX
+## ✅ Phase 5 — Mobile Polish & Logging UX *(completed)*
 
 **Goal:** The app is fully usable on a phone without layout issues, weight entry is accident-free, and cardio logging requires less manual calculation.
 
@@ -105,17 +105,17 @@ All items in this phase are driven by direct user feedback.
 
 ### Deliverables
 
-- [ ] **Remove weight increment/decrement buttons** — weight fields in the strength log form and template editor accept direct text input only; the +/− buttons caused accidental weight changes and are removed
-- [ ] **Fix mobile duration keyboard** — duration fields trigger a text keyboard on mobile (not a numeric keyboard) so the `h:mm:ss` format can actually be typed; the numeric keyboard was blocking input on iPhone
-- [ ] **Compact exercise remove button** — the remove control is replaced with a small icon button so it no longer clashes with the full exercise name on narrow screens
-- [ ] **Mobile responsive audit** — a full pass on viewport overflow; all controls, forms, and buttons fit within the screen width on iPhone-sized viewports with no horizontal scroll
-- [ ] **Green completed-exercise highlight** — when all sets within an exercise are marked done, the exercise header turns green (matching the per-set green treatment) in addition to auto-collapsing
-- [ ] **Move "Add Segment" to bottom** — the add-segment control moves below the last segment, consistent with how "Add Exercise" works in the template editor
-- [ ] **Auto-calculate pace** — in the cardio log form, pace is computed automatically from distance and duration whenever both fields are filled; the pace field updates in real time and can still be overridden manually
+- [x] **Remove weight increment/decrement buttons** — weight fields in the strength log form and template editor accept direct text input only; the +/− buttons caused accidental weight changes and are removed
+- [x] **Fix mobile duration keyboard** — duration fields trigger a text keyboard on mobile (not a numeric keyboard) so the `h:mm:ss` format can actually be typed; the numeric keyboard was blocking input on iPhone
+- [x] **Compact exercise remove button** — the remove control is replaced with a small icon button so it no longer clashes with the full exercise name on narrow screens
+- [x] **Mobile responsive audit** — a full pass on viewport overflow; all controls, forms, and buttons fit within the screen width on iPhone-sized viewports with no horizontal scroll
+- [x] **Green completed-exercise highlight** — when all sets within an exercise are marked done, the exercise header turns green (matching the per-set green treatment) in addition to auto-collapsing
+- [x] **Move "Add Segment" to bottom** — the add-segment control moves below the last segment, consistent with how "Add Exercise" works in the template editor
+- [x] **Auto-calculate pace** — in the cardio log form, pace is computed automatically from distance and duration whenever both fields are filled; the pace field updates in real time and can still be overridden manually
 
 ### Definition of Done
 
-A user on an iPhone can fill in all fields without keyboard or layout issues, remove an exercise with a small icon, and have pace calculated for them automatically when entering a cardio segment.
+A user on an iPhone can fill in all fields without keyboard or layout issues, remove an exercise with a small icon, and have pace calculated for them automatically when entering a cardio segment. ✅ **Achieved.**
 
 ---
 

@@ -66,18 +66,22 @@ The implementation is complete and mergeable when all of the following pass.
 
 ---
 
-## Group 7 — Mobile Responsive Audit
+## Group 7 — Mobile Responsive Audit ✅
 
 Test viewport: **375 × 667 (iPhone SE)** in Chrome DevTools device emulation.
 
-- [ ] `/login` — no horizontal scroll; form and button fit within viewport
-- [ ] `/history` — session cards, stat badges, weekly summary, and trends chart render without overflow
-- [ ] `/log` (cardio) — all segment fields, Add Segment button, and Submit button are fully visible; no controls clipped
-- [ ] `/log` (strength) — exercise block set-grid columns fit; Add Exercise button visible below last exercise
-- [ ] `/log?templateId=N` — template picker modal fits within viewport; exercise blocks usable
-- [ ] `/sessions/cardio/:id` — segment rows render without horizontal scroll
-- [ ] `/sessions/strength/:id` — exercise and set rows render without horizontal scroll
-- [ ] `/templates` — template list cards fit; no overflow
-- [ ] `/templates/:id/edit` — template editor form and exercise blocks fit on 375 px
-- [ ] `/settings` — all three sections (Activity Types, Exercises, Exercise Types) render without overflow
-- [ ] Desktop layout (≥ 1024 px) is unchanged for all routes above
+- [x] `/login` — no horizontal scroll; form and button fit within viewport
+- [x] `/history` — session cards, stat badges, weekly summary, and trends chart render without overflow
+- [x] `/log` (cardio) — all segment fields, Add Segment button, and Submit button are fully visible; no controls clipped
+- [x] `/log` (strength) — exercise block set-grid columns fit; Add Exercise button visible below last exercise
+- [x] `/log?templateId=N` — template picker modal fits within viewport; exercise blocks usable
+- [x] `/sessions/cardio/:id` — segment rows render without horizontal scroll
+- [x] `/sessions/strength/:id` — exercise and set rows render without horizontal scroll
+- [x] `/templates` — template list cards fit; no overflow
+- [x] `/templates/:id/edit` — template editor form and exercise blocks fit on 375 px
+- [x] `/settings` — all three sections (Activity Types, Exercises, Exercise Types) render without overflow
+- [x] Desktop layout (≥ 1024 px) is unchanged for all routes above
+
+### Code changes made
+- **ExerciseEntryBlock.tsx** — set grid columns changed from `1fr` to `minmax(0,1fr)` (prevents inputs from forcing grid wider than viewport), fixed column widths reduced from `2rem`/`2.5rem` to `1.5rem`/`2rem`, gap reduced from `gap-2` to `gap-1.5`; input placeholders shortened ("reps", "kg", "note") to fit narrower cells
+- **StrengthSessionDetailPage.tsx** — same `minmax(0,1fr)` + gap reduction applied to both the edit-form `EditExerciseBlock` and the read-only display grid; `truncate overflow-hidden` added to notes span in display view to prevent long notes text from forcing column overflow

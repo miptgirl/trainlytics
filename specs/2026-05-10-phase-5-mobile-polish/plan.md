@@ -90,7 +90,7 @@ This change applies to the cardio log form only.
 
 ---
 
-## Group 7 — Mobile Responsive Audit
+## Group 7 — Mobile Responsive Audit ✅
 
 This group is a testing and fix pass — no single code change. Complete Groups 1–6 first.
 

@@ -258,8 +258,8 @@ export function ExerciseEntryBlock({
   }, [allDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const gridCols = showDone
-    ? 'grid-cols-[2rem_1fr_1fr_1fr_2.5rem_2rem]'
-    : 'grid-cols-[2rem_1fr_1fr_1fr_2rem]'
+    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+    : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
     <div className="bg-white rounded-xl border border-gray-200">
@@ -336,7 +336,7 @@ export function ExerciseEntryBlock({
               </button>
             </div>
 
-            <div className={`grid ${gridCols} gap-2 mb-1 px-1`}>
+            <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
               <span className="text-xs text-gray-400">#</span>
               <span className="text-xs text-gray-500">Reps</span>
               <span className="text-xs text-gray-500">Weight (kg)</span>
@@ -351,26 +351,26 @@ export function ExerciseEntryBlock({
                 return (
                   <div
                     key={setField.id}
-                    className={`grid ${gridCols} gap-2 items-center ${isDone ? 'bg-green-50 rounded-lg px-1' : ''}`}
+                    className={`grid ${gridCols} gap-1.5 items-center ${isDone ? 'bg-green-50 rounded-lg px-1' : ''}`}
                   >
                     <span className={`text-xs text-center ${isDone ? 'text-green-600' : 'text-gray-400'}`}>{setIndex + 1}</span>
                     <input
                       type="number"
                       min="0"
-                      placeholder="e.g. 10"
+                      placeholder="reps"
                       className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
-                      placeholder="e.g. 60"
+                      placeholder="kg"
                       className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
                     <input
                       type="text"
-                      placeholder="optional"
+                      placeholder="note"
                       className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
                     />

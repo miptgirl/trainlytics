@@ -248,7 +248,7 @@ function EditExerciseBlock({
           ))}
         </select>
       </div>
-      <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 mb-1 px-1">
+      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem] gap-1.5 mb-1 px-1">
         <span className="text-xs text-gray-400">#</span>
         <span className="text-xs text-gray-500">Reps</span>
         <span className="text-xs text-gray-500">Weight (kg)</span>
@@ -257,7 +257,7 @@ function EditExerciseBlock({
       </div>
       <div className="space-y-2">
         {setFields.map((setField, setIndex) => (
-          <div key={setField.id} className="grid grid-cols-[2rem_1fr_1fr_1fr_2rem] gap-2 items-center">
+          <div key={setField.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem] gap-1.5 items-center">
             <span className="text-xs text-gray-400 text-center">{setIndex + 1}</span>
             <input type="number" min="0" placeholder="reps"
               className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
@@ -421,7 +421,7 @@ export default function StrengthSessionDetailPage() {
             <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-4">
               <h3 className="font-medium text-gray-900 mb-3">{entry.exercise_name}</h3>
 
-              <div className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 mb-2 px-1">
+              <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 mb-2 px-1">
                 <span className="text-xs text-gray-400">#</span>
                 <span className="text-xs font-medium text-gray-500">Reps</span>
                 <span className="text-xs font-medium text-gray-500">Weight</span>
@@ -430,11 +430,11 @@ export default function StrengthSessionDetailPage() {
 
               <div className="space-y-1">
                 {entry.sets.map((s) => (
-                  <div key={s.id} className="grid grid-cols-[2rem_1fr_1fr_1fr] gap-2 items-center py-1 border-t border-gray-100">
+                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-gray-100">
                     <span className="text-xs text-gray-400 text-center">{s.set_number}</span>
                     <span className="text-sm text-gray-900">{s.reps ?? '—'}</span>
                     <span className="text-sm text-gray-900">{s.weight != null ? `${s.weight} kg` : '—'}</span>
-                    <span className="text-sm text-gray-500">{s.notes ?? ''}</span>
+                    <span className="text-sm text-gray-500 overflow-hidden truncate">{s.notes ?? ''}</span>
                   </div>
                 ))}
               </div>
