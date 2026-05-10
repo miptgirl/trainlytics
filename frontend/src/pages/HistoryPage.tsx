@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AreaChart,
+  ComposedChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,6 +15,8 @@ import {
 } from 'recharts'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
+import { usePaceTrends } from '../lib/hooks/usePaceTrends'
 import { formatSessionDateTime } from '../lib/dateUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
@@ -64,6 +68,11 @@ interface TrainingTrendPoint {
   cardio_calories: number
   strength_calories: number
 }
+
+const PACE_COLORS = [
+  '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
+  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
+]
 
 function getMonday(d: Date): string {
   const date = new Date(d)
@@ -142,10 +151,47 @@ function TrainingTrendsChart() {
     queryFn: () => api.get<TrainingTrendPoint[]>('/sessions/training-trends?weeks=12'),
   })
 
+  // derive weekStarts from the training-trends data (ISO week_start strings)
+  const weekStarts = data ? [...new Set(data.map((p) => p.week_start))].sort() : []
+
+  // helper: add n days to an ISO date (YYYY-MM-DD)
+  function addDaysIso(iso: string, n: number) {
+    const d = new Date(iso + 'T00:00:00')
+    d.setDate(d.getDate() + n)
+    return d.toISOString().slice(0, 10)
+  }
+
+  // fetch steps covering the same span as the chart (start of first week to end of last week)
+  const startDate = weekStarts.length > 0 ? weekStarts[0] : undefined
+  const endDate = weekStarts.length > 0 ? addDaysIso(weekStarts[weekStarts.length - 1], 6) : undefined
+  const { data: stepsEntries } = useSteps(startDate, endDate)
+
+  // aggregate daily steps into weekly totals keyed by week_start (null if no data in that week)
+  const stepsByDate = new Map<string, number>()
+  ;(stepsEntries ?? []).forEach((e: StepEntry) => {
+    stepsByDate.set(e.date, (stepsByDate.get(e.date) ?? 0) + e.steps)
+  })
+
+  const weeklyStepsMap = new Map<string, number | null>()
+  for (const w of weekStarts) {
+    let total = 0
+    let count = 0
+    for (let i = 0; i < 7; i++) {
+      const d = addDaysIso(w, i)
+      const v = stepsByDate.get(d)
+      if (v != null) {
+        total += v
+        count += 1
+      }
+    }
+    weeklyStepsMap.set(w, count > 0 ? total : null)
+  }
+
   const chartData = data?.map((p) => ({
     week: formatWeekLabel(p.week_start),
     Cardio: view === 'minutes' ? p.cardio_minutes : p.cardio_calories,
     Strength: view === 'minutes' ? p.strength_minutes : p.strength_calories,
+    Steps: weeklyStepsMap.get(p.week_start) ?? null,
   }))
 
   return (
@@ -181,7 +227,7 @@ function TrainingTrendsChart() {
         <p className="text-slate-400 text-sm">Loading…</p>
       ) : chartData ? (
         <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorCardio" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -195,15 +241,148 @@ function TrainingTrendsChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            {/* Right-side axis for steps (only shown if any weekly step data exists) */}
+            {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
+            )}
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Area type="monotone" dataKey="Cardio" stackId="1" stroke="#10b981" strokeWidth={2} fill="url(#colorCardio)" />
             <Area type="monotone" dataKey="Strength" stackId="1" stroke="#3b82f6" strokeWidth={2} fill="url(#colorStrength)" />
-          </AreaChart>
+            {/* Steps line on the secondary axis — dashed and neutral colour; gaps are preserved via nulls */}
+            {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
+              <Line type="monotone" dataKey="Steps" yAxisId="right" stroke="#94a3b8" strokeWidth={2} dot={false} strokeDasharray="4 4" connectNulls={false} />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       ) : null}
+    </div>
+  )
+}
+
+// ── Pace Trends Chart ──────────────────────────────────────────────────────────
+
+function PaceTrendsChart() {
+  const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
+
+  const { data, isLoading } = usePaceTrends()
+
+  const allActivityTypes = useMemo(() => {
+    if (!data) return []
+    return [...new Set(data.map((d) => d.activity_type))].sort()
+  }, [data])
+
+  // One entry per unique (activity_type, segment_label) pair, excluding hidden types
+  const lineKeys = useMemo(() => {
+    if (!data) return []
+    const seen = new Set<string>()
+    const result: Array<{ key: string; actType: string; segLabel: string }> = []
+    for (const d of data) {
+      if (hiddenTypes.has(d.activity_type)) continue
+      const key = `${d.activity_type} · ${d.segment_label}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        result.push({ key, actType: d.activity_type, segLabel: d.segment_label })
+      }
+    }
+    return result
+  }, [data, hiddenTypes])
+
+  // Pivot: one row per week_start, one column per line key (null = gap)
+  const chartData = useMemo(() => {
+    if (!data) return []
+    const weeks = [...new Set(data.map((d) => d.week_start))].sort()
+    return weeks.map((week) => {
+      const row: Record<string, string | number | null> = { week: formatWeekLabel(week) }
+      for (const { key, actType, segLabel } of lineKeys) {
+        const point = data.find(
+          (d) => d.week_start === week && d.activity_type === actType && d.segment_label === segLabel,
+        )
+        row[key] = point != null ? point.avg_pace_sec_per_km : null
+      }
+      return row
+    })
+  }, [data, lineKeys])
+
+  function toggleType(type: string) {
+    setHiddenTypes((prev) => {
+      const next = new Set(prev)
+      if (next.has(type)) next.delete(type)
+      else next.add(type)
+      return next
+    })
+  }
+
+  const cardBody = () => {
+    if (isLoading) return <p className="text-slate-400 text-sm">Loading…</p>
+    if (!data || data.length === 0)
+      return (
+        <p className="text-slate-400 text-sm">
+          No cardio sessions with distance and duration logged yet.
+        </p>
+      )
+    return (
+      <>
+        {allActivityTypes.length > 1 && (
+          <div className="flex flex-wrap gap-2 mb-4">
+            {allActivityTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => toggleType(type)}
+                className={`text-xs px-3 py-1 rounded-full font-medium border transition-colors ${
+                  !hiddenTypes.has(type)
+                    ? 'bg-slate-800 text-white border-slate-800'
+                    : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        )}
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#94a3b8' }}
+              tickFormatter={(v: number) => {
+                const m = Math.floor(v / 60)
+                const s = Math.round(v % 60)
+                return `${m}:${String(s).padStart(2, '0')}`
+              }}
+            />
+            <Tooltip
+              formatter={(value: unknown, name: unknown) => {
+                const label = String(name ?? '')
+                if (typeof value !== 'number') return [String(value ?? '-'), label] as [string, string]
+                return [secPerKmToMinPerKm(value), label] as [string, string]
+              }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+            />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
+            {lineKeys.map(({ key }, i) => (
+              <Line
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={PACE_COLORS[i % PACE_COLORS.length]}
+                strokeWidth={2}
+                dot={false}
+                connectNulls={false}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </>
+    )
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+      {cardBody()}
     </div>
   )
 }
@@ -274,6 +453,7 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
+  const [chartTab, setChartTab] = useState<'trends' | 'pace'>('trends')
   const [type, setType] = useState<'all' | 'cardio' | 'strength'>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -303,7 +483,30 @@ export default function HistoryPage() {
       <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
 
       <WeeklySummaryCard />
-      <TrainingTrendsChart />
+
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-4 w-fit">
+        <button
+          onClick={() => setChartTab('trends')}
+          className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+            chartTab === 'trends'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Trends
+        </button>
+        <button
+          onClick={() => setChartTab('pace')}
+          className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+            chartTab === 'pace'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Pace
+        </button>
+      </div>
+      {chartTab === 'trends' ? <TrainingTrendsChart /> : <PaceTrendsChart />}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

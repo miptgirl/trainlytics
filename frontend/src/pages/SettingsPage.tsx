@@ -478,6 +478,8 @@ function ExercisesSection() {
   )
 }
 
+
+
 function ExerciseForm({
   allTypes,
   defaultValues,
@@ -580,7 +582,7 @@ export default function SettingsPage() {
       <div className="space-y-10">
         <ActivityTypesSection />
         <ExerciseTypesSection />
-        <ExercisesSection />
+  <ExercisesSection />
       </div>
     </Layout>
   )

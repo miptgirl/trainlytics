@@ -536,3 +536,209 @@ async def test_training_trends_user_isolation(
     assert resp.status_code == 200
     data = resp.json()
     assert all(p["cardio_minutes"] == 0 for p in data)
+
+
+# ── pace trends ───────────────────────────────────────────────────────────────
+
+async def _create_cardio_type(client: AsyncClient, name: str) -> int:
+    resp = await client.post("/api/cardio-types", json={"name": name})
+    assert resp.status_code == 201
+    return resp.json()["id"]
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_empty(db_session, auth_client: AsyncClient):
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_single_activity_type(db_session, auth_client: AsyncClient):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "segments": [
+                # 1200s over 4000m → 300 sec/km
+                {"order": 1, "duration_seconds": 1200, "distance_meters": 4000.0},
+            ],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    point = data[0]
+    assert point["activity_type"] == "Run"
+    assert point["segment_label"] == "Segment 1"
+    assert point["avg_pace_sec_per_km"] == 300
+    assert point["week_start"] == this_monday.isoformat()
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_multiple_activity_types(db_session, auth_client: AsyncClient):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    run_id = await _create_cardio_type(auth_client, "Run")
+    cycle_id = await _create_cardio_type(auth_client, "Cycle")
+
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": run_id,
+            "date": session_date,
+            "segments": [{"order": 1, "duration_seconds": 1200, "distance_meters": 4000.0}],
+        },
+    )
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": cycle_id,
+            "date": session_date,
+            "segments": [{"order": 1, "duration_seconds": 600, "distance_meters": 5000.0}],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+    types = {p["activity_type"] for p in data}
+    assert types == {"Run", "Cycle"}
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_segment_breakdown(db_session, auth_client: AsyncClient):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "segments": [
+                # titled segment uses title
+                {"order": 1, "duration_seconds": 600, "distance_meters": 2000.0, "title": "Warm-up"},
+                # untitled segment uses positional label
+                {"order": 2, "duration_seconds": 1200, "distance_meters": 4000.0},
+            ],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 2
+    labels = {p["segment_label"] for p in data}
+    assert labels == {"Warm-up", "Segment 2"}
+    # Both should be 300 sec/km (600/2 and 1200/4)
+    for p in data:
+        assert p["avg_pace_sec_per_km"] == 300
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_excludes_segments_without_distance(db_session, auth_client: AsyncClient):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "segments": [
+                # no distance → excluded
+                {"order": 1, "duration_seconds": 600},
+                # has distance → included
+                {"order": 2, "duration_seconds": 1200, "distance_meters": 4000.0},
+            ],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["segment_label"] == "Segment 2"
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_averages_across_sessions(db_session, auth_client: AsyncClient):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    # Session 1: 300 sec/km
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": f"{this_monday.isoformat()}T07:00:00Z",
+            "segments": [{"order": 1, "duration_seconds": 1200, "distance_meters": 4000.0}],
+        },
+    )
+    # Session 2: 360 sec/km — average should be 330
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": f"{this_monday.isoformat()}T17:00:00Z",
+            "segments": [{"order": 1, "duration_seconds": 1800, "distance_meters": 5000.0}],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) == 1
+    assert data[0]["avg_pace_sec_per_km"] == 330
+
+
+@pytest.mark.asyncio
+async def test_pace_trends_user_isolation(
+    db_session, auth_client: AsyncClient, auth_client_2: AsyncClient
+):
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "segments": [{"order": 1, "duration_seconds": 1200, "distance_meters": 4000.0}],
+        },
+    )
+
+    resp = await auth_client_2.get("/api/sessions/pace-trends?weeks=13")
+    assert resp.status_code == 200
+    assert resp.json() == []

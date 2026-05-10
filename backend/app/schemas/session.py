@@ -181,3 +181,10 @@ class TrainingTrendPoint(BaseModel):
     strength_minutes: int
     cardio_calories: int
     strength_calories: int
+
+
+class PaceTrendPoint(BaseModel):
+    week_start: DateType
+    activity_type: str
+    segment_label: str
+    avg_pace_sec_per_km: float

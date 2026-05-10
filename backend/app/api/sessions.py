@@ -16,10 +16,12 @@ from app.models.session import (
     StrengthSet,
     WorkoutSession,
 )
+from app.models.cardio_activity_type import CardioActivityType
 from app.schemas.session import (
     CardioSessionCreate,
     CardioSessionOut,
     CardioSessionPatch,
+    PaceTrendPoint,
     SessionListOut,
     SessionSummaryOut,
     StrengthExerciseEntryOut,
@@ -436,6 +438,17 @@ async def training_trends(
             )
         )
     return result
+
+
+@router.get("/pace-trends", response_model=list[PaceTrendPoint])
+async def pace_trends(
+    weeks: int = Query(13, ge=1, le=52),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[PaceTrendPoint]:
+    from app.services.sessions import get_pace_trends
+
+    return await get_pace_trends(db=db, user=user, weeks=weeks)
 
 
 @router.get("/{session_id}", response_model=Any)
