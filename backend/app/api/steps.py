@@ -37,18 +37,16 @@ async def upsert_steps(
 
 @router.get("", response_model=list[StepEntryResponse])
 async def list_steps(
-    start_date: DateType = Query(...),
-    end_date: DateType = Query(...),
+    start_date: DateType | None = Query(None),
+    end_date: DateType | None = Query(None),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[DailySteps]:
-    result = await db.execute(
-        select(DailySteps)
-        .where(
-            DailySteps.user_id == user,
-            DailySteps.date >= start_date,
-            DailySteps.date <= end_date,
-        )
-        .order_by(DailySteps.date.desc())
-    )
+    stmt = select(DailySteps).where(DailySteps.user_id == user)
+    if start_date is not None:
+        stmt = stmt.where(DailySteps.date >= start_date)
+    if end_date is not None:
+        stmt = stmt.where(DailySteps.date <= end_date)
+    stmt = stmt.order_by(DailySteps.date.desc())
+    result = await db.execute(stmt)
     return list(result.scalars().all())
