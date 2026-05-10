@@ -12,7 +12,14 @@ export interface StepEntry {
 
 export function useSteps(startDate?: string, endDate?: string) {
   const queryKey = ['steps', startDate ?? 'all', endDate ?? 'all']
-  const queryFn = () => api.get<StepEntry[]>(`/steps?start_date=${startDate ?? ''}&end_date=${endDate ?? ''}`)
+  const queryFn = () => {
+    const params = new URLSearchParams()
+    if (startDate) params.set('start_date', startDate)
+    if (endDate) params.set('end_date', endDate)
+    const qs = params.toString()
+    const url = qs ? `/steps?${qs}` : '/steps'
+    return api.get<StepEntry[]>(url)
+  }
   const q = useQuery<StepEntry[]>({ queryKey, queryFn })
   return q
 }
