@@ -1,6 +1,6 @@
 from datetime import date as DateType
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,3 +50,22 @@ async def list_steps(
     stmt = stmt.order_by(DailySteps.date.desc())
     result = await db.execute(stmt)
     return list(result.scalars().all())
+
+
+@router.delete("/{entry_id}", status_code=204)
+async def delete_steps(
+    entry_id: int,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(
+        select(DailySteps).where(
+            DailySteps.id == entry_id,
+            DailySteps.user_id == user,
+        )
+    )
+    entry = result.scalar_one_or_none()
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Step entry not found")
+    await db.delete(entry)
+    await db.commit()

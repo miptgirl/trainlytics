@@ -24,6 +24,17 @@ export function useSteps(startDate?: string, endDate?: string) {
   return q
 }
 
+export function useDeleteStep() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/steps/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['steps'] })
+      qc.invalidateQueries({ queryKey: ['training-trends'] })
+    },
+  })
+}
+
 export function useUpsertStep() {
   const qc = useQueryClient()
   return useMutation({

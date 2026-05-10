@@ -34,13 +34,31 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ---
 
-## 4. Frontend — Step Log Screen ✅ 
+## 4. Frontend — Step Log Screen ✅
 
 4.1 Create `/steps` route and `StepsPage` component ✅ — implemented at `frontend/src/pages/StepsPage.tsx`
 4.2 Add a link to Steps in the Settings tab (alongside Manage Activity Types and Manage Exercises) ✅ — link added in `frontend/src/pages/SettingsPage.tsx`
 4.3 Build step entry form: date picker + steps integer input, submits via `POST /steps` ✅ — form wired to `useUpsertStep` in `frontend/src/lib/hooks/useSteps.ts`
 4.4 Display recent entries list with date and step count; tapping an entry pre-fills the form for editing ✅ — list uses `useSteps` and pre-fills the form on edit
 4.5 Add `useSteps` and `useUpsertStep` React Query hooks ✅ — implemented at `frontend/src/lib/hooks/useSteps.ts`
+
+---
+
+## 7. Full Steps CRUD Screen
+
+The current Steps screen only supports add (upsert) — saved entries are not shown to the user from the Log Workout flow and the StepsPage list is read-only with a broken edit UX. This step upgrades the `/steps` page into a proper CRUD screen.
+
+7.1 Backend: add `DELETE /steps/{id}` route in `backend/app/api/steps.py` — delete the entry by id for the authenticated user (404 if not found or belongs to another user).
+
+7.2 Backend: add pytest test coverage for `DELETE /steps/{id}` (success, not-found, wrong-user) in `backend/tests/test_steps.py`.
+
+7.3 Frontend hooks: add `useDeleteStep` mutation in `frontend/src/lib/hooks/useSteps.ts` calling `DELETE /steps/{id}`; on success invalidate `['steps']` and `['training-trends']` queries.
+
+7.4 Frontend — `StepsForm`: accept optional `defaultValues` and `onSuccess` callback props so the parent can control which entry is being edited and reset the selection after save.
+
+7.5 Frontend — `StepsPage`: lift edit state (`editingEntry`) into the page; clicking "Edit" on a list row populates the form with that entry's date and steps; clicking "Cancel" clears the selection; a "Delete" button on each row calls `useDeleteStep` with a confirmation prompt; after save or delete the form resets to "new entry" mode.
+
+7.6 Frontend tests: update `frontend/src/__tests__/` with tests covering the delete flow and the controlled edit flow on `StepsPage`.
 
 ---
 ## 5. Frontend — Step Overlay on Training Trends Chart

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useUpsertStep } from '../lib/hooks/useSteps'
 
@@ -7,21 +7,36 @@ interface FormValues {
   steps: number
 }
 
-export default function StepsForm({ compact = false }: { compact?: boolean }) {
+interface StepsFormProps {
+  compact?: boolean
+  defaultValues?: { date: string; steps: number }
+  onSuccess?: () => void
+}
+
+export default function StepsForm({ compact = false, defaultValues, onSuccess }: StepsFormProps) {
   const today = new Date().toISOString().slice(0, 10)
   const upsert = useUpsertStep()
   const [saved, setSaved] = useState(false)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { date: today, steps: 0 },
+    defaultValues: defaultValues ?? { date: today, steps: 0 },
   })
+
+  useEffect(() => {
+    if (defaultValues) {
+      reset(defaultValues)
+    } else {
+      reset({ date: today, steps: 0 })
+    }
+  }, [defaultValues?.date, defaultValues?.steps])
 
   async function onSubmit(values: FormValues) {
     setSaved(false)
     try {
       await upsert.mutateAsync({ date: values.date, steps: values.steps })
-      reset({ date: values.date, steps: values.steps })
+      reset({ date: today, steps: 0 })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
+      onSuccess?.()
     } catch (e) {
       console.error('Failed to upsert steps', e)
     }

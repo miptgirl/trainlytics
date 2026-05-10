@@ -73,3 +73,28 @@ async def test_steps_user_isolation(
     resp = await auth_client_2.get("/api/steps?start_date=2026-05-10&end_date=2026-05-10")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+async def test_delete_step_entry(auth_client: AsyncClient, db_session: None) -> None:
+    create_resp = await auth_client.post("/api/steps", json={"date": "2026-05-10", "steps": 9500})
+    entry_id = create_resp.json()["id"]
+    resp = await auth_client.delete(f"/api/steps/{entry_id}")
+    assert resp.status_code == 204
+    list_resp = await auth_client.get("/api/steps?start_date=2026-05-10&end_date=2026-05-10")
+    assert list_resp.json() == []
+
+
+async def test_delete_step_not_found(auth_client: AsyncClient, db_session: None) -> None:
+    resp = await auth_client.delete("/api/steps/99999")
+    assert resp.status_code == 404
+
+
+async def test_delete_step_wrong_user(
+    auth_client: AsyncClient,
+    auth_client_2: AsyncClient,
+    db_session: None,
+) -> None:
+    create_resp = await auth_client.post("/api/steps", json={"date": "2026-05-10", "steps": 9500})
+    entry_id = create_resp.json()["id"]
+    resp = await auth_client_2.delete(f"/api/steps/{entry_id}")
+    assert resp.status_code == 404
