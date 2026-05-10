@@ -16,6 +16,7 @@ import {
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
+import { usePaceTrends } from '../lib/hooks/usePaceTrends'
 import { formatSessionDateTime } from '../lib/dateUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
@@ -66,13 +67,6 @@ interface TrainingTrendPoint {
   strength_minutes: number
   cardio_calories: number
   strength_calories: number
-}
-
-interface PaceTrendPoint {
-  week_start: string
-  activity_type: string
-  segment_label: string
-  avg_pace_sec_per_km: number
 }
 
 const PACE_COLORS = [
@@ -273,10 +267,7 @@ function TrainingTrendsChart() {
 function PaceTrendsChart() {
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 
-  const { data, isLoading } = useQuery<PaceTrendPoint[]>({
-    queryKey: ['pace-trends'],
-    queryFn: () => api.get<PaceTrendPoint[]>('/sessions/pace-trends?weeks=13'),
-  })
+  const { data, isLoading } = usePaceTrends()
 
   const allActivityTypes = useMemo(() => {
     if (!data) return []
