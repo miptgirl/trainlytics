@@ -65,7 +65,7 @@ Keys: `trainlytics_draft_strength` / `trainlytics_draft_cardio`.
 
 ---
 
-## Group 7 — Manual QA pass
+## Group 7 — Manual QA pass ✅
 
 7.1 On desktop and iPhone-sized viewport: verify export copies correct markdown for both session types from both entry points (detail page and history row).
 
