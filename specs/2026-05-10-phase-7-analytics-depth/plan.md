@@ -7,7 +7,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 ## 1. Backend — Pace Trends Endpoint ✅
 
 1.1 Add `GET /sessions/pace-trends` route in `backend/app/api/sessions.py`  
-1.2 Write the aggregation query in `backend/app/services/` — group cardio segments by week bucket and segment position, compute average pace per bucket, filter by activity type  
+1.2 Write the aggregation query in `backend/app/services/` — group cardio segments by week bucket and segment position, compute average pace per bucket, filter by activity type ✅ — extracted to `backend/app/services/sessions.py` as `get_pace_trends(db, user, weeks)`; route handler delegates to the service  
 1.3 Add Pydantic response schema: `PaceTrendPoint` (week_start, activity_type, segment_label, avg_pace_sec_per_km)  
 1.4 Write pytest tests for the endpoint (empty state, single activity type, multiple types, segment breakdown)
 
@@ -26,7 +26,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ## 3. Frontend — Pace Trends Chart ✅
 
-3.1 Create `usePaceTrends` React Query hook calling `GET /sessions/pace-trends`  
+3.1 Create `usePaceTrends` React Query hook calling `GET /sessions/pace-trends` ✅ — implemented at `frontend/src/lib/hooks/usePaceTrends.ts`; `PaceTrendPoint` interface lives in the hook file  
 3.2 Build `PaceTrendsChart` component using Recharts `LineChart` — one line per (activity_type, segment_label) pair  
 3.3 Add an activity-type filter control above the chart (checkboxes or pills, same style as existing filters)  
 3.4 Add the chart as a new tab on the History screen alongside the training trends chart  
@@ -58,7 +58,7 @@ The current Steps screen only supports add (upsert) — saved entries are not sh
 
 7.5 Frontend — `StepsPage`: lift edit state (`editingEntry`) into the page; clicking "Edit" on a list row populates the form with that entry's date and steps; clicking "Cancel" clears the selection; a "Delete" button on each row calls `useDeleteStep` with a confirmation prompt; after save or delete the form resets to "new entry" mode.
 
-7.6 Frontend tests: update `frontend/src/__tests__/` with tests covering the delete flow and the controlled edit flow on `StepsPage`.
+7.6 Frontend tests: update `frontend/src/__tests__/` with tests covering the delete flow and the controlled edit flow on `StepsPage`. ✅ — `frontend/src/__tests__/StepsPage.test.tsx` (7 tests: list render, add-entry mode, edit pre-fill, cancel, onSuccess reset, delete called, delete cancelled)
 
 ---
 ## 5. Frontend — Step Overlay on Training Trends Chart
@@ -85,7 +85,7 @@ Tasks:
 
 6.5 Ensure the Log Workout submission flow integrates with analytics and the training trends data (i.e., newly created step entries are visible in the 12-week trends overlay) — this may require invalidating `useTrainingTrends`/`usePaceTrends` queries after upsert. ✅ (existing `useUpsertStep` already invalidates `training-trends`)
 
-6.6 Update frontend tests: add coverage for Log Workout -> Steps selection, submission success, and UI absence of Settings link. ⚠️ (tests updated: remove assertions for Manage Data; add new tests planned)
+6.6 Update frontend tests: add coverage for Log Workout -> Steps selection, submission success, and UI absence of Settings link. ✅ — `frontend/src/__tests__/LogWorkoutSteps.test.tsx` (4 tests: picker buttons, Steps form renders, upsert called, success message) and `frontend/src/__tests__/SettingsPage.test.tsx` (3 tests: no "Manage Data", no /steps link, correct sections present)
 
 Notes / assumptions:
 
