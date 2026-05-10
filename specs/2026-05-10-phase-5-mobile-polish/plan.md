@@ -4,7 +4,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 1 — Remove Weight Stepper Buttons
+## Group 1 — Remove Weight Stepper Buttons ✅
 
 **File:** `frontend/src/components/ExerciseEntryBlock.tsx`
 
@@ -16,7 +16,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 2 — Fix Mobile Duration Keyboard
+## Group 2 — Fix Mobile Duration Keyboard ✅
 
 **File:** `frontend/src/components/TimeInput.tsx`
 
@@ -28,7 +28,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 3 — Compact Exercise / Segment Remove Button
+## Group 3 — Compact Exercise / Segment Remove Button ✅
 
 **Files:**
 - `frontend/src/components/ExerciseEntryBlock.tsx` (exercise remove)
@@ -41,7 +41,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 4 — Move "Add Segment" to Bottom
+## Group 4 — Move "Add Segment" to Bottom ✅
 
 **File:** `frontend/src/pages/LogWorkoutPage.tsx`
 
@@ -53,7 +53,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 5 — Green Completed-Exercise Header
+## Group 5 — Green Completed-Exercise Header ✅
 
 **File:** `frontend/src/components/ExerciseEntryBlock.tsx`
 
@@ -65,7 +65,7 @@ Each group is a shippable unit. Groups 1–6 are independent and can be done in 
 
 ---
 
-## Group 6 — Auto-Calculate Pace
+## Group 6 — Auto-Calculate Pace ✅
 
 **File:** `frontend/src/pages/LogWorkoutPage.tsx`
 
