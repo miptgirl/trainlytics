@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AreaChart,
+  ComposedChart,
   Area,
   LineChart,
   Line,
@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
 import { formatSessionDateTime } from '../lib/dateUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
@@ -156,10 +157,47 @@ function TrainingTrendsChart() {
     queryFn: () => api.get<TrainingTrendPoint[]>('/sessions/training-trends?weeks=12'),
   })
 
+  // derive weekStarts from the training-trends data (ISO week_start strings)
+  const weekStarts = data ? [...new Set(data.map((p) => p.week_start))].sort() : []
+
+  // helper: add n days to an ISO date (YYYY-MM-DD)
+  function addDaysIso(iso: string, n: number) {
+    const d = new Date(iso + 'T00:00:00')
+    d.setDate(d.getDate() + n)
+    return d.toISOString().slice(0, 10)
+  }
+
+  // fetch steps covering the same span as the chart (start of first week to end of last week)
+  const startDate = weekStarts.length > 0 ? weekStarts[0] : undefined
+  const endDate = weekStarts.length > 0 ? addDaysIso(weekStarts[weekStarts.length - 1], 6) : undefined
+  const { data: stepsEntries } = useSteps(startDate, endDate)
+
+  // aggregate daily steps into weekly totals keyed by week_start (null if no data in that week)
+  const stepsByDate = new Map<string, number>()
+  ;(stepsEntries ?? []).forEach((e: StepEntry) => {
+    stepsByDate.set(e.date, (stepsByDate.get(e.date) ?? 0) + e.steps)
+  })
+
+  const weeklyStepsMap = new Map<string, number | null>()
+  for (const w of weekStarts) {
+    let total = 0
+    let count = 0
+    for (let i = 0; i < 7; i++) {
+      const d = addDaysIso(w, i)
+      const v = stepsByDate.get(d)
+      if (v != null) {
+        total += v
+        count += 1
+      }
+    }
+    weeklyStepsMap.set(w, count > 0 ? total : null)
+  }
+
   const chartData = data?.map((p) => ({
     week: formatWeekLabel(p.week_start),
     Cardio: view === 'minutes' ? p.cardio_minutes : p.cardio_calories,
     Strength: view === 'minutes' ? p.strength_minutes : p.strength_calories,
+    Steps: weeklyStepsMap.get(p.week_start) ?? null,
   }))
 
   return (
@@ -195,7 +233,7 @@ function TrainingTrendsChart() {
         <p className="text-slate-400 text-sm">Loading…</p>
       ) : chartData ? (
         <ResponsiveContainer width="100%" height={200}>
-          <AreaChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorCardio" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
@@ -209,13 +247,21 @@ function TrainingTrendsChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            {/* Right-side axis for steps (only shown if any weekly step data exists) */}
+            {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
+            )}
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Area type="monotone" dataKey="Cardio" stackId="1" stroke="#10b981" strokeWidth={2} fill="url(#colorCardio)" />
             <Area type="monotone" dataKey="Strength" stackId="1" stroke="#3b82f6" strokeWidth={2} fill="url(#colorStrength)" />
-          </AreaChart>
+            {/* Steps line on the secondary axis — dashed and neutral colour; gaps are preserved via nulls */}
+            {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
+              <Line type="monotone" dataKey="Steps" yAxisId="right" stroke="#94a3b8" strokeWidth={2} dot={false} strokeDasharray="4 4" connectNulls={false} />
+            )}
+          </ComposedChart>
         </ResponsiveContainer>
       ) : null}
     </div>
@@ -319,8 +365,9 @@ function PaceTrendsChart() {
             />
             <Tooltip
               formatter={(value: unknown, name: unknown) => {
-                if (typeof value !== 'number') return ['-', name]
-                return [secPerKmToMinPerKm(value), name]
+                const label = String(name ?? '')
+                if (typeof value !== 'number') return [String(value ?? '-'), label] as [string, string]
+                return [secPerKmToMinPerKm(value), label] as [string, string]
               }}
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
             />

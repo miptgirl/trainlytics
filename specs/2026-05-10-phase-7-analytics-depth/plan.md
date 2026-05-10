@@ -45,8 +45,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 ---
 
 ## 5. Frontend — Step Overlay on Training Trends Chart
-
-5.1 Extend `useTrainingTrends` (or add a parallel fetch) to also load step data for the same 12-week window  
-5.2 Add a secondary right-side y-axis to the existing training trends `AreaChart`  
-5.3 Render step totals as a `Line` on the secondary axis, styled distinctly (dashed or dotted, neutral colour)  
-5.4 Handle weeks with no step data (gap in line vs. zero — use gap)
+5.1 Extend `useTrainingTrends` (or add a parallel fetch) to also load step data for the same 12-week window ✅  
+5.2 Add a secondary right-side y-axis to the existing training trends `AreaChart` ✅  
+5.3 Render step totals as a `Line` on the secondary axis, styled distinctly (dashed or dotted, neutral colour) ✅  
+5.4 Handle weeks with no step data (gap in line vs. zero — use gap) ✅

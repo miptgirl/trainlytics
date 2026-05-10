@@ -27,15 +27,16 @@
 - [ ] The step list on `/steps` shows recent entries in reverse-chronological order
 - [ ] Tapping an entry pre-fills the form with that date and count for editing
 - [x] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
-- [ ] The 12-week training trends chart displays a step count line on a secondary right-side y-axis
-- [ ] Weeks with no step data show a gap in the step line (not zero)
-- [ ] The step line is visually distinct from the cardio/strength area fills
+ - [x] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
+ - [x] The 12-week training trends chart displays a step count line on a secondary right-side y-axis
+ - [x] Weeks with no step data show a gap in the step line (not zero)
+ - [x] The step line is visually distinct from the cardio/strength area fills
 
 Notes: frontend `/steps` screen and hooks implemented. Manual verification performed locally:
 - Navigated to Settings → Steps, opened the `/steps` page
 - Created and edited entries; POST /steps was called and list refreshed via React Query
 
-Remaining work: integrate steps into the 12-week training trends chart (Phase 7.5), and ensure gaps and secondary y-axis rendering.
+Remaining work: ensure manual QA checklist items are signed off and frontend TypeScript/build checks pass in CI.
 
 ---
 
