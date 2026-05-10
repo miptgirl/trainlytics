@@ -11,21 +11,21 @@ A user can tap "Copy" on any logged session from the history list or detail page
 ### Functional
 
 - [ ] "Copy" button is visible on each row in the History list
-- [ ] "Copy" button is visible on `StrengthSessionDetailPage`
-- [ ] "Copy" button is visible on `CardioSessionDetailPage`
+- [x] "Copy" button is visible on `StrengthSessionDetailPage`
+- [x] "Copy" button is visible on `CardioSessionDetailPage`
 - [ ] Copying a strength session produces a markdown summary with: H2 header (title + date), all exercises as H3 headers, all sets as bullet lines (`N kg × R reps`), optional notes at the bottom
 - [ ] Copying a cardio session produces a markdown summary with: H2 header (title/type + date), all segments as H3 headers with distance/duration/pace, optional notes at the bottom
 - [ ] Optional fields (calories, notes, segment title) are omitted from the output when null or empty — no blank lines left behind
-- [ ] Button shows "Copied!" for ~2 s then resets to the copy icon
+- [x] Button shows "Copied!" for ~2 s then resets to the copy icon
 - [ ] Clicking Copy on a history list row triggers a network request to the detail endpoint (confirmed in DevTools Network tab) — then copies without opening the detail page
-- [ ] Clicking Copy on the detail page does NOT trigger an extra network request
+- [x] Clicking Copy on the detail page does NOT trigger an extra network request
 
 ### Edge cases
 
 - [ ] Session with no notes: notes line absent from output
 - [ ] Strength set with null weight: renders `— kg × N reps`
 - [ ] Cardio segment with no title: header falls back to `Segment N`
-- [ ] Clipboard denied (e.g. permissions): a visible error message is shown instead of silent failure
+- [x] Clipboard denied (e.g. permissions): a visible error message is shown instead of silent failure
 
 ### Unit tests
 

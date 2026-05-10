@@ -6,6 +6,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { kmToMetres, metresToKm, minPerKmToSecPerKm, minsToSeconds, secPerKmToMinPerKm, secondsToMins } from '../lib/unitUtils'
+import { formatCardioSession } from '../lib/exportUtils'
 
 interface CardioType {
   id: number
@@ -259,6 +260,7 @@ export default function CardioSessionDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle')
 
   const sessionId = Number(id)
 
@@ -326,6 +328,17 @@ export default function CardioSessionDetailPage() {
   const totalDur = session.total_duration_seconds
     ?? session.segments.reduce((sum, s) => sum + s.duration_seconds, 0)
 
+  async function handleCopy() {
+    const text = formatCardioSession(session, typeName === '—' ? undefined : typeName)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('error')
+    }
+    setTimeout(() => setCopyStatus('idle'), 2000)
+  }
+
   if (editing) {
     return (
       <Layout>
@@ -351,6 +364,13 @@ export default function CardioSessionDetailPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Cardio Session</h1>
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleCopy}
+            disabled={copyStatus !== 'idle'}
+            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+          >
+            {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
+          </button>
           <button
             onClick={() => setEditing(true)}
             className="text-sm text-gray-600 hover:text-gray-900"

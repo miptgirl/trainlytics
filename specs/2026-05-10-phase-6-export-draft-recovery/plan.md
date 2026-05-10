@@ -15,7 +15,7 @@ Use existing unit conversion helpers (`metresToKm`, `secPerKmToMinPerKm`, etc.) 
 
 ---
 
-## Group 2 — Copy button on detail pages
+## Group 2 — Copy button on detail pages ✅
 
 2.1 Add a "Copy" icon button to `StrengthSessionDetailPage.tsx`:
   - Positioned near the session header (alongside Edit/Delete)

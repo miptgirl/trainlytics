@@ -5,6 +5,7 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
+import { formatStrengthSession } from '../lib/exportUtils'
 
 interface Exercise {
   id: number
@@ -290,6 +291,7 @@ export default function StrengthSessionDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle')
 
   const { data: session, isLoading, isError } = useQuery({
     queryKey: ['sessions', id],
@@ -355,6 +357,17 @@ export default function StrengthSessionDetailPage() {
     )
   }
 
+  async function handleCopy() {
+    const text = formatStrengthSession(session)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('error')
+    }
+    setTimeout(() => setCopyStatus('idle'), 2000)
+  }
+
   const totalSets = session.exercises.reduce((sum, e) => sum + e.sets.length, 0)
 
   return (
@@ -370,6 +383,13 @@ export default function StrengthSessionDetailPage() {
         </div>
         {!editing && (
           <div className="flex gap-2">
+            <button
+              onClick={handleCopy}
+              disabled={copyStatus !== 'idle'}
+              className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
+            </button>
             <button
               onClick={() => setEditing(true)}
               className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
