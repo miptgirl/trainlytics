@@ -43,9 +43,39 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 4.5 Add `useSteps` and `useUpsertStep` React Query hooks ✅ — implemented at `frontend/src/lib/hooks/useSteps.ts`
 
 ---
-
 ## 5. Frontend — Step Overlay on Training Trends Chart
 5.1 Extend `useTrainingTrends` (or add a parallel fetch) to also load step data for the same 12-week window ✅  
 5.2 Add a secondary right-side y-axis to the existing training trends `AreaChart` ✅  
 5.3 Render step totals as a `Line` on the secondary axis, styled distinctly (dashed or dotted, neutral colour) ✅  
 5.4 Handle weeks with no step data (gap in line vs. zero — use gap) ✅
+
+---
+
+## 6. Frontend — Settings cleanup & Log Workout: Steps integration
+
+Goal: remove the separate "Manage Data" entry in Settings and surface Steps as a trackable activity directly in the Log Workout flow (alongside Cardio and Strength). This makes steps feel like a first-class tracked metric and reduces clutter in Settings.
+
+Tasks:
+
+6.1 Remove "Manage Data" entry from the Settings page UI — update `frontend/src/pages/SettingsPage.tsx` to delete the link (or hide it behind a feature-flag) and update any tests that assert its presence.
+
+6.2 Remove the dedicated "Steps" link (if present) from Settings — steps will instead be accessible via Log Workout and the standalone `/steps` page (the existing StepsPage remains for bulk entry/history).
+
+6.3 Add a "Steps" option to the Log Workout picker component (same UI pattern as Cardio/Strength) — create or update the component at `frontend/src/components/LogWorkoutPicker` (or the equivalent file) to include the new activity type.
+
+6.4 In the Log Workout flow, when "Steps" is selected, show a compact step-entry UI (date + step count) that posts to `POST /steps` using the existing `useUpsertStep` hook. Reuse the `StepsPage` form component where possible.
+
+6.5 Ensure the Log Workout submission flow integrates with analytics and the training trends data (i.e., newly created step entries are visible in the 12-week trends overlay) — this may require invalidating `useTrainingTrends`/`usePaceTrends` queries after upsert.
+
+6.6 Update frontend tests: add coverage for Log Workout -> Steps selection, submission success, and UI absence of Settings link.
+
+Notes / assumptions:
+
+- The backend `POST /steps` and GET endpoints already exist per Phase 2; this change assumes those routes are available and follow the schemas listed in the plan.
+- If there is a centralized registry of activity types (Cardio/Strength) in the frontend, add a `steps` entry there so UI strings and icons stay consistent.
+
+Acceptance criteria:
+
+- The Settings page no longer shows "Manage Data" or the Steps link.
+- Users can log Steps from the Log Workout flow; the entry is saved via `POST /steps` and appears in Step history and trends overlays.
+- Tests covering the new behavior pass.
