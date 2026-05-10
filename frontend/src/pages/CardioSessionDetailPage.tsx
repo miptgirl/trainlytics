@@ -308,6 +308,7 @@ export default function CardioSessionDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete<void>(`/sessions/${sessionId}`),
     onSuccess: () => {
+      qc.removeQueries({ queryKey: ['sessions', sessionId] })
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate('/', { replace: true })
     },

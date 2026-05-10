@@ -333,6 +333,7 @@ export default function StrengthSessionDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/sessions/${id}`),
     onSuccess: () => {
+      qc.removeQueries({ queryKey: ['sessions', id] })
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate('/')
     },
