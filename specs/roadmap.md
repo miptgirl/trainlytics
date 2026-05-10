@@ -119,7 +119,7 @@ A user on an iPhone can fill in all fields without keyboard or layout issues, re
 
 ---
 
-## Phase 6 — Export & Draft Recovery
+## ✅ Phase 6 — Export & Draft Recovery *(completed)*
 
 **Goal:** A user can share any session as structured text for AI or coach analysis, and never lose a half-filled log form.
 
@@ -127,12 +127,12 @@ Both items are driven by direct user feedback. The export capability is core to 
 
 ### Deliverables
 
-- [ ] **Training summary export** — a "Copy as text" action on both the history list (per session row) and the session detail view produces a structured plain-text summary ready to paste into an LLM or share with a coach; strength sessions include all exercises, sets, reps, and weights; cardio sessions include all segments with distance, duration, and pace
-- [ ] **Draft auto-save** — the log form saves its in-progress state to `localStorage` as the user types; when opening the log form with a pending unsaved draft, a prompt offers to restore it; drafts are cleared automatically on successful submission
+- [x] **Training summary export** — a "Copy as text" action on both the history list (per session row) and the session detail view produces a structured plain-text summary ready to paste into an LLM or share with a coach; strength sessions include all exercises, sets, reps, and weights; cardio sessions include all segments with distance, duration, and pace
+- [x] **Draft auto-save** — the log form saves its in-progress state to `localStorage` as the user types; when opening the log form with a pending unsaved draft, a prompt offers to restore it; drafts are cleared automatically on successful submission
 
 ### Definition of Done
 
-A user can tap "Copy as text" on any logged session and paste a clean structured summary into ChatGPT or a coach chat. If they close the log form mid-session by accident, they are offered to restore their work next time they open it.
+A user can tap "Copy as text" on any logged session and paste a clean structured summary into ChatGPT or a coach chat. If they close the log form mid-session by accident, they are offered to restore their work next time they open it. ✅ **Achieved.**
 
 ---
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
@@ -11,6 +11,7 @@ import {
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
+import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -212,6 +213,9 @@ function CardioForm() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [titleTouched, setTitleTouched] = useState(false)
+  const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  const hasMounted = useRef(false)
 
   const { data: cardioTypes = [] } = useQuery({
     queryKey: ['cardio-types'],
@@ -223,7 +227,8 @@ function CardioForm() {
     handleSubmit,
     control,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm<CardioFormValues>({
     defaultValues: {
       title: '',
@@ -238,6 +243,7 @@ function CardioForm() {
 
   const watchedActivityTypeId = useWatch({ control, name: 'activity_type_id' })
   const watchedSegments = useWatch({ control, name: 'segments' })
+  const watchedFormValues = useWatch({ control })
 
   useEffect(() => {
     if (titleTouched) return
@@ -256,10 +262,44 @@ function CardioForm() {
       const dist = parseFloat(seg.distance_km)
       const dur = seg.duration_seconds
       if (!isNaN(dist) && dist > 0 && dur != null && dur > 0) {
-        setValue(`segments.${index}.pace_seconds_per_km`, Math.round(dur / dist), { shouldValidate: false })
+        const newPace = Math.round(dur / dist)
+        if (newPace !== seg.pace_seconds_per_km) {
+          setValue(`segments.${index}.pace_seconds_per_km`, newPace, { shouldValidate: false })
+        }
       }
     })
   }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const draft = loadDraft('cardio')
+    if (draft) {
+      setPendingDraft(draft)
+      setShowDraftBanner(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      return
+    }
+    if (!isDirty) return
+    saveDraft('cardio', watchedFormValues)
+  }, [watchedFormValues, isDirty])
+
+  function handleDiscard() {
+    clearDraft('cardio')
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
+
+  function handleRestore() {
+    if (!pendingDraft) return
+    setTitleTouched(true)
+    reset(pendingDraft as CardioFormValues)
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
 
   const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
 
@@ -287,13 +327,39 @@ function CardioForm() {
       return api.post<{ id: number }>('/sessions/cardio', payload)
     },
     onSuccess: (session) => {
+      clearDraft('cardio')
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate(`/sessions/${session.id}`)
+    },
+    onError: (err) => {
+      console.error('[CardioForm] save failed:', err)
     },
   })
 
   return (
-    <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
+    <>
+      {showDraftBanner && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
+          <span className="text-sm text-amber-800">You have an unsaved Cardio draft.</span>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRestore}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+            >
+              Restore
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscard}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+      <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
       {/* Basic fields */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
         <div>
@@ -492,6 +558,7 @@ function CardioForm() {
         </button>
       </div>
     </form>
+    </>
   )
 }
 
@@ -509,6 +576,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [diffState, setDiffState] = useState<DiffState | null>(null)
   const [collapsedExercises, setCollapsedExercises] = useState<Set<number>>(new Set())
   const [titleTouched, setTitleTouched] = useState(false)
+  const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  const hasMounted = useRef(false)
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
@@ -526,8 +596,10 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     control,
     reset,
     getValues,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
+
+  const watchedFormValues = useWatch({ control })
 
   const {
     fields: exerciseFields,
@@ -539,6 +611,50 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     if (initialTemplateId) applyTemplate(initialTemplateId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTemplateId])
+
+  useEffect(() => {
+    const draft = loadDraft('strength')
+    if (draft) {
+      setPendingDraft(draft)
+      setShowDraftBanner(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      return
+    }
+    if (!isDirty) return
+    saveDraft('strength', { ...watchedFormValues, templateId: selectedTemplateId })
+  }, [watchedFormValues, selectedTemplateId, isDirty])
+
+  function handleDiscard() {
+    clearDraft('strength')
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
+
+  async function handleRestore() {
+    if (!pendingDraft) return
+    const { templateId: draftTemplateId, ...formValues } = pendingDraft as StrengthFormValues & { templateId?: number | null }
+    if (draftTemplateId) {
+      setIsLoadingTemplate(true)
+      try {
+        const snapshot = await api.get<TemplateSnapshot>(`/templates/strength/${draftTemplateId}`)
+        setSelectedTemplateId(draftTemplateId)
+        setTemplateSnapshot(snapshot)
+      } catch {
+        // Template may have been deleted; restore form values without template link
+      } finally {
+        setIsLoadingTemplate(false)
+      }
+    }
+    setTitleTouched(true)
+    reset(formValues as StrengthFormValues)
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
 
   async function applyTemplate(id: number) {
     setIsLoadingTemplate(true)
@@ -590,6 +706,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         })),
       }),
     onSuccess: (session) => {
+      clearDraft('strength')
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate(`/sessions/${session.id}`)
     },
@@ -637,6 +754,29 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
 
   return (
     <>
+      {showDraftBanner && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
+          <span className="text-sm text-amber-800">You have an unsaved Strength draft.</span>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={isLoadingTemplate}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              {isLoadingTemplate ? 'Restoring…' : 'Restore'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={isLoadingTemplate}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         {/* Template selector */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">

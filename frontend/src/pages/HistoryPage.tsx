@@ -15,6 +15,12 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { formatSessionDateTime } from '../lib/dateUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
+import {
+  formatStrengthSession,
+  formatCardioSession,
+  type StrengthSession,
+  type CardioSession,
+} from '../lib/exportUtils'
 
 interface SessionSummary {
   id: number
@@ -229,6 +235,42 @@ function StrengthStats({ s }: { s: SessionSummary }) {
   return <span>{parts.join(' · ')}</span>
 }
 
+// ── Copy Row Button ───────────────────────────────────────────────────────────
+
+function CopyRowButton({ session }: { session: SessionSummary }) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'copied' | 'error'>('idle')
+
+  async function handleClick(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (status !== 'idle') return
+    setStatus('loading')
+    try {
+      const full = await api.get<StrengthSession | CardioSession>(`/sessions/${session.id}`)
+      const text =
+        session.type === 'strength'
+          ? formatStrengthSession(full as StrengthSession)
+          : formatCardioSession(full as CardioSession)
+      await navigator.clipboard.writeText(text)
+      setStatus('copied')
+    } catch {
+      setStatus('error')
+    }
+    setTimeout(() => setStatus('idle'), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={status === 'loading'}
+      className="shrink-0 px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 text-slate-500 transition-colors"
+      aria-label="Copy session summary"
+    >
+      {status === 'loading' ? '…' : status === 'copied' ? 'Copied!' : status === 'error' ? 'Failed' : 'Copy'}
+    </button>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
@@ -328,10 +370,10 @@ export default function HistoryPage() {
         <>
           <ul className="space-y-2">
             {data.items.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="flex items-center bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all">
                 <Link
                   to={`/sessions/${s.id}`}
-                  className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 hover:border-blue-400 hover:shadow-sm transition-all"
+                  className="flex flex-1 items-center justify-between px-4 py-3 min-w-0"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span
@@ -363,6 +405,9 @@ export default function HistoryPage() {
                     )}
                   </div>
                 </Link>
+                <div className="shrink-0 pr-3">
+                  <CopyRowButton session={s} />
+                </div>
               </li>
             ))}
           </ul>
