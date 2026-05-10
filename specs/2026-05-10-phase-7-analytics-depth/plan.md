@@ -36,11 +36,11 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ## 4. Frontend — Step Log Screen
 
-4.1 Create `/steps` route and `StepsPage` component  
-4.2 Add a link to Steps in the Settings tab (alongside Manage Activity Types and Manage Exercises)  
-4.3 Build step entry form: date picker + steps integer input, submits via `POST /steps`  
-4.4 Display recent entries list with date and step count; tapping an entry pre-fills the form for editing  
-4.5 Add `useSteps` and `useUpsertStep` React Query hooks
+4.1 Create `/steps` route and `StepsPage` component ✅ — implemented at `frontend/src/pages/StepsPage.tsx`
+4.2 Add a link to Steps in the Settings tab (alongside Manage Activity Types and Manage Exercises) ✅ — link added in `frontend/src/pages/SettingsPage.tsx`
+4.3 Build step entry form: date picker + steps integer input, submits via `POST /steps` ✅ — form wired to `useUpsertStep` in `frontend/src/lib/hooks/useSteps.ts`
+4.4 Display recent entries list with date and step count; tapping an entry pre-fills the form for editing ✅ — list uses `useSteps` and pre-fills the form on edit
+4.5 Add `useSteps` and `useUpsertStep` React Query hooks ✅ — implemented at `frontend/src/lib/hooks/useSteps.ts`
 
 ---
 

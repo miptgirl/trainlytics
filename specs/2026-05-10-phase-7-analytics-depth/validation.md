@@ -31,6 +31,12 @@
 - [ ] Weeks with no step data show a gap in the step line (not zero)
 - [ ] The step line is visually distinct from the cardio/strength area fills
 
+Notes: frontend `/steps` screen and hooks implemented. Manual verification performed locally:
+- Navigated to Settings → Steps, opened the `/steps` page
+- Created and edited entries; POST /steps was called and list refreshed via React Query
+
+Remaining work: integrate steps into the 12-week training trends chart (Phase 7.5), and ensure gaps and secondary y-axis rendering.
+
 ---
 
 ## Manual QA Checklist
