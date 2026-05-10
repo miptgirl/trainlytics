@@ -40,8 +40,8 @@ A user can tap "Copy" on any logged session from the history list or detail page
 
 - [x] Filling in any field in the strength form and refreshing the page shows a restore banner: *"You have an unsaved Strength draft."*
 - [x] Clicking Restore on the strength banner re-populates all fields correctly (exercises, sets, reps, weights, title, date, notes)
-- [ ] Filling in any field in the cardio form and refreshing shows a restore banner for the cardio form
-- [ ] Clicking Restore on the cardio banner re-populates all fields correctly (segments, distances, durations)
+- [x] Filling in any field in the cardio form and refreshing shows a restore banner for the cardio form
+- [x] Clicking Restore on the cardio banner re-populates all fields correctly (segments, distances, durations)
 
 ### Template association
 
@@ -53,13 +53,13 @@ A user can tap "Copy" on any logged session from the history list or detail page
 - [x] Clicking Discard hides the banner and clears the draft from `localStorage` (confirmed in DevTools Application tab)
 - [x] Refreshing after discard shows no restore banner
 - [x] Submitting a strength session successfully clears the strength draft from `localStorage`
-- [ ] Submitting a cardio session successfully clears the cardio draft from `localStorage`
+- [x] Submitting a cardio session successfully clears the cardio draft from `localStorage`
 
 ### Tab independence
 
 - [x] Switching from Strength tab to Cardio tab does not clear the Strength draft
 - [x] Switching back to Strength tab still shows the restore banner for the Strength draft
-- [ ] Starting and saving a cardio draft, then switching to Strength (with no strength draft) shows no strength restore banner
+- [x] Starting and saving a cardio draft, then switching to Strength (with no strength draft) shows no strength restore banner
 
 ### No draft state
 

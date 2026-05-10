@@ -56,7 +56,7 @@ Keys: `trainlytics_draft_strength` / `trainlytics_draft_cardio`.
 
 ---
 
-## Group 6 — Draft integration: cardio form
+## Group 6 — Draft integration: cardio form ✅
 
 6.1 Same pattern as Group 5 but for the cardio tab:
   - `saveDraft('cardio', values)` on every change
