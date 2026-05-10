@@ -45,7 +45,7 @@ Keys: `trainlytics_draft_strength` / `trainlytics_draft_cardio`.
 
 ---
 
-## Group 5 — Draft integration: strength form
+## Group 5 — Draft integration: strength form ✅
 
 5.1 In `LogWorkoutPage.tsx` (strength tab):
   - On every `watch()` change, call `saveDraft('strength', { ...values, templateId })`

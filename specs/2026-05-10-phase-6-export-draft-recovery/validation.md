@@ -38,32 +38,32 @@ A user can tap "Copy" on any logged session from the history list or detail page
 
 ### Functional
 
-- [ ] Filling in any field in the strength form and refreshing the page shows a restore banner: *"You have an unsaved Strength draft."*
-- [ ] Clicking Restore on the strength banner re-populates all fields correctly (exercises, sets, reps, weights, title, date, notes)
+- [x] Filling in any field in the strength form and refreshing the page shows a restore banner: *"You have an unsaved Strength draft."*
+- [x] Clicking Restore on the strength banner re-populates all fields correctly (exercises, sets, reps, weights, title, date, notes)
 - [ ] Filling in any field in the cardio form and refreshing shows a restore banner for the cardio form
 - [ ] Clicking Restore on the cardio banner re-populates all fields correctly (segments, distances, durations)
 
 ### Template association
 
-- [ ] Starting a strength session from template X, filling some fields, refreshing, and restoring — the restored session still links to template X (templateId is preserved)
-- [ ] Submitting the restored session triggers the "differs from template?" prompt correctly
+- [x] Starting a strength session from template X, filling some fields, refreshing, and restoring — the restored session still links to template X (templateId is preserved)
+- [x] Submitting the restored session triggers the "differs from template?" prompt correctly
 
 ### Discard & clear
 
-- [ ] Clicking Discard hides the banner and clears the draft from `localStorage` (confirmed in DevTools Application tab)
-- [ ] Refreshing after discard shows no restore banner
-- [ ] Submitting a strength session successfully clears the strength draft from `localStorage`
+- [x] Clicking Discard hides the banner and clears the draft from `localStorage` (confirmed in DevTools Application tab)
+- [x] Refreshing after discard shows no restore banner
+- [x] Submitting a strength session successfully clears the strength draft from `localStorage`
 - [ ] Submitting a cardio session successfully clears the cardio draft from `localStorage`
 
 ### Tab independence
 
-- [ ] Switching from Strength tab to Cardio tab does not clear the Strength draft
-- [ ] Switching back to Strength tab still shows the restore banner for the Strength draft
+- [x] Switching from Strength tab to Cardio tab does not clear the Strength draft
+- [x] Switching back to Strength tab still shows the restore banner for the Strength draft
 - [ ] Starting and saving a cardio draft, then switching to Strength (with no strength draft) shows no strength restore banner
 
 ### No draft state
 
-- [ ] Opening the log form with no draft in `localStorage` shows no restore banner
+- [x] Opening the log form with no draft in `localStorage` shows no restore banner
 
 ### Unit tests
 

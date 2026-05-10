@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
@@ -11,6 +11,7 @@ import {
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
+import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -515,6 +516,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [diffState, setDiffState] = useState<DiffState | null>(null)
   const [collapsedExercises, setCollapsedExercises] = useState<Set<number>>(new Set())
   const [titleTouched, setTitleTouched] = useState(false)
+  const [showDraftBanner, setShowDraftBanner] = useState(false)
+  const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  const hasMounted = useRef(false)
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
@@ -532,8 +536,10 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     control,
     reset,
     getValues,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
+
+  const watchedFormValues = useWatch({ control })
 
   const {
     fields: exerciseFields,
@@ -545,6 +551,50 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     if (initialTemplateId) applyTemplate(initialTemplateId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTemplateId])
+
+  useEffect(() => {
+    const draft = loadDraft('strength')
+    if (draft) {
+      setPendingDraft(draft)
+      setShowDraftBanner(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      return
+    }
+    if (!isDirty) return
+    saveDraft('strength', { ...watchedFormValues, templateId: selectedTemplateId })
+  }, [watchedFormValues, selectedTemplateId, isDirty])
+
+  function handleDiscard() {
+    clearDraft('strength')
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
+
+  async function handleRestore() {
+    if (!pendingDraft) return
+    const { templateId: draftTemplateId, ...formValues } = pendingDraft as StrengthFormValues & { templateId?: number | null }
+    if (draftTemplateId) {
+      setIsLoadingTemplate(true)
+      try {
+        const snapshot = await api.get<TemplateSnapshot>(`/templates/strength/${draftTemplateId}`)
+        setSelectedTemplateId(draftTemplateId)
+        setTemplateSnapshot(snapshot)
+      } catch {
+        // Template may have been deleted; restore form values without template link
+      } finally {
+        setIsLoadingTemplate(false)
+      }
+    }
+    setTitleTouched(true)
+    reset(formValues as StrengthFormValues)
+    setShowDraftBanner(false)
+    setPendingDraft(null)
+  }
 
   async function applyTemplate(id: number) {
     setIsLoadingTemplate(true)
@@ -596,6 +646,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         })),
       }),
     onSuccess: (session) => {
+      clearDraft('strength')
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate(`/sessions/${session.id}`)
     },
@@ -643,6 +694,29 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
 
   return (
     <>
+      {showDraftBanner && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
+          <span className="text-sm text-amber-800">You have an unsaved Strength draft.</span>
+          <div className="flex gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRestore}
+              disabled={isLoadingTemplate}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            >
+              {isLoadingTemplate ? 'Restoring…' : 'Restore'}
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscard}
+              disabled={isLoadingTemplate}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         {/* Template selector */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
