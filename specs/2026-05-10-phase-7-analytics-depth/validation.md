@@ -18,7 +18,7 @@
 - [ ] Pace values are displayed in min/km format (not raw sec/km)
 - [ ] Weeks with no qualifying cardio data produce a gap in the line (not zero)
 - [ ] An empty state message is shown when no cardio sessions with distance/duration exist
-- [ ] `GET /sessions/pace-trends` returns correct weekly averages for multi-type, multi-segment test data
+- [x] `GET /sessions/pace-trends` returns correct weekly averages for multi-type, multi-segment test data
 
 ### Step Tracking
 

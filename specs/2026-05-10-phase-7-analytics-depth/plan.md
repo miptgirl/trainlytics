@@ -4,7 +4,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ---
 
-## 1. Backend — Pace Trends Endpoint
+## 1. Backend — Pace Trends Endpoint ✅
 
 1.1 Add `GET /sessions/pace-trends` route in `backend/app/api/sessions.py`  
 1.2 Write the aggregation query in `backend/app/services/` — group cardio segments by week bucket and segment position, compute average pace per bucket, filter by activity type  
