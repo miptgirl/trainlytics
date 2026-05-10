@@ -34,7 +34,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ---
 
-## 4. Frontend — Step Log Screen
+## 4. Frontend — Step Log Screen ✅ 
 
 4.1 Create `/steps` route and `StepsPage` component ✅ — implemented at `frontend/src/pages/StepsPage.tsx`
 4.2 Add a link to Steps in the Settings tab (alongside Manage Activity Types and Manage Exercises) ✅ — link added in `frontend/src/pages/SettingsPage.tsx`
