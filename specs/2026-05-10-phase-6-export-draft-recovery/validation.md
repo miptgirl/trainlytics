@@ -64,3 +64,10 @@ A user can tap "Copy" on any logged session from the history list or detail page
 ### No draft state
 
 - [ ] Opening the log form with no draft in `localStorage` shows no restore banner
+
+### Unit tests
+
+- [x] `saveDraft` / `loadDraft` round-trips strength and cardio drafts independently
+- [x] `loadDraft` returns `null` when no draft exists and on malformed JSON
+- [x] `clearDraft` removes only the specified type's draft
+- [x] `saveDraft` does not throw when `localStorage` is unavailable

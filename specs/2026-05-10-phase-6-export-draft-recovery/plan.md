@@ -34,7 +34,7 @@ Use existing unit conversion helpers (`metresToKm`, `secPerKmToMinPerKm`, etc.) 
 
 ---
 
-## Group 4 — Draft localStorage utilities
+## Group 4 — Draft localStorage utilities ✅
 
 4.1 Create `frontend/src/lib/draftUtils.ts` with typed helpers:
   - `saveDraft(type: 'strength' | 'cardio', data: object): void`
