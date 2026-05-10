@@ -29,8 +29,8 @@ A user can tap "Copy" on any logged session from the history list or detail page
 
 ### Unit tests
 
-- [ ] `formatStrengthSession` tests pass (exercises, sets, nulls)
-- [ ] `formatCardioSession` tests pass (segments, named/unnamed, nulls)
+- [x] `formatStrengthSession` tests pass (exercises, sets, nulls)
+- [x] `formatCardioSession` tests pass (segments, named/unnamed, nulls)
 
 ---
 

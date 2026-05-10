@@ -1,6 +1,6 @@
 # Phase 6 — Export & Draft Recovery: Plan
 
-## Group 1 — Export formatting utility
+## Group 1 — Export formatting utility ✅
 
 1.1 Create `frontend/src/lib/exportUtils.ts` with two pure functions:
   - `formatStrengthSession(session: StrengthSession): string` — returns markdown string
