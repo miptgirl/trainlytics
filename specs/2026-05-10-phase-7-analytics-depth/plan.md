@@ -13,7 +13,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ---
 
-## 2. Backend — Step Tracking
+## 2. Backend — Step Tracking ✅
 
 2.1 Create `DailySteps` SQLAlchemy model in `backend/app/models/` (`id`, `user_id`, `date`, `steps`, `created_at`, `updated_at`)  
 2.2 Generate and apply Alembic migration  

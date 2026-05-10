@@ -6,6 +6,7 @@ from app.api import cardio_types as cardio_types_module
 from app.api import exercise_types as exercise_types_module
 from app.api import exercises as exercises_module
 from app.api import sessions as sessions_module
+from app.api import steps as steps_module
 from app.api import templates as templates_module
 
 app = FastAPI(title="Trainlytics API")
@@ -23,6 +24,7 @@ app.include_router(exercises_module.router, prefix="/api")
 app.include_router(exercise_types_module.router, prefix="/api")
 app.include_router(cardio_types_module.router, prefix="/api")
 app.include_router(sessions_module.router, prefix="/api")
+app.include_router(steps_module.router, prefix="/api")
 app.include_router(templates_module.router, prefix="/api")
 
 

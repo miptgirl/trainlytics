@@ -26,7 +26,7 @@
 - [ ] A user can submit a step count for any date; re-submitting the same date updates the existing record
 - [ ] The step list on `/steps` shows recent entries in reverse-chronological order
 - [ ] Tapping an entry pre-fills the form with that date and count for editing
-- [ ] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
+- [x] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
 - [ ] The 12-week training trends chart displays a step count line on a secondary right-side y-axis
 - [ ] Weeks with no step data show a gap in the step line (not zero)
 - [ ] The step line is visually distinct from the cardio/strength area fills
