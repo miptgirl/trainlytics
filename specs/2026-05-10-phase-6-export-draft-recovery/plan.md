@@ -25,7 +25,7 @@ Use existing unit conversion helpers (`metresToKm`, `secPerKmToMinPerKm`, etc.) 
 
 ---
 
-## Group 3 — Copy button on history list rows
+## Group 3 — Copy button on history list rows ✅
 
 3.1 Add a "Copy" icon button to each session row in `HistoryPage.tsx`.
   - On click: fetch the full session via `GET /sessions/strength/{id}` or `GET /sessions/cardio/{id}` (type is known from `SessionSummary.type`)
