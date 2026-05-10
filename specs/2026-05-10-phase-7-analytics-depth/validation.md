@@ -10,14 +10,14 @@
 
 ### Pace Trends Chart
 
-- [ ] A "Pace" tab is visible on the History screen alongside the existing "Trends" chart tab
-- [ ] Switching to the Pace tab renders a line chart with weekly buckets on the x-axis (same 12-week window as training trends)
-- [ ] Each distinct (activity type, segment label) pair is a separate line with a distinct colour
-- [ ] Segment labels show the segment `title` when one exists, or "Segment N" (positional) otherwise
-- [ ] The activity-type filter control correctly shows/hides the corresponding lines
-- [ ] Pace values are displayed in min/km format (not raw sec/km)
-- [ ] Weeks with no qualifying cardio data produce a gap in the line (not zero)
-- [ ] An empty state message is shown when no cardio sessions with distance/duration exist
+- [x] A "Pace" tab is visible on the History screen alongside the existing "Trends" chart tab
+- [x] Switching to the Pace tab renders a line chart with weekly buckets on the x-axis (same 12-week window as training trends)
+- [x] Each distinct (activity type, segment label) pair is a separate line with a distinct colour
+- [x] Segment labels show the segment `title` when one exists, or "Segment N" (positional) otherwise
+- [x] The activity-type filter control correctly shows/hides the corresponding lines
+- [x] Pace values are displayed in min/km format (not raw sec/km)
+- [x] Weeks with no qualifying cardio data produce a gap in the line (not zero)
+- [x] An empty state message is shown when no cardio sessions with distance/duration exist
 - [x] `GET /sessions/pace-trends` returns correct weekly averages for multi-type, multi-segment test data
 
 ### Step Tracking

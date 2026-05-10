@@ -24,7 +24,7 @@ Numbered task groups in dependency order. Groups 1–2 are backend; groups 3–5
 
 ---
 
-## 3. Frontend — Pace Trends Chart
+## 3. Frontend — Pace Trends Chart ✅
 
 3.1 Create `usePaceTrends` React Query hook calling `GET /sessions/pace-trends`  
 3.2 Build `PaceTrendsChart` component using Recharts `LineChart` — one line per (activity_type, segment_label) pair  
