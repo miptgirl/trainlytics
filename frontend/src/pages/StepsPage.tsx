@@ -4,7 +4,6 @@ import { useSteps } from '../lib/hooks/useSteps'
 import StepsForm from '../components/StepsForm'
 
 export default function StepsPage() {
-  const today = new Date().toISOString().slice(0, 10)
   const { data: entries = [], isLoading } = useSteps()
 
   // editingId tracked implicitly by populating form; no explicit id needed in this MVP
