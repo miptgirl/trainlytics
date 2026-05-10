@@ -23,9 +23,11 @@
 ### Step Tracking
 
 - [x] `/steps` route is accessible from the Settings tab — moved: Steps is now accessible from Log Workout picker and the standalone `/steps` page
-- [ ] A user can submit a step count for any date; re-submitting the same date updates the existing record
-- [ ] The step list on `/steps` shows recent entries in reverse-chronological order
-- [ ] Tapping an entry pre-fills the form with that date and count for editing
+- [x] A user can submit a step count for any date; re-submitting the same date updates the existing record
+- [x] The step list on `/steps` shows recent entries in reverse-chronological order
+- [x] Tapping an entry pre-fills the form with that date and count for editing
+- [x] `DELETE /steps/{id}` removes the entry for the authenticated user (404 for not-found or wrong user)
+- [x] A "Delete" button on each row calls `DELETE /steps/{id}` with a confirmation prompt; after delete the form resets to "new entry" mode
 - [x] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
  - [x] `POST /steps` and `GET /steps` endpoints respond correctly and are protected by auth
  - [x] The 12-week training trends chart displays a step count line on a secondary right-side y-axis
