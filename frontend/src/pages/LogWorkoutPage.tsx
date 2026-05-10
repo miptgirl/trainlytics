@@ -251,6 +251,16 @@ function CardioForm() {
     setValue('title', newTitle)
   }, [watchedActivityTypeId, watchedSegments, cardioTypes, titleTouched, setValue])
 
+  useEffect(() => {
+    watchedSegments.forEach((seg, index) => {
+      const dist = parseFloat(seg.distance_km)
+      const dur = seg.duration_seconds
+      if (!isNaN(dist) && dist > 0 && dur != null && dur > 0) {
+        setValue(`segments.${index}.pace_seconds_per_km`, Math.round(dur / dist), { shouldValidate: false })
+      }
+    })
+  }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
 
   const createMutation = useMutation({
@@ -362,16 +372,7 @@ function CardioForm() {
 
       {/* Segments */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium text-gray-900">Segments</h2>
-          <button
-            type="button"
-            onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' })}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-          >
-            + Add Segment
-          </button>
-        </div>
+        <h2 className="font-medium text-gray-900 mb-3">Segments</h2>
 
         <div className="space-y-3">
           {fields.map((field, index) => (
@@ -382,9 +383,12 @@ function CardioForm() {
                   <button
                     type="button"
                     onClick={() => remove(index)}
-                    className="text-xs text-red-500 hover:text-red-700"
+                    aria-label="Remove segment"
+                    className="p-1 text-gray-400 hover:text-red-500 rounded"
                   >
-                    Remove
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 )}
               </div>
@@ -457,6 +461,14 @@ function CardioForm() {
             </div>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' })}
+          className="mt-3 w-full text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-xl py-2"
+        >
+          + Add Segment
+        </button>
       </div>
 
       {createMutation.error && (

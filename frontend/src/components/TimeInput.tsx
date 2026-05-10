@@ -148,7 +148,7 @@ export function TimeInput({
       <input
         id={id}
         type="text"
-        inputMode="numeric"
+        inputMode="text"
         value={display}
         placeholder={placeholder ?? (format === 'pace' ? 'm:ss' : 'h:mm:ss')}
         required={required}

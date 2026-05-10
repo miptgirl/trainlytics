@@ -1,6 +1,6 @@
 # Roadmap
 
-The roadmap is organized around three phases. Each phase produces a usable, shippable slice of the product. Phases build on each other — Phase 2 assumes Phase 1 is complete and stable.
+The roadmap is organized into phases. Each phase produces a usable, shippable slice of the product. Phases build on each other — Phase 2 assumes Phase 1 is complete and stable.
 
 ---
 
@@ -97,9 +97,65 @@ A user on a mobile device can navigate the full app without UI collisions, log a
 
 ---
 
-## Phase 5 — Planning & Weekly Overview (previously Phase 4)
+## ✅ Phase 5 — Mobile Polish & Logging UX *(completed)*
+
+**Goal:** The app is fully usable on a phone without layout issues, weight entry is accident-free, and cardio logging requires less manual calculation.
+
+All items in this phase are driven by direct user feedback.
+
+### Deliverables
+
+- [x] **Remove weight increment/decrement buttons** — weight fields in the strength log form and template editor accept direct text input only; the +/− buttons caused accidental weight changes and are removed
+- [x] **Fix mobile duration keyboard** — duration fields trigger a text keyboard on mobile (not a numeric keyboard) so the `h:mm:ss` format can actually be typed; the numeric keyboard was blocking input on iPhone
+- [x] **Compact exercise remove button** — the remove control is replaced with a small icon button so it no longer clashes with the full exercise name on narrow screens
+- [x] **Mobile responsive audit** — a full pass on viewport overflow; all controls, forms, and buttons fit within the screen width on iPhone-sized viewports with no horizontal scroll
+- [x] **Green completed-exercise highlight** — when all sets within an exercise are marked done, the exercise header turns green (matching the per-set green treatment) in addition to auto-collapsing
+- [x] **Move "Add Segment" to bottom** — the add-segment control moves below the last segment, consistent with how "Add Exercise" works in the template editor
+- [x] **Auto-calculate pace** — in the cardio log form, pace is computed automatically from distance and duration whenever both fields are filled; the pace field updates in real time and can still be overridden manually
+
+### Definition of Done
+
+A user on an iPhone can fill in all fields without keyboard or layout issues, remove an exercise with a small icon, and have pace calculated for them automatically when entering a cardio segment. ✅ **Achieved.**
+
+---
+
+## Phase 6 — Export & Draft Recovery
+
+**Goal:** A user can share any session as structured text for AI or coach analysis, and never lose a half-filled log form.
+
+Both items are driven by direct user feedback. The export capability is core to the Trainlytics mission of data ownership.
+
+### Deliverables
+
+- [ ] **Training summary export** — a "Copy as text" action on both the history list (per session row) and the session detail view produces a structured plain-text summary ready to paste into an LLM or share with a coach; strength sessions include all exercises, sets, reps, and weights; cardio sessions include all segments with distance, duration, and pace
+- [ ] **Draft auto-save** — the log form saves its in-progress state to `localStorage` as the user types; when opening the log form with a pending unsaved draft, a prompt offers to restore it; drafts are cleared automatically on successful submission
+
+### Definition of Done
+
+A user can tap "Copy as text" on any logged session and paste a clean structured summary into ChatGPT or a coach chat. If they close the log form mid-session by accident, they are offered to restore their work next time they open it.
+
+---
+
+## Phase 7 — Analytics Depth
+
+**Goal:** A user can track pace trends over time and monitor their overall daily activity through step counts.
+
+### Deliverables
+
+- [ ] **Pace trends chart** — a new chart tab on the main screen shows average pace over time, filterable by activity type and by segment name within an activity; backed by a new backend aggregation endpoint
+- [ ] **Step tracking** — a daily step count can be manually entered (e.g. synced from a phone health app or watch); step totals appear as a line overlay on the existing 12-week training trends chart on the main screen; backed by a new `daily_steps` table and `POST /steps` / `GET /steps` endpoints
+
+### Definition of Done
+
+A user can open the main screen, switch to the pace chart tab, and see how their running pace has changed over recent weeks broken down by activity type. They can also log their daily steps and see them alongside training volume on the 12-week chart.
+
+---
+
+## Phase 8 — Planning & Weekly Overview *(deferred)*
 
 **Goal:** A user can plan their training week in advance and log against that plan.
+
+> Deferred in favour of user-feedback–driven phases (5–7). No active work scheduled.
 
 ### Deliverables
 
@@ -113,11 +169,11 @@ A user can build a training week, log sessions against it, and see at a glance h
 
 ---
 
-## Phase 6 — Analytics & Export (previously Phase 5)
+## Phase 9 — Deep Analytics *(deferred)*
 
-**Goal:** A user can understand their progress over time and share it externally.
+**Goal:** A user can understand strength and cardio progression in detail and export structured summaries.
 
-> **Note:** Weekly training load trends (cardio vs. strength minutes and calories over 12 weeks) were delivered in Phase 3. Phase 5 covers deeper, exercise-level analytics and export.
+> Deferred. The export deliverable was elevated to Phase 6 (session-level copy). Phase 9 covers longer-horizon analytics.
 
 ### Deliverables
 
@@ -125,11 +181,10 @@ A user can build a training week, log sessions against it, and see at a glance h
 - [ ] **Strength volume breakdown** — weekly total volume per exercise or muscle group, beyond the aggregate already shown in Phase 3
 - [ ] **Cardio distance trends** — weekly distance per activity type over time
 - [ ] **Rolling averages & training load** — rolling 4-week and 8-week load views built on top of the existing trends API
-- [ ] **Weekly export** — structured plain-text summary of a selected week (workouts, volume, completion) for AI or coach sharing
 
 ### Definition of Done
 
-A user can view a chart of their squat progression, drill into weekly volume per exercise, and export last week's summary as text.
+A user can view a chart of their squat progression and drill into weekly volume per exercise.
 
 ---
 
