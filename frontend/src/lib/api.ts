@@ -27,7 +27,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as Record<string, unknown>
-    throw new Error(String(err['detail'] ?? 'Request failed'))
+    const message = String(err['detail'] ?? 'Request failed')
+    console.error(`[api] ${method} ${path} → ${res.status}:`, message, err)
+    throw new Error(message)
   }
 
   if (res.status === 204) return undefined as T

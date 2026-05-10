@@ -256,7 +256,10 @@ function CardioForm() {
       const dist = parseFloat(seg.distance_km)
       const dur = seg.duration_seconds
       if (!isNaN(dist) && dist > 0 && dur != null && dur > 0) {
-        setValue(`segments.${index}.pace_seconds_per_km`, Math.round(dur / dist), { shouldValidate: false })
+        const newPace = Math.round(dur / dist)
+        if (newPace !== seg.pace_seconds_per_km) {
+          setValue(`segments.${index}.pace_seconds_per_km`, newPace, { shouldValidate: false })
+        }
       }
     })
   }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -289,6 +292,9 @@ function CardioForm() {
     onSuccess: (session) => {
       qc.invalidateQueries({ queryKey: ['sessions'] })
       navigate(`/sessions/${session.id}`)
+    },
+    onError: (err) => {
+      console.error('[CardioForm] save failed:', err)
     },
   })
 
