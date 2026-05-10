@@ -478,25 +478,7 @@ function ExercisesSection() {
   )
 }
 
-function ManageDataSection() {
-  return (
-    <section className="mt-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-slate-800">Manage Data</h2>
-      </div>
-      <div className="bg-white border border-slate-200 rounded-2xl p-4">
-        <ul className="space-y-2">
-          <li>
-            <a href="/steps" className="text-blue-600 hover:underline">Steps</a>
-          </li>
-          <li>
-            <a href="/templates" className="text-blue-600 hover:underline">Manage Templates</a>
-          </li>
-        </ul>
-      </div>
-    </section>
-  )
-}
+
 
 function ExerciseForm({
   allTypes,
@@ -600,8 +582,7 @@ export default function SettingsPage() {
       <div className="space-y-10">
         <ActivityTypesSection />
         <ExerciseTypesSection />
-        <ExercisesSection />
-        <ManageDataSection />
+  <ExercisesSection />
       </div>
     </Layout>
   )

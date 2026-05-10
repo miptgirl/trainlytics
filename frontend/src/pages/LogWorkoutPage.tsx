@@ -13,12 +13,13 @@ import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
+import StepsForm from '../components/StepsForm'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
 // ─────────────────────────────────────────────────────────────────────────────
 
-type WorkoutType = 'cardio' | 'strength'
+type WorkoutType = 'cardio' | 'strength' | 'steps'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cardio form types & helpers
@@ -1051,7 +1052,7 @@ export default function LogWorkoutPage() {
       </div>
 
       {/* Type selector */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-8">
         <button
           type="button"
           onClick={() => setWorkoutType('cardio')}
@@ -1063,6 +1064,18 @@ export default function LogWorkoutPage() {
         >
           <span className="text-3xl">🏃</span>
           <span className="text-base font-semibold">Cardio</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setWorkoutType('steps')}
+          className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
+            workoutType === 'steps'
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+          }`}
+        >
+          <span className="text-3xl">🚶</span>
+          <span className="text-base font-semibold">Steps</span>
         </button>
         <button
           type="button"
@@ -1080,6 +1093,14 @@ export default function LogWorkoutPage() {
 
       {/* Form */}
       {workoutType === 'cardio' && <CardioForm />}
+      {workoutType === 'steps' && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4 max-w-3xl">
+          {/* compact steps form */}
+          <div>
+            <StepsForm compact />
+          </div>
+        </div>
+      )}
       {workoutType === 'strength' && (
         <StrengthForm
           initialTemplateId={templateIdParam ? parseInt(templateIdParam, 10) : undefined}

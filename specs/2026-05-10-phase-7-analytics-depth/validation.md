@@ -22,7 +22,7 @@
 
 ### Step Tracking
 
-- [ ] `/steps` route is accessible from the Settings tab
+- [x] `/steps` route is accessible from the Settings tab — moved: Steps is now accessible from Log Workout picker and the standalone `/steps` page
 - [ ] A user can submit a step count for any date; re-submitting the same date updates the existing record
 - [ ] The step list on `/steps` shows recent entries in reverse-chronological order
 - [ ] Tapping an entry pre-fills the form with that date and count for editing

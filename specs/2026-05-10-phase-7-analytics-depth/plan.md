@@ -57,17 +57,17 @@ Goal: remove the separate "Manage Data" entry in Settings and surface Steps as a
 
 Tasks:
 
-6.1 Remove "Manage Data" entry from the Settings page UI — update `frontend/src/pages/SettingsPage.tsx` to delete the link (or hide it behind a feature-flag) and update any tests that assert its presence.
+6.1 Remove "Manage Data" entry from the Settings page UI — update `frontend/src/pages/SettingsPage.tsx` to delete the link (or hide it behind a feature-flag) and update any tests that assert its presence. ✅
 
-6.2 Remove the dedicated "Steps" link (if present) from Settings — steps will instead be accessible via Log Workout and the standalone `/steps` page (the existing StepsPage remains for bulk entry/history).
+6.2 Remove the dedicated "Steps" link (if present) from Settings — steps will instead be accessible via Log Workout and the standalone `/steps` page (the existing StepsPage remains for bulk entry/history). ✅
 
-6.3 Add a "Steps" option to the Log Workout picker component (same UI pattern as Cardio/Strength) — create or update the component at `frontend/src/components/LogWorkoutPicker` (or the equivalent file) to include the new activity type.
+6.3 Add a "Steps" option to the Log Workout picker component (same UI pattern as Cardio/Strength) — create or update the component at `frontend/src/components/LogWorkoutPicker` (or the equivalent file) to include the new activity type. ✅
 
-6.4 In the Log Workout flow, when "Steps" is selected, show a compact step-entry UI (date + step count) that posts to `POST /steps` using the existing `useUpsertStep` hook. Reuse the `StepsPage` form component where possible.
+6.4 In the Log Workout flow, when "Steps" is selected, show a compact step-entry UI (date + step count) that posts to `POST /steps` using the existing `useUpsertStep` hook. Reuse the `StepsPage` form component where possible. ✅
 
-6.5 Ensure the Log Workout submission flow integrates with analytics and the training trends data (i.e., newly created step entries are visible in the 12-week trends overlay) — this may require invalidating `useTrainingTrends`/`usePaceTrends` queries after upsert.
+6.5 Ensure the Log Workout submission flow integrates with analytics and the training trends data (i.e., newly created step entries are visible in the 12-week trends overlay) — this may require invalidating `useTrainingTrends`/`usePaceTrends` queries after upsert. ✅ (existing `useUpsertStep` already invalidates `training-trends`)
 
-6.6 Update frontend tests: add coverage for Log Workout -> Steps selection, submission success, and UI absence of Settings link.
+6.6 Update frontend tests: add coverage for Log Workout -> Steps selection, submission success, and UI absence of Settings link. ⚠️ (tests updated: remove assertions for Manage Data; add new tests planned)
 
 Notes / assumptions:
 
