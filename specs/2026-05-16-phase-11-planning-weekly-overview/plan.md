@@ -148,7 +148,7 @@
 
 ---
 
-### Group 8 — Frontend: Plan Session Form
+### Group 8 — Frontend: Plan Session Form ✅
 
 8.1 Create `src/components/plan/PlanSessionForm.tsx`:
   - Session type toggle: Strength / Cardio

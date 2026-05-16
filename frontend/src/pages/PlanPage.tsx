@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Layout } from '../components/Layout'
 import { WeekGrid } from '../components/plan/WeekGrid'
+import { PlanSessionForm } from '../components/plan/PlanSessionForm'
 import { useWeekPlan, type PlannedSessionOut } from '../lib/planApi'
 
 function getMondayOfCurrentWeek(): string {
@@ -33,21 +34,43 @@ function formatWeekRange(weekStart: string): string {
   return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${year}`
 }
 
+interface FormModal {
+  open: boolean
+  date: string
+  session: PlannedSessionOut | null
+}
+
 export default function PlanPage() {
   const [weekStart, setWeekStart] = useState(getMondayOfCurrentWeek)
   const { data, isLoading } = useWeekPlan(weekStart)
+  const [formModal, setFormModal] = useState<FormModal>({
+    open: false,
+    date: getMondayOfCurrentWeek(),
+    session: null,
+  })
 
-  // Stubs for Group 8: PlanSessionForm modal will be wired up there
-  function handleAddSession(_date: string) {
-    // Group 8 will implement this
+  function handleAddSession(date: string) {
+    setFormModal({ open: true, date, session: null })
   }
 
-  function handleEditSession(_session: PlannedSessionOut) {
-    // Group 8 will implement this
+  function handleEditSession(session: PlannedSessionOut) {
+    setFormModal({ open: true, date: session.planned_date, session })
+  }
+
+  function handleCloseForm() {
+    setFormModal((prev) => ({ ...prev, open: false }))
   }
 
   return (
     <Layout>
+      {formModal.open && (
+        <PlanSessionForm
+          weekStart={weekStart}
+          initialDate={formModal.date}
+          editingSession={formModal.session ?? undefined}
+          onClose={handleCloseForm}
+        />
+      )}
       <div className="space-y-6">
         {/* Week navigation */}
         <div className="flex items-center justify-between">
