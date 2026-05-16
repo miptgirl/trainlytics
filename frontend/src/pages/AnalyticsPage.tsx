@@ -3,6 +3,10 @@ import { SummaryHeader } from '../components/analytics/SummaryHeader'
 import { ExerciseProgressionChart } from '../components/analytics/ExerciseProgressionChart'
 import { PersonalRecordsPanel } from '../components/analytics/PersonalRecordsPanel'
 import { StrengthVolumeBreakdown } from '../components/analytics/StrengthVolumeBreakdown'
+import { ActivityTimeSplitChart } from '../components/analytics/ActivityTimeSplitChart'
+import { WalkSegmentsTrendChart } from '../components/analytics/WalkSegmentsTrendChart'
+import { CardioDistanceProgressionChart } from '../components/analytics/CardioDistanceProgressionChart'
+import { TrainingLoadChart } from '../components/analytics/TrainingLoadChart'
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -40,7 +44,26 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </SectionCard>
-        <SectionCard title="Cardio" />
+        <SectionCard title="Cardio">
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Activity Time Split</h3>
+              <ActivityTimeSplitChart />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Walk Segments per Session</h3>
+              <WalkSegmentsTrendChart />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Distance Progression</h3>
+              <CardioDistanceProgressionChart />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Training Load</h3>
+              <TrainingLoadChart />
+            </div>
+          </div>
+        </SectionCard>
         <SectionCard title="Readiness" />
         <SectionCard title="Consistency" />
       </div>

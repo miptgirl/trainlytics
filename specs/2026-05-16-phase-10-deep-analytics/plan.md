@@ -71,7 +71,7 @@
 
 ---
 
-### Group 7 — Frontend: Cardio Analytics
+### Group 7 — Frontend: Cardio Analytics ✅
 
 7.1 Create `src/components/analytics/ActivityTimeSplitChart.tsx` — bar or pie chart (user-togglable) of total cardio minutes per activity type; period selector: 30 / 90 / 180 / all-time days  
 7.2 Create `src/components/analytics/WalkSegmentsTrendChart.tsx` — bar chart of walk segment count per run session over time; zero-count sessions shown as empty bars; x-axis is date  

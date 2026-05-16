@@ -79,7 +79,7 @@ All tests in `tests/test_analytics.py` pass:
 - [ ] The Personal Records panel shows exercises grouped by their type tags; exercises without tags appear under "Untagged"
 - [ ] Strength volume breakdown chart shows stacked bars per week; each colour corresponds to a different muscle-group tag
 
-### Cardio Analytics
+### Cardio Analytics ✅ (Group 7 implemented 2026-05-16)
 
 - [ ] Activity type time split chart shows correct proportions; period selector changes the data (try 30 / 90 / all-time)
 - [ ] Walk segments trend chart shows bars per session; sessions with no walk segments show as 0
