@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFieldArray, useWatch, useController } from 'react-hook-form'
 import { api } from '../lib/api'
+import { EraserIcon } from './EraserIcon'
 
 export interface SetFormValues {
   reps: string
@@ -535,10 +536,10 @@ export function ExerciseEntryBlock({
                         <button
                           type="button"
                           onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600"
                           aria-label="Clear notes"
                         >
-                          ✕
+                          <EraserIcon />
                         </button>
                       )}
                     </div>

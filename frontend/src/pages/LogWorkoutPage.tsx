@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
@@ -476,10 +477,10 @@ function CardioForm() {
               <button
                 type="button"
                 onClick={() => setValue('notes', '')}
-                className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
                 aria-label="Clear notes"
               >
-                ✕
+                <EraserIcon />
               </button>
             )}
           </div>
@@ -914,10 +915,10 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
                   aria-label="Clear notes"
                 >
-                  ✕
+                  <EraserIcon />
                 </button>
               )}
             </div>
