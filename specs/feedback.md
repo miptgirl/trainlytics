@@ -1,8 +1,9 @@
-- Small nit item: Small button to clean up notes from training set 
-- When logging training let's add a question to assess the wellbeing before training and perceived difficulty of the session (near notes). Think through the scales and maybe use icons. I would do 5 grades for each one. 
-- Intelligence for excercises: 
-  - When you're selecting an exercise during training or when making a template, it should suggest you default params (sets, repetitions + weight) based on the previous trainings (the latest logged one)
-  - There should be a notion of excercise replacements based on muscle group.
-    - User can specify potential replacements for each excercise in settings 
-    - When creating a template or logging a training, there should be a possibility to swap the excercise with something. 
+Deeper analytics: 
+Nit: on history screen filter out weeks without activities, now 12 weeks always 
+
+Tab for analytics and insights with the following info, but please think yourself and provide more ideas. 
+- Cardio / runs: now we have only pace, it's interesting but not enough. I would love also see the split of time between types of activities (i.e. I hope to see there that I can run longer). Also, it would be intersting to see for run sessions stats on average number of walks per run in run sessions. 
+- Overall stats: on the top let's show the overall time spent on sport and overall number of trainings logged. 
+- Since we added stats about wellbeing and training difficulty let's show it as well. 
+
   

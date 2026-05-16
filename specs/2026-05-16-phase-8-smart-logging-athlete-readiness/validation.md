@@ -10,13 +10,13 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 
 ### Wellbeing & RPE
 
-- [ ] Strength log form shows two emoji rows (wellbeing + RPE) above the notes field
-- [ ] Cardio log form shows the same two rows
-- [ ] Selecting an emoji highlights it; tapping again deselects (value becomes null)
-- [ ] Submitted session payload includes `wellbeing` and `rpe` (null when not selected)
+- [x] Strength log form shows two emoji rows (wellbeing + RPE) above the notes field
+- [x] Cardio log form shows the same two rows
+- [x] Selecting an emoji highlights it; tapping again deselects (value becomes null)
+- [x] Submitted session payload includes `wellbeing` and `rpe` (null when not selected)
 - [x] `workout_sessions` table has `wellbeing` and `rpe` integer columns (confirmed via `\d workout_sessions` or Alembic history)
-- [ ] Session detail view shows wellbeing and RPE when set; nothing shown when null
-- [ ] Both fields absent from the form do not break existing session submissions
+- [x] Session detail view shows wellbeing and RPE when set; nothing shown when null
+- [x] Both fields absent from the form do not break existing session submissions
 
 ### Smart Exercise Defaults
 

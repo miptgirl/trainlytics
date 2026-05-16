@@ -41,7 +41,7 @@
 
 ---
 
-### Group 5 — Frontend: Wellbeing & RPE
+### Group 5 — Frontend: Wellbeing & RPE ✅ DONE
 
 5.1 Create a reusable `EmojiRating` component: 5 emoji buttons, selected state highlighted, unselected muted; tapping a selected emoji deselects it (sets value to null)  
 5.2 Add wellbeing and RPE rating rows to the strength log form, placed above the notes field; labels: "How are you feeling?" / "How hard was that?"  

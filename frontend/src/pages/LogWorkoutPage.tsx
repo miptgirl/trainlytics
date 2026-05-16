@@ -14,6 +14,7 @@ import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import StepsForm from '../components/StepsForm'
+import { EmojiRating, WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/EmojiRating'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -45,6 +46,8 @@ interface CardioFormValues {
   notes: string
   total_duration_seconds: number | null
   calories: string
+  wellbeing: number | null
+  rpe: number | null
   segments: SegmentFormValues[]
 }
 
@@ -95,6 +98,8 @@ interface StrengthFormValues {
   calories: string
   date: string
   notes: string
+  wellbeing: number | null
+  rpe: number | null
   exercises: ExerciseEntryFormValues[]
 }
 
@@ -109,6 +114,8 @@ const emptyStrengthDefaults = (): StrengthFormValues => ({
   calories: '',
   date: localDateTimeNow(),
   notes: '',
+  wellbeing: null,
+  rpe: null,
   exercises: [emptyEntry()],
 })
 
@@ -118,6 +125,8 @@ function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
     duration_seconds: null,
     calories: '',
     date: localDateTimeNow(),
+    wellbeing: null,
+    rpe: null,
     notes: '',
     exercises: t.exercises.map((entry) => ({
       exercise_id: String(entry.exercise_id),
@@ -238,6 +247,8 @@ function CardioForm() {
       notes: '',
       total_duration_seconds: null,
       calories: '',
+      wellbeing: null,
+      rpe: null,
       segments: [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
     },
   })
@@ -313,6 +324,8 @@ function CardioForm() {
         notes: data.notes || null,
         calories: data.calories ? parseInt(data.calories, 10) : null,
         total_duration_seconds: data.total_duration_seconds ?? null,
+        wellbeing: data.wellbeing ?? null,
+        rpe: data.rpe ?? null,
         segments: data.segments.map((seg, i) => {
           const distKm = parseFloat(seg.distance_km)
           return {
@@ -426,6 +439,30 @@ function CardioForm() {
           />
         </div>
 
+        <Controller
+          control={control}
+          name="wellbeing"
+          render={({ field }) => (
+            <EmojiRating
+              label="How are you feeling?"
+              options={WELLBEING_OPTIONS}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="rpe"
+          render={({ field }) => (
+            <EmojiRating
+              label="How hard was that?"
+              options={RPE_OPTIONS}
+              value={field.value}
+              onChange={field.onChange}
+            />
+          )}
+        />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
           <textarea
@@ -695,6 +732,8 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
         calories: data.calories ? parseInt(data.calories, 10) : null,
         date: datetimeLocalToUTC(data.date),
         notes: data.notes || null,
+        wellbeing: data.wellbeing ?? null,
+        rpe: data.rpe ?? null,
         exercises: data.exercises.map((entry, i) => ({
           exercise_id: parseInt(entry.exercise_id, 10),
           order: i + 1,
@@ -825,6 +864,30 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
             />
             {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
           </div>
+          <Controller
+            control={control}
+            name="wellbeing"
+            render={({ field }) => (
+              <EmojiRating
+                label="How are you feeling?"
+                options={WELLBEING_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+          <Controller
+            control={control}
+            name="rpe"
+            render={({ field }) => (
+              <EmojiRating
+                label="How hard was that?"
+                options={RPE_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
             <textarea

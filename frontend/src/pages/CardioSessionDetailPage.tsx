@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { kmToMetres, metresToKm, minPerKmToSecPerKm, minsToSeconds, secPerKmToMinPerKm, secondsToMins } from '../lib/unitUtils'
 import { formatCardioSession } from '../lib/exportUtils'
+import { EmojiRatingDisplay } from '../components/EmojiRating'
 
 interface CardioType {
   id: number
@@ -31,6 +32,8 @@ interface CardioSession {
   date: string
   notes: string | null
   calories: number | null
+  wellbeing: number | null
+  rpe: number | null
   created_at: string
   segments: CardioSegment[]
 }
@@ -417,6 +420,11 @@ export default function CardioSessionDetailPage() {
         {session.notes && (
           <div className="pt-2 border-t border-gray-100">
             <p className="text-sm text-gray-600">{session.notes}</p>
+          </div>
+        )}
+        {(session.wellbeing != null || session.rpe != null) && (
+          <div className="pt-2 border-t border-gray-100">
+            <EmojiRatingDisplay wellbeing={session.wellbeing} rpe={session.rpe} />
           </div>
         )}
       </div>
