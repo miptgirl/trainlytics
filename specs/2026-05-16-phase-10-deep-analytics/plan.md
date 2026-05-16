@@ -46,7 +46,7 @@
 
 ---
 
-### Group 4 — Frontend: Analytics Page Shell & Nav
+### Group 4 — Frontend: Analytics Page Shell & Nav ✅
 
 4.1 Create `src/pages/AnalyticsPage.tsx` — top-level layout with section headings: *All-time Summary*, *Strength*, *Cardio*, *Readiness*, *Consistency*; sections render in order, each in a card  
 4.2 Add `/analytics` route in `App.tsx`  

@@ -13,6 +13,7 @@ import HistoryPage from './pages/HistoryPage'
 import TemplatesPage from './pages/TemplatesPage'
 import StepsPage from './pages/StepsPage'
 import ProfilePage from './pages/ProfilePage'
+import AnalyticsPage from './pages/AnalyticsPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -99,6 +100,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <AnalyticsPage />
             </ProtectedRoute>
           }
         />
