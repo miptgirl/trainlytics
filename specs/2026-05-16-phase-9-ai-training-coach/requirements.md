@@ -166,6 +166,50 @@ When opening the **strength log form** (with or without a template loaded), an *
 
 ---
 
+### 5. AI Request Logging
+
+Every AI call — regardless of endpoint or provider — is recorded to an `ai_request_logs` table in the database. This is the primary debugging surface for inspecting prompt quality, response content, token usage, and latency.
+
+**DB table — `ai_request_logs`:**
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | integer PK, autoincrement | |
+| `username` | varchar | authenticated user |
+| `endpoint` | varchar | `"weekly-insights"` or `"adapt-session"` |
+| `provider` | varchar | `"anthropic"` or `"openai"` |
+| `model` | varchar | exact model string used (e.g. `"claude-sonnet-4-5"`, `"gpt-4o"`) |
+| `prompt` | text | full prompt sent to the model, including athlete context block and history |
+| `response` | text | raw text response from the model |
+| `input_tokens` | integer, nullable | as reported by the provider SDK |
+| `output_tokens` | integer, nullable | as reported by the provider SDK |
+| `duration_ms` | integer | wall-clock time of the API call in milliseconds |
+| `error` | text, nullable | exception message if the call failed; `response` will be null |
+| `created_at` | timestamptz | set server-side at insert time |
+
+**Behaviour:**
+- A log row is written for **every** AI call, including failed ones (error stored in `error` column)
+- Logging is fire-and-forget — a failure to write the log row must never surface as an error to the user
+- The `prompt` column stores the complete assembled prompt (after compaction, with athlete context prepended) so it can be reproduced and debugged in isolation
+- No frontend for this table in Phase 9 — logs are inspected directly via psql or `docker compose exec db psql`
+
+**Querying logs locally:**
+```sql
+-- Recent calls with token usage and latency
+SELECT created_at, endpoint, provider, model,
+       input_tokens, output_tokens, duration_ms, error
+FROM ai_request_logs
+ORDER BY created_at DESC
+LIMIT 20;
+
+-- Inspect a specific prompt and response
+SELECT prompt, response
+FROM ai_request_logs
+WHERE id = <id>;
+```
+
+---
+
 ## Key Decisions
 
 | Decision | Choice | Rationale |
@@ -179,6 +223,7 @@ When opening the **strength log form** (with or without a template loaded), an *
 | Keys never returned | `GET /profile` returns `has_anthropic_key` / `has_openai_key` booleans only | Prevents key exposure through normal API usage |
 | Prompt caching | Applied to the 5-week history block in weekly insights (Anthropic only) | The static history is the expensive part; caching cuts repeat costs on Anthropic; OpenAI has no equivalent |
 | Set compaction | Consecutive identical sets collapsed to `N×reps@weight` in all AI prompts | ~75% token reduction on typical strength sessions; stored data is unaffected |
+| AI request logging | Every call logged to `ai_request_logs` table (prompt, response, tokens, latency, errors) | Full debuggability without a separate logging service; inspected via psql |
 
 ---
 

@@ -89,7 +89,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 
 ## DB Validation
 
-Run after migration:
+Run after migrations:
 
 ```sql
 -- Confirm user_settings table
@@ -100,6 +100,23 @@ WHERE table_name = 'user_settings';
 -- Confirm key is stored encrypted (not plaintext)
 SELECT username, length(anthropic_api_key_encrypted), left(anthropic_api_key_encrypted, 10)
 FROM user_settings;
+
+-- Confirm ai_request_logs table
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'ai_request_logs';
+
+-- Inspect recent AI calls
+SELECT created_at, endpoint, provider, model,
+       input_tokens, output_tokens, duration_ms, error
+FROM ai_request_logs
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Read a specific prompt and response in full
+SELECT prompt, response
+FROM ai_request_logs
+WHERE id = <id>;
 ```
 
 ---
@@ -140,9 +157,20 @@ These steps assume a running local environment (`docker compose up --build` from
    ```
    Confirm `goals` is a JSON array of `{ text, priority }` objects, `birth_year` is an integer, and both key columns contain ciphertext
 8. Switch the provider toggle — confirm it persists on reload
-9. Trigger an AI call (e.g. "Analyse this week") and check the backend logs or a test fixture to confirm the athlete context block is present in the prompt and includes the goals and injury notes you entered
-10. Remove the Anthropic key — confirm the toggle disappears and OpenAI is used automatically
-11. Remove the OpenAI key too — confirm AI features show the "Add an API key" prompt
+9. Trigger "Analyse this week" — then open psql and run:
+   ```sql
+   SELECT id, endpoint, provider, model, input_tokens, output_tokens, duration_ms, error
+   FROM ai_request_logs ORDER BY created_at DESC LIMIT 1;
+   ```
+   Confirm a row exists with correct endpoint/provider/model, non-null token counts, and null error
+10. Inspect the full prompt of that row:
+    ```sql
+    SELECT prompt FROM ai_request_logs WHERE id = <id from above>;
+    ```
+    Confirm the athlete context block (goals, injury notes) appears at the top, followed by compacted training history
+11. Simulate a failure: temporarily set a bad API key, trigger an AI call — confirm the user sees an error message (not a crash), then check `ai_request_logs` for a row with `error` populated and `response` null
+12. Remove the Anthropic key — confirm the toggle disappears and OpenAI is used automatically
+13. Remove the OpenAI key too — confirm AI features show the "Add an API key" prompt
 
 ### Weekly Insights
 
