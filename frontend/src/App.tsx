@@ -14,6 +14,7 @@ import TemplatesPage from './pages/TemplatesPage'
 import StepsPage from './pages/StepsPage'
 import ProfilePage from './pages/ProfilePage'
 import AnalyticsPage from './pages/AnalyticsPage'
+import PlanPage from './pages/PlanPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -108,6 +109,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <AnalyticsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/plan"
+          element={
+            <ProtectedRoute>
+              <PlanPage />
             </ProtectedRoute>
           }
         />

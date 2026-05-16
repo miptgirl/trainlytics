@@ -15,7 +15,7 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 | Group 3 — Backend: Pydantic Schemas | ✅ Complete |
 | Group 4 — Backend: AI Cardio Adapt Endpoint | ✅ Complete |
 | Group 5 — Backend: Tests | ✅ Complete |
-| Group 6 — Frontend: /plan Route, Nav & API Hooks | ⬜ Pending |
+| Group 6 — Frontend: /plan Route, Nav & API Hooks | ✅ Complete |
 | Group 7 — Frontend: Week Grid & Session Display | ⬜ Pending |
 | Group 8 — Frontend: Plan Session Form | ⬜ Pending |
 | Group 9 — Frontend: Start Session from Plan | ⬜ Pending |

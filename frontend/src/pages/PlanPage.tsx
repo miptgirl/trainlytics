@@ -1,0 +1,78 @@
+import { useState } from 'react'
+import { Layout } from '../components/Layout'
+import { useWeekPlan } from '../lib/planApi'
+
+function getMondayOfCurrentWeek(): string {
+  const today = new Date()
+  const day = today.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(today)
+  monday.setDate(today.getDate() + diff)
+  return monday.toISOString().split('T')[0]
+}
+
+function shiftWeek(weekStart: string, direction: -1 | 1): string {
+  const date = new Date(weekStart + 'T00:00:00')
+  date.setDate(date.getDate() + direction * 7)
+  return date.toISOString().split('T')[0]
+}
+
+function formatWeekRange(weekStart: string): string {
+  const start = new Date(weekStart + 'T00:00:00')
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+
+  const startMonth = start.toLocaleDateString('en-US', { month: 'long' })
+  const endMonth = end.toLocaleDateString('en-US', { month: 'long' })
+  const year = end.getFullYear()
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${start.getDate()} – ${end.getDate()}, ${year}`
+  }
+  return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${year}`
+}
+
+export default function PlanPage() {
+  const [weekStart, setWeekStart] = useState(getMondayOfCurrentWeek)
+  const { data, isLoading } = useWeekPlan(weekStart)
+
+  return (
+    <Layout>
+      <div className="space-y-6">
+        {/* Week navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setWeekStart(w => shiftWeek(w, -1))}
+            className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            aria-label="Previous week"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+          <h1 className="text-lg font-semibold text-slate-800">{formatWeekRange(weekStart)}</h1>
+          <button
+            onClick={() => setWeekStart(w => shiftWeek(w, 1))}
+            className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            aria-label="Next week"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Plan content placeholder */}
+        {isLoading ? (
+          <div className="text-slate-500 text-sm">Loading…</div>
+        ) : (
+          <div className="text-slate-400 text-sm">
+            {data?.sessions.length === 0
+              ? 'No sessions planned for this week.'
+              : `${data?.sessions.length} session(s) planned.`}
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
+}

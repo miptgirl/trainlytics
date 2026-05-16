@@ -103,7 +103,7 @@
 
 ---
 
-### Group 6 — Frontend: /plan Route, Nav & API Hooks
+### Group 6 — Frontend: /plan Route, Nav & API Hooks ✅
 
 6.1 Add `/plan` route in `App.tsx`; create `src/pages/PlanPage.tsx` as the top-level container
 
