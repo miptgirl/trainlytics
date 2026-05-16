@@ -123,7 +123,7 @@
 
 ---
 
-### Group 7 — Frontend: Week Grid & Session Display
+### Group 7 — Frontend: Week Grid & Session Display ✅
 
 7.1 Create `src/components/plan/WeekGrid.tsx`:
   - Renders Mon–Sun as sections, each with a date header and a list of `PlannedSessionCard` components

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Layout } from '../components/Layout'
-import { useWeekPlan } from '../lib/planApi'
+import { WeekGrid } from '../components/plan/WeekGrid'
+import { useWeekPlan, type PlannedSessionOut } from '../lib/planApi'
 
 function getMondayOfCurrentWeek(): string {
   const today = new Date()
@@ -36,41 +37,76 @@ export default function PlanPage() {
   const [weekStart, setWeekStart] = useState(getMondayOfCurrentWeek)
   const { data, isLoading } = useWeekPlan(weekStart)
 
+  // Stubs for Group 8: PlanSessionForm modal will be wired up there
+  function handleAddSession(_date: string) {
+    // Group 8 will implement this
+  }
+
+  function handleEditSession(_session: PlannedSessionOut) {
+    // Group 8 will implement this
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         {/* Week navigation */}
         <div className="flex items-center justify-between">
           <button
-            onClick={() => setWeekStart(w => shiftWeek(w, -1))}
+            onClick={() => setWeekStart((w) => shiftWeek(w, -1))}
             className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
             aria-label="Previous week"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
           <h1 className="text-lg font-semibold text-slate-800">{formatWeekRange(weekStart)}</h1>
           <button
-            onClick={() => setWeekStart(w => shiftWeek(w, 1))}
+            onClick={() => setWeekStart((w) => shiftWeek(w, 1))}
             className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
             aria-label="Next week"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
         </div>
 
-        {/* Plan content placeholder */}
+        {/* Week grid */}
         {isLoading ? (
-          <div className="text-slate-500 text-sm">Loading…</div>
-        ) : (
-          <div className="text-slate-400 text-sm">
-            {data?.sessions.length === 0
-              ? 'No sessions planned for this week.'
-              : `${data?.sessions.length} session(s) planned.`}
+          <div className="space-y-6">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-slate-200 rounded w-40 mb-2" />
+                <div className="h-16 bg-slate-100 rounded-xl" />
+              </div>
+            ))}
           </div>
+        ) : (
+          <WeekGrid
+            weekStart={weekStart}
+            sessions={data?.sessions ?? []}
+            onAddSession={handleAddSession}
+            onEditSession={handleEditSession}
+          />
         )}
       </div>
     </Layout>
