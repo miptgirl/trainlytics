@@ -47,11 +47,11 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 
 ### Clear Notes Button
 
-- [ ] Clear button (✕) appears next to the session notes field when it has content
-- [ ] Clear button appears next to per-set notes fields when they have content
-- [ ] Clear button appears next to template notes field when it has content
-- [ ] Clicking clear empties the field in one tap
-- [ ] Button is not visible when the field is empty
+- [x] Clear button (✕) appears next to the session notes field when it has content
+- [x] Clear button appears next to per-set notes fields when they have content
+- [x] Clear button appears next to template notes field when it has content
+- [x] Clicking clear empties the field in one tap
+- [x] Button is not visible when the field is empty
 
 ---
 

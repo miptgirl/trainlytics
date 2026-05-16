@@ -465,12 +465,24 @@ function CardioForm() {
         />
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-          <textarea
-            rows={2}
-            placeholder="Optional notes…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            {...register('notes')}
-          />
+          <div className="relative">
+            <textarea
+              rows={2}
+              placeholder="Optional notes…"
+              className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+              {...register('notes')}
+            />
+            {watchedFormValues.notes && (
+              <button
+                type="button"
+                onClick={() => setValue('notes', '')}
+                className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                aria-label="Clear notes"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -634,6 +646,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     control,
     reset,
     getValues,
+    setValue,
     formState: { errors, isDirty },
   } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
 
@@ -890,12 +903,24 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
           />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea
-              rows={2}
-              placeholder="Optional notes…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              {...register('notes')}
-            />
+            <div className="relative">
+              <textarea
+                rows={2}
+                placeholder="Optional notes…"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+                {...register('notes')}
+              />
+              {watchedFormValues.notes && (
+                <button
+                  type="button"
+                  onClick={() => setValue('notes', '')}
+                  className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                  aria-label="Clear notes"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
@@ -937,6 +962,7 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
                 exIndex={exIndex}
                 register={register}
                 control={control}
+                setValue={setValue}
                 exercises={exercises}
                 canRemove={exerciseFields.length > 1}
                 isAdHoc={templateSnapshot === null}

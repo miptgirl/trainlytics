@@ -80,7 +80,7 @@
 
 ---
 
-### Group 9 — Frontend: Clear Notes Button
+### Group 9 — Frontend: Clear Notes Button ✅ DONE
 
 9.1 Create a small inline clear button (✕ icon) that appears when a textarea/input has content  
 9.2 Apply to session-level notes field on the strength log form  

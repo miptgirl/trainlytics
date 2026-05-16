@@ -258,6 +258,7 @@ export function ExerciseEntryBlock({
   exIndex,
   register,
   control,
+  setValue,
   exercises,
   canRemove,
   onRemove,
@@ -272,6 +273,7 @@ export function ExerciseEntryBlock({
   exIndex: number
   register: any
   control: any
+  setValue?: (name: string, value: any) => void
   exercises: ExerciseOption[]
   canRemove: boolean
   onRemove: () => void
@@ -522,12 +524,24 @@ export function ExerciseEntryBlock({
                       className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
-                    <input
-                      type="text"
-                      placeholder="note"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 bg-white' : 'border-gray-300'}`}
-                      {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="note"
+                        className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-green-200 text-green-700 bg-white' : 'border-gray-300'}`}
+                        {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
+                      />
+                      {setValue && setValues[setIndex]?.notes && (
+                        <button
+                          type="button"
+                          onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                          aria-label="Clear notes"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
                     {showDone && (
                       <label className="flex items-center justify-center cursor-pointer">
                         <input
