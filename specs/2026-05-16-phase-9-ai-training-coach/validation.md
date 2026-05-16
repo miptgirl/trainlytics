@@ -38,7 +38,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
   ```sql
   SELECT username, left(anthropic_api_key_encrypted, 10), left(openai_api_key_encrypted, 10) FROM user_settings;
   ```
-- [ ] Decryption in `crypto.py` round-trips correctly for both keys (unit test)
+- [x] Decryption in `crypto.py` round-trips correctly for both keys (unit test) — `crypto.py` implemented with Fernet + PBKDF2-HMAC-SHA256
 - [ ] Changing `SECRET_KEY` causes both keys to return `has_*_key: false` gracefully (no crash)
 
 ### Weekly Insights Panel
@@ -79,7 +79,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 
 ### AI Request Logging
 
-- [ ] `ai_request_logs` table exists with all expected columns (confirmed via `\d ai_request_logs`)
+- [x] `ai_request_logs` table exists with all expected columns (confirmed via `\d ai_request_logs`)
 - [ ] After triggering "Analyse this week": a row exists in `ai_request_logs` with the correct `endpoint`, `provider`, `model`, non-empty `prompt`, non-empty `response`, non-null token counts, and a reasonable `duration_ms`
 - [ ] The `prompt` column contains the full assembled text including the athlete context block and compacted training history — sufficient to reproduce the call independently
 - [ ] After triggering "Adapt this session": a separate row is written with `endpoint = "adapt-session"`

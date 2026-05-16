@@ -4,12 +4,12 @@
 
 ---
 
-### Group 1 — DB Migration & Crypto Service
+### Group 1 — DB Migration & Crypto Service ✅
 
-1.1 Add `user_settings` table via Alembic migration: columns `username` (PK), `display_name` (varchar, nullable), `birth_year` (integer, nullable), `experience_level` (varchar, nullable), `goals` (jsonb, nullable), `injury_notes` (text, nullable), `coach_notes` (text, nullable), `anthropic_api_key_encrypted` (text, nullable), `openai_api_key_encrypted` (text, nullable), `ai_provider` (varchar, nullable)  
-1.2 Add `ai_request_logs` table via same (or separate) Alembic migration: columns `id` (PK autoincrement), `username` (varchar), `endpoint` (varchar), `provider` (varchar), `model` (varchar), `prompt` (text), `response` (text, nullable), `input_tokens` (integer, nullable), `output_tokens` (integer, nullable), `duration_ms` (integer), `error` (text, nullable), `created_at` (timestamptz, server default now())  
-1.3 Create `app/services/crypto.py`: Fernet key derived from `SECRET_KEY` via PBKDF2-HMAC-SHA256 with fixed app salt; expose `encrypt(plaintext: str) -> str` and `decrypt(ciphertext: str) -> str`  
-1.4 Apply migrations locally; verify with `alembic upgrade head` and `\d user_settings`, `\d ai_request_logs`
+1.1 ✅ Add `user_settings` table via Alembic migration: columns `username` (PK), `display_name` (varchar, nullable), `birth_year` (integer, nullable), `experience_level` (varchar, nullable), `goals` (jsonb, nullable), `injury_notes` (text, nullable), `coach_notes` (text, nullable), `anthropic_api_key_encrypted` (text, nullable), `openai_api_key_encrypted` (text, nullable), `ai_provider` (varchar, nullable)  
+1.2 ✅ Add `ai_request_logs` table via same (or separate) Alembic migration: columns `id` (PK autoincrement), `username` (varchar), `endpoint` (varchar), `provider` (varchar), `model` (varchar), `prompt` (text), `response` (text, nullable), `input_tokens` (integer, nullable), `output_tokens` (integer, nullable), `duration_ms` (integer), `error` (text, nullable), `created_at` (timestamptz, server default now())  
+1.3 ✅ Create `app/services/crypto.py`: Fernet key derived from `SECRET_KEY` via PBKDF2-HMAC-SHA256 with fixed app salt; expose `encrypt(plaintext: str) -> str` and `decrypt(ciphertext: str) -> str`  
+1.4 ✅ Apply migrations locally; verify with `alembic upgrade head` and `\d user_settings`, `\d ai_request_logs`
 
 ---
 
