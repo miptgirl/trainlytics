@@ -25,10 +25,10 @@
 
 ---
 
-### Group 3 — Backend: AI Service & Weekly Insights
+### Group 3 — Backend: AI Service & Weekly Insights ✅
 
-3.1 Add `anthropic` and `openai` to backend dependencies (`pyproject.toml`)  
-3.2 Create `app/services/ai_service.py`:
+3.1 ✅ Add `anthropic` and `openai` to backend dependencies (`pyproject.toml`)  
+3.2 ✅ Create `app/services/ai_service.py`:
   - `get_active_provider(username) -> tuple[str, str] | None` — returns `(provider, decrypted_key)` based on `ai_provider` setting and which keys are set; returns `None` if no key configured  
   - `build_athlete_context_block(username) -> str` — assembles the profile context block (experience, age derived from birth year, goals, injury notes, coach notes); omits lines for unset fields  
   - `call_ai(prompt: str, username: str, endpoint: str) -> str` — prepends athlete context block, dispatches to Anthropic (Claude Sonnet, with prompt caching) or OpenAI (GPT-4o) based on active provider; measures wall-clock duration; writes a row to `ai_request_logs` (prompt, response, tokens, duration, error if any) regardless of success or failure; log write errors are silently swallowed and never propagate to the caller  
@@ -39,10 +39,10 @@
   - `call_weekly_insights(username) -> str` — wrap history in provider-appropriate call via `call_ai`  
   - `build_session_snapshot_prompt(session_snapshot, user_message, username) -> str` — fetch recent 4 weeks (compacted) + available replacements per exercise  
   - `call_adapt_session(session_snapshot, user_message, username) -> str` — call via `call_ai`  
-3.3 Create `app/api/ai.py`:
+3.3 ✅ Create `app/api/ai.py`:
   - `POST /ai/weekly-insights` — call `ai_service.call_weekly_insights`; 402 if no API key configured  
   - `POST /ai/adapt-session` — body `{ session_snapshot, user_message }`; call `ai_service.call_adapt_session`; 402 if no API key configured  
-3.4 Register `/ai` router in `app/main.py`
+3.4 ✅ Register `/ai` router in `app/main.py`
 
 ---
 

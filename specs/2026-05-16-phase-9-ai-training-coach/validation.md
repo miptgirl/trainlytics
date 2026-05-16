@@ -49,7 +49,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 - [ ] Spinner shown while the request is in flight
 - [ ] Response text is rendered in the card body; scrollable if long
 - [ ] Error state shows a user-friendly message and a retry button
-- [ ] `POST /ai/weekly-insights` returns 402 when no key is stored
+- [x] `POST /ai/weekly-insights` returns 402 when no key is stored
 
 ### Adaptive Session Helper
 
@@ -61,7 +61,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 - [ ] Spinner shown while request is in flight
 - [ ] Suggestions rendered as plain text in the modal
 - [ ] Closing the modal does not alter the form state
-- [ ] `POST /ai/adapt-session` returns 402 when no key is stored
+- [x] `POST /ai/adapt-session` returns 402 when no key is stored
 - [ ] The `session_snapshot` sent to the backend includes current exercises, sets, reps, and weights from the form
 
 ### Backend Tests

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import ai as ai_module
 from app.api import auth as auth_module
 from app.api import cardio_types as cardio_types_module
 from app.api import exercise_types as exercise_types_module
@@ -28,6 +29,7 @@ app.include_router(sessions_module.router, prefix="/api")
 app.include_router(steps_module.router, prefix="/api")
 app.include_router(templates_module.router, prefix="/api")
 app.include_router(profile_module.router, prefix="/api")
+app.include_router(ai_module.router, prefix="/api")
 
 
 @app.get("/api/health")
