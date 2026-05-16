@@ -43,12 +43,12 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 
 ### Weekly Insights Panel
 
-- [ ] "AI Insights" card visible on the History screen, positioned below the weekly summary and above the trends chart
-- [ ] When no API key is configured: "Analyse this week" button is replaced by an inline prompt linking to `/profile`
-- [ ] When key is configured: button is present and triggers `POST /ai/weekly-insights`
-- [ ] Spinner shown while the request is in flight
-- [ ] Response text is rendered in the card body; scrollable if long
-- [ ] Error state shows a user-friendly message and a retry button
+- [x] "AI Insights" card visible on the History screen, positioned below the weekly summary and above the trends chart
+- [x] When no API key is configured: "Analyse this week" button is replaced by an inline prompt linking to `/profile`
+- [x] When key is configured: button is present and triggers `POST /ai/weekly-insights`
+- [x] Spinner shown while the request is in flight
+- [x] Response text is rendered in the card body; scrollable if long
+- [x] Error state shows a user-friendly message and a retry button
 - [x] `POST /ai/weekly-insights` returns 402 when no key is stored
 
 ### Adaptive Session Helper

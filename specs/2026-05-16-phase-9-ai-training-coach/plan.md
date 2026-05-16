@@ -62,15 +62,15 @@
 
 ---
 
-### Group 5 — Frontend: Weekly Insights Panel
+### Group 5 — Frontend: Weekly Insights Panel ✅
 
-5.1 Create `src/components/WeeklyInsightsCard.tsx`:
+5.1 ✅ Create `src/components/WeeklyInsightsCard.tsx`:
   - If `has_api_key` false: render inline prompt with link to `/profile`  
   - If `has_api_key` true: render "Analyse this week" button  
   - On click: call `POST /ai/weekly-insights`; show spinner; on success render plain-text result in scrollable card body  
   - Error state: show error message with retry option  
-5.2 Insert `<WeeklyInsightsCard />` in the History screen below the weekly summary card and above the training trends chart  
-5.3 The `has_api_key` value is fetched once (from existing profile query or a dedicated lightweight call) and passed as a prop
+5.2 ✅ Insert `<WeeklyInsightsCard />` in the History screen below the weekly summary card and above the training trends chart  
+5.3 ✅ The `has_api_key` value is fetched once (from existing profile query or a dedicated lightweight call) and passed as a prop
 
 ---
 

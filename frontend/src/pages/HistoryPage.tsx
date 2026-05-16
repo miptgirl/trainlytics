@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { Layout } from '../components/Layout'
+import { WeeklyInsightsCard } from '../components/WeeklyInsightsCard'
 import { api } from '../lib/api'
 import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
 import { usePaceTrends } from '../lib/hooks/usePaceTrends'
@@ -460,6 +461,12 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1)
   const pageSize = 20
 
+  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profile'),
+  })
+  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+
   const params = new URLSearchParams()
   if (type !== 'all') params.set('type', type)
   if (dateFrom) params.set('date_from', dateFrom)
@@ -483,6 +490,8 @@ export default function HistoryPage() {
       <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
 
       <WeeklySummaryCard />
+
+      <WeeklyInsightsCard hasApiKey={hasApiKey} />
 
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-4 w-fit">
         <button
