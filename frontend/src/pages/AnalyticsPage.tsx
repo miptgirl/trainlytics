@@ -1,4 +1,5 @@
 import { Layout } from '../components/Layout'
+import { SummaryHeader } from '../components/analytics/SummaryHeader'
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -17,7 +18,9 @@ export default function AnalyticsPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
 
-        <SectionCard title="All-time Summary" />
+        <SectionCard title="All-time Summary">
+          <SummaryHeader />
+        </SectionCard>
         <SectionCard title="Strength" />
         <SectionCard title="Cardio" />
         <SectionCard title="Readiness" />

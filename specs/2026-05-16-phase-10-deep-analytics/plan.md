@@ -55,7 +55,7 @@
 
 ---
 
-### Group 5 — Frontend: All-time Summary Header
+### Group 5 — Frontend: All-time Summary Header ✅
 
 5.1 Fetch `GET /analytics/summary` on page load  
 5.2 Render a three-stat header row: *Total time* (formatted as `Xh Ym`), *Sessions logged*, *Distance run* (km, 1 decimal); loading skeleton shown while fetching  

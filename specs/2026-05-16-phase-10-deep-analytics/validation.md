@@ -62,7 +62,7 @@ All tests in `tests/test_analytics.py` pass:
 - [ ] Nav bar does not overflow or wrap awkwardly on mobile (test at 390 px viewport width)
 - [ ] All other nav links still work correctly
 
-### All-time Summary Header
+### All-time Summary Header ✅
 
 - [ ] Total sessions count matches the number of sessions visible in the History screen
 - [ ] Total time is non-zero and formatted as `Xh Ym`
