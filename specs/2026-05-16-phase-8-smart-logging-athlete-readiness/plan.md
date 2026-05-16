@@ -12,7 +12,7 @@
 
 ---
 
-### Group 2 — Backend: Wellbeing & RPE
+### Group 2 — Backend: Wellbeing & RPE ✅ DONE
 
 2.1 Update `WorkoutSession` SQLAlchemy model with `wellbeing` and `rpe` fields  
 2.2 Update `WorkoutSessionCreate` and `WorkoutSessionUpdate` Pydantic schemas to include optional `wellbeing: int | None` and `rpe: int | None` (validated range 1–5)  

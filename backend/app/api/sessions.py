@@ -49,6 +49,8 @@ def _build_cardio_out(ws: WorkoutSession) -> CardioSessionOut:
         notes=ws.notes,
         title=ws.title,
         calories=ws.calories,
+        wellbeing=ws.wellbeing,
+        rpe=ws.rpe,
         created_at=ws.created_at,
         segments=cs.segments,  # type: ignore[arg-type]
     )
@@ -83,6 +85,8 @@ def _build_strength_out(ws: WorkoutSession) -> StrengthSessionOut:
         notes=ws.notes,
         title=ws.title,
         calories=ws.calories,
+        wellbeing=ws.wellbeing,
+        rpe=ws.rpe,
         duration_seconds=ws.strength_session.duration_seconds,
         created_at=ws.created_at,
         exercises=exercises_out,
@@ -229,6 +233,8 @@ async def create_cardio_session(
         notes=body.notes,
         title=body.title,
         calories=body.calories,
+        wellbeing=body.wellbeing,
+        rpe=body.rpe,
     )
     db.add(ws)
     await db.flush()
@@ -279,6 +285,8 @@ async def create_strength_session(
         notes=body.notes,
         title=body.title,
         calories=body.calories,
+        wellbeing=body.wellbeing,
+        rpe=body.rpe,
     )
     db.add(ws)
     await db.flush()
@@ -518,6 +526,10 @@ async def _patch_cardio(
         ws.title = body.title
     if body.calories is not None:
         ws.calories = body.calories
+    if body.wellbeing is not None:
+        ws.wellbeing = body.wellbeing
+    if body.rpe is not None:
+        ws.rpe = body.rpe
 
     cs = ws.cardio_session
     if body.activity_type_id is not None:
@@ -558,6 +570,10 @@ async def _patch_strength(
         ws.title = body.title
     if body.calories is not None:
         ws.calories = body.calories
+    if body.wellbeing is not None:
+        ws.wellbeing = body.wellbeing
+    if body.rpe is not None:
+        ws.rpe = body.rpe
     if body.duration_seconds is not None:
         ws.strength_session.duration_seconds = body.duration_seconds
 
