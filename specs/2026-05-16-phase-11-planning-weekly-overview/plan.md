@@ -67,7 +67,7 @@
 
 ---
 
-### Group 4 — Backend: AI Cardio Adapt Endpoint
+### Group 4 — Backend: AI Cardio Adapt Endpoint ✅
 
 4.1 Add `POST /ai/adapt-cardio-session` to `app/api/ai.py`:
   - Body: `{ planned_session_id: int, complaint: str }`

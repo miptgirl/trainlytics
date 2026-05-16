@@ -29,6 +29,9 @@ from app.models.exercise import Exercise
 from app.models.user_settings import UserSettings
 from app.services.crypto import InvalidToken, decrypt
 
+# Lazy imports used inside functions to avoid circular imports:
+# app.models.plan, app.models.cardio_activity_type
+
 # ── Model identifiers ─────────────────────────────────────────────────────────
 
 ANTHROPIC_MODEL = "claude-sonnet-4-5"
@@ -186,6 +189,103 @@ def compact_cardio_segments(segments: list[Any]) -> str:
         i = j
 
     return "; ".join(parts)
+
+
+def format_planned_cardio_session(session_title: str | None, segments: list[Any]) -> str:
+    """Format a planned cardio session for use in an AI prompt.
+
+    Each segment element must expose (or dict-key) activity_type_name, distance_metres,
+    duration_secs, pace_secs_per_km, and title.
+    """
+    header = f"Planned cardio session: {session_title or 'Untitled'}"
+    lines: list[str] = [header]
+    for i, seg in enumerate(segments, 1):
+        if hasattr(seg, "__getitem__"):
+            name = seg.get("activity_type_name", "Unknown")
+            dist = seg.get("distance_metres")
+            dur = seg.get("duration_secs")
+            pace = seg.get("pace_secs_per_km")
+            title = seg.get("title")
+        else:
+            name = getattr(seg, "activity_type_name", "Unknown")
+            dist = getattr(seg, "distance_metres", None)
+            dur = getattr(seg, "duration_secs", None)
+            pace = getattr(seg, "pace_secs_per_km", None)
+            title = getattr(seg, "title", None)
+
+        label = title or name
+        parts: list[str] = [f"  Segment {i}: {label}"]
+        if dist is not None:
+            parts.append(f"{dist / 1000:.2g} km")
+        if dur is not None:
+            mins = dur / 60
+            parts.append(f"{mins:.0f} min")
+        if pace is not None:
+            p_mins, p_secs = divmod(int(pace), 60)
+            parts.append(f"pace {p_mins}:{p_secs:02d}/km")
+        lines.append(", ".join(parts) if len(parts) > 1 else parts[0])
+    return "\n".join(lines)
+
+
+async def build_cardio_history_prompt(username: str, db: AsyncSession) -> str:
+    """Assemble 4 weeks of cardio-only history for prompt context."""
+    from sqlalchemy.orm import selectinload
+
+    today = datetime.date.today()
+    cutoff = today - datetime.timedelta(weeks=4)
+    cutoff_dt = datetime.datetime.combine(cutoff, datetime.time.min, tzinfo=datetime.timezone.utc)
+
+    result = await db.execute(
+        select(WorkoutSession)
+        .where(
+            WorkoutSession.user_id == username,
+            WorkoutSession.type == "cardio",
+            WorkoutSession.date >= cutoff_dt,
+        )
+        .order_by(WorkoutSession.date.asc())
+        .options(selectinload(WorkoutSession.cardio_session).selectinload(CardioSession.segments))
+    )
+    sessions = result.scalars().all()
+
+    if not sessions:
+        return "No cardio sessions recorded in the past 4 weeks."
+
+    lines: list[str] = ["Recent cardio history (last 4 weeks):"]
+    for ws in sessions:
+        lines.append(compact_session_summary(ws))
+    return "\n".join(lines)
+
+
+async def get_skip_notes_context(username: str, db: AsyncSession) -> str:
+    """Return formatted skip notes from the current and previous week, or empty string."""
+    from app.models.plan import PlannedSession, WeeklyPlan
+
+    today = datetime.date.today()
+    current_week_start = today - datetime.timedelta(days=today.weekday())
+    prev_week_start = current_week_start - datetime.timedelta(weeks=1)
+
+    result = await db.execute(
+        select(PlannedSession)
+        .join(WeeklyPlan, WeeklyPlan.id == PlannedSession.plan_id)
+        .where(
+            WeeklyPlan.user_id == username,
+            WeeklyPlan.week_start.in_([current_week_start, prev_week_start]),
+            PlannedSession.skip_note.isnot(None),
+            PlannedSession.skip_note != "",
+        )
+        .order_by(PlannedSession.planned_date)
+    )
+    sessions = result.scalars().all()
+
+    if not sessions:
+        return ""
+
+    lines: list[str] = ["Skip notes (recent weeks):"]
+    for s in sessions:
+        lines.append(
+            f"  Skipped {s.title or s.session_type} on {s.planned_date}: {s.skip_note}"
+        )
+    return "\n".join(lines)
 
 
 def compact_session_summary(ws: WorkoutSession) -> str:
@@ -407,12 +507,14 @@ async def call_ai(
 
 async def call_weekly_insights(username: str, db: AsyncSession) -> str:
     history = await build_weekly_history_prompt(username, db)
+    skip_notes = await get_skip_notes_context(username, db)
+    history_block = f"{history}\n\n{skip_notes}" if skip_notes else history
     prompt = (
         "You are a personal training coach. Analyse the athlete's recent training log below.\n"
         "Surface: total volume change week-over-week, pace or strength progression, any PRs, "
         "wellbeing/RPE patterns, and any imbalance observations (e.g. all push, no pull). "
         "Keep the response concise — 150–250 words.\n\n"
-        f"Training history:\n{history}"
+        f"Training history:\n{history_block}"
     )
     return await call_ai(prompt, username, "weekly-insights", db)
 
@@ -494,3 +596,71 @@ async def call_adapt_session(
 ) -> str:
     prompt = await build_session_snapshot_prompt(session_snapshot, user_message, username, db)
     return await call_ai(prompt, username, "adapt-session", db)
+
+
+# ── Adapt cardio session ──────────────────────────────────────────────────────
+
+async def call_adapt_cardio_session(
+    planned_session_id: int,
+    complaint: str,
+    username: str,
+    db: AsyncSession,
+) -> str:
+    """Build and dispatch the adapt-cardio-session prompt.
+
+    Raises ValueError("not_found") if the planned session does not exist or
+    belongs to a different user.
+    """
+    from sqlalchemy.orm import selectinload
+
+    from app.models.cardio_activity_type import CardioActivityType
+    from app.models.plan import PlannedSession, WeeklyPlan
+
+    result = await db.execute(
+        select(PlannedSession)
+        .join(WeeklyPlan, WeeklyPlan.id == PlannedSession.plan_id)
+        .where(
+            PlannedSession.id == planned_session_id,
+            WeeklyPlan.user_id == username,
+        )
+        .options(selectinload(PlannedSession.cardio_segments))
+    )
+    session = result.scalar_one_or_none()
+    if session is None:
+        raise ValueError("not_found")
+
+    # Resolve activity type names
+    activity_type_ids = [seg.activity_type_id for seg in session.cardio_segments]
+    act_names: dict[int, str] = {}
+    if activity_type_ids:
+        at_result = await db.execute(
+            select(CardioActivityType).where(CardioActivityType.id.in_(activity_type_ids))
+        )
+        for at in at_result.scalars().all():
+            act_names[at.id] = at.name
+
+    segments_data = [
+        {
+            "activity_type_name": act_names.get(seg.activity_type_id, "Unknown"),
+            "title": seg.title,
+            "distance_metres": seg.distance_metres,
+            "duration_secs": seg.duration_secs,
+            "pace_secs_per_km": seg.pace_secs_per_km,
+            "notes": seg.notes,
+        }
+        for seg in session.cardio_segments
+    ]
+
+    planned_text = format_planned_cardio_session(session.title, segments_data)
+    cardio_history = await build_cardio_history_prompt(username, db)
+
+    prompt = (
+        "You are a personal training coach. The athlete wants to adapt today's planned cardio session.\n\n"
+        f"{cardio_history}\n\n"
+        f"{planned_text}\n\n"
+        f"Athlete's message: {complaint}\n\n"
+        "Provide specific, actionable modification suggestions for the planned cardio session. "
+        "Reference the planned distances, durations, and paces when suggesting adjustments. "
+        "Keep the response concise and practical."
+    )
+    return await call_ai(prompt, username, "adapt-cardio-session", db)

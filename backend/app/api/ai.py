@@ -16,6 +16,11 @@ class AdaptSessionRequest(BaseModel):
     user_message: str
 
 
+class AdaptCardioRequest(BaseModel):
+    planned_session_id: int
+    complaint: str
+
+
 @router.post("/weekly-insights")
 async def weekly_insights(
     username: str = Depends(get_current_user),
@@ -53,6 +58,31 @@ async def adapt_session(
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=f"AI call failed: {exc}") from exc
     return {"suggestions": suggestions}
+
+
+@router.post("/adapt-cardio-session")
+async def adapt_cardio_session(
+    body: AdaptCardioRequest,
+    username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    provider_info = await ai_service.get_active_provider(username, db)
+    if provider_info is None:
+        raise HTTPException(
+            status_code=402,
+            detail="No AI API key configured. Add a key in your profile to use this feature.",
+        )
+    try:
+        response = await ai_service.call_adapt_cardio_session(
+            body.planned_session_id, body.complaint, username, db
+        )
+    except ValueError as exc:
+        if str(exc) == "not_found":
+            raise HTTPException(status_code=404, detail="Planned session not found")
+        raise HTTPException(status_code=502, detail=f"AI call failed: {exc}") from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=f"AI call failed: {exc}") from exc
+    return {"response": response}
 
 
 @router.get("/logs")
