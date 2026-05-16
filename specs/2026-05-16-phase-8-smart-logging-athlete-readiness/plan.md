@@ -60,7 +60,7 @@
 
 ---
 
-### Group 7 — Frontend: Exercise Replacements — Settings
+### Group 7 — Frontend: Exercise Replacements — Settings ✅ DONE
 
 7.1 In `ExercisesPage` (or the exercise edit modal/sheet), add a "Replacements" section below the existing fields  
 7.2 Show a list of current replacements with a remove (✕) button per entry  

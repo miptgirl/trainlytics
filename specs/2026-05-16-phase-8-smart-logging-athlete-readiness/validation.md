@@ -33,11 +33,11 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 - [x] `GET /exercises/{id}/replacements` — returns list of replacement exercises (id + name), scoped to current user
 - [x] `POST /exercises/{id}/replacements` — adds a replacement; returns updated list; 400 on self-replacement; 409 on duplicate; 404 on unknown/unauthorized exercise
 - [x] `DELETE /exercises/{id}/replacements/{rid}` — removes replacement; returns updated list; 404 if not found
-- [ ] Settings / Manage Exercises shows a "Replacements" section for each exercise
-- [ ] Adding a replacement calls `POST /exercises/{id}/replacements` and updates the list
-- [ ] The "add replacement" picker groups exercises by type tag
-- [ ] Removing a replacement calls `DELETE /exercises/{id}/replacements/{rid}`
-- [ ] "Also add reverse?" prompt is offered and works correctly
+- [x] Settings / Manage Exercises shows a "Replacements" section for each exercise
+- [x] Adding a replacement calls `POST /exercises/{id}/replacements` and updates the list
+- [x] The "add replacement" picker groups exercises by type tag
+- [x] Removing a replacement calls `DELETE /exercises/{id}/replacements/{rid}`
+- [x] "Also add reverse?" prompt is offered and works correctly
 - [ ] Swap icon (⇄) appears on exercise rows in the strength log form only for exercises that have replacements
 - [ ] Tapping swap opens a list of configured replacements
 - [ ] Selecting a replacement swaps the exercise; sets/reps/weight are loaded from the most recent session for the replacement exercise (not copied from the swapped-out row)
