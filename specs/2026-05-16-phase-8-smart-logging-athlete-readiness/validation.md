@@ -30,6 +30,9 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 ### Exercise Replacements
 
 - [x] `exercise_replacements` table exists with correct FK and unique constraints
+- [x] `GET /exercises/{id}/replacements` — returns list of replacement exercises (id + name), scoped to current user
+- [x] `POST /exercises/{id}/replacements` — adds a replacement; returns updated list; 400 on self-replacement; 409 on duplicate; 404 on unknown/unauthorized exercise
+- [x] `DELETE /exercises/{id}/replacements/{rid}` — removes replacement; returns updated list; 404 if not found
 - [ ] Settings / Manage Exercises shows a "Replacements" section for each exercise
 - [ ] Adding a replacement calls `POST /exercises/{id}/replacements` and updates the list
 - [ ] The "add replacement" picker groups exercises by type tag

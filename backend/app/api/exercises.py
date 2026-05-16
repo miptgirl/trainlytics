@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, insert, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
-from app.models.exercise import Exercise
+from app.models.exercise import Exercise, exercise_replacements
 from app.models.exercise_type import ExerciseType
 from app.models.session import StrengthExerciseEntry, StrengthSession, WorkoutSession
-from app.schemas.exercise import ExerciseCreate, ExerciseDefaultsOut, ExerciseOut, ExercisePatch, SetDefault
+from app.schemas.exercise import ExerciseCreate, ExerciseDefaultsOut, ExerciseOut, ExercisePatch, ExerciseRef, ReplacementAdd, SetDefault
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
 
@@ -107,6 +107,92 @@ async def get_last_session_defaults(
     return ExerciseDefaultsOut(
         sets=[SetDefault(set_number=s.set_number, reps=s.reps, weight=s.weight) for s in entry.sets]
     )
+
+
+async def _list_replacements(exercise_id: int, db: AsyncSession) -> list[Exercise]:
+    result = await db.execute(
+        select(Exercise)
+        .join(exercise_replacements, Exercise.id == exercise_replacements.c.replacement_id)
+        .where(exercise_replacements.c.exercise_id == exercise_id)
+        .order_by(Exercise.name)
+    )
+    return list(result.scalars().all())
+
+
+@router.get("/{exercise_id}/replacements", response_model=list[ExerciseRef])
+async def list_replacements(
+    exercise_id: int,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[Exercise]:
+    exercise = await db.get(Exercise, exercise_id)
+    if not exercise or exercise.user_id != user:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    return await _list_replacements(exercise_id, db)
+
+
+@router.post("/{exercise_id}/replacements", response_model=list[ExerciseRef], status_code=201)
+async def add_replacement(
+    exercise_id: int,
+    body: ReplacementAdd,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[Exercise]:
+    exercise = await db.get(Exercise, exercise_id)
+    if not exercise or exercise.user_id != user:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    if body.replacement_id == exercise_id:
+        raise HTTPException(status_code=400, detail="An exercise cannot be its own replacement")
+
+    replacement = await db.get(Exercise, body.replacement_id)
+    if not replacement or replacement.user_id != user:
+        raise HTTPException(status_code=404, detail="Replacement exercise not found")
+
+    existing = await db.execute(
+        select(exercise_replacements).where(
+            exercise_replacements.c.exercise_id == exercise_id,
+            exercise_replacements.c.replacement_id == body.replacement_id,
+        )
+    )
+    if existing.first() is not None:
+        raise HTTPException(status_code=409, detail="Replacement already exists")
+
+    await db.execute(
+        insert(exercise_replacements).values(exercise_id=exercise_id, replacement_id=body.replacement_id)
+    )
+    await db.commit()
+    return await _list_replacements(exercise_id, db)
+
+
+@router.delete("/{exercise_id}/replacements/{replacement_id}", response_model=list[ExerciseRef])
+async def remove_replacement(
+    exercise_id: int,
+    replacement_id: int,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[Exercise]:
+    exercise = await db.get(Exercise, exercise_id)
+    if not exercise or exercise.user_id != user:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    result = await db.execute(
+        select(exercise_replacements).where(
+            exercise_replacements.c.exercise_id == exercise_id,
+            exercise_replacements.c.replacement_id == replacement_id,
+        )
+    )
+    if result.first() is None:
+        raise HTTPException(status_code=404, detail="Replacement not found")
+
+    await db.execute(
+        delete(exercise_replacements).where(
+            exercise_replacements.c.exercise_id == exercise_id,
+            exercise_replacements.c.replacement_id == replacement_id,
+        )
+    )
+    await db.commit()
+    return await _list_replacements(exercise_id, db)
 
 
 @router.delete("/{exercise_id}", status_code=204)

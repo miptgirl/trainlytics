@@ -17,6 +17,13 @@ class ExercisePatch(BaseModel):
     type_ids: list[int] | None = None
 
 
+class ExerciseRef(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
 class ExerciseOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,6 +33,10 @@ class ExerciseOut(BaseModel):
     notes: str | None
     created_at: datetime
     types: list[ExerciseTypeOut] = []
+
+
+class ReplacementAdd(BaseModel):
+    replacement_id: int
 
 
 class SetDefault(BaseModel):

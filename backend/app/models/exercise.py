@@ -3,13 +3,20 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.exercise_type import ExerciseType
+
+exercise_replacements = Table(
+    "exercise_replacements",
+    Base.metadata,
+    Column("exercise_id", Integer, ForeignKey("exercises.id", ondelete="CASCADE"), primary_key=True),
+    Column("replacement_id", Integer, ForeignKey("exercises.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Exercise(Base):
@@ -28,4 +35,11 @@ class Exercise(Base):
         "ExerciseType",
         secondary="exercise_exercise_types",
         lazy="selectin",
+    )
+    replacements: Mapped[list[Exercise]] = relationship(
+        "Exercise",
+        secondary=exercise_replacements,
+        primaryjoin=lambda: Exercise.id == exercise_replacements.c.exercise_id,
+        secondaryjoin=lambda: Exercise.id == exercise_replacements.c.replacement_id,
+        lazy="raise",
     )

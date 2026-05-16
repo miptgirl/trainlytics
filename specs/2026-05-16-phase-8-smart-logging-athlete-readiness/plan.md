@@ -29,7 +29,7 @@
 
 ---
 
-### Group 4 — Backend: Exercise Replacements
+### Group 4 — Backend: Exercise Replacements ✅ DONE
 
 4.1 Add `exercise_replacements` association table to `exercise.py` model (or a new `exercise_replacement.py` model file)  
 4.2 Add `replacements` relationship on `Exercise` via the join table  
