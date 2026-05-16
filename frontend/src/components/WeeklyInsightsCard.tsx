@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 
 interface WeeklyInsightsCardProps {
@@ -98,9 +100,9 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         )}
 
         {status === 'success' && analysis && (
-          <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed max-h-64 overflow-y-auto">
-            {analysis}
-          </p>
+          <div className="prose prose-sm prose-slate max-w-none max-h-64 overflow-y-auto leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+          </div>
         )}
 
         {status === 'error' && errorMsg && (

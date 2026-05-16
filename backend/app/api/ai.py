@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.models.ai_request_log import AiRequestLog
 from app.services import ai_service
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -51,3 +53,35 @@ async def adapt_session(
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=f"AI call failed: {exc}") from exc
     return {"suggestions": suggestions}
+
+
+@router.get("/logs")
+async def get_logs(
+    limit: int = Query(default=20, le=100),
+    username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict]:
+    """Return the most recent AI request logs for the authenticated user."""
+    result = await db.execute(
+        select(AiRequestLog)
+        .where(AiRequestLog.username == username)
+        .order_by(desc(AiRequestLog.created_at))
+        .limit(limit)
+    )
+    rows = result.scalars().all()
+    return [
+        {
+            "id": r.id,
+            "endpoint": r.endpoint,
+            "provider": r.provider,
+            "model": r.model,
+            "input_tokens": r.input_tokens,
+            "output_tokens": r.output_tokens,
+            "duration_ms": r.duration_ms,
+            "error": r.error,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "prompt": r.prompt,
+            "response": r.response,
+        }
+        for r in rows
+    ]

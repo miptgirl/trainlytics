@@ -87,10 +87,10 @@
 
 ---
 
-### Group 7 — Tests & Polish
+### Group 7 — Tests & Polish ✅
 
-7.1 Backend: add `tests/test_ai.py` — mock Anthropic/OpenAI SDKs; test weekly-insights 402 when no key; test adapt-session 402; test happy-path returns `analysis`/`suggestions` string; test that a successful call writes a row to `ai_request_logs` with correct endpoint, provider, model, and non-null response; test that a failed AI call (SDK raises exception) still writes a log row with the error field set and does not re-raise to the caller  
-7.2 Backend: unit tests for `compact_sets` and `compact_cardio_segments` in `tests/test_ai.py`: all-same sets → `N×reps@weight`; mixed sets → individual listing with grouped runs; single set → no prefix; empty list → empty string  
-7.3 Frontend: add Vitest tests for `WeeklyInsightsCard` (no-key state, loading state, result state) and `AdaptSessionModal` (renders, submits, shows result)  
+7.1 ✅ Backend: add `tests/test_ai.py` — mock Anthropic/OpenAI SDKs; test weekly-insights 402 when no key; test adapt-session 402; test happy-path returns `analysis`/`suggestions` string; test that a successful call writes a row to `ai_request_logs` with correct endpoint, provider, model, and non-null response; test that a failed AI call (SDK raises exception) still writes a log row with the error field set and does not re-raise to the caller  
+7.2 ✅ Backend: unit tests for `compact_sets` and `compact_cardio_segments` in `tests/test_ai.py`: all-same sets → `N×reps@weight`; mixed sets → individual listing with grouped runs; single set → no prefix; empty list → empty string  
+7.3 ✅ Frontend: add Vitest tests for `WeeklyInsightsCard` (no-key state, loading state, result state) and `AdaptSessionModal` (renders, submits, shows result)  
 7.4 Manual validation pass per `validation.md`  
-7.5 Update `CHANGELOG.md` with Phase 9 entry
+7.5 ✅ Update `CHANGELOG.md` with Phase 9 entry

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 
@@ -8,6 +10,20 @@ import { api } from '../lib/api'
 type Priority = 'high' | 'medium' | 'low'
 type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced'
 type AIProvider = 'anthropic' | 'openai'
+
+interface AiLog {
+  id: number
+  endpoint: string
+  provider: string
+  model: string
+  input_tokens: number | null
+  output_tokens: number | null
+  duration_ms: number
+  error: string | null
+  created_at: string | null
+  prompt: string
+  response: string | null
+}
 
 interface GoalItem {
   text: string
@@ -148,6 +164,102 @@ function ApiKeyField({
           >
             Save
           </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Debug Logs Section ──────────────────────────────────────────────────────
+
+function DebugLogsSection() {
+  const [open, setOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  const { data: logs, isLoading, refetch } = useQuery<AiLog[]>({
+    queryKey: ['ai-logs'],
+    queryFn: () => api.get<AiLog[]>('/ai/logs?limit=20'),
+    enabled: open,
+    staleTime: 0,
+  })
+
+  return (
+    <div className="border border-slate-200 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        onClick={() => { setOpen(v => !v); if (!open) refetch() }}
+        className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+      >
+        <span className="text-xs font-mono font-semibold text-slate-400 tracking-widest uppercase">
+          ⚙ Debug — AI request logs
+        </span>
+        <span className="text-slate-400 text-xs">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div className="bg-white divide-y divide-slate-100">
+          {isLoading && (
+            <p className="px-5 py-4 text-sm text-slate-400">Loading…</p>
+          )}
+          {!isLoading && (!logs || logs.length === 0) && (
+            <p className="px-5 py-4 text-sm text-slate-400">No logs yet.</p>
+          )}
+          {logs?.map((log) => {
+            const isExpanded = expandedId === log.id
+            const ts = log.created_at
+              ? new Date(log.created_at).toLocaleString()
+              : '—'
+            const statusColor = log.error ? 'text-red-600' : 'text-emerald-600'
+            const statusLabel = log.error ? '✗ error' : '✓ ok'
+
+            return (
+              <div key={log.id} className="px-5 py-3">
+                {/* Summary row */}
+                <button
+                  type="button"
+                  className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-left"
+                  onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                >
+                  <span className="text-xs font-mono text-slate-500 shrink-0">{ts}</span>
+                  <span className="text-xs font-semibold text-slate-700 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                    {log.endpoint}
+                  </span>
+                  <span className="text-xs text-slate-500">{log.provider} / {log.model}</span>
+                  {log.input_tokens != null && (
+                    <span className="text-xs text-slate-400">
+                      {log.input_tokens}↑ {log.output_tokens}↓ tokens
+                    </span>
+                  )}
+                  <span className="text-xs text-slate-400">{log.duration_ms} ms</span>
+                  <span className={`text-xs font-semibold ml-auto ${statusColor}`}>{statusLabel}</span>
+                </button>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div className="mt-3 flex flex-col gap-3">
+                    {log.error && (
+                      <div>
+                        <p className="text-xs font-semibold text-red-600 mb-1">Error</p>
+                        <pre className="text-xs bg-red-50 text-red-700 rounded p-2 whitespace-pre-wrap break-all">{log.error}</pre>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 mb-1">Prompt</p>
+                      <pre className="text-xs bg-slate-50 text-slate-700 rounded p-2 whitespace-pre-wrap break-all max-h-64 overflow-y-auto">{log.prompt}</pre>
+                    </div>
+                    {log.response && (
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500 mb-1">Response (rendered)</p>
+                        <div className="prose prose-sm prose-slate max-w-none bg-slate-50 rounded p-2 max-h-64 overflow-y-auto">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.response}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -399,6 +511,9 @@ export default function ProfilePage() {
             )}
           </div>
         </SectionCard>
+
+        {/* ── Debug: AI Request Logs ── */}
+        <DebugLogsSection />
       </div>
     </Layout>
   )

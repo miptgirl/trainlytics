@@ -67,15 +67,15 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 ### Backend Tests
 
 - [x] `tests/test_profile.py` passes: get (no row), patch display name, patch Anthropic key, patch OpenAI key, neither key returned, clear each key independently
-- [ ] `tests/test_ai.py` passes with mocked AI SDKs: 402 paths, happy-path responses
-- [ ] `test_ai.py`: successful call writes a row to `ai_request_logs` with correct `endpoint`, `provider`, `model`, non-null `response`, and non-null `input_tokens`/`output_tokens`
-- [ ] `test_ai.py`: failed AI call (SDK raises) writes a row with `error` set and `response` null — and the exception is **not** re-raised to the HTTP handler
-- [ ] `compact_sets` unit tests pass:
+- [x] `tests/test_ai.py` passes with mocked AI SDKs: 402 paths, happy-path responses
+- [x] `test_ai.py`: successful call writes a row to `ai_request_logs` with correct `endpoint`, `provider`, `model`, non-null `response`, and non-null `input_tokens`/`output_tokens`
+- [x] `test_ai.py`: failed AI call (SDK raises) writes a row with `error` set and `response` null — and the exception is **not** re-raised to the HTTP handler
+- [x] `compact_sets` unit tests pass:
   - 5 identical sets (5 reps @ 100 kg) → `5×5@100kg`
   - Mixed sets (10@60kg, 5@90kg, 5@90kg, 4@90kg) → `10@60kg, 2×5@90kg, 4@90kg`
   - Single set → no repetition prefix (e.g. `5@100kg`)
   - Empty list → empty string
-- [ ] `compact_cardio_segments` unit tests pass for analogous cases
+- [x] `compact_cardio_segments` unit tests pass for analogous cases
 
 ### AI Request Logging
 

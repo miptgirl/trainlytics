@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { api } from '../lib/api'
 
 interface SessionSnapshot {
@@ -117,8 +119,8 @@ export function AdaptSessionModal({ hasApiKey, sessionSnapshot, onClose }: Adapt
               )}
 
               {status === 'success' && suggestions && (
-                <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
-                  {suggestions}
+                <div className="prose prose-sm prose-slate max-w-none bg-slate-50 rounded-lg p-3 leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{suggestions}</ReactMarkdown>
                 </div>
               )}
             </>
