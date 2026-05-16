@@ -10,20 +10,20 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 
 ### User Profile Page
 
-- [ ] `/profile` route is accessible and linked from the nav bar
-- [ ] Display name can be set and updated; change persists on page reload
-- [ ] Birth year can be set; age is not stored — verify `birth_year` column in `user_settings`, not an `age` column
-- [ ] Experience level selector saves and persists; valid values are `beginner`, `intermediate`, `advanced`
-- [ ] Training goals: adding a goal requires both text and a priority (High / Medium / Low); new goals default to Medium; removing a goal deletes it; list is displayed sorted high → medium → low; stored as JSONB array of `{ text, priority }` objects; confirmed via psql
-- [ ] Goals with an invalid priority value are rejected by the backend (422)
-- [ ] Injury / limitation notes: saves and persists on reload
-- [ ] AI coach notes: saves and persists on reload
-- [ ] Anthropic key field: masked by default, toggle reveals; saving shows "Configured ✓"; raw key never visible again
-- [ ] OpenAI key field: same behaviour as Anthropic key field
-- [ ] `GET /profile` response includes `birth_year`, `experience_level`, `goals`, `injury_notes`, `coach_notes`, `has_anthropic_key`, `has_openai_key`; neither raw key appears
-- [ ] "Remove" clears the respective key; `GET /profile` returns `false` for that key; AI features show the configure prompt if no key remains
-- [ ] Provider toggle is visible only when both keys are configured; selecting a provider persists via `PATCH /profile`
-- [ ] When only one key is set, that provider is used automatically with no toggle shown
+- [x] `/profile` route is accessible and linked from the nav bar
+- [x] Display name can be set and updated; change persists on page reload
+- [x] Birth year can be set; age is not stored — verify `birth_year` column in `user_settings`, not an `age` column
+- [x] Experience level selector saves and persists; valid values are `beginner`, `intermediate`, `advanced`
+- [x] Training goals: adding a goal requires both text and a priority (High / Medium / Low); new goals default to Medium; removing a goal deletes it; list is displayed sorted high → medium → low; stored as JSONB array of `{ text, priority }` objects; confirmed via psql
+- [x] Goals with an invalid priority value are rejected by the backend (422)
+- [x] Injury / limitation notes: saves and persists on reload
+- [x] AI coach notes: saves and persists on reload
+- [x] Anthropic key field: masked by default, toggle reveals; saving shows "Configured ✓"; raw key never visible again
+- [x] OpenAI key field: same behaviour as Anthropic key field
+- [x] `GET /profile` response includes `birth_year`, `experience_level`, `goals`, `injury_notes`, `coach_notes`, `has_anthropic_key`, `has_openai_key`; neither raw key appears
+- [x] "Remove" clears the respective key; `GET /profile` returns `false` for that key; AI features show the configure prompt if no key remains
+- [x] Provider toggle is visible only when both keys are configured; selecting a provider persists via `PATCH /profile`
+- [x] When only one key is set, that provider is used automatically with no toggle shown
 - [ ] Profile page is scrollable and renders cleanly on mobile (iPhone viewport)
 
 ### AI Prompt Context

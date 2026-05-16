@@ -46,9 +46,9 @@
 
 ---
 
-### Group 4 — Frontend: Profile Page
+### Group 4 — Frontend: Profile Page ✅
 
-4.1 Create `src/pages/ProfilePage.tsx`:
+4.1 ✅ Create `src/pages/ProfilePage.tsx`:
   - Fetch `GET /profile` on mount  
   - **About section**: display name (text input), birth year (number input), experience level (Beginner / Intermediate / Advanced segmented control)
   - **Training goals section**: each goal has a text input and a priority selector (High / Medium / Low); "Add goal" appends a new item defaulting to Medium priority; each item has a remove (✕) button; list is displayed sorted by priority (high → medium → low); saves full array via `PATCH /profile`
@@ -57,8 +57,8 @@
   - **AI Provider section**: two key fields (Anthropic, OpenAI), each with masked input, toggle reveal, save, and remove; provider toggle shown only when both keys are set  
   - Each key: on save calls `PATCH /profile`, clears input, shows "Configured ✓"; remove calls `PATCH /profile` with `null`
   - Sections are visually separated (cards or dividers); page must be scrollable and usable on mobile  
-4.2 Add `/profile` route in `App.tsx`  
-4.3 Add "Profile" link to nav bar
+4.2 ✅ Add `/profile` route in `App.tsx`  
+4.3 ✅ Add "Profile" link to nav bar
 
 ---
 

@@ -12,6 +12,7 @@ import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import HistoryPage from './pages/HistoryPage'
 import TemplatesPage from './pages/TemplatesPage'
 import StepsPage from './pages/StepsPage'
+import ProfilePage from './pages/ProfilePage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -90,6 +91,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <StepsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
             </ProtectedRoute>
           }
         />
