@@ -100,7 +100,7 @@
 
 ---
 
-### Group 10 — History Screen Fix
+### Group 10 — History Screen Fix ✅
 
 10.1 Update `GET /sessions/training-trends` call in `src/pages/HistoryPage.tsx` (or equivalent) to pass `skip_empty_weeks=true`; no visual change expected — empty-week bars simply disappear  
 

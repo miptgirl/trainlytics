@@ -68,9 +68,9 @@ All tests in `tests/test_analytics.py` pass:
 - [ ] Total time is non-zero and formatted as `Xh Ym`
 - [ ] Total distance (km) reflects your cardio sessions with distance logged
 
-### History Screen Fix
+### History Screen Fix ✅ (Group 10 implemented 2026-05-16)
 
-- [ ] Open the History screen; the 12-week trends chart contains no empty bars for weeks with no logged sessions
+- [x] Open the History screen; the 12-week trends chart contains no empty bars for weeks with no logged sessions
 
 ### Strength Analytics
 
