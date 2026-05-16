@@ -4,6 +4,28 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-05-16 — Phase 9: AI Training Coach
+
+### Added
+
+- **User Profile Page** — `/profile` route linked from nav bar; stores display name, birth year, experience level, training goals (ordered list with `high`/`medium`/`low` priority), injury notes, and AI coach notes in a new `user_settings` table; all fields persist on reload
+- **API Key Management** — Anthropic and OpenAI keys stored encrypted (Fernet + PBKDF2-HMAC-SHA256 from `SECRET_KEY`) in `user_settings`; masked input with toggle-reveal, "Save" (shows "Configured ✓") and "Remove" actions; provider selector shown when both keys are set; raw keys never returned to the frontend
+- **Weekly Insights Panel** — "AI Insights" card on the History screen (below weekly summary, above trends chart); "Analyse this week" button calls `POST /ai/weekly-insights`; streams compacted 6-week training history with athlete context block to Claude Sonnet or GPT-4o; spinner, success, error and retry states
+- **Adaptive Session Helper** — "Adapt this session" button in the strength log form opens `AdaptSessionModal`; user describes a physical complaint; `POST /ai/adapt-session` sends session snapshot + 4-week history + athlete context; suggestions rendered as plain text
+- **AI Request Logging** — every AI call (success or failure) writes a row to `ai_request_logs` with endpoint, provider, model, full prompt, response, token counts, duration, and error; log write failures are silently swallowed and never propagate
+- **Athlete Context Block** — assembled from profile fields (experience, age derived from birth year, goals sorted by priority, injury notes, coach notes); prepended to every AI prompt; fields omitted when not set
+- **`compact_sets` / `compact_cardio_segments`** — helpers collapse consecutive identical sets/segments into `N×reps@weight` / `N×dist@pace` notation for concise prompts
+- **`app/services/crypto.py`** — Fernet encrypt/decrypt with key derived from `SECRET_KEY` via PBKDF2-HMAC-SHA256 and a fixed app salt
+- **Alembic migrations** — `user_settings` and `ai_request_logs` tables
+
+### Tests
+
+- `tests/test_ai.py` — 17 tests: `compact_sets` and `compact_cardio_segments` unit tests (empty, single, identical, mixed cases); 402 paths for both AI endpoints; happy-path Anthropic mock; log row verification for success and failure; SDK exception writes log row with `error` set and does not re-raise
+- `WeeklyInsightsCard.test.tsx` — 6 Vitest tests: no-key state, Analyse button, spinner, result render, error state, retry
+- `AdaptSessionModal.test.tsx` — 9 Vitest tests: renders, no-key state, disabled button when empty, enabled when typed, spinner, suggestions render, request body, error state, close
+
+---
+
 ## 2026-05-04 — Phase 4: Usability & Mobile Polish
 
 ### Added
