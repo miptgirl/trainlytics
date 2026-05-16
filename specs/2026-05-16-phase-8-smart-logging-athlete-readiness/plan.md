@@ -4,7 +4,7 @@
 
 ---
 
-### Group 1 — DB Migrations
+### Group 1 — DB Migrations ✅ DONE
 
 1.1 Add `wellbeing` (integer, nullable) and `rpe` (integer, nullable) columns to `workout_sessions`  
 1.2 Create `exercise_replacements` join table with `(exercise_id, replacement_id)` primary key and FK constraints with `ON DELETE CASCADE`  

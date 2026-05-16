@@ -14,7 +14,7 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 - [ ] Cardio log form shows the same two rows
 - [ ] Selecting an emoji highlights it; tapping again deselects (value becomes null)
 - [ ] Submitted session payload includes `wellbeing` and `rpe` (null when not selected)
-- [ ] `workout_sessions` table has `wellbeing` and `rpe` integer columns (confirmed via `\d workout_sessions` or Alembic history)
+- [x] `workout_sessions` table has `wellbeing` and `rpe` integer columns (confirmed via `\d workout_sessions` or Alembic history)
 - [ ] Session detail view shows wellbeing and RPE when set; nothing shown when null
 - [ ] Both fields absent from the form do not break existing session submissions
 
@@ -28,7 +28,7 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 
 ### Exercise Replacements
 
-- [ ] `exercise_replacements` table exists with correct FK and unique constraints
+- [x] `exercise_replacements` table exists with correct FK and unique constraints
 - [ ] Settings / Manage Exercises shows a "Replacements" section for each exercise
 - [ ] Adding a replacement calls `POST /exercises/{id}/replacements` and updates the list
 - [ ] The "add replacement" picker groups exercises by type tag
