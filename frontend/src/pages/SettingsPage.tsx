@@ -353,6 +353,7 @@ function ExerciseTypeForm({
 function ExercisesSection() {
   const qc = useQueryClient()
   const [editingId, setEditingId] = useState<number | 'new' | null>(null)
+  const [autoOpenPicker, setAutoOpenPicker] = useState(false)
 
   const { data: exercises = [], isLoading } = useQuery({
     queryKey: ['exercises'],
@@ -367,10 +368,6 @@ function ExercisesSection() {
   const createMutation = useMutation({
     mutationFn: (body: { name: string; notes?: string; type_ids: number[] }) =>
       api.post<Exercise>('/exercises', body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['exercises'] })
-      setEditingId(null)
-    },
   })
 
   const updateMutation = useMutation({
@@ -386,6 +383,27 @@ function ExercisesSection() {
     mutationFn: (id: number) => api.delete<void>(`/exercises/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['exercises'] }),
   })
+
+  function handleCreate(values: ExerciseFormValues) {
+    createMutation.mutate(
+      { name: values.name, notes: values.notes || undefined, type_ids: values.type_ids },
+      { onSuccess: () => { qc.invalidateQueries({ queryKey: ['exercises'] }); setEditingId(null) } }
+    )
+  }
+
+  function handleCreateAndAddReplacement(values: ExerciseFormValues) {
+    createMutation.mutate(
+      { name: values.name, notes: values.notes || undefined, type_ids: values.type_ids },
+      {
+        onSuccess: (created) => {
+          qc.setQueryData<Exercise[]>(['exercises'], (old = []) => [...old, created])
+          setAutoOpenPicker(true)
+          setEditingId(created.id)
+          qc.invalidateQueries({ queryKey: ['exercises'] })
+        },
+      }
+    )
+  }
 
   return (
     <section>
@@ -404,9 +422,8 @@ function ExercisesSection() {
       {editingId === 'new' && (
         <ExerciseForm
           allTypes={allTypes}
-          onSubmit={(values) =>
-            createMutation.mutate({ name: values.name, notes: values.notes || undefined, type_ids: values.type_ids })
-          }
+          onSubmit={handleCreate}
+          onSaveAndAddReplacement={handleCreateAndAddReplacement}
           onCancel={() => setEditingId(null)}
           isPending={createMutation.isPending}
         />
@@ -434,8 +451,10 @@ function ExercisesSection() {
                       type_ids: values.type_ids,
                     })
                   }
-                  onCancel={() => setEditingId(null)}
+                  onCancel={() => { setAutoOpenPicker(false); setEditingId(null) }}
                   isPending={updateMutation.isPending}
+                  autoOpenPicker={autoOpenPicker}
+                  onPickerOpened={() => setAutoOpenPicker(false)}
                 />
               </li>
             ) : (
@@ -583,12 +602,23 @@ function ReplacementPicker({
 function ReplacementsSection({
   exerciseId,
   allExercises,
+  autoOpenPicker,
+  onPickerOpened,
 }: {
   exerciseId: number
   allExercises: Exercise[]
+  autoOpenPicker?: boolean
+  onPickerOpened?: () => void
 }) {
   const qc = useQueryClient()
   const [pickerOpen, setPickerOpen] = useState(false)
+
+  useEffect(() => {
+    if (autoOpenPicker) {
+      setPickerOpen(true)
+      onPickerOpened?.()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [reverseCandidate, setReverseCandidate] = useState<ExerciseRef | null>(null)
 
   const { data: replacements = [] } = useQuery({
@@ -690,16 +720,22 @@ function ExerciseForm({
   allExercises,
   defaultValues,
   onSubmit,
+  onSaveAndAddReplacement,
   onCancel,
   isPending,
+  autoOpenPicker,
+  onPickerOpened,
 }: {
   exerciseId?: number
   allTypes: ExerciseType[]
   allExercises?: Exercise[]
   defaultValues?: ExerciseFormValues
   onSubmit: (values: ExerciseFormValues) => void
+  onSaveAndAddReplacement?: (values: ExerciseFormValues) => void
   onCancel: () => void
   isPending: boolean
+  autoOpenPicker?: boolean
+  onPickerOpened?: () => void
 }) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ExerciseFormValues>({
     defaultValues: defaultValues ?? { name: '', notes: '', type_ids: [] },
@@ -766,9 +802,14 @@ function ExerciseForm({
         </div>
       )}
       {exerciseId !== undefined && allExercises !== undefined && (
-        <ReplacementsSection exerciseId={exerciseId} allExercises={allExercises} />
+        <ReplacementsSection
+          exerciseId={exerciseId}
+          allExercises={allExercises}
+          autoOpenPicker={autoOpenPicker}
+          onPickerOpened={onPickerOpened}
+        />
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           type="submit"
           disabled={isPending}
@@ -776,6 +817,16 @@ function ExerciseForm({
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
+        {onSaveAndAddReplacement && (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={handleSubmit(onSaveAndAddReplacement)}
+            className="bg-white hover:bg-gray-50 disabled:opacity-50 text-blue-600 text-sm font-medium px-4 py-1.5 rounded-lg border border-blue-300"
+          >
+            {isPending ? 'Saving…' : 'Save & add replacement'}
+          </button>
+        )}
         <button type="button" onClick={onCancel} className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1.5">
           Cancel
         </button>
