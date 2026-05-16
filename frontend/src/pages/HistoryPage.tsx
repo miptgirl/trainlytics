@@ -149,7 +149,7 @@ function TrainingTrendsChart() {
 
   const { data, isLoading } = useQuery<TrainingTrendPoint[]>({
     queryKey: ['training-trends'],
-    queryFn: () => api.get<TrainingTrendPoint[]>('/sessions/training-trends?weeks=12'),
+    queryFn: () => api.get<TrainingTrendPoint[]>('/sessions/training-trends?weeks=12&skip_empty_weeks=true'),
   })
 
   // derive weekStarts from the training-trends data (ISO week_start strings)

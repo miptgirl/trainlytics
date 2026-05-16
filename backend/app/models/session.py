@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.exercise import Exercise
+from app.models.cardio_activity_type import CardioActivityType
 
 
 class SessionType(str, Enum):
@@ -72,6 +73,9 @@ class CardioSegment(Base):
     pace_seconds_per_km: Mapped[float | None] = mapped_column(nullable=True)
     heart_rate_avg: Mapped[int | None] = mapped_column(Integer, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    activity_type_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("cardio_activity_types.id", ondelete="SET NULL"), nullable=True
+    )
 
     cardio_session: Mapped["CardioSession"] = relationship(
         "CardioSession", back_populates="segments"

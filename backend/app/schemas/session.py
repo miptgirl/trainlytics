@@ -12,6 +12,7 @@ class CardioSegmentCreate(BaseModel):
     pace_seconds_per_km: float | None = None
     heart_rate_avg: int | None = None
     title: str | None = None
+    activity_type_id: int | None = None
 
 
 class CardioSegmentPatch(BaseModel):
@@ -33,6 +34,7 @@ class CardioSegmentOut(BaseModel):
     pace_seconds_per_km: float | None
     heart_rate_avg: int | None
     title: str | None = None
+    activity_type_id: int | None = None
 
 
 class CardioSessionCreate(BaseModel):

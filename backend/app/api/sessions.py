@@ -373,6 +373,7 @@ async def weekly_summary(
 @router.get("/training-trends", response_model=list[TrainingTrendPoint])
 async def training_trends(
     weeks: int = Query(12, ge=1, le=52),
+    skip_empty_weeks: bool = Query(True),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[TrainingTrendPoint]:
@@ -436,6 +437,8 @@ async def training_trends(
     for ws in week_starts:
         c_dur, c_cal = cardio_by_week.get(ws, (0, 0))
         s_dur, s_cal = strength_by_week.get(ws, (0, 0))
+        if skip_empty_weeks and c_dur == 0 and s_dur == 0:
+            continue
         result.append(
             TrainingTrendPoint(
                 week_start=ws,

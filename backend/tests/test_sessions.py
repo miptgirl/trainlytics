@@ -492,7 +492,7 @@ async def test_weekly_summary_user_isolation(db_session, auth_client: AsyncClien
 
 @pytest.mark.asyncio
 async def test_training_trends_returns_n_weeks(db_session, auth_client: AsyncClient):
-    resp = await auth_client.get("/api/sessions/training-trends?weeks=12")
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=12&skip_empty_weeks=false")
     assert resp.status_code == 200
     data = resp.json()
     # API returns the last N full weeks + the current in-progress week = N+1
@@ -501,7 +501,7 @@ async def test_training_trends_returns_n_weeks(db_session, auth_client: AsyncCli
 
 @pytest.mark.asyncio
 async def test_training_trends_empty_weeks_are_zeros(db_session, auth_client: AsyncClient):
-    resp = await auth_client.get("/api/sessions/training-trends?weeks=4")
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=4&skip_empty_weeks=false")
     assert resp.status_code == 200
     data = resp.json()
     for point in data:
@@ -742,3 +742,64 @@ async def test_pace_trends_user_isolation(
     resp = await auth_client_2.get("/api/sessions/pace-trends?weeks=13")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+# ── skip_empty_weeks ──────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_training_trends_skip_empty_weeks_true(
+    db_session, auth_client: AsyncClient
+):
+    """Weeks with zero minutes are excluded when skip_empty_weeks=true (default)."""
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "total_duration_seconds": 1800,
+            "segments": [{"order": 1, "duration_seconds": 1800}],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=12&skip_empty_weeks=true")
+    assert resp.status_code == 200
+    data = resp.json()
+    # Only the current week has a session; all empty weeks must be absent
+    assert all(p["cardio_minutes"] > 0 or p["strength_minutes"] > 0 for p in data)
+    assert len(data) == 1
+
+
+@pytest.mark.asyncio
+async def test_training_trends_skip_empty_weeks_false(
+    db_session, auth_client: AsyncClient
+):
+    """Empty weeks are present when skip_empty_weeks=false."""
+    from datetime import date, timedelta
+
+    today = date.today()
+    this_monday = today - timedelta(days=today.weekday())
+    session_date = f"{this_monday.isoformat()}T08:00:00Z"
+
+    type_id = await _create_cardio_type(auth_client, "Run")
+    await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "activity_type_id": type_id,
+            "date": session_date,
+            "total_duration_seconds": 1800,
+            "segments": [{"order": 1, "duration_seconds": 1800}],
+        },
+    )
+
+    resp = await auth_client.get("/api/sessions/training-trends?weeks=4&skip_empty_weeks=false")
+    assert resp.status_code == 200
+    data = resp.json()
+    # 4 prior weeks + current = 5 total, most are empty
+    assert len(data) == 5

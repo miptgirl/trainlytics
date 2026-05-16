@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import ai as ai_module
+from app.api import analytics as analytics_module
 from app.api import auth as auth_module
 from app.api import cardio_types as cardio_types_module
 from app.api import exercise_types as exercise_types_module
@@ -22,6 +23,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_module.router, prefix="/api")
+app.include_router(analytics_module.router, prefix="/api")
 app.include_router(exercises_module.router, prefix="/api")
 app.include_router(exercise_types_module.router, prefix="/api")
 app.include_router(cardio_types_module.router, prefix="/api")
