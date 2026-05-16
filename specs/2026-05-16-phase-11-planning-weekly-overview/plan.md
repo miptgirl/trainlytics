@@ -4,7 +4,7 @@
 
 ---
 
-### Group 1 — Backend: Data Model & Migrations
+### Group 1 — Backend: Data Model & Migrations ✅
 
 1.1 Create `app/models/plan.py` — define three SQLAlchemy models:
   - `WeeklyPlan`: `id`, `user_id` (FK), `week_start` (Date), `created_at`; unique constraint `(user_id, week_start)`

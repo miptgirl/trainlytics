@@ -6,6 +6,25 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 
 ---
 
+## Status
+
+| Group | Status |
+|---|---|
+| Group 1 — Backend: Data Model & Migrations | ✅ Complete |
+| Group 2 — Backend: Plan CRUD Endpoints | ⬜ Pending |
+| Group 3 — Backend: Pydantic Schemas | ⬜ Pending |
+| Group 4 — Backend: AI Cardio Adapt Endpoint | ⬜ Pending |
+| Group 5 — Backend: Tests | ⬜ Pending |
+| Group 6 — Frontend: /plan Route, Nav & API Hooks | ⬜ Pending |
+| Group 7 — Frontend: Week Grid & Session Display | ⬜ Pending |
+| Group 8 — Frontend: Plan Session Form | ⬜ Pending |
+| Group 9 — Frontend: Start Session from Plan | ⬜ Pending |
+| Group 10 — Frontend: Weekly Overview Card & Copy from Last Week | ⬜ Pending |
+| Group 11 — Frontend: AI Cardio Adapt Modal | ⬜ Pending |
+| Group 12 — Final QA & Polish | ⬜ Pending |
+
+---
+
 ## Automated Tests
 
 All tests live in `tests/test_plans.py` and `tests/test_ai_cardio_adapt.py` (see `plan.md` Group 5).
