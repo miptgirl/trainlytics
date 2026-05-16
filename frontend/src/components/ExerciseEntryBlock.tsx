@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useFieldArray, useWatch, Controller } from 'react-hook-form'
+import { api } from '../lib/api'
 
 export interface SetFormValues {
   reps: string
@@ -207,6 +208,10 @@ function ExercisePickerDropdown({
   )
 }
 
+interface ExerciseDefaults {
+  sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
+}
+
 export function ExerciseEntryBlock({
   exIndex,
   register,
@@ -217,6 +222,7 @@ export function ExerciseEntryBlock({
   errors,
   showDone = false,
   isCollapsed = false,
+  isAdHoc = false,
   onToggleCollapse,
   onAutoCollapse,
   onAutoExpand,
@@ -230,11 +236,12 @@ export function ExerciseEntryBlock({
   errors: any
   showDone?: boolean
   isCollapsed?: boolean
+  isAdHoc?: boolean
   onToggleCollapse?: () => void
   onAutoCollapse?: () => void
   onAutoExpand?: () => void
 }) {
-  const { fields: setFields, append: appendSet, remove: removeSet } = useFieldArray({
+  const { fields: setFields, append: appendSet, remove: removeSet, replace: replaceSets } = useFieldArray({
     control,
     name: `exercises.${exIndex}.sets`,
   })
@@ -246,6 +253,43 @@ export function ExerciseEntryBlock({
 
   const allDone = showDone && setValues.length > 0 && setValues.every(s => s.done)
   const prevAllDoneRef = useRef(false)
+
+  const [filledFromSession, setFilledFromSession] = useState(false)
+  const prevSelectedIdRef = useRef<string>(selectedId || '')
+
+  useEffect(() => {
+    if (selectedId === prevSelectedIdRef.current) return
+    prevSelectedIdRef.current = selectedId || ''
+
+    if (!isAdHoc || !selectedId) {
+      setFilledFromSession(false)
+      return
+    }
+
+    let cancelled = false
+    setFilledFromSession(false)
+
+    api.get<ExerciseDefaults>(`/exercises/${selectedId}/last-session-defaults`)
+      .then((data) => {
+        if (cancelled) return
+        if (data.sets.length > 0) {
+          replaceSets(data.sets.map((s) => ({
+            reps: s.reps !== null ? String(s.reps) : '',
+            weight: s.weight !== null ? String(s.weight) : '',
+            notes: '',
+            done: false,
+          })))
+          setFilledFromSession(true)
+        } else {
+          replaceSets([emptySet()])
+        }
+      })
+      .catch(() => {
+        if (!cancelled) replaceSets([emptySet()])
+      })
+
+    return () => { cancelled = true }
+  }, [selectedId, isAdHoc]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!showDone) return
@@ -321,6 +365,12 @@ export function ExerciseEntryBlock({
             )}
             {selectedExercise?.notes && (
               <p className="mt-1.5 text-xs text-slate-500 italic">📝 {selectedExercise.notes}</p>
+            )}
+            {filledFromSession && (
+              <p className="mt-1 text-xs text-emerald-600 flex items-center gap-1">
+                <span>✓</span>
+                <span>Filled from last session</span>
+              </p>
             )}
           </div>
 

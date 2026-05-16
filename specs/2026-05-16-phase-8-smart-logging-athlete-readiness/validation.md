@@ -20,11 +20,11 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 
 ### Smart Exercise Defaults
 
-- [ ] Adding an exercise ad-hoc to the strength log form triggers a call to `GET /exercises/{id}/last-session-defaults`
-- [ ] If history exists, sets/reps/weight are pre-populated; a "Filled from last session" hint is visible
-- [ ] Pre-populated values are fully editable before submission
-- [ ] Loading from a template still uses template values; smart defaults do not fire for template exercises
-- [ ] If no history exists, the form shows the existing default (1 blank set) with no hint
+- [x] Adding an exercise ad-hoc to the strength log form triggers a call to `GET /exercises/{id}/last-session-defaults`
+- [x] If history exists, sets/reps/weight are pre-populated; a "Filled from last session" hint is visible
+- [x] Pre-populated values are fully editable before submission
+- [x] Loading from a template still uses template values; smart defaults do not fire for template exercises
+- [x] If no history exists, the form shows the existing default (1 blank set) with no hint
 - [x] `GET /exercises/{id}/last-session-defaults` endpoint implemented — returns `{ sets: [{set_number, reps, weight}] }` from the most recent session, or `{ sets: [] }` when no history exists; scoped to the current user; 404 on unknown/unauthorized exercise
 
 ### Exercise Replacements

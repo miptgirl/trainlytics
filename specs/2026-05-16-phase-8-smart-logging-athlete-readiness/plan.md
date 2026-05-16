@@ -51,7 +51,7 @@
 
 ---
 
-### Group 6 — Frontend: Smart Exercise Defaults
+### Group 6 — Frontend: Smart Exercise Defaults ✅ DONE
 
 6.1 In `LogWorkoutPage` strength form, after the user selects an exercise from the dropdown (ad-hoc path only, not template), call `GET /exercises/{id}/last-session-defaults`  
 6.2 If the response contains sets, pre-populate the sets array; show a subtle hint "Filled from last session"  
