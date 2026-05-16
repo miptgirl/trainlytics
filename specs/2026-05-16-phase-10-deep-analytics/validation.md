@@ -86,7 +86,7 @@ All tests in `tests/test_analytics.py` pass:
 - [ ] Distance progression chart shows one line per activity type with distance > 0
 - [ ] Training load chart shows two lines (4-week and 8-week); toggle between minutes and distance
 
-### Readiness Analytics
+### Readiness Analytics ✅ (Group 8 implemented 2026-05-16)
 
 - [ ] Wellbeing & RPE trends chart shows two lines; weeks with no readiness data show as gaps (not zero)
 - [ ] Correlation scatter shows one dot per session (with both wellbeing and RPE set); trend line visible; type filter (strength / cardio) hides/shows the correct dots

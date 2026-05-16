@@ -7,6 +7,8 @@ import { ActivityTimeSplitChart } from '../components/analytics/ActivityTimeSpli
 import { WalkSegmentsTrendChart } from '../components/analytics/WalkSegmentsTrendChart'
 import { CardioDistanceProgressionChart } from '../components/analytics/CardioDistanceProgressionChart'
 import { TrainingLoadChart } from '../components/analytics/TrainingLoadChart'
+import { ReadinessTrendsChart } from '../components/analytics/ReadinessTrendsChart'
+import { WellbeingCorrelationChart } from '../components/analytics/WellbeingCorrelationChart'
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -64,7 +66,18 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </SectionCard>
-        <SectionCard title="Readiness" />
+        <SectionCard title="Readiness">
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Weekly Trends</h3>
+              <ReadinessTrendsChart />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Wellbeing vs RPE Correlation</h3>
+              <WellbeingCorrelationChart />
+            </div>
+          </div>
+        </SectionCard>
         <SectionCard title="Consistency" />
       </div>
     </Layout>

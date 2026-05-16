@@ -81,7 +81,7 @@
 
 ---
 
-### Group 8 — Frontend: Readiness Analytics
+### Group 8 — Frontend: Readiness Analytics ✅
 
 8.1 Create `src/components/analytics/ReadinessTrendsChart.tsx` — dual-line chart; primary line: avg weekly wellbeing (scale 1–5); secondary line: avg weekly RPE (scale 1–5); x-axis is week start date; weeks with no data are gaps (not zero)  
 8.2 Create `src/components/analytics/WellbeingCorrelationChart.tsx` — scatter chart; x-axis: pre-training wellbeing; y-axis: post-session RPE; each point is one session; colour-coded by session type (strength vs. cardio); linear trend line overlay; filter toggle for session type  
