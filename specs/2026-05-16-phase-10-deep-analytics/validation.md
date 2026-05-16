@@ -91,7 +91,7 @@ All tests in `tests/test_analytics.py` pass:
 - [ ] Wellbeing & RPE trends chart shows two lines; weeks with no readiness data show as gaps (not zero)
 - [ ] Correlation scatter shows one dot per session (with both wellbeing and RPE set); trend line visible; type filter (strength / cardio) hides/shows the correct dots
 
-### Consistency Heatmap
+### Consistency Heatmap ✅ (Group 9 implemented 2026-05-16)
 
 - [ ] Last 365 days are rendered as a calendar grid
 - [ ] Days with strength only, cardio only, both, and rest are visually distinct

@@ -9,6 +9,7 @@ import { CardioDistanceProgressionChart } from '../components/analytics/CardioDi
 import { TrainingLoadChart } from '../components/analytics/TrainingLoadChart'
 import { ReadinessTrendsChart } from '../components/analytics/ReadinessTrendsChart'
 import { WellbeingCorrelationChart } from '../components/analytics/WellbeingCorrelationChart'
+import { ConsistencyHeatmap } from '../components/analytics/ConsistencyHeatmap'
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -78,7 +79,9 @@ export default function AnalyticsPage() {
             </div>
           </div>
         </SectionCard>
-        <SectionCard title="Consistency" />
+        <SectionCard title="Consistency">
+          <ConsistencyHeatmap />
+        </SectionCard>
       </div>
     </Layout>
   )

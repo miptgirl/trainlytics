@@ -89,7 +89,7 @@
 
 ---
 
-### Group 9 — Frontend: Consistency Heatmap
+### Group 9 — Frontend: Consistency Heatmap ✅
 
 9.1 Create `src/components/analytics/ConsistencyHeatmap.tsx`:
   - GitHub-style calendar grid of the last 365 days (Mon–Sun columns, week rows)
