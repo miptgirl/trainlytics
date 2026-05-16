@@ -4,7 +4,7 @@
 
 ---
 
-### Group 1 — Backend: Analytics Endpoints (Core)
+### Group 1 — Backend: Analytics Endpoints (Core) ✅
 
 1.1 Add `GET /analytics/summary` — query `workout_sessions` for: total session count, sum of `duration` in minutes (strength + cardio), sum of cardio segment distances in km; return `{ total_sessions, total_minutes, total_distance_km }`  
 1.2 Add `GET /analytics/strength/progression?exercise_id=<id>` — for each strength session that contains the given exercise, return `(date, max_weight, total_volume)`; order by date ascending; backed by a join across `workout_sessions → exercises → sets`  
@@ -20,7 +20,7 @@
 
 ---
 
-### Group 2 — Backend: Training Trends Fix & Wiring
+### Group 2 — Backend: Training Trends Fix & Wiring ✅
 
 2.1 Extend `GET /sessions/training-trends` — add `skip_empty_weeks` boolean query param (default `true`); when true, weeks with zero sessions (both strength and cardio minutes = 0) are excluded from the response  
 2.2 Register all `/analytics/*` routes in a new `app/api/analytics.py` router; mount in `app/main.py`  
@@ -28,7 +28,7 @@
 
 ---
 
-### Group 3 — Backend: Tests
+### Group 3 — Backend: Tests ✅
 
 3.1 Add `tests/test_analytics.py` — cover each new endpoint:
   - `summary`: no sessions → zeros; sessions of each type → correct totals

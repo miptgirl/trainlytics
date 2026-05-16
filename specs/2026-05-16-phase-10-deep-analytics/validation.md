@@ -21,23 +21,23 @@ The History screen 12-week trends chart no longer shows empty zero-height bars f
 
 ## Automated Tests
 
-### Backend (`pytest`)
+### Backend (`pytest`) ✅ — All 167 tests passing (2026-05-16)
 
 All tests in `tests/test_analytics.py` pass:
 
-- `GET /analytics/summary` — zeros with no data; correct totals with mixed session types
-- `GET /analytics/strength/progression` — empty list for unknown exercise; correct `(date, max_weight, total_volume)` per session
-- `GET /analytics/strength/records` — correct PRs per `(exercise, type_tag)` pair; untagged exercises in `"untagged"` group
-- `GET /analytics/strength/volume-by-tag` — correct weekly aggregation per tag across multiple weeks
-- `GET /analytics/cardio/time-split` — correct minute totals per activity type
-- `GET /analytics/cardio/walk-segments` — walk+run session returns correct count; no-walk session returns `0`; walk-only session returns walk segment count
-- `GET /analytics/cardio/distance-progression` — activity types with no distance excluded; rolling monthly values correct
-- `GET /analytics/training-load` — 4-week and 8-week rolling windows correct
-- `GET /analytics/readiness/trends` — null wellbeing/RPE rows excluded from weekly averages
-- `GET /analytics/readiness/correlation` — null rows excluded; returned tuples correct
-- `GET /analytics/heatmap` — single-type day has one entry in `session_types`; dual-type day has both; dates with no sessions are absent
-- `GET /sessions/training-trends?skip_empty_weeks=true` — weeks with zero minutes not present in response
-- `GET /sessions/training-trends?skip_empty_weeks=false` — empty weeks present in response (regression guard)
+- ✅ `GET /analytics/summary` — zeros with no data; correct totals with mixed session types
+- ✅ `GET /analytics/strength/progression` — empty list for unknown exercise; correct `(date, max_weight, total_volume)` per session
+- ✅ `GET /analytics/strength/records` — correct PRs per `(exercise, type_tag)` pair; untagged exercises in `"untagged"` group
+- ✅ `GET /analytics/strength/volume-by-tag` — correct weekly aggregation per tag across multiple weeks
+- ✅ `GET /analytics/cardio/time-split` — correct minute totals per activity type
+- ✅ `GET /analytics/cardio/walk-segments` — walk+run session returns correct count; no-walk session returns `0`; walk-only session returns walk segment count
+- ✅ `GET /analytics/cardio/distance-progression` — activity types with no distance excluded; rolling monthly values correct
+- ✅ `GET /analytics/training-load` — 4-week and 8-week rolling windows correct
+- ✅ `GET /analytics/readiness/trends` — null wellbeing/RPE rows excluded from weekly averages
+- ✅ `GET /analytics/readiness/correlation` — null rows excluded; returned tuples correct
+- ✅ `GET /analytics/heatmap` — single-type day has one entry in `session_types`; dual-type day has both; dates with no sessions are absent
+- ✅ `GET /sessions/training-trends?skip_empty_weeks=true` — weeks with zero minutes not present in response
+- ✅ `GET /sessions/training-trends?skip_empty_weeks=false` — empty weeks present in response (regression guard)
 
 ### Frontend (`vitest`)
 
