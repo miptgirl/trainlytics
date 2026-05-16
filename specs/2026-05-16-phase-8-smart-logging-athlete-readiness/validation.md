@@ -87,7 +87,7 @@ WHERE table_name = 'exercise_replacements';
 
 ## Mobile Smoke Test
 
-- [ ] Emoji tap targets are large enough on iPhone-sized viewport (≥ 44px touch area)
-- [ ] Swap modal is usable on narrow screens
-- [ ] Clear button hit area does not conflict with adjacent controls
-- [ ] No horizontal overflow introduced by new UI elements
+- [x] Emoji tap targets are large enough on iPhone-sized viewport (≥ 44px touch area)
+- [x] Swap modal is usable on narrow screens
+- [x] Clear button hit area does not conflict with adjacent controls — padding added (`p-1.5`) to all clear note buttons
+- [x] No horizontal overflow introduced by new UI elements

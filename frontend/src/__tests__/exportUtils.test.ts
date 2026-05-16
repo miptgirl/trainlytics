@@ -121,6 +121,28 @@ describe('formatStrengthSession', () => {
     const result = formatStrengthSession({ ...baseStrength, notes: null })
     expect(result).not.toContain('Notes:')
   })
+
+  it('includes wellbeing in summary when set', () => {
+    const result = formatStrengthSession({ ...baseStrength, wellbeing: 3 })
+    expect(result).toContain('Feeling: 😐 Okay')
+  })
+
+  it('includes rpe in summary when set', () => {
+    const result = formatStrengthSession({ ...baseStrength, rpe: 2 })
+    expect(result).toContain('Effort: 😞 Hard')
+  })
+
+  it('includes both wellbeing and rpe when set', () => {
+    const result = formatStrengthSession({ ...baseStrength, wellbeing: 5, rpe: 1 })
+    expect(result).toContain('Feeling: 😄 Great')
+    expect(result).toContain('Effort: 😫 All-out')
+  })
+
+  it('omits feeling and effort lines when wellbeing and rpe are null', () => {
+    const result = formatStrengthSession({ ...baseStrength, wellbeing: null, rpe: null })
+    expect(result).not.toContain('Feeling:')
+    expect(result).not.toContain('Effort:')
+  })
 })
 
 // ── Cardio ────────────────────────────────────────────────────────────────────
@@ -255,5 +277,21 @@ describe('formatCardioSession', () => {
   it('omits notes line when null', () => {
     const result = formatCardioSession({ ...baseCardio, notes: null }, 'Run')
     expect(result).not.toContain('Notes:')
+  })
+
+  it('includes wellbeing in summary when set', () => {
+    const result = formatCardioSession({ ...baseCardio, wellbeing: 4 }, 'Run')
+    expect(result).toContain('Feeling: 🙂 Good')
+  })
+
+  it('includes rpe in summary when set', () => {
+    const result = formatCardioSession({ ...baseCardio, rpe: 3 }, 'Run')
+    expect(result).toContain('Effort: 😐 Moderate')
+  })
+
+  it('omits feeling and effort lines when wellbeing and rpe are null', () => {
+    const result = formatCardioSession({ ...baseCardio, wellbeing: null, rpe: null }, 'Run')
+    expect(result).not.toContain('Feeling:')
+    expect(result).not.toContain('Effort:')
   })
 })

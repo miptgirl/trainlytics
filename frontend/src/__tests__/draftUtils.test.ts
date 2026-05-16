@@ -25,6 +25,22 @@ describe('saveDraft / loadDraft', () => {
     expect(loadDraft('cardio')).toEqual(draft)
   })
 
+  it('round-trips wellbeing and rpe values in a strength draft', () => {
+    const draft = { title: 'Push Day', wellbeing: 4, rpe: 2, exercises: [] }
+    saveDraft('strength', draft)
+    const restored = loadDraft('strength') as Record<string, unknown>
+    expect(restored.wellbeing).toBe(4)
+    expect(restored.rpe).toBe(2)
+  })
+
+  it('round-trips wellbeing and rpe values in a cardio draft', () => {
+    const draft = { title: 'Morning Run', wellbeing: 3, rpe: null, segments: [] }
+    saveDraft('cardio', draft)
+    const restored = loadDraft('cardio') as Record<string, unknown>
+    expect(restored.wellbeing).toBe(3)
+    expect(restored.rpe).toBeNull()
+  })
+
   it('strength and cardio drafts are stored independently', () => {
     saveDraft('strength', { title: 'Legs' })
     saveDraft('cardio', { title: 'Bike' })

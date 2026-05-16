@@ -349,7 +349,7 @@ function TemplateForm({
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600 text-xs leading-none"
                   aria-label="Clear notes"
                 >
                   ✕

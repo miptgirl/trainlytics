@@ -151,7 +151,7 @@ A user can open the main screen, switch to the pace chart tab, and see how their
 
 ---
 
-## Phase 8 — Smart Logging & Athlete Readiness
+## ✅ Phase 8 — Smart Logging & Athlete Readiness *(completed)*
 
 **Goal:** Logging a session becomes smarter and more personalized — exercises come pre-filled with last-session weights, swaps are one tap away, and the app captures how the athlete felt before and after each session.
 
@@ -159,14 +159,14 @@ All items are driven by direct user feedback.
 
 ### Deliverables
 
-- [ ] **Wellbeing & RPE capture** — two 5-grade icon scales added to the strength and cardio log forms, placed near the notes field: one for pre-training wellbeing (how you feel going in) and one for post-session perceived difficulty (RPE); icon-based input keeps it fast on mobile; both fields are optional and stored per session; backed by two new columns on `workout_sessions`
-- [ ] **Smart exercise defaults** — when adding an exercise to a strength log or template, the form pre-fills sets, reps, and weight from the most recent logged session that included that exercise; the user can override freely before saving
-- [ ] **Exercise replacements** — in Settings / Manage Exercises, a user can define a list of replacement exercises for each exercise (grouped by muscle group); when logging a strength session or editing a template, a swap control lets the user replace any exercise with one of its defined replacements in one tap, inheriting the same default params
-- [ ] **Clear notes button** — a small icon button next to the notes field lets the user wipe the notes in one tap
+- [x] **Wellbeing & RPE capture** — two 5-grade icon scales added to the strength and cardio log forms, placed near the notes field: one for pre-training wellbeing (how you feel going in) and one for post-session perceived difficulty (RPE); icon-based input keeps it fast on mobile; both fields are optional and stored per session; backed by two new columns on `workout_sessions`
+- [x] **Smart exercise defaults** — when adding an exercise to a strength log or template, the form pre-fills sets, reps, and weight from the most recent logged session that included that exercise; the user can override freely before saving
+- [x] **Exercise replacements** — in Settings / Manage Exercises, a user can define a list of replacement exercises for each exercise (grouped by muscle group); when logging a strength session or editing a template, a swap control lets the user replace any exercise with one of its defined replacements in one tap, inheriting the same default params
+- [x] **Clear notes button** — a small icon button next to the notes field lets the user wipe the notes in one tap
 
 ### Definition of Done
 
-A user can open the log form, rate how they feel with an icon tap, pick an exercise and see last session's weight already filled in, swap it for a replacement if needed, and clear their notes without selecting all text manually.
+A user can open the log form, rate how they feel with an icon tap, pick an exercise and see last session's weight already filled in, swap it for a replacement if needed, and clear their notes without selecting all text manually. ✅ **Achieved.**
 
 ---
 

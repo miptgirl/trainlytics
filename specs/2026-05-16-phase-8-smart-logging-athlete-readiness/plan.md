@@ -91,7 +91,7 @@
 
 ---
 
-### Group 10 — Integration & Polish
+### Group 10 — Integration & Polish ✅ DONE
 
 10.1 Update draft auto-save (Phase 6) to persist wellbeing/RPE values  
 10.2 Verify session export text (Phase 6) includes wellbeing/RPE when set  

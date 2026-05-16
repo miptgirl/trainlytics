@@ -535,7 +535,7 @@ export function ExerciseEntryBlock({
                         <button
                           type="button"
                           onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                          className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs leading-none"
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 text-xs leading-none"
                           aria-label="Clear notes"
                         >
                           ✕

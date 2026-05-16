@@ -19,6 +19,8 @@ export interface StrengthSession {
   calories: number | null
   notes: string | null
   exercises: StrengthExerciseEntry[]
+  wellbeing?: number | null
+  rpe?: number | null
 }
 
 export interface CardioSegment {
@@ -36,7 +38,12 @@ export interface CardioSession {
   notes: string | null
   calories: number | null
   segments: CardioSegment[]
+  wellbeing?: number | null
+  rpe?: number | null
 }
+
+const WELLBEING_LABELS = ['😫 Exhausted', '😞 Not great', '😐 Okay', '🙂 Good', '😄 Great']
+const RPE_LABELS = ['😫 All-out', '😞 Hard', '😐 Moderate', '🙂 Easy', '😄 Very easy']
 
 function formatExportDate(isoString: string): string {
   const d = new Date(isoString)
@@ -70,6 +77,12 @@ export function formatStrengthSession(session: StrengthSession): string {
   }
   if (session.calories != null) {
     summaryParts.push(`Calories: ${session.calories} kcal`)
+  }
+  if (session.wellbeing != null) {
+    summaryParts.push(`Feeling: ${WELLBEING_LABELS[session.wellbeing - 1]}`)
+  }
+  if (session.rpe != null) {
+    summaryParts.push(`Effort: ${RPE_LABELS[session.rpe - 1]}`)
   }
   sections.push(`## ${heading} – ${formatExportDate(session.date)}\n${summaryParts.join(' | ')}`)
 
@@ -108,6 +121,12 @@ export function formatCardioSession(session: CardioSession, typeName?: string): 
   }
   if (session.calories != null) {
     summaryParts.push(`Calories: ${session.calories} kcal`)
+  }
+  if (session.wellbeing != null) {
+    summaryParts.push(`Feeling: ${WELLBEING_LABELS[session.wellbeing - 1]}`)
+  }
+  if (session.rpe != null) {
+    summaryParts.push(`Effort: ${RPE_LABELS[session.rpe - 1]}`)
   }
   sections.push(`## ${heading} – ${formatExportDate(session.date)}\n${summaryParts.join(' | ')}`)
 
