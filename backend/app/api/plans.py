@@ -255,7 +255,10 @@ async def update_planned_session(
     await db.commit()
 
     result = await db.execute(
-        select(PlannedSession).where(PlannedSession.id == session.id).options(_SESSION_LOAD)
+        select(PlannedSession)
+        .where(PlannedSession.id == session.id)
+        .options(_SESSION_LOAD)
+        .execution_options(populate_existing=True)
     )
     session = result.scalar_one()
     return await _build_session_out(db, user, session)

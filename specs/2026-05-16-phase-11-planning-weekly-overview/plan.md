@@ -86,7 +86,7 @@
 
 ---
 
-### Group 5 — Backend: Tests
+### Group 5 — Backend: Tests ✅
 
 5.1 Add `tests/test_plans.py`:
   - `GET /plans/{week_start}`: non-Monday date → 400; valid Monday with no plan → empty plan auto-created; planned strength session, matching log → status `done`; day elapsed, no log → status `skipped`; day not yet passed, no log → status `planned`; cardio session matching by primary activity type → status `done`
