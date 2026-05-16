@@ -205,6 +205,10 @@ A user can open their profile, enter their Anthropic API key and preferred weigh
 - [ ] **Planned vs. completed view** — see which workouts were done, skipped, or modified vs. the plan
 - [ ] **Weekly overview** — summary card showing the week at a glance (volume, completion rate)
 
+### Backlog (to pick up alongside Phase 10)
+
+- **Adaptive session helper for cardio** — the "Adapt this session" AI helper (introduced in Phase 9 for strength) is deferred for cardio until the planning layer is in place; adapting a cardio session is most useful when the user has a planned target to modify against (e.g. shorten a planned 10 km run)
+
 ### Definition of Done
 
 A user can build a training week, log sessions against it, and see at a glance how the week went.
