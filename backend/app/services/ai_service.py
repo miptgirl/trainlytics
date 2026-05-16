@@ -18,7 +18,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_request_log import AiRequestLog
-from app.models.session import CardioSession, StrengthSession, WorkoutSession
+from app.models.session import (
+    CardioSession,
+    StrengthExerciseEntry,
+    StrengthSession,
+    StrengthSet,
+    WorkoutSession,
+)
+from app.models.exercise import Exercise
 from app.models.user_settings import UserSettings
 from app.services.crypto import InvalidToken, decrypt
 
@@ -240,10 +247,10 @@ async def build_weekly_history_prompt(username: str, db: AsyncSession) -> str:
         .options(
             selectinload(WorkoutSession.strength_session).selectinload(
                 StrengthSession.exercise_entries
-            ).selectinload("sets"),
+            ).selectinload(StrengthExerciseEntry.sets),
             selectinload(WorkoutSession.strength_session).selectinload(
                 StrengthSession.exercise_entries
-            ).selectinload("exercise"),
+            ).selectinload(StrengthExerciseEntry.exercise),
             selectinload(WorkoutSession.cardio_session).selectinload(CardioSession.segments),
         )
     )
@@ -434,10 +441,10 @@ async def build_session_snapshot_prompt(
         .options(
             selectinload(WorkoutSession.strength_session).selectinload(
                 StrengthSession.exercise_entries
-            ).selectinload("sets"),
+            ).selectinload(StrengthExerciseEntry.sets),
             selectinload(WorkoutSession.strength_session).selectinload(
                 StrengthSession.exercise_entries
-            ).selectinload("exercise"),
+            ).selectinload(StrengthExerciseEntry.exercise),
             selectinload(WorkoutSession.cardio_session).selectinload(CardioSession.segments),
         )
     )
