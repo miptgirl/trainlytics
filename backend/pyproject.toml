@@ -5,8 +5,11 @@ description = "Trainlytics backend API"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.18.4",
+    "anthropic>=0.40.0",
     "asyncpg>=0.31.0",
+    "cryptography>=44.0.0",
     "fastapi[standard]>=0.136.1",
+    "openai>=1.50.0",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.14.0",
     "python-jose[cryptography]>=3.5.0",

@@ -36,6 +36,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/log" className={navLinkClass}>Log Workout</NavLink>
             <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
             <NavLink to="/steps" className={navLinkClass}>Steps</NavLink>
+            <NavLink to="/profile" className={navLinkClass}>Profile</NavLink>
             <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
           </nav>
 
@@ -79,6 +80,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/log" className={mobileNavLinkClass} onClick={handleNavClick}>Log Workout</NavLink>
               <NavLink to="/templates" className={mobileNavLinkClass} onClick={handleNavClick}>Templates</NavLink>
               <NavLink to="/steps" className={mobileNavLinkClass} onClick={handleNavClick}>Steps</NavLink>
+              <NavLink to="/profile" className={mobileNavLinkClass} onClick={handleNavClick}>Profile</NavLink>
               <NavLink to="/settings" className={mobileNavLinkClass} onClick={handleNavClick}>Settings</NavLink>
             </nav>
             <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">

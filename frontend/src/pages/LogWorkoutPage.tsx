@@ -16,6 +16,7 @@ import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import StepsForm from '../components/StepsForm'
 import { EmojiRating, WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/EmojiRating'
+import { AdaptSessionModal } from '../components/AdaptSessionModal'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -629,7 +630,14 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [titleTouched, setTitleTouched] = useState(false)
   const [showDraftBanner, setShowDraftBanner] = useState(false)
   const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  const [showAdaptModal, setShowAdaptModal] = useState(false)
   const hasMounted = useRef(false)
+
+  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profile'),
+  })
+  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],
@@ -858,6 +866,26 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
           )}
         </div>
 
+        {/* Adapt this session */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          {hasApiKey ? (
+            <button
+              type="button"
+              onClick={() => setShowAdaptModal(true)}
+              className="w-full text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1.5"
+            >
+              <span>✨</span> Adapt this session
+            </button>
+          ) : (
+            <p className="text-sm text-slate-500">
+              <a href="/profile" className="text-blue-600 hover:underline font-medium">
+                Add an API key in Profile
+              </a>{' '}
+              to adapt this session with AI suggestions.
+            </p>
+          )}
+        </div>
+
         {/* Basic fields */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
           <div>
@@ -1045,8 +1073,35 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
           isError={patchTemplateMutation.isError}
         />
       )}
+
+      {/* Adapt session modal */}
+      {showAdaptModal && (
+        <AdaptSessionModal
+          hasApiKey={hasApiKey}
+          sessionSnapshot={buildSessionSnapshot()}
+          onClose={() => setShowAdaptModal(false)}
+        />
+      )}
     </>
   )
+
+  function buildSessionSnapshot() {
+    const exerciseMap = new Map(exercises.map((e) => [e.id, e.name]))
+    const currentValues = watchedFormValues as StrengthFormValues
+    return {
+      template_name: templateSnapshot?.name,
+      exercises: (currentValues.exercises ?? [])
+        .filter((e) => e.exercise_id)
+        .map((e) => ({
+          exercise_id: parseInt(e.exercise_id, 10),
+          exercise_name: exerciseMap.get(parseInt(e.exercise_id, 10)) ?? 'Unknown',
+          sets: (e.sets ?? []).map((s) => ({
+            reps: s.reps ? parseInt(s.reps, 10) : null,
+            weight_kg: s.weight ? parseFloat(s.weight) : null,
+          })),
+        })),
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
