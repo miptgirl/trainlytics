@@ -21,7 +21,7 @@
 
 ---
 
-### Group 3 — Backend: Smart Exercise Defaults
+### Group 3 — Backend: Smart Exercise Defaults ✅ DONE
 
 3.1 Add `GET /exercises/{exercise_id}/last-session-defaults` route in `exercises.py`  
 3.2 Query `StrengthExerciseEntry` joined to `StrengthSession` → `WorkoutSession` for the current user, ordered by session date descending, limit 1  

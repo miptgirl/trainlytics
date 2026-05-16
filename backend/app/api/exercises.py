@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.exercise import Exercise
 from app.models.exercise_type import ExerciseType
-from app.schemas.exercise import ExerciseCreate, ExerciseOut, ExercisePatch
+from app.models.session import StrengthExerciseEntry, StrengthSession, WorkoutSession
+from app.schemas.exercise import ExerciseCreate, ExerciseDefaultsOut, ExerciseOut, ExercisePatch, SetDefault
 
 router = APIRouter(prefix="/exercises", tags=["exercises"])
 
@@ -74,6 +76,37 @@ async def update_exercise(
     await db.commit()
     await db.refresh(exercise)
     return exercise
+
+
+@router.get("/{exercise_id}/last-session-defaults", response_model=ExerciseDefaultsOut)
+async def get_last_session_defaults(
+    exercise_id: int,
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ExerciseDefaultsOut:
+    exercise = await db.get(Exercise, exercise_id)
+    if not exercise or exercise.user_id != user:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+
+    result = await db.execute(
+        select(StrengthExerciseEntry)
+        .join(StrengthSession, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+        .join(WorkoutSession, StrengthSession.session_id == WorkoutSession.id)
+        .where(
+            StrengthExerciseEntry.exercise_id == exercise_id,
+            WorkoutSession.user_id == user,
+        )
+        .order_by(WorkoutSession.date.desc())
+        .limit(1)
+        .options(selectinload(StrengthExerciseEntry.sets))
+    )
+    entry = result.scalar_one_or_none()
+    if not entry:
+        return ExerciseDefaultsOut(sets=[])
+
+    return ExerciseDefaultsOut(
+        sets=[SetDefault(set_number=s.set_number, reps=s.reps, weight=s.weight) for s in entry.sets]
+    )
 
 
 @router.delete("/{exercise_id}", status_code=204)

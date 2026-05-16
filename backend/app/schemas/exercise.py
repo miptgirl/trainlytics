@@ -26,3 +26,13 @@ class ExerciseOut(BaseModel):
     notes: str | None
     created_at: datetime
     types: list[ExerciseTypeOut] = []
+
+
+class SetDefault(BaseModel):
+    set_number: int
+    reps: int | None
+    weight: float | None
+
+
+class ExerciseDefaultsOut(BaseModel):
+    sets: list[SetDefault]

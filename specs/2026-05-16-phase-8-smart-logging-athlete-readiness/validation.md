@@ -25,6 +25,7 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 - [ ] Pre-populated values are fully editable before submission
 - [ ] Loading from a template still uses template values; smart defaults do not fire for template exercises
 - [ ] If no history exists, the form shows the existing default (1 blank set) with no hint
+- [x] `GET /exercises/{id}/last-session-defaults` endpoint implemented — returns `{ sets: [{set_number, reps, weight}] }` from the most recent session, or `{ sets: [] }` when no history exists; scoped to the current user; 404 on unknown/unauthorized exercise
 
 ### Exercise Replacements
 
