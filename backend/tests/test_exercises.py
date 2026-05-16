@@ -157,3 +157,112 @@ async def test_user_cannot_edit_other_users_exercise(
 
     resp = await auth_client_2.patch(f"/api/exercises/{eid}", json={"name": "Stolen"})
     assert resp.status_code == 404
+
+
+# --- Exercise replacements ---
+
+
+async def test_list_replacements_empty(auth_client: AsyncClient, db_session: None) -> None:
+    ex = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    resp = await auth_client.get(f"/api/exercises/{ex['id']}/replacements")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+async def test_add_replacement(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    leg_press = (await auth_client.post("/api/exercises", json={"name": "Leg Press"})).json()
+
+    resp = await auth_client.post(
+        f"/api/exercises/{squat['id']}/replacements",
+        json={"replacement_id": leg_press["id"]},
+    )
+    assert resp.status_code == 201
+    assert len(resp.json()) == 1
+    assert resp.json()[0]["id"] == leg_press["id"]
+    assert resp.json()[0]["name"] == "Leg Press"
+
+
+async def test_list_replacements_after_add(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    leg_press = (await auth_client.post("/api/exercises", json={"name": "Leg Press"})).json()
+    hack_squat = (await auth_client.post("/api/exercises", json={"name": "Hack Squat"})).json()
+
+    await auth_client.post(f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": leg_press["id"]})
+    await auth_client.post(f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": hack_squat["id"]})
+
+    resp = await auth_client.get(f"/api/exercises/{squat['id']}/replacements")
+    assert resp.status_code == 200
+    names = {r["name"] for r in resp.json()}
+    assert names == {"Leg Press", "Hack Squat"}
+
+
+async def test_add_duplicate_replacement_returns_409(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    leg_press = (await auth_client.post("/api/exercises", json={"name": "Leg Press"})).json()
+
+    await auth_client.post(f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": leg_press["id"]})
+    resp = await auth_client.post(
+        f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": leg_press["id"]}
+    )
+    assert resp.status_code == 409
+
+
+async def test_add_self_as_replacement_returns_400(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    resp = await auth_client.post(
+        f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": squat["id"]}
+    )
+    assert resp.status_code == 400
+
+
+async def test_remove_replacement(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    leg_press = (await auth_client.post("/api/exercises", json={"name": "Leg Press"})).json()
+
+    await auth_client.post(f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": leg_press["id"]})
+    resp = await auth_client.delete(f"/api/exercises/{squat['id']}/replacements/{leg_press['id']}")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+async def test_remove_nonexistent_replacement_returns_404(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    resp = await auth_client.delete(f"/api/exercises/{squat['id']}/replacements/9999")
+    assert resp.status_code == 404
+
+
+async def test_replacements_are_user_scoped(
+    auth_client: AsyncClient,
+    auth_client_2: AsyncClient,
+    db_session: None,
+) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    resp = await auth_client_2.get(f"/api/exercises/{squat['id']}/replacements")
+    assert resp.status_code == 404
+
+
+async def test_cannot_add_other_users_exercise_as_replacement(
+    auth_client: AsyncClient,
+    auth_client_2: AsyncClient,
+    db_session: None,
+) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    other_ex = (await auth_client_2.post("/api/exercises", json={"name": "Other Squat"})).json()
+
+    resp = await auth_client.post(
+        f"/api/exercises/{squat['id']}/replacements",
+        json={"replacement_id": other_ex["id"]},
+    )
+    assert resp.status_code == 404
+
+
+async def test_replacements_not_in_exercise_list_response(auth_client: AsyncClient, db_session: None) -> None:
+    squat = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()
+    leg_press = (await auth_client.post("/api/exercises", json={"name": "Leg Press"})).json()
+    await auth_client.post(f"/api/exercises/{squat['id']}/replacements", json={"replacement_id": leg_press["id"]})
+
+    list_resp = await auth_client.get("/api/exercises")
+    assert list_resp.status_code == 200
+    squat_in_list = next(e for e in list_resp.json() if e["id"] == squat["id"])
+    assert "replacements" not in squat_in_list

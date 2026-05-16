@@ -46,7 +46,7 @@ A user can create a "Push Day" template with their usual exercises, open it when
 ### Backlog (deferred from Phase 2)
 
 - **Template versioning** — keep a history of past template states so users can see how a template evolved over time; "last saved state" is sufficient for Phase 2
-- **Unit preference (kg / lb)** — user-level setting to display and enter weights in kg or lb; all weights are stored in kg internally; Phase 2 UI shows kg only
+- **Unit preference (kg / lb)** — deferred to Phase 9 user profile page; all weights are stored in kg internally; UI shows kg only until then
 
 ---
 
@@ -136,26 +136,68 @@ A user can tap "Copy as text" on any logged session and paste a clean structured
 
 ---
 
-## Phase 7 — Analytics Depth
+## ✅ Phase 7 — Analytics Depth *(completed)*
 
 **Goal:** A user can track pace trends over time and monitor their overall daily activity through step counts.
 
 ### Deliverables
 
-- [ ] **Pace trends chart** — a new chart tab on the main screen shows average pace over time, filterable by activity type and by segment name within an activity; backed by a new backend aggregation endpoint
-- [ ] **Step tracking** — a daily step count can be manually entered (e.g. synced from a phone health app or watch); step totals appear as a line overlay on the existing 12-week training trends chart on the main screen; backed by a new `daily_steps` table and `POST /steps` / `GET /steps` endpoints
+- [x] **Pace trends chart** — a new chart tab on the main screen shows average pace over time, filterable by activity type and by segment name within an activity; backed by a new backend aggregation endpoint
+- [x] **Step tracking** — a daily step count can be manually entered (e.g. synced from a phone health app or watch); step totals appear as a line overlay on the existing 12-week training trends chart on the main screen; backed by a new `daily_steps` table and `POST /steps` / `GET /steps` endpoints
 
 ### Definition of Done
 
-A user can open the main screen, switch to the pace chart tab, and see how their running pace has changed over recent weeks broken down by activity type. They can also log their daily steps and see them alongside training volume on the 12-week chart.
+A user can open the main screen, switch to the pace chart tab, and see how their running pace has changed over recent weeks broken down by activity type. They can also log their daily steps and see them alongside training volume on the 12-week chart. ✅ **Achieved.**
 
 ---
 
-## Phase 8 — Planning & Weekly Overview *(deferred)*
+## ✅ Phase 8 — Smart Logging & Athlete Readiness *(completed)*
+
+**Goal:** Logging a session becomes smarter and more personalized — exercises come pre-filled with last-session weights, swaps are one tap away, and the app captures how the athlete felt before and after each session.
+
+All items are driven by direct user feedback.
+
+### Deliverables
+
+- [x] **Wellbeing & RPE capture** — two 5-grade icon scales added to the strength and cardio log forms, placed near the notes field: one for pre-training wellbeing (how you feel going in) and one for post-session perceived difficulty (RPE); icon-based input keeps it fast on mobile; both fields are optional and stored per session; backed by two new columns on `workout_sessions`
+- [x] **Smart exercise defaults** — when adding an exercise to a strength log or template, the form pre-fills sets, reps, and weight from the most recent logged session that included that exercise; the user can override freely before saving
+- [x] **Exercise replacements** — in Settings / Manage Exercises, a user can define a list of replacement exercises for each exercise (grouped by muscle group); when logging a strength session or editing a template, a swap control lets the user replace any exercise with one of its defined replacements in one tap, inheriting the same default params
+- [x] **Clear notes button** — a small icon button next to the notes field lets the user wipe the notes in one tap
+
+### Definition of Done
+
+A user can open the log form, rate how they feel with an icon tap, pick an exercise and see last session's weight already filled in, swap it for a replacement if needed, and clear their notes without selecting all text manually. ✅ **Achieved.**
+
+---
+
+## Phase 9 — AI Training Coach
+
+**Goal:** The app uses an LLM to analyze the last week of training and help the user adapt a planned session when something feels off — exercises to swap, volume to cut, movements to skip — without leaving Trainlytics. A user profile page provides a home for per-user settings including the AI API key.
+
+### Deliverables
+
+- [ ] **User profile page** — a `/profile` route accessible from the nav; stores per-user preferences in a new `user_settings` table keyed by username; initial fields: display name, Anthropic API key, weight unit preference (kg / lb, closing out the Phase 2 backlog item); backed by `GET /profile` and `PATCH /profile`
+- [ ] **Anthropic API key configuration** — the profile page includes a field for the user's Anthropic API key (the single credential from console.anthropic.com used to call Claude models); the key is stored encrypted in the database, never returned to the frontend after saving, and used exclusively by backend AI endpoints; AI features show a "Configure your API key in Profile" prompt when no key is set
+- [ ] **Weekly insights panel** — an "AI Insights" card on the main screen with a "Analyse this week" button; on demand, the AI compares the current week against the previous 5 weeks and surfaces observations: volume change, pace or strength progression, PRs, and wellbeing/RPE patterns (using Phase 8 readiness data where available); the 5-week history block is sent with prompt caching to avoid re-processing on repeat calls; backed by `POST /ai/weekly-insights`
+- [ ] **Adaptive session helper** — when opening a log form (with or without a template), an "I need to adapt this session" action lets the user describe how they feel (e.g. *"my calves hurt"*, *"very tired today"*); the AI receives the planned session and the user's recent history and suggests concrete modifications: exercises to swap (drawing on the replacements defined in Phase 8), sets or volume to reduce, movements to skip entirely; response is plain text with specific actionable changes; backed by `POST /ai/adapt-session`
+
+### Technical notes
+
+- All AI endpoints live in the backend (`app/api/ai.py`, `app/services/ai_service.py`); the frontend never holds or transmits the API key
+- Training history is assembled server-side into a structured prompt; Anthropic prompt caching applied to the static history block to minimize token cost on repeat calls
+- Model: Claude Sonnet (balance of quality and cost for this use case)
+
+### Definition of Done
+
+A user can open their profile, enter their Anthropic API key and preferred weight unit, then: tap "Analyse this week" to get a comparison against the previous 5 weeks, and — when opening any log form — describe a physical complaint and receive specific modifications to their planned session.
+
+---
+
+## Phase 10 — Planning & Weekly Overview *(deferred)*
 
 **Goal:** A user can plan their training week in advance and log against that plan.
 
-> Deferred in favour of user-feedback–driven phases (5–7). No active work scheduled.
+> Deferred in favour of user-feedback–driven phases (5–9). No active work scheduled.
 
 ### Deliverables
 
@@ -169,11 +211,11 @@ A user can build a training week, log sessions against it, and see at a glance h
 
 ---
 
-## Phase 9 — Deep Analytics *(deferred)*
+## Phase 11 — Deep Analytics *(deferred)*
 
-**Goal:** A user can understand strength and cardio progression in detail and export structured summaries.
+**Goal:** A user can understand strength and cardio progression in detail.
 
-> Deferred. The export deliverable was elevated to Phase 6 (session-level copy). Phase 9 covers longer-horizon analytics.
+> Deferred. The export deliverable was elevated to Phase 6 (session-level copy). Phase 11 covers longer-horizon analytics.
 
 ### Deliverables
 
@@ -194,4 +236,3 @@ A user can view a chart of their squat progression and drill into weekly volume 
 - Native mobile app (mobile browser is the target)
 - Wearable or third-party API integrations (Garmin, Strava, Apple Health)
 - Social features
-- In-app AI analysis (export + external AI tool is the intended workflow)

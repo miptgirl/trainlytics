@@ -23,6 +23,8 @@ class WorkoutSession(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
     calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wellbeing: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rpe: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

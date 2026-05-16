@@ -21,11 +21,11 @@ Three things set Trainlytics apart, and all three are equally core to the missio
 **1. Hybrid training support**
 One place to log cardio (duration, distance, pace, HR zones) and strength (exercises, sets, reps, weights, progression) without compromise. The app adapts to the training style, not the other way around.
 
-**2. Data ownership and export**
-Users own their data and can export structured weekly summaries in a format designed for AI analysis or human coaching. No lock-in, no paywalls on your own history.
+**2. Data ownership, export, and AI analysis**
+Users own their data and can export structured session summaries for coaching or external AI tools. Trainlytics also integrates directly with the Claude API for two in-app AI capabilities: a weekly insights panel that compares the current training week against the previous five, and an adaptive session helper that lets the user describe how they feel (sore, tired, injured) and receive concrete modifications to their planned workout — exercises to swap, volume to cut, movements to skip.
 
 **3. Templates, planning, and reflection**
-Reusable strength session templates so users never have to reconstruct a workout from memory. A planning layer (built on top of templates) that lets users build weekly training plans, compare planned vs. completed workouts, and iterate. Training is intentional, not just reactive.
+Reusable strength session templates so users never have to reconstruct a workout from memory. Smart defaults pre-fill exercise parameters from the last logged session, and exercise replacements let users swap movements in one tap. Pre-training wellbeing and post-session RPE are captured alongside every workout so athletes can track how readiness affects performance over time. A planning layer (built on top of templates) lets users build weekly training plans, compare planned vs. completed workouts, and iterate. Training is intentional, not just reactive.
 
 ## Who It's For
 

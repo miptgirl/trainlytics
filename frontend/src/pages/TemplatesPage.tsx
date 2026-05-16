@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { EraserIcon } from '../components/EraserIcon'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
   emptyEntry,
@@ -284,8 +285,11 @@ function TemplateForm({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<TemplateFormValues>({ defaultValues })
+
+  const templateNotes = useWatch({ control, name: 'notes' })
 
   const {
     fields: exerciseFields,
@@ -335,12 +339,24 @@ function TemplateForm({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea
-              rows={2}
-              placeholder="Optional notes…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              {...register('notes')}
-            />
+            <div className="relative">
+              <textarea
+                rows={2}
+                placeholder="Optional notes…"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${templateNotes ? 'pr-8' : ''}`}
+                {...register('notes')}
+              />
+              {templateNotes && (
+                <button
+                  type="button"
+                  onClick={() => setValue('notes', '')}
+                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
+                  aria-label="Clear notes"
+                >
+                  <EraserIcon />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -355,6 +371,7 @@ function TemplateForm({
                 exIndex={exIndex}
                 register={register}
                 control={control}
+                setValue={setValue}
                 exercises={exercises}
                 canRemove={exerciseFields.length > 1}
                 onRemove={() => {

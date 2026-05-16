@@ -6,6 +6,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { formatStrengthSession } from '../lib/exportUtils'
+import { EmojiRatingDisplay } from '../components/EmojiRating'
 
 interface Exercise {
   id: number
@@ -36,6 +37,8 @@ interface StrengthSession {
   duration_seconds: number | null
   calories: number | null
   notes: string | null
+  wellbeing: number | null
+  rpe: number | null
   created_at: string
   exercises: StrengthExerciseEntry[]
 }
@@ -430,6 +433,11 @@ export default function StrengthSessionDetailPage() {
               {session.calories != null && (
                 <p className="text-sm text-gray-500">Calories: {session.calories} kcal</p>
               )}
+            </div>
+          )}
+          {(session.wellbeing != null || session.rpe != null) && (
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <EmojiRatingDisplay wellbeing={session.wellbeing} rpe={session.rpe} />
             </div>
           )}
           {session.notes && (

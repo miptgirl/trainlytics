@@ -29,8 +29,23 @@ Trainlytics is built as a single-user personal app with a React frontend and a P
 
 ## Data & Analytics
 
-- All analytics are computed server-side in Python — well-suited for trend calculations, aggregations, and future ML/AI integrations
-- Export endpoint produces structured plain-text weekly summaries suitable for pasting into any AI tool or sharing with a coach
+- All analytics are computed server-side in Python — well-suited for trend calculations, aggregations, and AI integrations
+- Export endpoint produces structured plain-text session summaries suitable for pasting into any AI tool or sharing with a coach
+
+## AI
+
+| Concern | Choice |
+|---|---|
+| Provider | Anthropic (Claude API) |
+| SDK | `anthropic` Python SDK |
+| Model | Claude Sonnet (quality/cost balance) |
+| Key storage | Encrypted in `user_settings` DB table; set via the in-app Profile page; never returned to the frontend after saving |
+| Cost control | Prompt caching applied to the static training history block on every AI call |
+
+AI features live entirely in the backend (`app/api/ai.py`, `app/services/ai_service.py`). The frontend never holds or transmits the API key. Two endpoints are exposed:
+
+- `POST /ai/weekly-insights` — compares the current week against the previous 5 weeks and returns a plain-text analysis
+- `POST /ai/adapt-session` — takes a planned session (template or in-progress log) and the user's free-text description of how they feel; returns concrete modification suggestions (swaps, volume cuts, exercises to skip)
 
 ## Deployment
 

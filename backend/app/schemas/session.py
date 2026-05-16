@@ -2,7 +2,7 @@ from datetime import date as DateType
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CardioSegmentCreate(BaseModel):
@@ -42,6 +42,8 @@ class CardioSessionCreate(BaseModel):
     notes: str | None = None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=5)
     segments: list[CardioSegmentCreate]
 
 
@@ -52,6 +54,8 @@ class CardioSessionPatch(BaseModel):
     notes: str | None = None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=5)
     segments: list[CardioSegmentCreate] | None = None
 
 
@@ -65,6 +69,8 @@ class CardioSessionOut(BaseModel):
     notes: str | None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = None
+    rpe: int | None = None
     created_at: datetime
     segments: list[CardioSegmentOut]
 
@@ -109,6 +115,8 @@ class StrengthSessionCreate(BaseModel):
     notes: str | None = None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=5)
     duration_seconds: int | None = None
     exercises: list[StrengthExerciseEntryCreate]
 
@@ -118,6 +126,8 @@ class StrengthSessionPatch(BaseModel):
     notes: str | None = None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=5)
     duration_seconds: int | None = None
     exercises: list[StrengthExerciseEntryCreate] | None = None
 
@@ -131,6 +141,8 @@ class StrengthSessionOut(BaseModel):
     notes: str | None
     title: str | None = None
     calories: int | None = None
+    wellbeing: int | None = None
+    rpe: int | None = None
     duration_seconds: int | None = None
     created_at: datetime
     exercises: list[StrengthExerciseEntryOut]
