@@ -170,26 +170,30 @@ A user can open the log form, rate how they feel with an icon tap, pick an exerc
 
 ---
 
-## Phase 9 — AI Training Coach
+## ✅ Phase 9 — AI Training Coach *(completed)*
 
 **Goal:** The app uses an LLM to analyze the last week of training and help the user adapt a planned session when something feels off — exercises to swap, volume to cut, movements to skip — without leaving Trainlytics. A user profile page provides a home for per-user settings including the AI API key.
 
 ### Deliverables
 
-- [ ] **User profile page** — a `/profile` route accessible from the nav; stores per-user preferences in a new `user_settings` table keyed by username; initial fields: display name, Anthropic API key, weight unit preference (kg / lb, closing out the Phase 2 backlog item); backed by `GET /profile` and `PATCH /profile`
-- [ ] **Anthropic API key configuration** — the profile page includes a field for the user's Anthropic API key (the single credential from console.anthropic.com used to call Claude models); the key is stored encrypted in the database, never returned to the frontend after saving, and used exclusively by backend AI endpoints; AI features show a "Configure your API key in Profile" prompt when no key is set
-- [ ] **Weekly insights panel** — an "AI Insights" card on the main screen with a "Analyse this week" button; on demand, the AI compares the current week against the previous 5 weeks and surfaces observations: volume change, pace or strength progression, PRs, and wellbeing/RPE patterns (using Phase 8 readiness data where available); the 5-week history block is sent with prompt caching to avoid re-processing on repeat calls; backed by `POST /ai/weekly-insights`
-- [ ] **Adaptive session helper** — when opening a log form (with or without a template), an "I need to adapt this session" action lets the user describe how they feel (e.g. *"my calves hurt"*, *"very tired today"*); the AI receives the planned session and the user's recent history and suggests concrete modifications: exercises to swap (drawing on the replacements defined in Phase 8), sets or volume to reduce, movements to skip entirely; response is plain text with specific actionable changes; backed by `POST /ai/adapt-session`
+- [x] **User profile page** — `/profile` route linked from the nav; stores per-user preferences in a new `user_settings` table; fields: display name, birth year, experience level, training goals (ordered list with high/medium/low priority), injury notes, AI coach notes; backed by `GET /profile` and `PATCH /profile`
+- [x] **API key configuration** — Anthropic and OpenAI keys stored encrypted (Fernet + PBKDF2-HMAC-SHA256 from `SECRET_KEY`); masked input with toggle-reveal, Save (shows "Configured ✓") and Remove; provider selector shown when both keys are set; raw keys never returned to the frontend; AI features show a "Configure your key in Profile" prompt when no key is set
+- [x] **Athlete context block** — every AI prompt is prepended with a structured profile block (experience, age, goals sorted by priority, injury notes, coach notes); fields omitted when not set
+- [x] **Weekly insights panel** — "AI Insights" card on the History screen below the weekly summary; "Analyse this week" calls `POST /ai/weekly-insights`; compacted 6-week training history sent to Claude Sonnet or GPT-4o; response rendered as markdown with spinner, error, and retry states
+- [x] **Adaptive session helper** — "Adapt this session" button in the strength log form opens a modal; user describes a complaint in free text; `POST /ai/adapt-session` sends session snapshot + 4-week history + athlete context; suggestions rendered as markdown
+- [x] **AI request logging** — every call (success or failure) writes a row to `ai_request_logs` with endpoint, provider, model, full prompt, response, token counts, duration, and error; log write failures silently swallowed
+- [x] **Debug log viewer** — collapsible "Debug — AI request logs" panel at the bottom of `/profile`; shows last 20 calls with expandable prompt, rendered response, token counts, duration, and error; backed by `GET /ai/logs`
 
 ### Technical notes
 
 - All AI endpoints live in the backend (`app/api/ai.py`, `app/services/ai_service.py`); the frontend never holds or transmits the API key
-- Training history is assembled server-side into a structured prompt; Anthropic prompt caching applied to the static history block to minimize token cost on repeat calls
-- Model: Claude Sonnet (balance of quality and cost for this use case)
+- `compact_sets` / `compact_cardio_segments` helpers collapse consecutive identical sets/segments into `N×reps@weight` / `N×dist@pace` notation for concise prompts
+- Both Anthropic (Claude Sonnet) and OpenAI (GPT-4o) supported; active provider resolved from `user_settings.ai_provider` at call time
+- Anthropic prompt caching applied to the athlete context block
 
 ### Definition of Done
 
-A user can open their profile, enter their Anthropic API key and preferred weight unit, then: tap "Analyse this week" to get a comparison against the previous 5 weeks, and — when opening any log form — describe a physical complaint and receive specific modifications to their planned session.
+A user can open their profile, enter their Anthropic or OpenAI API key, then: tap "Analyse this week" on the History screen to get an AI comparison against the previous 5 weeks, and — when opening any strength log form — describe a physical complaint and receive specific modification suggestions. ✅ **Achieved.**
 
 ---
 
