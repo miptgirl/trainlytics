@@ -66,7 +66,7 @@ A user can open their profile, enter their Anthropic API key, then: tap "Analyse
 
 ### Backend Tests
 
-- [ ] `tests/test_profile.py` passes: get (no row), patch display name, patch Anthropic key, patch OpenAI key, neither key returned, clear each key independently
+- [x] `tests/test_profile.py` passes: get (no row), patch display name, patch Anthropic key, patch OpenAI key, neither key returned, clear each key independently
 - [ ] `tests/test_ai.py` passes with mocked AI SDKs: 402 paths, happy-path responses
 - [ ] `test_ai.py`: successful call writes a row to `ai_request_logs` with correct `endpoint`, `provider`, `model`, non-null `response`, and non-null `input_tokens`/`output_tokens`
 - [ ] `test_ai.py`: failed AI call (SDK raises) writes a row with `error` set and `response` null — and the exception is **not** re-raised to the HTTP handler

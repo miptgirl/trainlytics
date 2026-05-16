@@ -13,15 +13,15 @@
 
 ---
 
-### Group 2 — Backend: Profile Endpoints
+### Group 2 — Backend: Profile Endpoints ✅
 
-2.1 Add `UserSettings` SQLAlchemy model in `app/models/user_settings.py`  
-2.2 Add Pydantic schemas in `app/schemas/user_settings.py`: define `GoalItem(text: str, priority: Literal["high", "medium", "low"])`; `UserSettingsOut` includes `goals: list[GoalItem]`; `UserSettingsPatch` accepts `goals: list[GoalItem] | None` (full array replacement)  
-2.3 Add `app/api/profile.py` with:
+2.1 ✅ Add `UserSettings` SQLAlchemy model in `app/models/user_settings.py`  
+2.2 ✅ Add Pydantic schemas in `app/schemas/user_settings.py`: define `GoalItem(text: str, priority: Literal["high", "medium", "low"])`; `UserSettingsOut` includes `goals: list[GoalItem]`; `UserSettingsPatch` accepts `goals: list[GoalItem] | None` (full array replacement)  
+2.3 ✅ Add `app/api/profile.py` with:
   - `GET /profile` — fetch row (or return defaults if no row); never include raw keys; return `has_anthropic_key` and `has_openai_key` booleans
   - `PATCH /profile` — upsert row; encrypt each key via `crypto.py` before storing; passing `null` for a key field clears it  
-2.4 Register `/profile` router in `app/main.py`  
-2.5 Write pytest tests in `tests/test_profile.py`: get with no row, patch display name, patch birth year, patch experience level, patch goals list (add item with priority, remove item, verify invalid priority rejected), patch injury notes, patch coach notes, patch Anthropic key, patch OpenAI key, verify neither key is returned, clear each key independently, set `ai_provider`
+2.4 ✅ Register `/profile` router in `app/main.py`  
+2.5 ✅ Write pytest tests in `tests/test_profile.py`: get with no row, patch display name, patch birth year, patch experience level, patch goals list (add item with priority, remove item, verify invalid priority rejected), patch injury notes, patch coach notes, patch Anthropic key, patch OpenAI key, verify neither key is returned, clear each key independently, set `ai_provider`
 
 ---
 
