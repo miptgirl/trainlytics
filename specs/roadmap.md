@@ -197,38 +197,38 @@ A user can open their profile, enter their Anthropic or OpenAI API key, then: ta
 
 ---
 
-## Phase 10 — Deep Analytics
+## ✅ Phase 10 — Deep Analytics *(completed)*
 
 **Goal:** A dedicated analytics experience giving the user a rich, multi-dimensional view of their training — strength progression, cardio trends, readiness patterns, and consistency — all in one place.
 
 ### Deliverables
 
 #### Analytics tab
-- [ ] **Dedicated `/analytics` route** — new top-level nav tab; all charts and panels below live here, not on the History screen
+- [x] **Dedicated `/analytics` route** — new top-level nav tab; all charts and panels below live here, not on the History screen
 
 #### Overall stats
-- [ ] **All-time summary header** — top of the Analytics page shows: total time on sport (formatted as hours), total sessions logged, and total distance run (km); computed server-side
+- [x] **All-time summary header** — top of the Analytics page shows: total time on sport (formatted as hours), total sessions logged, and total distance run (km); computed server-side
 
 #### History screen fix
-- [ ] **Filter empty weeks** — the 12-week training trends chart on the History screen only renders weeks that have at least one logged session; empty weeks are skipped rather than shown as zero-height bars
+- [x] **Filter empty weeks** — the 12-week training trends chart on the History screen only renders weeks that have at least one logged session; empty weeks are skipped rather than shown as zero-height bars
 
 #### Strength analytics
-- [ ] **Exercise progression chart** — line chart of weight (or volume = weight × reps) over time for any selected exercise; personal records (heaviest single set, best total volume) are highlighted with a marker; backed by a new backend aggregation endpoint
-- [ ] **Personal records panel** — summary card listing the all-time PR per exercise (heaviest weight lifted, most reps at a given weight, best single-set volume); updates automatically as new sessions are logged
-- [ ] **Strength volume breakdown** — weekly total volume (kg × reps) per exercise or muscle-group tag, as a stacked bar chart; lets the user see how volume shifts between muscle groups over time
+- [x] **Exercise progression chart** — line chart of weight (or volume = weight × reps) over time for any selected exercise; personal records (heaviest single set, best total volume) are highlighted with a marker; backed by a new backend aggregation endpoint
+- [x] **Personal records panel** — summary card listing the all-time PR per exercise (heaviest weight lifted, most reps at a given weight, best single-set volume); updates automatically as new sessions are logged
+- [x] **Strength volume breakdown** — weekly total volume (kg × reps) per exercise or muscle-group tag, as a stacked bar chart; lets the user see how volume shifts between muscle groups over time
 
 #### Cardio analytics
-- [ ] **Activity type time split** — bar or pie chart showing how total cardio time is distributed across activity types (e.g. Run, Walk, Cycle) over a selectable period; makes it easy to see "I'm running more and walking less"
-- [ ] **Avg walk segments per run session** — for sessions whose segments include at least one Walk segment alongside a Run segment, compute the average number of Walk segments per session over time; displayed as a trend line; uses existing cardio segment activity types — no new data model needed
-- [ ] **Cardio distance progression** — cumulative distance per activity type plotted over time (monthly granularity); shows long-horizon growth like "I've run 200 km this year"
-- [ ] **Rolling averages & training load** — rolling 4-week and 8-week load views (total minutes and total distance) built on top of the existing trends API; helps spot overtraining and deload periods
+- [x] **Activity type time split** — bar or pie chart showing how total cardio time is distributed across activity types (e.g. Run, Walk, Cycle) over a selectable period; makes it easy to see "I'm running more and walking less"
+- [x] **Avg walk segments per run session** — for sessions whose segments include at least one Walk segment alongside a Run segment, compute the average number of Walk segments per session over time; displayed as a trend line; uses existing cardio segment activity types — no new data model needed
+- [x] **Cardio distance progression** — cumulative distance per activity type plotted over time (monthly granularity); shows long-horizon growth like "I've run 200 km this year"
+- [x] **Rolling averages & training load** — rolling 4-week and 8-week load views (total minutes and total distance) built on top of the existing trends API; helps spot overtraining and deload periods
 
 #### Readiness & wellbeing analytics
-- [ ] **Wellbeing & RPE trends** — dual-line chart of average pre-training wellbeing score and average post-session RPE per week; shows whether readiness is improving or declining over time
-- [ ] **Wellbeing ↔ performance correlation** — scatter chart with pre-training wellbeing on the x-axis and post-session RPE on the y-axis, one dot per session; a trend line indicates whether higher wellbeing predicts easier sessions; sessions can be filtered by type
+- [x] **Wellbeing & RPE trends** — dual-line chart of average pre-training wellbeing score and average post-session RPE per week; shows whether readiness is improving or declining over time
+- [x] **Wellbeing ↔ performance correlation** — scatter chart with pre-training wellbeing on the x-axis and post-session RPE on the y-axis, one dot per session; a trend line indicates whether higher wellbeing predicts easier sessions; sessions can be filtered by type
 
 #### Consistency
-- [ ] **Training consistency heatmap** — GitHub-style calendar heatmap covering the last 12 months; each day is colour-coded by session type (strength / cardio / rest); current and longest streaks are shown below the heatmap
+- [x] **Training consistency heatmap** — GitHub-style calendar heatmap covering the last 12 months; each day is colour-coded by session type (strength / cardio / rest); current and longest streaks are shown below the heatmap
 
 ### Technical notes
 
@@ -239,7 +239,7 @@ A user can open their profile, enter their Anthropic or OpenAI API key, then: ta
 
 ### Definition of Done
 
-A user can open the Analytics tab and see: their all-time training summary at a glance; how their squat weight has progressed and where their PRs sit; how their cardio time splits across run vs. walk vs. cycle; whether their walk-break frequency is declining over time as running fitness improves; their cumulative distance covered; how wellbeing and RPE track over weeks; and a full-year heatmap showing streaks and consistency.
+A user can open the Analytics tab and see: their all-time training summary at a glance; how their squat weight has progressed and where their PRs sit; how their cardio time splits across run vs. walk vs. cycle; whether their walk-break frequency is declining over time as running fitness improves; their cumulative distance covered; how wellbeing and RPE track over weeks; and a full-year heatmap showing streaks and consistency. ✅ **Achieved.**
 
 ---
 
