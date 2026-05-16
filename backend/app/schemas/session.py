@@ -120,6 +120,7 @@ class StrengthSessionCreate(BaseModel):
     wellbeing: int | None = Field(default=None, ge=1, le=5)
     rpe: int | None = Field(default=None, ge=1, le=5)
     duration_seconds: int | None = None
+    template_id: int | None = None
     exercises: list[StrengthExerciseEntryCreate]
 
 

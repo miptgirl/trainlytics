@@ -11,8 +11,8 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 | Group | Status |
 |---|---|
 | Group 1 — Backend: Data Model & Migrations | ✅ Complete |
-| Group 2 — Backend: Plan CRUD Endpoints | ⬜ Pending |
-| Group 3 — Backend: Pydantic Schemas | ⬜ Pending |
+| Group 2 — Backend: Plan CRUD Endpoints | ✅ Complete |
+| Group 3 — Backend: Pydantic Schemas | ✅ Complete |
 | Group 4 — Backend: AI Cardio Adapt Endpoint | ⬜ Pending |
 | Group 5 — Backend: Tests | ⬜ Pending |
 | Group 6 — Frontend: /plan Route, Nav & API Hooks | ⬜ Pending |

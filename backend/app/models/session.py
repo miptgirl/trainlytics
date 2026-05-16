@@ -89,6 +89,9 @@ class StrengthSession(Base):
     session_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("workout_sessions.id", ondelete="CASCADE"), nullable=False, unique=True
     )
+    template_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("strength_templates.id", ondelete="SET NULL"), nullable=True
+    )
     duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     workout_session: Mapped["WorkoutSession"] = relationship(

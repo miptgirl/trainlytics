@@ -291,7 +291,7 @@ async def create_strength_session(
     db.add(ws)
     await db.flush()
 
-    ss = StrengthSession(session_id=ws.id, duration_seconds=body.duration_seconds)
+    ss = StrengthSession(session_id=ws.id, duration_seconds=body.duration_seconds, template_id=body.template_id)
     db.add(ss)
     await db.flush()
 

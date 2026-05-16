@@ -17,7 +17,7 @@
 
 ---
 
-### Group 2 — Backend: Plan CRUD Endpoints
+### Group 2 — Backend: Plan CRUD Endpoints ✅
 
 2.1 Create `app/api/plans.py` router; mount it at `/plans` in `app/main.py`
 
@@ -56,7 +56,7 @@
 
 ---
 
-### Group 3 — Backend: Pydantic Schemas
+### Group 3 — Backend: Pydantic Schemas ✅
 
 3.1 Create `app/schemas/plan.py`:
   - `PlannedCardioSegmentIn` / `PlannedCardioSegmentOut`
