@@ -1,5 +1,8 @@
 import { Layout } from '../components/Layout'
 import { SummaryHeader } from '../components/analytics/SummaryHeader'
+import { ExerciseProgressionChart } from '../components/analytics/ExerciseProgressionChart'
+import { PersonalRecordsPanel } from '../components/analytics/PersonalRecordsPanel'
+import { StrengthVolumeBreakdown } from '../components/analytics/StrengthVolumeBreakdown'
 
 function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
@@ -21,7 +24,22 @@ export default function AnalyticsPage() {
         <SectionCard title="All-time Summary">
           <SummaryHeader />
         </SectionCard>
-        <SectionCard title="Strength" />
+        <SectionCard title="Strength">
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Exercise Progression</h3>
+              <ExerciseProgressionChart />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Personal Records</h3>
+              <PersonalRecordsPanel />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-600 mb-3">Weekly Volume by Type</h3>
+              <StrengthVolumeBreakdown />
+            </div>
+          </div>
+        </SectionCard>
         <SectionCard title="Cardio" />
         <SectionCard title="Readiness" />
         <SectionCard title="Consistency" />

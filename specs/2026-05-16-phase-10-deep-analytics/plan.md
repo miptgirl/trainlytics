@@ -62,7 +62,7 @@
 
 ---
 
-### Group 6 — Frontend: Strength Analytics
+### Group 6 — Frontend: Strength Analytics ✅
 
 6.1 Create `src/components/analytics/ExerciseProgressionChart.tsx` — exercise selector dropdown (all exercises); line chart of `max_weight` over time with volume as a secondary toggleable series; PR data points highlighted with a marker  
 6.2 Create `src/components/analytics/PersonalRecordsPanel.tsx` — grouped by exercise type tag; each tag section lists exercises with their three PR values (heaviest, best reps, best volume); `"untagged"` group shown last  
