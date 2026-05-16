@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useFieldArray, useWatch, Controller } from 'react-hook-form'
+import { useFieldArray, useWatch, useController } from 'react-hook-form'
 import { api } from '../lib/api'
 
 export interface SetFormValues {
@@ -212,6 +212,48 @@ interface ExerciseDefaults {
   sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
 }
 
+interface ExerciseRef {
+  id: number
+  name: string
+}
+
+function SwapModal({
+  replacements,
+  onSelect,
+  onClose,
+}: {
+  replacements: ExerciseRef[]
+  onSelect: (r: ExerciseRef) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm shadow-xl flex flex-col max-h-[60vh]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-800 text-sm">Swap exercise</h3>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded text-lg leading-none">
+            ✕
+          </button>
+        </div>
+        <ul className="overflow-y-auto py-2">
+          {replacements.map((rep) => (
+            <li key={rep.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(rep)}
+                className="w-full text-left px-4 py-3 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              >
+                {rep.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export function ExerciseEntryBlock({
   exIndex,
   register,
@@ -246,7 +288,12 @@ export function ExerciseEntryBlock({
     name: `exercises.${exIndex}.sets`,
   })
 
-  const selectedId = useWatch({ control, name: `exercises.${exIndex}.exercise_id` })
+  const { field: exerciseField } = useController({
+    control,
+    name: `exercises.${exIndex}.exercise_id`,
+    rules: { required: 'Select an exercise' },
+  })
+  const selectedId = exerciseField.value
   const selectedExercise = exercises.find((e) => e.id === parseInt(selectedId, 10))
 
   const setValues = (useWatch({ control, name: `exercises.${exIndex}.sets` }) ?? []) as SetFormValues[]
@@ -256,10 +303,18 @@ export function ExerciseEntryBlock({
 
   const [filledFromSession, setFilledFromSession] = useState(false)
   const prevSelectedIdRef = useRef<string>(selectedId || '')
+  const [swapOpen, setSwapOpen] = useState(false)
+  const [swapReplacements, setSwapReplacements] = useState<ExerciseRef[]>([])
+  const isSwappingRef = useRef(false)
 
   useEffect(() => {
     if (selectedId === prevSelectedIdRef.current) return
     prevSelectedIdRef.current = selectedId || ''
+
+    if (isSwappingRef.current) {
+      isSwappingRef.current = false
+      return
+    }
 
     if (!isAdHoc || !selectedId) {
       setFilledFromSession(false)
@@ -290,6 +345,41 @@ export function ExerciseEntryBlock({
 
     return () => { cancelled = true }
   }, [selectedId, isAdHoc]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!selectedId) {
+      setSwapReplacements([])
+      return
+    }
+    let cancelled = false
+    api.get<ExerciseRef[]>(`/exercises/${selectedId}/replacements`)
+      .then((data) => { if (!cancelled) setSwapReplacements(data) })
+      .catch(() => { if (!cancelled) setSwapReplacements([]) })
+    return () => { cancelled = true }
+  }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function swapExercise(replacement: ExerciseRef) {
+    setSwapOpen(false)
+    isSwappingRef.current = true
+    exerciseField.onChange(String(replacement.id))
+    setFilledFromSession(false)
+    try {
+      const data = await api.get<ExerciseDefaults>(`/exercises/${replacement.id}/last-session-defaults`)
+      if (data.sets.length > 0) {
+        replaceSets(data.sets.map((s) => ({
+          reps: s.reps !== null ? String(s.reps) : '',
+          weight: s.weight !== null ? String(s.weight) : '',
+          notes: '',
+          done: false,
+        })))
+        setFilledFromSession(true)
+      } else {
+        replaceSets([emptySet()])
+      }
+    } catch {
+      replaceSets([emptySet()])
+    }
+  }
 
   useEffect(() => {
     if (!showDone) return
@@ -333,32 +423,46 @@ export function ExerciseEntryBlock({
             </span>
           )}
         </div>
-        {canRemove && (
-          <button type="button" onClick={onRemove} aria-label="Remove exercise" className="p-1 text-gray-400 hover:text-red-500 rounded shrink-0 ml-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-        )}
+        <div className="flex items-center gap-0.5 shrink-0 ml-2">
+          {swapReplacements.length > 0 && selectedId && (
+            <button
+              type="button"
+              onClick={() => setSwapOpen(true)}
+              className="p-1 text-gray-400 hover:text-blue-500 rounded"
+              aria-label="Swap exercise"
+              title="Swap exercise"
+            >
+              ⇄
+            </button>
+          )}
+          {canRemove && (
+            <button type="button" onClick={onRemove} aria-label="Remove exercise" className="p-1 text-gray-400 hover:text-red-500 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
+
+      {swapOpen && swapReplacements.length > 0 && (
+        <SwapModal
+          replacements={swapReplacements}
+          onSelect={swapExercise}
+          onClose={() => setSwapOpen(false)}
+        />
+      )}
 
       {/* Body — hidden when collapsed */}
       {!isCollapsed && (
         <div className="px-4 pb-4">
           <div className="mb-4">
             <label className="block text-xs text-gray-500 mb-1">Exercise *</label>
-            <Controller
-              control={control}
-              name={`exercises.${exIndex}.exercise_id`}
-              rules={{ required: 'Select an exercise' }}
-              render={({ field }) => (
-                <ExercisePickerDropdown
-                  exercises={exercises}
-                  value={field.value}
-                  onChange={field.onChange}
-                  hasError={!!errors.exercises?.[exIndex]?.exercise_id}
-                />
-              )}
+            <ExercisePickerDropdown
+              exercises={exercises}
+              value={exerciseField.value}
+              onChange={exerciseField.onChange}
+              hasError={!!errors.exercises?.[exIndex]?.exercise_id}
             />
             {errors.exercises?.[exIndex]?.exercise_id && (
               <p className="mt-1 text-xs text-red-600">{errors.exercises[exIndex].exercise_id.message}</p>

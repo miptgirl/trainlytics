@@ -70,7 +70,7 @@
 
 ---
 
-### Group 8 — Frontend: Swap Control in Log Form
+### Group 8 — Frontend: Swap Control in Log Form ✅ DONE
 
 8.1 Add a swap icon button (⇄) to each exercise row in the strength log form  
 8.2 Button is only visible if the exercise has at least one configured replacement (check `GET /exercises/{id}/replacements` or include replacements in the exercise list response)  

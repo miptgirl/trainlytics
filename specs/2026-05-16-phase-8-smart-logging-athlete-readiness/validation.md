@@ -38,12 +38,12 @@ A user can open the log form, rate how they feel with an emoji tap, pick an exer
 - [x] The "add replacement" picker groups exercises by type tag
 - [x] Removing a replacement calls `DELETE /exercises/{id}/replacements/{rid}`
 - [x] "Also add reverse?" prompt is offered and works correctly
-- [ ] Swap icon (⇄) appears on exercise rows in the strength log form only for exercises that have replacements
-- [ ] Tapping swap opens a list of configured replacements
-- [ ] Selecting a replacement swaps the exercise; sets/reps/weight are loaded from the most recent session for the replacement exercise (not copied from the swapped-out row)
-- [ ] If no session history exists for the replacement, the form shows blank sets
-- [ ] Swap also works in the template editor
-- [ ] Exercises with no replacements show no swap icon
+- [x] Swap icon (⇄) appears on exercise rows in the strength log form only for exercises that have replacements
+- [x] Tapping swap opens a list of configured replacements
+- [x] Selecting a replacement swaps the exercise; sets/reps/weight are loaded from the most recent session for the replacement exercise (not copied from the swapped-out row)
+- [x] If no session history exists for the replacement, the form shows blank sets
+- [x] Swap also works in the template editor
+- [x] Exercises with no replacements show no swap icon
 
 ### Clear Notes Button
 
