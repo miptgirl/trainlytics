@@ -74,16 +74,16 @@
 
 ---
 
-### Group 6 — Frontend: Adaptive Session Helper
+### Group 6 — Frontend: Adaptive Session Helper ✅
 
-6.1 Create `src/components/AdaptSessionModal.tsx`:
+6.1 ✅ Create `src/components/AdaptSessionModal.tsx`:
   - A modal with a `<textarea>` for the user's free-text description  
   - "Get suggestions" button triggers `POST /ai/adapt-session` with `{ session_snapshot, user_message }`  
   - Spinner while loading; plain-text suggestions rendered on success  
   - Close button dismisses modal  
-6.2 Add "Adapt this session" button near the top of the strength log form in `LogWorkoutPage.tsx` (or equivalent component); only visible when type is Strength  
-6.3 Build `session_snapshot` object from current form state before opening modal: `{ template_name?, exercises: [{ exercise_id, exercise_name, replacements: [...], sets: [{ reps, weight_kg }] }] }`  
-6.4 If `has_api_key` is false: button is replaced by the inline "configure key" prompt
+6.2 ✅ Add "Adapt this session" button near the top of the strength log form in `LogWorkoutPage.tsx` (or equivalent component); only visible when type is Strength  
+6.3 ✅ Build `session_snapshot` object from current form state before opening modal: `{ template_name?, exercises: [{ exercise_id, exercise_name, sets: [{ reps, weight_kg }] }] }`  
+6.4 ✅ If `has_api_key` is false: button is replaced by the inline "configure key" prompt
 
 ---
 
