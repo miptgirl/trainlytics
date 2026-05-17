@@ -28,6 +28,24 @@ function buildSegmentSummary(segments: PlannedSessionOut['segments']): string {
     .join(' · ')
 }
 
+function buildCardioTitle(
+  activityTypeName: string | null,
+  segments: PlannedSessionOut['segments'],
+): string {
+  const base = activityTypeName ?? 'Cardio'
+  const totalMetres = segments.reduce((sum, seg) => sum + (seg.distance_metres ?? 0), 0)
+  const totalSecs = segments.reduce((sum, seg) => sum + (seg.duration_secs ?? 0), 0)
+  if (totalMetres > 0) {
+    const km = totalMetres / 1000
+    const kmStr = km % 1 === 0 ? String(km) : parseFloat(km.toFixed(1)).toString()
+    return `${base} – ${kmStr} km`
+  }
+  if (totalSecs > 0) {
+    return `${base} – ${Math.round(totalSecs / 60)} min`
+  }
+  return base
+}
+
 const statusBadgeClass = {
   planned: 'bg-blue-50 text-blue-700',
   done: 'bg-green-50 text-green-700',
@@ -91,8 +109,9 @@ export function PlannedSessionCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 truncate">
               {session.title ??
-                activityTypeName ??
-                (session.session_type === 'strength' ? 'Strength Session' : 'Cardio Session')}
+                (session.session_type === 'cardio'
+                  ? buildCardioTitle(activityTypeName, session.segments)
+                  : 'Strength Session')}
             </p>
             {segmentSummary && (
               <p className="text-xs text-slate-500 mt-0.5 truncate">{segmentSummary}</p>
