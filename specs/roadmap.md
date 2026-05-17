@@ -272,9 +272,136 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 
 ---
 
+## Phase 12 — Analytics Fixes & Navigation Revamp
+
+**Goal:** Fix broken analytics charts, reorganize the analytics UX, and clean up navigation before building on top of either.
+
+### Deliverables
+
+#### Analytics bug fixes
+- [ ] **Activity Type Split** — fix SQL; chart currently returns no data
+- [ ] **Walk Segments per Session** — fix SQL; all values currently zero
+- [ ] **Distance Progression** — fix SQL; no distance data shown
+
+#### Analytics UX reorganization
+- [ ] **Consistency heatmap repositioned** — moved to directly below the all-time summary header (currently buried at the bottom)
+- [ ] **New overview charts** — sessions per week, total training time per week, total volume per week; visible by default
+- [ ] **Strength section layout** — Weekly Volume by Type + Weekly Exercises by Type visible by default; all other strength charts collapsed
+- [ ] **Cardio section** — collapsed by default
+
+#### Navigation revamp
+- [ ] **Tab consolidation** — fewer top-level tabs, centered, clearer labels; resolve the "too many tabs" feedback
+
+#### Profile
+- [ ] **API key simplification** — single provider selector + one key field; replaces the current separate Anthropic / OpenAI fields
+
+#### Plan tab
+- [ ] **Plan vs. actual summary** — weekly card showing planned vs. logged totals: distance and time for cardio; exercises and volume for strength
+
+### Definition of Done
+
+A user can open Analytics and see correctly populated charts for activity split, walk segments, and distance progression. The analytics page is organized with the most actionable charts visible by default. Navigation tabs fit comfortably on mobile and are easy to read. The plan tab weekly card shows how logged volume compared to the plan.
+
+---
+
+## Phase 13 — Heart Rate Zones
+
+**Goal:** Turn the raw HR data already stored per segment into actionable zone-based insight.
+
+### Deliverables
+
+- [ ] **Zone definitions in Profile** — user sets their max HR manually or lets the app derive it from birth year; Z1–Z5 thresholds computed from max HR
+- [ ] **Session detail: HR zone distribution** — donut chart showing % time in each zone for any cardio session that has HR data recorded
+- [ ] **History list: avg HR** — average HR shown alongside existing stats (distance, pace, duration) on sessions that have HR data
+- [ ] **Analytics: time-in-zone trends** — weekly chart showing how time in each HR zone has shifted over the last 12 weeks
+
+### Definition of Done
+
+A user can set their max HR in Profile, open any HR-tracked cardio session, and see a zone breakdown. The Analytics tab shows a weekly view of time in Z1–Z5 so they can track whether their easy runs are actually easy.
+
+---
+
+## Phase 14 — Plan vs. Actual Deep Analytics
+
+**Goal:** Make the gap (or match) between planned and completed training visible both per-session and as a rolling trend.
+
+### Deliverables
+
+- [ ] **Per-session comparison** — on a "Done" planned session card, show planned vs. actual side-by-side: distance/time for cardio; exercises, sets, reps, and total volume for strength
+- [ ] **Plan tab weekly totals** — weekly summary card shows planned total volume/distance vs. actual logged totals with a delta
+- [ ] **Analytics: Plan Adherence section** — rolling weekly chart of completion % and volume delta (planned vs. actual); helps spot weeks of under- or over-delivery over time
+
+### Definition of Done
+
+A user can tap a completed planned session and immediately see what they planned vs. what they actually did. The Analytics tab shows a multi-week view of how closely they've been following their plan.
+
+---
+
+## Phase 15 — Integrations: Import Pipeline
+
+**Goal:** A user can import training data from Strava and Apple Health, review staged sessions before they're saved, and have richer health metrics (sleep, HRV, resting HR, body weight) available across the app.
+
+### Phase 15a — Strava Import
+
+- [ ] **OAuth flow** — connect Strava account from Profile; store OAuth tokens per user
+- [ ] **Fetch & map activities** — pull recent Strava activities and map to Trainlytics cardio sessions (type, segments, distance, duration, pace, HR)
+- [ ] **Import review queue** — staged sessions shown before committing; user accepts, discards, or lightly edits each; deduplication by date + duration prevents double-logging
+- [ ] **Import status in Profile** — last synced timestamp; manual re-fetch button
+
+### Phase 15b — Apple Health XML Import
+
+- [ ] **XML file upload** — user exports from iPhone Settings → Health → Export All Health Data and uploads the zip/XML
+- [ ] **Parser for all supported types** — workouts, steps, resting HR, HRV (SDNN), sleep, body weight, VO2 max, active energy burned
+- [ ] **New backend tables** — daily health metrics: `body_metrics` (weight, resting HR, HRV, VO2 max, sleep duration/quality per date)
+- [ ] **Import review queue** — same staged approval UI as Strava; user reviews before committing
+- [ ] **Health section in Analytics** — new section showing: sleep duration trend, resting HR over time, HRV trend, body weight over time
+- [ ] **AI context enrichment** — recent sleep, HRV, and resting HR included in AI prompts as readiness signals
+
+### Technical notes
+
+- Strava: standard OAuth 2.0 with activity scope; `GET /athlete/activities` endpoint
+- Apple Health export is a zip containing `export.xml` (HealthKit records) and `workout-routes/` (GPX files); parser targets `HKRecord` and `HKWorkout` elements
+- Import queue stored in a `pending_imports` table; rows deleted on accept or discard
+
+### Definition of Done
+
+A user can connect Strava and import recent runs with one click, reviewing each before saving. They can upload their Apple Health export and have workouts, body weight, sleep, and HRV data imported and visible in Analytics. AI prompts automatically include recent HRV and sleep when available.
+
+---
+
+## Phase 16 — Agentic AI Coach
+
+**Goal:** The AI can propose concrete, targeted edits to the training plan — for both end-of-week review and in-week adjustments — and the user approves or dismisses each change before anything is saved.
+
+### Deliverables
+
+#### Week review
+- [ ] **"Review week" trigger** — button at the top of the Plan tab; auto-prompted on Monday for the previous week
+- [ ] **AI analysis** — analyzes planned vs. actual completion, wellbeing and RPE trends, fatigue signals from the week; proposes specific edits to next week's plan
+- [ ] **Diff-style approval UI** — each proposed change is a card: "Move Thursday run → Saturday", "Remove Friday strength — low wellbeing trend"; user accepts or dismisses each individually, then commits all accepted changes at once
+
+#### In-week plan adjustment
+- [ ] **"Adjust plan" button** — on the current week view in the Plan tab
+- [ ] **Free-text context input** — user describes their situation ("travelling Wed–Thu", "shoulder is sore", "want to add an extra run")
+- [ ] **AI proposes edits** — specific changes to the remaining sessions in the current week
+- [ ] **Same diff-style approval UI** — accept / dismiss per change, then commit
+
+### Technical notes
+
+- New endpoint: `POST /ai/review-week` — takes previous week summary + next week plan structure; returns a list of typed edit operations (`move_session`, `remove_session`, `add_session`, `adjust_volume`)
+- New endpoint: `POST /ai/adjust-week` — takes current week plan + free-text constraint; returns same edit operation format
+- Frontend applies accepted operations to the plan via existing plan mutation endpoints
+- Edit operations are structured (not free text) so the frontend can render them as reversible diffs
+
+### Definition of Done
+
+A user can tap "Review week" after a hard week, see AI-proposed adjustments to next week's plan as individual accept/dismiss cards, and commit the ones that make sense. They can also describe a mid-week constraint and get targeted edits to the remaining days — without the AI making any changes until explicitly approved.
+
+---
+
 ## Out of Scope (for now)
 
 - Multi-user support (single account only)
 - Native mobile app (mobile browser is the target)
-- Wearable or third-party API integrations (Garmin, Strava, Apple Health)
+- Garmin integrations
 - Social features
