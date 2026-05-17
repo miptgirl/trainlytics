@@ -178,7 +178,7 @@
 
 ---
 
-### Group 10 — Frontend: Weekly Overview Card & Copy from Last Week
+### Group 10 — Frontend: Weekly Overview Card & Copy from Last Week ✅
 
 10.1 Create `src/components/plan/WeeklyOverviewCard.tsx`:
   - Displays: Planned N · Done N · Skipped N · Completion N%

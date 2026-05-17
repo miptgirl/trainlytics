@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Layout } from '../components/Layout'
 import { WeekGrid } from '../components/plan/WeekGrid'
 import { PlanSessionForm } from '../components/plan/PlanSessionForm'
-import { useWeekPlan, type PlannedSessionOut } from '../lib/planApi'
+import { WeeklyOverviewCard } from '../components/plan/WeeklyOverviewCard'
+import { useWeekPlan, useCopyFromLastWeek, type PlannedSessionOut } from '../lib/planApi'
 
 function getMondayOfCurrentWeek(): string {
   const today = new Date()
@@ -43,11 +44,27 @@ interface FormModal {
 export default function PlanPage() {
   const [weekStart, setWeekStart] = useState(getMondayOfCurrentWeek)
   const { data, isLoading } = useWeekPlan(weekStart)
+  const copyFromLastWeek = useCopyFromLastWeek()
+  const [toast, setToast] = useState<string | null>(null)
   const [formModal, setFormModal] = useState<FormModal>({
     open: false,
     date: getMondayOfCurrentWeek(),
     session: null,
   })
+
+  function showToast(msg: string) {
+    setToast(msg)
+    setTimeout(() => setToast(null), 4000)
+  }
+
+  function handleCopyFromLastWeek() {
+    copyFromLastWeek.mutate(weekStart, {
+      onError: (err) => {
+        const msg = err instanceof Error ? err.message : 'Failed to copy plan'
+        showToast(msg)
+      },
+    })
+  }
 
   function handleAddSession(date: string) {
     setFormModal({ open: true, date, session: null })
@@ -112,6 +129,61 @@ export default function PlanPage() {
             </svg>
           </button>
         </div>
+
+        {/* Weekly overview */}
+        <WeeklyOverviewCard sessions={data?.sessions ?? []} isLoading={isLoading} />
+
+        {/* Copy from last week — only when the week is empty */}
+        {!isLoading && (data?.sessions ?? []).length === 0 && (
+          <div className="flex justify-center">
+            <button
+              onClick={handleCopyFromLastWeek}
+              disabled={copyFromLastWeek.isPending}
+              className="flex items-center gap-2 text-sm text-slate-600 border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50"
+            >
+              {copyFromLastWeek.isPending ? (
+                <svg
+                  className="animate-spin h-4 w-4 text-slate-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v8H4z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                  <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                </svg>
+              )}
+              Copy from last week
+            </button>
+          </div>
+        )}
+
+        {/* Toast notification */}
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">
+            {toast}
+          </div>
+        )}
 
         {/* Week grid */}
         {isLoading ? (
