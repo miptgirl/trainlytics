@@ -8,7 +8,7 @@
 | Group 2 — New Analytics Backend Endpoints | ✅ Complete | 4 endpoints added; all existing tests pass |
 | Group 3 — API Key Simplification | ✅ Complete | ai_key_encrypted column added; old columns wiped; single ai_key field in API; 14 tests pass |
 | Group 4 — Navigation Revamp | ✅ Complete | StatsPage with Analytics/History sub-nav; /history and /analytics redirect; Layout has 7 tabs |
-| Group 5 — Analytics UX Reorganization | ⬜ Not started | Depends on Groups 2 + 4 |
+| Group 5 — Analytics UX Reorganization | ✅ Complete | Heatmap moved; 3 overview charts; strength collapsible; cardio collapsed; plan adherence section |
 | Group 6 — Plan vs. Actual Card | ⬜ Not started | Depends on Group 2.3 |
 | Group 7 — Profile API Key (Frontend) | ⬜ Not started | Depends on Group 3 |
 | Group 8 — SQL Debug Tools | ⬜ Not started | Depends on Group 1.4 (done) |

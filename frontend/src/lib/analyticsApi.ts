@@ -161,3 +161,46 @@ export function useAnalyticsHeatmap() {
     queryFn: () => api.get<HeatmapDay[]>('/analytics/heatmap'),
   })
 }
+
+export interface OverviewTrendPoint {
+  week_start: string
+  session_count: number
+  total_minutes: number
+  total_volume: number
+}
+
+export interface ExercisesByTypePoint {
+  week_start: string
+  muscle_group_tag: string
+  exercise_count: number
+}
+
+export interface PlanAdherencePoint {
+  week_start: string
+  completion_pct: number | null
+  strength_volume_delta: number | null
+  cardio_distance_delta: number | null
+}
+
+export function useOverviewTrends() {
+  return useQuery<OverviewTrendPoint[]>({
+    queryKey: ['analytics', 'overview-trends'],
+    queryFn: () => api.get<OverviewTrendPoint[]>('/analytics/overview-trends'),
+  })
+}
+
+export function useExercisesByType(weeks = 12) {
+  return useQuery<ExercisesByTypePoint[]>({
+    queryKey: ['analytics', 'strength', 'exercises-by-type', weeks],
+    queryFn: () =>
+      api.get<ExercisesByTypePoint[]>(`/analytics/strength/exercises-by-type?weeks=${weeks}`),
+  })
+}
+
+export function usePlanAdherence(weeks = 12) {
+  return useQuery<PlanAdherencePoint[]>({
+    queryKey: ['analytics', 'plan-adherence', weeks],
+    queryFn: () =>
+      api.get<PlanAdherencePoint[]>(`/analytics/plan-adherence?weeks=${weeks}`),
+  })
+}
