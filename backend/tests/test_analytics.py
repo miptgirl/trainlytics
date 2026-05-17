@@ -460,3 +460,115 @@ async def test_heatmap(auth_client: AsyncClient, db_session: None) -> None:
     # days with no sessions are omitted
     absent_day = (today - timedelta(days=7)).strftime("%Y-%m-%d")
     assert absent_day not in by_date
+
+
+# ── Phase 12: COALESCE fallback tests (session-level activity type) ──────────
+
+@pytest.mark.asyncio
+async def test_cardio_time_split_uses_session_activity_type(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """Segments without per-segment activity_type_id should use the session-level type."""
+    run_id = await _create_cardio_type(auth_client, "Run")
+
+    now = datetime.now(timezone.utc)
+    date1 = (now - timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Segment has NO activity_type_id — only the session does
+    await _create_cardio_session(
+        auth_client, date1,
+        [{"order": 1, "duration_seconds": 1800}],  # no activity_type_id on segment
+        activity_type_id=run_id,
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/time-split?period=30")
+    assert resp.status_code == 200
+    data = resp.json()
+    by_type = {p["activity_type"]: p["total_minutes"] for p in data}
+    assert "Run" in by_type
+    assert by_type["Run"] == pytest.approx(30.0)
+
+
+@pytest.mark.asyncio
+async def test_cardio_walk_segments_uses_session_activity_type(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """Walk sessions without per-segment types should count their segments as walk."""
+    walk_id = await _create_cardio_type(auth_client, "Walk")
+
+    # 3-segment Walk session, no per-segment activity_type_id
+    await _create_cardio_session(
+        auth_client, "2026-02-01T08:00:00Z",
+        [
+            {"order": 1, "duration_seconds": 600},
+            {"order": 2, "duration_seconds": 600},
+            {"order": 3, "duration_seconds": 600},
+        ],
+        activity_type_id=walk_id,
+        title="Walk session",
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/walk-segments")
+    assert resp.status_code == 200
+    data = resp.json()
+    by_title = {d["session_title"]: d["walk_segment_count"] for d in data}
+    assert by_title["Walk session"] == 3
+
+
+@pytest.mark.asyncio
+async def test_cardio_distance_progression_uses_session_activity_type(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """Distance data on segments without per-segment type should use session-level type."""
+    run_id = await _create_cardio_type(auth_client, "Run")
+
+    await _create_cardio_session(
+        auth_client, "2026-02-10T08:00:00Z",
+        [{"order": 1, "duration_seconds": 1800, "distance_meters": 5000.0}],  # no segment AT
+        activity_type_id=run_id,
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/distance-progression")
+    assert resp.status_code == 200
+    data = resp.json()
+    types_present = {d["activity_type"] for d in data}
+    assert "Run" in types_present
+    total_km = sum(d["cumulative_distance_km"] for d in data if d["activity_type"] == "Run")
+    assert total_km == pytest.approx(5.0)
+
+
+# ── Phase 12: debug=true tests ────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_analytics_debug_flag(auth_client: AsyncClient, db_session: None) -> None:
+    """Any analytics endpoint with ?debug=true returns {data, debug: {sql}} with non-empty SQL."""
+    run_id = await _create_cardio_type(auth_client, "Run")
+    now = datetime.now(timezone.utc)
+    date1 = (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    await _create_cardio_session(
+        auth_client, date1,
+        [{"order": 1, "duration_seconds": 1800}],
+        activity_type_id=run_id,
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/time-split?period=30&debug=true")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert "data" in body
+    assert "debug" in body
+    assert "sql" in body["debug"]
+    sql = body["debug"]["sql"]
+    assert isinstance(sql, str) and len(sql) > 0
+    assert "cardio_segments" in sql.lower() or "cardio_sessions" in sql.lower()
+
+
+@pytest.mark.asyncio
+async def test_analytics_debug_false_returns_normal_shape(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """Without ?debug=true, response shape is unchanged (a plain list)."""
+    resp = await auth_client.get("/api/analytics/cardio/time-split?period=30")
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)

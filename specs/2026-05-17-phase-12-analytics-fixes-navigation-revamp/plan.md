@@ -1,5 +1,21 @@
 # Phase 12 — Implementation Plan
 
+## Status
+
+| Group | Status | Notes |
+|---|---|---|
+| Group 1 — Analytics Bug Fixes + SQL Debug | ✅ Complete | All 3 SQL bugs fixed; debug=true on all /analytics/* endpoints; 18 tests pass |
+| Group 2 — New Analytics Backend Endpoints | ⬜ Not started | |
+| Group 3 — API Key Simplification | ⬜ Not started | |
+| Group 4 — Navigation Revamp | ⬜ Not started | |
+| Group 5 — Analytics UX Reorganization | ⬜ Not started | Depends on Groups 2 + 4 |
+| Group 6 — Plan vs. Actual Card | ⬜ Not started | Depends on Group 2.3 |
+| Group 7 — Profile API Key (Frontend) | ⬜ Not started | Depends on Group 3 |
+| Group 8 — SQL Debug Tools | ⬜ Not started | Depends on Group 1.4 (done) |
+| Group 9 — Tests & Cleanup | ⬜ Not started | |
+
+---
+
 Each group is a discrete unit of work. Groups within the same section can be done in parallel; groups with a `→` dependency must follow their predecessor.
 
 ---
