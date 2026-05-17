@@ -26,6 +26,12 @@ class WorkoutSession(Base):
     calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
     wellbeing: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rpe: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    avg_hr_bpm: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    z1_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    z2_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    z3_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    z4_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    z5_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -71,7 +77,6 @@ class CardioSegment(Base):
     duration_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     distance_meters: Mapped[float | None] = mapped_column(nullable=True)
     pace_seconds_per_km: Mapped[float | None] = mapped_column(nullable=True)
-    heart_rate_avg: Mapped[int | None] = mapped_column(Integer, nullable=True)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
     activity_type_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("cardio_activity_types.id", ondelete="SET NULL"), nullable=True

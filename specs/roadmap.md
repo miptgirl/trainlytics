@@ -304,20 +304,22 @@ A user can open Analytics and see correctly populated charts for activity split,
 
 ---
 
-## Phase 13 — Heart Rate Zones
+## ✅ Phase 13 — Heart Rate Zones *(completed)*
 
-**Goal:** Turn the raw HR data already stored per segment into actionable zone-based insight.
+**Goal:** Turn HR data into actionable zone-based insight. Users manually enter avg HR and time-in-zone data (copied from Apple Watch / Apple Health) per cardio session.
 
 ### Deliverables
 
-- [ ] **Zone definitions in Profile** — user sets their max HR manually or lets the app derive it from birth year; Z1–Z5 thresholds computed from max HR
-- [ ] **Session detail: HR zone distribution** — donut chart showing % time in each zone for any cardio session that has HR data recorded
-- [ ] **History list: avg HR** — average HR shown alongside existing stats (distance, pace, duration) on sessions that have HR data
-- [ ] **Analytics: time-in-zone trends** — weekly chart showing how time in each HR zone has shifted over the last 12 weeks
+- [x] **DB migration** — added `avg_hr_bpm`, `z1_seconds`–`z5_seconds` to `workout_sessions`; dropped the unused `cardio_segments.heart_rate_avg` column
+- [x] **Cardio log form: HR input** — collapsible "Add HR data" section with avg HR field and five zone duration inputs (Z1–Z5 with BPM range labels); auto-expanded when editing a session with existing HR data; draft auto-save includes HR fields
+- [x] **Session detail: HR zone distribution** — donut chart showing time-in-zone breakdown; only non-zero zones rendered as slices; tooltip shows zone label, BPM range, formatted duration, and %; avg HR shown as a stat; section hidden when no HR data present
+- [x] **History list: avg HR badge** — heart icon + "{n} bpm" shown on cardio session rows where `avg_hr_bpm` is set; matches existing stat chip style
+- [x] **Analytics: time-in-zone trends chart** — stacked bar chart (Minutes / % toggle) showing weekly zone breakdown over the last 12 weeks; SQL debug icon; backed by `GET /analytics/cardio/hr-zone-trends`
+- [x] **Tests** — 5 session API tests + 3 analytics tests covering HR data persistence, list exposure, null handling, aggregation, and debug flag
 
 ### Definition of Done
 
-A user can set their max HR in Profile, open any HR-tracked cardio session, and see a zone breakdown. The Analytics tab shows a weekly view of time in Z1–Z5 so they can track whether their easy runs are actually easy.
+A user can log a cardio session with HR data from Apple Watch, see a zone donut on session detail, find avg HR in the History list, and explore weekly time-in-zone trends in Analytics. ✅ **Achieved.**
 
 ---
 

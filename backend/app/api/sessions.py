@@ -51,6 +51,12 @@ def _build_cardio_out(ws: WorkoutSession) -> CardioSessionOut:
         calories=ws.calories,
         wellbeing=ws.wellbeing,
         rpe=ws.rpe,
+        avg_hr_bpm=ws.avg_hr_bpm,
+        z1_seconds=ws.z1_seconds,
+        z2_seconds=ws.z2_seconds,
+        z3_seconds=ws.z3_seconds,
+        z4_seconds=ws.z4_seconds,
+        z5_seconds=ws.z5_seconds,
         created_at=ws.created_at,
         segments=cs.segments,  # type: ignore[arg-type]
     )
@@ -176,6 +182,7 @@ async def list_sessions(
                     created_at=ws.created_at,
                     total_duration_seconds=cs.total_duration_seconds,
                     total_distance_meters=total_distance,
+                    avg_hr_bpm=ws.avg_hr_bpm,
                 )
             )
         elif ws.type == "strength" and ws.strength_session:
@@ -235,6 +242,12 @@ async def create_cardio_session(
         calories=body.calories,
         wellbeing=body.wellbeing,
         rpe=body.rpe,
+        avg_hr_bpm=body.avg_hr_bpm,
+        z1_seconds=body.z1_seconds,
+        z2_seconds=body.z2_seconds,
+        z3_seconds=body.z3_seconds,
+        z4_seconds=body.z4_seconds,
+        z5_seconds=body.z5_seconds,
     )
     db.add(ws)
     await db.flush()
@@ -533,6 +546,10 @@ async def _patch_cardio(
         ws.wellbeing = body.wellbeing
     if body.rpe is not None:
         ws.rpe = body.rpe
+
+    for hr_field in ("avg_hr_bpm", "z1_seconds", "z2_seconds", "z3_seconds", "z4_seconds", "z5_seconds"):
+        if hr_field in body.model_fields_set:
+            setattr(ws, hr_field, getattr(body, hr_field))
 
     cs = ws.cardio_session
     if body.activity_type_id is not None:

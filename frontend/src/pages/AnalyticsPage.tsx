@@ -11,6 +11,7 @@ import { ActivityTimeSplitChart } from '../components/analytics/ActivityTimeSpli
 import { WalkSegmentsTrendChart } from '../components/analytics/WalkSegmentsTrendChart'
 import { CardioDistanceProgressionChart } from '../components/analytics/CardioDistanceProgressionChart'
 import { TrainingLoadChart } from '../components/analytics/TrainingLoadChart'
+import { HrZoneTrendsChart } from '../components/analytics/HrZoneTrendsChart'
 import { ReadinessTrendsChart } from '../components/analytics/ReadinessTrendsChart'
 import { WellbeingCorrelationChart } from '../components/analytics/WellbeingCorrelationChart'
 import { PlanAdherenceChart } from '../components/analytics/PlanAdherenceChart'
@@ -177,6 +178,12 @@ export function AnalyticsPageContent() {
 
       <CollapsibleSectionCard title="Cardio" defaultOpen={false}>
         <div className="space-y-8">
+          <ChartPanel
+            title="HR Zone Trends"
+            debugUrl="/analytics/cardio/hr-zone-trends"
+          >
+            <HrZoneTrendsChart />
+          </ChartPanel>
           <ChartPanel
             title="Activity Time Split"
             debugUrl="/analytics/cardio/time-split?period=90"

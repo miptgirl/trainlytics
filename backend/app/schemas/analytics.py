@@ -100,3 +100,12 @@ class PlanAdherencePoint(BaseModel):
     completion_pct: float | None
     strength_volume_delta: float | None
     cardio_distance_delta: float | None
+
+
+class HrZoneTrendsRow(BaseModel):
+    week_start: DateType
+    z1_minutes: float
+    z2_minutes: float
+    z3_minutes: float
+    z4_minutes: float
+    z5_minutes: float

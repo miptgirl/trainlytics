@@ -204,3 +204,19 @@ export function usePlanAdherence(weeks = 12) {
       api.get<PlanAdherencePoint[]>(`/analytics/plan-adherence?weeks=${weeks}`),
   })
 }
+
+export interface HrZoneTrendsRow {
+  week_start: string
+  z1_minutes: number
+  z2_minutes: number
+  z3_minutes: number
+  z4_minutes: number
+  z5_minutes: number
+}
+
+export function useHrZoneTrends() {
+  return useQuery<HrZoneTrendsRow[]>({
+    queryKey: ['analytics', 'cardio', 'hr-zone-trends'],
+    queryFn: () => api.get<HrZoneTrendsRow[]>('/analytics/cardio/hr-zone-trends'),
+  })
+}

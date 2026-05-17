@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { kmToMetres, metresToKm, minPerKmToSecPerKm, minsToSeconds, secPerKmToMinPerKm, secondsToMins } from '../lib/unitUtils'
 import { formatCardioSession } from '../lib/exportUtils'
 import { EmojiRatingDisplay } from '../components/EmojiRating'
+import { HrInputSection } from '../components/HrInputSection'
+import { HrZoneDonut } from '../components/HrZoneDonut'
 
 interface CardioType {
   id: number
@@ -21,7 +23,6 @@ interface CardioSegment {
   duration_seconds: number
   distance_meters: number | null
   pace_seconds_per_km: number | null
-  heart_rate_avg: number | null
 }
 
 interface CardioSession {
@@ -36,6 +37,12 @@ interface CardioSession {
   rpe: number | null
   created_at: string
   segments: CardioSegment[]
+  avg_hr_bpm: number | null
+  z1_seconds: number | null
+  z2_seconds: number | null
+  z3_seconds: number | null
+  z4_seconds: number | null
+  z5_seconds: number | null
 }
 
 function formatDuration(seconds: number): string {
@@ -48,14 +55,13 @@ function formatDuration(seconds: number): string {
 }
 
 // ──────────────────────────────────────────
-// Edit form types (reused from log page)
+// Edit form types
 // ──────────────────────────────────────────
 interface SegmentFormValues {
   title: string
   duration_mins: string
   distance_km: string
   pace_min_per_km: string
-  heart_rate_avg: string
 }
 
 interface EditFormValues {
@@ -66,6 +72,12 @@ interface EditFormValues {
   total_duration_mins: string
   calories: string
   segments: SegmentFormValues[]
+  avg_hr_bpm: string
+  z1_seconds: number | null
+  z2_seconds: number | null
+  z3_seconds: number | null
+  z4_seconds: number | null
+  z5_seconds: number | null
 }
 
 function toForm(session: CardioSession): EditFormValues {
@@ -85,8 +97,13 @@ function toForm(session: CardioSession): EditFormValues {
       pace_min_per_km: seg.pace_seconds_per_km != null
         ? String(Math.round(secondsToMins(seg.pace_seconds_per_km) * 100) / 100)
         : '',
-      heart_rate_avg: seg.heart_rate_avg?.toString() ?? '',
     })),
+    avg_hr_bpm: session.avg_hr_bpm?.toString() ?? '',
+    z1_seconds: session.z1_seconds ?? null,
+    z2_seconds: session.z2_seconds ?? null,
+    z3_seconds: session.z3_seconds ?? null,
+    z4_seconds: session.z4_seconds ?? null,
+    z5_seconds: session.z5_seconds ?? null,
   }
 }
 
@@ -111,10 +128,12 @@ function EditForm({
   onCancel: () => void
   isPending: boolean
 }) {
-  const { register, handleSubmit, control, formState: { errors } } = useForm<EditFormValues>({
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<EditFormValues>({
     defaultValues: toForm(session),
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
+  const watchedAvgHrBpm = useWatch({ control, name: 'avg_hr_bpm' }) as string
+  const watchedZoneSeconds = useWatch({ control, name: ['z1_seconds', 'z2_seconds', 'z3_seconds', 'z4_seconds', 'z5_seconds'] }) as [number | null, number | null, number | null, number | null, number | null]
 
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
@@ -183,7 +202,7 @@ function EditForm({
           <h2 className="font-medium text-gray-900">Segments</h2>
           <button
             type="button"
-            onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '', heart_rate_avg: '' })}
+            onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '' })}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
           >
             + Add Segment
@@ -227,17 +246,21 @@ function EditForm({
                     className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     {...register(`segments.${index}.pace_min_per_km`)} />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Avg HR (bpm)</label>
-                  <input type="number" min="0"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.heart_rate_avg`)} />
-                </div>
               </div>
             </div>
           ))}
         </div>
       </div>
+
+      <HrInputSection
+        avgHrBpm={watchedAvgHrBpm ?? ''}
+        onAvgHrBpmChange={(v) => setValue('avg_hr_bpm', v)}
+        zoneSeconds={watchedZoneSeconds}
+        onZoneChange={(i, v) => {
+          const names = ['z1_seconds', 'z2_seconds', 'z3_seconds', 'z4_seconds', 'z5_seconds'] as const
+          setValue(names[i], v)
+        }}
+      />
 
       <div className="flex gap-3">
         <button
@@ -287,6 +310,12 @@ export default function CardioSessionDetailPage() {
         notes: data.notes || null,
         calories: data.calories ? parseInt(data.calories, 10) : null,
         total_duration_seconds: !isNaN(totalDurMins) ? minsToSeconds(totalDurMins) : null,
+        avg_hr_bpm: data.avg_hr_bpm ? parseInt(data.avg_hr_bpm, 10) : null,
+        z1_seconds: data.z1_seconds ?? null,
+        z2_seconds: data.z2_seconds ?? null,
+        z3_seconds: data.z3_seconds ?? null,
+        z4_seconds: data.z4_seconds ?? null,
+        z5_seconds: data.z5_seconds ?? null,
         segments: data.segments.map((seg, i) => {
           const durMins = parseFloat(seg.duration_mins)
           const distKm = parseFloat(seg.distance_km)
@@ -297,7 +326,6 @@ export default function CardioSessionDetailPage() {
             duration_seconds: !isNaN(durMins) ? minsToSeconds(durMins) : null,
             distance_meters: !isNaN(distKm) ? kmToMetres(distKm) : null,
             pace_seconds_per_km: !isNaN(paceMpk) ? minPerKmToSecPerKm(paceMpk) : null,
-            heart_rate_avg: parseIntOrNull(seg.heart_rate_avg),
           }
         }),
       }
@@ -454,16 +482,26 @@ export default function CardioSessionDetailPage() {
                   <span className="font-medium">{secPerKmToMinPerKm(seg.pace_seconds_per_km)}</span>
                 </>
               )}
-              {seg.heart_rate_avg != null && (
-                <>
-                  <span className="text-gray-500">Avg HR</span>
-                  <span className="font-medium">{seg.heart_rate_avg} bpm</span>
-                </>
-              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* HR Zone Distribution */}
+      {(session.avg_hr_bpm != null ||
+        [session.z1_seconds, session.z2_seconds, session.z3_seconds, session.z4_seconds, session.z5_seconds]
+          .some((v) => v != null && v > 0)) && (
+        <HrZoneDonut
+          avgHrBpm={session.avg_hr_bpm}
+          zones={{
+            z1: session.z1_seconds,
+            z2: session.z2_seconds,
+            z3: session.z3_seconds,
+            z4: session.z4_seconds,
+            z5: session.z5_seconds,
+          }}
+        />
+      )}
     </Layout>
   )
 }

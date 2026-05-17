@@ -4,6 +4,30 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-05-17 — Phase 13: Heart Rate Zones
+
+### Added
+
+- **HR data on cardio sessions** — six new columns on `workout_sessions`: `avg_hr_bpm INTEGER NULL` and `z1_seconds`–`z5_seconds INTEGER NULL`; Alembic migration 0012 also drops the unused `cardio_segments.heart_rate_avg` column
+- **HR zone constants** — `backend/app/services/hr_zones.py` defines the five fixed Apple Health BPM thresholds (Z1 < 132, Z2 133–144, Z3 145–157, Z4 158–169, Z5 ≥ 170)
+- **Cardio log form: HR input section** — collapsible "Add HR data" toggle below the last segment; expands to reveal an avg HR integer field and five zone duration inputs (Z1–Z5 with BPM range labels) using the existing `h:mm:ss` / `m:ss` parser; collapsed by default, auto-expanded when editing a session with saved HR data; HR fields included in `localStorage` draft and restored on draft load
+- **Session detail: HR zone donut** — new `HrZoneDonut` component renders a Recharts donut chart when at least one zone field is non-null and non-zero; only zones with data appear as slices; per-slice tooltip shows zone label, BPM range, formatted duration (`h:mm:ss`), and % of total; "Avg HR: {n} bpm" stat shown above the chart when present; section hidden entirely when no HR data exists; absent on strength sessions
+- **History list: avg HR badge** — heart icon + "{n} bpm" rendered alongside distance/pace/duration chips for cardio sessions where `avg_hr_bpm` is set; absent for sessions without HR or for strength sessions
+- **Analytics: HR Zone Trends chart** — new `HrZoneTrendsChart` component added as the first item inside the Cardio collapsible section; stacked bar chart with one bar per week; Minutes / % toggle (absolute zone minutes vs. normalized 100% bars); Z1–Z5 colors consistent with the session detail donut; per-bar tooltip shows all five zones with minutes and %; SQL debug `</>` icon
+- **`GET /analytics/cardio/hr-zone-trends`** — returns `[{week_start, z1_minutes, …, z5_minutes}]` for the last 12 complete Mon–Sun weeks plus the current in-progress week (13 entries); null zone seconds treated as 0; `?debug=true` wraps response in `{data, debug: {sql}}`
+
+### Removed
+
+- `cardio_segments.heart_rate_avg` column — dropped by migration 0012; was never surfaced in the UI; submitting `heart_rate_avg` in a segment payload is now silently ignored
+
+### Tests
+
+- **5 session API tests** — `test_log_cardio_with_hr_data`, `test_log_cardio_no_hr_data`, `test_session_list_includes_avg_hr`, `test_session_list_no_hr_null`, `test_segment_heart_rate_avg_removed`
+- **3 analytics tests** — `test_hr_zone_trends_aggregation`, `test_hr_zone_trends_null_zones_as_zero`, `test_hr_zone_trends_debug_flag`
+- Existing `CARDIO_PAYLOAD` in `test_sessions.py` updated to remove the now-gone `heart_rate_avg` segment field
+
+---
+
 ## 2026-05-17 — Phase 11: Planning & Weekly Overview
 
 ### Added
