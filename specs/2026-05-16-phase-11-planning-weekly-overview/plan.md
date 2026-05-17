@@ -164,7 +164,7 @@
 
 ---
 
-### Group 9 — Frontend: Start Session from Plan
+### Group 9 — Frontend: Start Session from Plan ✅
 
 9.1 In `PlannedSessionCard.tsx`, wire the "Start" button:
   - Strength: navigate to `/log?type=strength&templateId=<template_id>`

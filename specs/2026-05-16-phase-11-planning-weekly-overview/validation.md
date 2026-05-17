@@ -18,7 +18,7 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 | Group 6 — Frontend: /plan Route, Nav & API Hooks | ✅ Complete |
 | Group 7 — Frontend: Week Grid & Session Display | ✅ Complete |
 | Group 8 — Frontend: Plan Session Form | ✅ Complete |
-| Group 9 — Frontend: Start Session from Plan | ⬜ Pending |
+| Group 9 — Frontend: Start Session from Plan | ✅ Complete |
 | Group 10 — Frontend: Weekly Overview Card & Copy from Last Week | ⬜ Pending |
 | Group 11 — Frontend: AI Cardio Adapt Modal | ⬜ Pending |
 | Group 12 — Final QA & Polish | ⬜ Pending |

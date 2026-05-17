@@ -70,7 +70,7 @@ export function PlannedSessionCard({
     if (session.session_type === 'strength' && session.template_id) {
       navigate(`/log?type=strength&templateId=${session.template_id}`)
     } else if (session.session_type === 'cardio') {
-      navigate(`/log?type=cardio&plannedSessionId=${session.id}`)
+      navigate(`/log?type=cardio&plannedSessionId=${session.id}&weekStart=${weekStart}`)
     }
   }
 

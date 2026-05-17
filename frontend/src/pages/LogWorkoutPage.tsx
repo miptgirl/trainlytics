@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type PlannedSessionOut } from '../lib/planApi'
 import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
@@ -221,18 +222,37 @@ function toTemplatePayload(data: StrengthFormValues) {
 // Cardio Form
 // ─────────────────────────────────────────────────────────────────────────────
 
-function CardioForm() {
+function CardioForm({
+  initialPlannedSessionId,
+  initialWeekStart,
+}: {
+  initialPlannedSessionId?: number
+  initialWeekStart?: string
+}) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [titleTouched, setTitleTouched] = useState(false)
-  const [showDraftBanner, setShowDraftBanner] = useState(false)
-  const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  // 'none' | 'draft' (2-way) | 'three-way' (draft + planned session)
+  const [bannerMode, setBannerMode] = useState<'none' | 'draft' | 'three-way'>('none')
+  const [pendingDraft, setPendingDraft] = useState<CardioFormValues | null>(null)
   const hasMounted = useRef(false)
+  const startupDone = useRef(false)
 
   const { data: cardioTypes = [] } = useQuery({
     queryKey: ['cardio-types'],
     queryFn: () => api.get<CardioType[]>('/cardio-types'),
   })
+
+  const { data: weekPlanForCardio } = useQuery<{ sessions: PlannedSessionOut[] }>({
+    queryKey: ['plans', initialWeekStart ?? ''],
+    queryFn: () => api.get(`/plans/${initialWeekStart}`),
+    enabled: !!initialWeekStart && !!initialPlannedSessionId,
+  })
+
+  const plannedSession: PlannedSessionOut | null =
+    initialPlannedSessionId && weekPlanForCardio
+      ? (weekPlanForCardio.sessions.find((s) => s.id === initialPlannedSessionId) ?? null)
+      : null
 
   const {
     register,
@@ -284,13 +304,52 @@ function CardioForm() {
     })
   }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function injectPlannedSession(session: PlannedSessionOut) {
+    const firstSeg = session.segments[0]
+    setTitleTouched(true)
+    reset({
+      title: session.title ?? '',
+      activity_type_id: firstSeg ? String(firstSeg.activity_type_id) : '',
+      date: localDateTimeNow(),
+      notes: session.notes ?? '',
+      total_duration_seconds: null,
+      calories: '',
+      wellbeing: null,
+      rpe: null,
+      segments:
+        session.segments.length > 0
+          ? session.segments.map((seg) => ({
+              title: seg.title ?? '',
+              duration_seconds: seg.duration_secs ?? null,
+              distance_km:
+                seg.distance_metres != null ? String(seg.distance_metres / 1000) : '',
+              pace_seconds_per_km: seg.pace_secs_per_km ?? null,
+              heart_rate_avg: '',
+            }))
+          : [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
+    })
+  }
+
+  // Startup: decide whether to show draft banner, 3-way prompt, or auto-inject planned session.
+  // Runs once all needed data is available (draft is sync; planned session requires the query).
   useEffect(() => {
+    if (startupDone.current) return
+    if (initialPlannedSessionId && !weekPlanForCardio) return // wait for query
+
+    startupDone.current = true
     const draft = loadDraft('cardio')
-    if (draft) {
-      setPendingDraft(draft)
-      setShowDraftBanner(true)
+
+    if (draft && plannedSession) {
+      setPendingDraft(draft as CardioFormValues)
+      setBannerMode('three-way')
+    } else if (draft) {
+      setPendingDraft(draft as CardioFormValues)
+      setBannerMode('draft')
+    } else if (plannedSession) {
+      injectPlannedSession(plannedSession)
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekPlanForCardio, initialPlannedSessionId, plannedSession])
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -303,15 +362,29 @@ function CardioForm() {
 
   function handleDiscard() {
     clearDraft('cardio')
-    setShowDraftBanner(false)
+    setBannerMode('none')
     setPendingDraft(null)
   }
 
   function handleRestore() {
     if (!pendingDraft) return
     setTitleTouched(true)
-    reset(pendingDraft as CardioFormValues)
-    setShowDraftBanner(false)
+    reset(pendingDraft)
+    setBannerMode('none')
+    setPendingDraft(null)
+  }
+
+  function handleUsePlannedSession() {
+    if (!plannedSession) return
+    clearDraft('cardio')
+    injectPlannedSession(plannedSession)
+    setBannerMode('none')
+    setPendingDraft(null)
+  }
+
+  function handleStartFresh() {
+    clearDraft('cardio')
+    setBannerMode('none')
     setPendingDraft(null)
   }
 
@@ -354,7 +427,7 @@ function CardioForm() {
 
   return (
     <>
-      {showDraftBanner && (
+      {bannerMode === 'draft' && (
         <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
           <span className="text-sm text-amber-800">You have an unsaved Cardio draft.</span>
           <div className="flex gap-2 shrink-0">
@@ -371,6 +444,38 @@ function CardioForm() {
               className="text-sm font-medium text-gray-500 hover:text-gray-700"
             >
               Discard
+            </button>
+          </div>
+        </div>
+      )}
+      {bannerMode === 'three-way' && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+          <p className="text-sm text-amber-800 font-medium">
+            You have a saved draft and a planned session. Which would you like to use?
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleRestore}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+            >
+              Restore saved draft
+            </button>
+            <span className="text-amber-400">·</span>
+            <button
+              type="button"
+              onClick={handleUsePlannedSession}
+              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+            >
+              Use planned session
+            </button>
+            <span className="text-amber-400">·</span>
+            <button
+              type="button"
+              onClick={handleStartFresh}
+              className="text-sm font-medium text-gray-500 hover:text-gray-700"
+            >
+              Start fresh
             </button>
           </div>
         </div>
@@ -1186,9 +1291,16 @@ function DiffModal({
 export default function LogWorkoutPage() {
   const [searchParams] = useSearchParams()
   const templateIdParam = searchParams.get('templateId')
+  const typeParam = searchParams.get('type')
+  const plannedSessionIdParam = searchParams.get('plannedSessionId')
+  const weekStartParam = searchParams.get('weekStart')
 
   const [workoutType, setWorkoutType] = useState<WorkoutType | null>(
-    templateIdParam ? 'strength' : null,
+    typeParam === 'cardio'
+      ? 'cardio'
+      : typeParam === 'strength' || templateIdParam
+        ? 'strength'
+        : null,
   )
 
   return (
@@ -1238,7 +1350,12 @@ export default function LogWorkoutPage() {
       </div>
 
       {/* Form */}
-      {workoutType === 'cardio' && <CardioForm />}
+      {workoutType === 'cardio' && (
+        <CardioForm
+          initialPlannedSessionId={plannedSessionIdParam ? parseInt(plannedSessionIdParam, 10) : undefined}
+          initialWeekStart={weekStartParam ?? undefined}
+        />
+      )}
       {workoutType === 'steps' && (
         <div className="bg-white rounded-xl border border-gray-200 p-4 max-w-3xl">
           {/* compact steps form */}
