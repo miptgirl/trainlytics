@@ -19,6 +19,7 @@ import StepsForm from '../components/StepsForm'
 import { EmojiRating, WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/EmojiRating'
 import { AdaptSessionModal } from '../components/AdaptSessionModal'
 import { AdaptCardioModal } from '../components/plan/AdaptCardioModal'
+import { HrInputSection } from '../components/HrInputSection'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -40,7 +41,6 @@ interface SegmentFormValues {
   duration_seconds: number | null
   distance_km: string
   pace_seconds_per_km: number | null
-  heart_rate_avg: string
 }
 
 interface CardioFormValues {
@@ -53,6 +53,12 @@ interface CardioFormValues {
   wellbeing: number | null
   rpe: number | null
   segments: SegmentFormValues[]
+  avg_hr_bpm: string
+  z1_seconds: number | null
+  z2_seconds: number | null
+  z3_seconds: number | null
+  z4_seconds: number | null
+  z5_seconds: number | null
 }
 
 function parseSeconds(val: string): number | undefined {
@@ -296,7 +302,13 @@ function CardioForm({
       calories: '',
       wellbeing: null,
       rpe: null,
-      segments: [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
+      segments: [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null }],
+      avg_hr_bpm: '',
+      z1_seconds: null,
+      z2_seconds: null,
+      z3_seconds: null,
+      z4_seconds: null,
+      z5_seconds: null,
     },
   })
 
@@ -363,9 +375,8 @@ function CardioForm({
               distance_km:
                 seg.distance_metres != null ? String(seg.distance_metres / 1000) : '',
               pace_seconds_per_km: seg.pace_secs_per_km ?? null,
-              heart_rate_avg: '',
             }))
-          : [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' }],
+          : [{ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null }],
     })
   }
 
@@ -440,6 +451,12 @@ function CardioForm({
         total_duration_seconds: data.total_duration_seconds ?? null,
         wellbeing: data.wellbeing ?? null,
         rpe: data.rpe ?? null,
+        avg_hr_bpm: data.avg_hr_bpm ? parseInt(data.avg_hr_bpm, 10) : null,
+        z1_seconds: data.z1_seconds ?? null,
+        z2_seconds: data.z2_seconds ?? null,
+        z3_seconds: data.z3_seconds ?? null,
+        z4_seconds: data.z4_seconds ?? null,
+        z5_seconds: data.z5_seconds ?? null,
         segments: data.segments.map((seg, i) => {
           const distKm = parseFloat(seg.distance_km)
           return {
@@ -448,7 +465,6 @@ function CardioForm({
             duration_seconds: seg.duration_seconds ?? 0,
             distance_meters: !isNaN(distKm) ? kmToMetres(distKm) : null,
             pace_seconds_per_km: seg.pace_seconds_per_km ?? null,
-            heart_rate_avg: parseSeconds(seg.heart_rate_avg) ?? null,
           }
         }),
       }
@@ -731,16 +747,6 @@ function CardioForm({
                     )}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Avg Heart Rate (bpm)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="e.g. 145"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    {...register(`segments.${index}.heart_rate_avg`)}
-                  />
-                </div>
               </div>
             </div>
           ))}
@@ -748,12 +754,28 @@ function CardioForm({
 
         <button
           type="button"
-          onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null, heart_rate_avg: '' })}
+          onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null })}
           className="mt-3 w-full text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-xl py-2"
         >
           + Add Segment
         </button>
       </div>
+
+      <HrInputSection
+        avgHrBpm={watchedFormValues.avg_hr_bpm ?? ''}
+        onAvgHrBpmChange={(v) => setValue('avg_hr_bpm', v)}
+        zoneSeconds={[
+          watchedFormValues.z1_seconds ?? null,
+          watchedFormValues.z2_seconds ?? null,
+          watchedFormValues.z3_seconds ?? null,
+          watchedFormValues.z4_seconds ?? null,
+          watchedFormValues.z5_seconds ?? null,
+        ]}
+        onZoneChange={(i, v) => {
+          const names = ['z1_seconds', 'z2_seconds', 'z3_seconds', 'z4_seconds', 'z5_seconds'] as const
+          setValue(names[i], v)
+        }}
+      />
 
       {createMutation.error && (
         <p className="text-sm text-red-600">{createMutation.error.message}</p>
