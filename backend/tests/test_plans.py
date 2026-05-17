@@ -6,6 +6,9 @@ from datetime import date, timedelta
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.models.plan import PlannedSession
 
 
 def _monday_of_week(d: date) -> date:
@@ -537,3 +540,136 @@ async def test_plan_weekly_summary_mixed(db_session, auth_client: AsyncClient):
     # Actual from the logged session
     assert data["actual"]["cardio_distance_km"] == pytest.approx(5.0)
     assert data["actual"]["cardio_duration_min"] == pytest.approx(30.0)
+
+
+# ── Phase 14: plan versioning ─────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_plan_session_stores_template_version(db_session, auth_client: AsyncClient):
+    tmpl_id = await _create_template(auth_client)
+
+    resp = await auth_client.post(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
+        json={
+            "planned_date": THIS_MONDAY.isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl_id,
+        },
+    )
+    assert resp.status_code == 201
+    session_id = resp.json()["id"]
+
+    async with db_session() as db:
+        ps = await db.get(PlannedSession, session_id)
+        assert ps.template_version == 1
+
+
+@pytest.mark.asyncio
+async def test_plan_session_edit_same_template_version_unchanged(db_session, auth_client: AsyncClient):
+    tmpl_id = await _create_template(auth_client)
+
+    create_resp = await auth_client.post(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
+        json={
+            "planned_date": THIS_MONDAY.isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl_id,
+        },
+    )
+    session_id = create_resp.json()["id"]
+
+    # Update template → version 2
+    ex_id = await _create_exercise(auth_client, "New Exercise")
+    await auth_client.patch(
+        f"/api/templates/strength/{tmpl_id}",
+        json={"exercises": [
+            {"exercise_id": ex_id, "order": 1, "sets": [{"set_number": 1, "reps": 3}]}
+        ]},
+    )
+
+    # Edit planned session — same template, just shift date by one day (still same week)
+    update_resp = await auth_client.put(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions/{session_id}",
+        json={
+            "planned_date": (THIS_MONDAY + timedelta(days=1)).isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl_id,
+        },
+    )
+    assert update_resp.status_code == 200
+
+    async with db_session() as db:
+        ps = await db.get(PlannedSession, session_id)
+        assert ps.template_version == 1  # unchanged because template didn't change
+
+
+@pytest.mark.asyncio
+async def test_plan_session_edit_new_template_updates_version(db_session, auth_client: AsyncClient):
+    tmpl1_id = await _create_template(auth_client, "Template A")
+    tmpl2_id = await _create_template(auth_client, "Template B")
+
+    # Update template2 → version 2
+    ex_id = await _create_exercise(auth_client, "Extra Exercise")
+    await auth_client.patch(
+        f"/api/templates/strength/{tmpl2_id}",
+        json={"exercises": [
+            {"exercise_id": ex_id, "order": 1, "sets": [{"set_number": 1, "reps": 5, "weight_kg": 80.0}]}
+        ]},
+    )
+
+    create_resp = await auth_client.post(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
+        json={
+            "planned_date": THIS_MONDAY.isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl1_id,
+        },
+    )
+    session_id = create_resp.json()["id"]
+
+    # Swap to template2 (which is at version 2)
+    update_resp = await auth_client.put(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions/{session_id}",
+        json={
+            "planned_date": THIS_MONDAY.isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl2_id,
+        },
+    )
+    assert update_resp.status_code == 200
+
+    async with db_session() as db:
+        ps = await db.get(PlannedSession, session_id)
+        assert ps.template_version == 2
+
+
+@pytest.mark.asyncio
+async def test_copy_from_last_week_uses_current_version(db_session, auth_client: AsyncClient):
+    tmpl_id = await _create_template(auth_client)
+
+    prev_monday = THIS_MONDAY - timedelta(weeks=1)
+    await auth_client.post(
+        f"/api/plans/{prev_monday.isoformat()}/sessions",
+        json={
+            "planned_date": (prev_monday + timedelta(days=2)).isoformat(),
+            "session_type": "strength",
+            "template_id": tmpl_id,
+        },
+    )
+
+    # Update template → version 2
+    ex_id = await _create_exercise(auth_client, "Updated Exercise")
+    await auth_client.patch(
+        f"/api/templates/strength/{tmpl_id}",
+        json={"exercises": [
+            {"exercise_id": ex_id, "order": 1, "sets": [{"set_number": 1, "reps": 5, "weight_kg": 120.0}]}
+        ]},
+    )
+
+    copy_resp = await auth_client.post(f"/api/plans/{THIS_MONDAY.isoformat()}/copy-from-last-week")
+    assert copy_resp.status_code == 200
+
+    copied_session_id = copy_resp.json()["sessions"][0]["id"]
+    async with db_session() as db:
+        ps = await db.get(PlannedSession, copied_session_id)
+        assert ps.template_version == 2  # current version at copy time

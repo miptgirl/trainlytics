@@ -15,7 +15,7 @@
 | `useSessionComparison` hook + TypeScript types | ✅ Done |
 | `SessionComparisonPanel` component | ✅ Done |
 | `PlannedSessionCard` toggle + panel integration | ✅ Done |
-| Tests | ⬜ Not started |
+| Tests | ✅ Done |
 
 ---
 

@@ -27,8 +27,9 @@ def patch_users(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-async def db_session() -> None:
-    """In-memory SQLite database; overrides get_db for the duration of a test."""
+async def db_session():
+    """In-memory SQLite database; overrides get_db for the duration of a test.
+    Yields the session factory so tests can open their own sessions for direct DB queries."""
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -40,7 +41,7 @@ async def db_session() -> None:
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
-    yield
+    yield Session
     app.dependency_overrides.pop(get_db, None)
     await engine.dispose()
 

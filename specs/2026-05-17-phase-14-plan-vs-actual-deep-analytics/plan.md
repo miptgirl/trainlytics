@@ -8,7 +8,7 @@
 | Group 2 — Template Versioning Logic | ✅ Complete | _write_template_history async; wired into create/update/plan endpoints |
 | Group 3 — Backend: Comparison Endpoint & Schemas | ✅ Complete | Schemas in plan.py; GET /plan/sessions/{id}/comparison in plan_summary.py |
 | Group 4 — Frontend: Comparison Panel & Card Update | ✅ Complete | Types + hook in planApi.ts; SessionComparisonPanel.tsx; toggle in PlannedSessionCard.tsx |
-| Group 5 — Tests & Cleanup | ⬜ Not started | |
+| Group 5 — Tests & Cleanup | ✅ Complete | Versioning tests in test_templates.py + test_plans.py; comparison tests in test_plan_comparison.py |
 
 ---
 
