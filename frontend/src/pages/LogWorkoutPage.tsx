@@ -61,11 +61,6 @@ interface CardioFormValues {
   z5_seconds: number | null
 }
 
-function parseSeconds(val: string): number | undefined {
-  const n = parseInt(val, 10)
-  return isNaN(n) || n <= 0 ? undefined : n
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Strength form types & helpers
 // ─────────────────────────────────────────────────────────────────────────────

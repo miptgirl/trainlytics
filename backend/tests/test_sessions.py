@@ -15,7 +15,6 @@ CARDIO_PAYLOAD = {
             "duration_seconds": 1800,
             "distance_meters": 5000.0,
             "pace_seconds_per_km": 360.0,
-            "heart_rate_avg": 145,
             "title": "Warm-up",
         },
         {
@@ -23,7 +22,6 @@ CARDIO_PAYLOAD = {
             "duration_seconds": 1800,
             "distance_meters": 5000.0,
             "pace_seconds_per_km": 360.0,
-            "heart_rate_avg": 155,
         },
     ],
 }
@@ -60,7 +58,6 @@ async def test_create_cardio_session_single_segment(db_session, auth_client: Asy
     data = resp.json()
     assert len(data["segments"]) == 1
     assert data["segments"][0]["distance_meters"] is None
-    assert data["segments"][0]["heart_rate_avg"] is None
     assert data["title"] is None
     assert data["calories"] is None
 
@@ -803,3 +800,79 @@ async def test_training_trends_skip_empty_weeks_false(
     data = resp.json()
     # 4 prior weeks + current = 5 total, most are empty
     assert len(data) == 5
+
+
+# ── Phase 13: HR data tests ───────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_log_cardio_with_hr_data(db_session, auth_client: AsyncClient):
+    payload = {
+        **CARDIO_PAYLOAD,
+        "avg_hr_bpm": 145,
+        "z2_seconds": 600,
+        "z3_seconds": 1200,
+    }
+    create = await auth_client.post("/api/sessions/cardio", json=payload)
+    assert create.status_code == 201
+    session_id = create.json()["id"]
+
+    resp = await auth_client.get(f"/api/sessions/{session_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["avg_hr_bpm"] == 145
+    assert data["z2_seconds"] == 600
+    assert data["z3_seconds"] == 1200
+
+
+@pytest.mark.asyncio
+async def test_log_cardio_no_hr_data(db_session, auth_client: AsyncClient):
+    create = await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
+    assert create.status_code == 201
+    session_id = create.json()["id"]
+
+    resp = await auth_client.get(f"/api/sessions/{session_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["avg_hr_bpm"] is None
+    assert data["z1_seconds"] is None
+    assert data["z2_seconds"] is None
+    assert data["z3_seconds"] is None
+    assert data["z4_seconds"] is None
+    assert data["z5_seconds"] is None
+
+
+@pytest.mark.asyncio
+async def test_session_list_includes_avg_hr(db_session, auth_client: AsyncClient):
+    payload = {**CARDIO_PAYLOAD, "avg_hr_bpm": 148}
+    await auth_client.post("/api/sessions/cardio", json=payload)
+
+    resp = await auth_client.get("/api/sessions")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    cardio = next(s for s in items if s["type"] == "cardio")
+    assert cardio["avg_hr_bpm"] == 148
+
+
+@pytest.mark.asyncio
+async def test_session_list_no_hr_null(db_session, auth_client: AsyncClient):
+    await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
+
+    resp = await auth_client.get("/api/sessions")
+    assert resp.status_code == 200
+    items = resp.json()["items"]
+    cardio = next(s for s in items if s["type"] == "cardio")
+    assert cardio["avg_hr_bpm"] is None
+
+
+@pytest.mark.asyncio
+async def test_segment_heart_rate_avg_removed(db_session, auth_client: AsyncClient):
+    payload = {
+        "date": "2026-05-01T07:00:00Z",
+        "segments": [
+            {"order": 1, "duration_seconds": 1800, "heart_rate_avg": 155},
+        ],
+    }
+    resp = await auth_client.post("/api/sessions/cardio", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert "heart_rate_avg" not in data["segments"][0]

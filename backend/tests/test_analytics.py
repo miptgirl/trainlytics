@@ -735,3 +735,75 @@ async def test_plan_adherence(auth_client: AsyncClient, db_session: None) -> Non
     assert week_entry is not None
     assert week_entry["completion_pct"] == pytest.approx(100.0)
     assert week_entry["strength_volume_delta"] == pytest.approx(400.0 - 500.0)  # -100
+
+
+# ── Phase 13: HR zone trends ──────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_hr_zone_trends_aggregation(auth_client: AsyncClient, db_session: None) -> None:
+    """Two sessions in the same week: z2_seconds summed and converted to minutes."""
+    from datetime import date as DateType
+
+    today = DateType.today()
+    this_monday = today - timedelta(days=today.weekday())
+    day = this_monday.strftime("%Y-%m-%dT08:00:00Z")
+
+    # Session A: z2=600s, Session B: z2=300s → total 900s = 15.0 min
+    await _create_cardio_session(
+        auth_client, day,
+        [{"order": 1, "duration_seconds": 1800}],
+        z2_seconds=600,
+    )
+    await _create_cardio_session(
+        auth_client, day,
+        [{"order": 1, "duration_seconds": 1800}],
+        z2_seconds=300,
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/hr-zone-trends")
+    assert resp.status_code == 200
+    rows = resp.json()
+
+    week_key = this_monday.isoformat()
+    week_row = next((r for r in rows if r["week_start"] == week_key), None)
+    assert week_row is not None
+    assert week_row["z2_minutes"] == pytest.approx(15.0)
+
+
+@pytest.mark.asyncio
+async def test_hr_zone_trends_null_zones_as_zero(auth_client: AsyncClient, db_session: None) -> None:
+    """Session with null zone fields contributes 0 to that zone's total."""
+    from datetime import date as DateType
+
+    today = DateType.today()
+    this_monday = today - timedelta(days=today.weekday())
+    day = this_monday.strftime("%Y-%m-%dT08:00:00Z")
+
+    # Only z3 is set; z1 is null
+    await _create_cardio_session(
+        auth_client, day,
+        [{"order": 1, "duration_seconds": 1800}],
+        z3_seconds=300,
+    )
+
+    resp = await auth_client.get("/api/analytics/cardio/hr-zone-trends")
+    assert resp.status_code == 200
+    rows = resp.json()
+
+    week_key = this_monday.isoformat()
+    week_row = next((r for r in rows if r["week_start"] == week_key), None)
+    assert week_row is not None
+    assert week_row["z1_minutes"] == pytest.approx(0.0)
+    assert week_row["z3_minutes"] == pytest.approx(5.0)
+
+
+@pytest.mark.asyncio
+async def test_hr_zone_trends_debug_flag(auth_client: AsyncClient, db_session: None) -> None:
+    """?debug=true wraps response in {data, debug: {sql}}."""
+    resp = await auth_client.get("/api/analytics/cardio/hr-zone-trends?debug=true")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "data" in body
+    assert "debug" in body
+    assert "sql" in body["debug"]
+    assert isinstance(body["debug"]["sql"], str) and len(body["debug"]["sql"]) > 0

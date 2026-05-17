@@ -10,7 +10,7 @@
 | History list: avg HR badge | ✅ Done |
 | Analytics hr-zone-trends endpoint | ✅ Done |
 | Analytics HR zone trends chart (frontend) | ✅ Done |
-| Tests & cleanup | ⬜ Not started |
+| Tests & cleanup | ✅ Done |
 
 ---
 

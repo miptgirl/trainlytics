@@ -10,7 +10,7 @@
 | Group 4 — History List: Avg HR Badge | ✅ Done | |
 | Group 5 — Analytics: hr-zone-trends Endpoint | ✅ Done | |
 | Group 6 — Analytics: HR Zone Trends Chart (Frontend) | ✅ Done | |
-| Group 7 — Tests & Cleanup | ⬜ Not started | |
+| Group 7 — Tests & Cleanup | ✅ Done | |
 
 ---
 
