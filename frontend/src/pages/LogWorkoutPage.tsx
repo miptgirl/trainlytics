@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type PlannedSessionOut } from '../lib/planApi'
+import { type PlannedSessionOut, type WeekPlanOut } from '../lib/planApi'
 import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
@@ -18,6 +18,7 @@ import { kmToMetres } from '../lib/unitUtils'
 import StepsForm from '../components/StepsForm'
 import { EmojiRating, WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/EmojiRating'
 import { AdaptSessionModal } from '../components/AdaptSessionModal'
+import { AdaptCardioModal } from '../components/plan/AdaptCardioModal'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -232,6 +233,7 @@ function CardioForm({
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [titleTouched, setTitleTouched] = useState(false)
+  const [showAdaptCardioModal, setShowAdaptCardioModal] = useState(false)
   // 'none' | 'draft' (2-way) | 'three-way' (draft + planned session)
   const [bannerMode, setBannerMode] = useState<'none' | 'draft' | 'three-way'>('none')
   const [pendingDraft, setPendingDraft] = useState<CardioFormValues | null>(null)
@@ -243,6 +245,12 @@ function CardioForm({
     queryFn: () => api.get<CardioType[]>('/cardio-types'),
   })
 
+  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+    queryKey: ['profile'],
+    queryFn: () => api.get('/profile'),
+  })
+  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+
   const { data: weekPlanForCardio } = useQuery<{ sessions: PlannedSessionOut[] }>({
     queryKey: ['plans', initialWeekStart ?? ''],
     queryFn: () => api.get(`/plans/${initialWeekStart}`),
@@ -253,6 +261,23 @@ function CardioForm({
     initialPlannedSessionId && weekPlanForCardio
       ? (weekPlanForCardio.sessions.find((s) => s.id === initialPlannedSessionId) ?? null)
       : null
+
+  // Compute today's week start (Monday) for activity-type-based matching
+  const todayWeekStart = (() => {
+    const today = new Date()
+    const day = today.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    const monday = new Date(today)
+    monday.setDate(today.getDate() + diff)
+    return monday.toISOString().split('T')[0]
+  })()
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  const { data: todayWeekPlan } = useQuery<WeekPlanOut>({
+    queryKey: ['plans', todayWeekStart],
+    queryFn: () => api.get(`/plans/${todayWeekStart}`),
+    enabled: !initialPlannedSessionId,
+  })
 
   const {
     register,
@@ -278,6 +303,22 @@ function CardioForm({
   const watchedActivityTypeId = useWatch({ control, name: 'activity_type_id' })
   const watchedSegments = useWatch({ control, name: 'segments' })
   const watchedFormValues = useWatch({ control })
+
+  // Resolve planned_session_id for the AI adapt feature:
+  // (a) from URL param, or (b) matching today's planned cardio by activity type
+  const resolvedPlannedSessionId: number | null = (() => {
+    if (initialPlannedSessionId) return initialPlannedSessionId
+    if (!watchedActivityTypeId || !todayWeekPlan) return null
+    const activityTypeId = parseInt(watchedActivityTypeId, 10)
+    const match = todayWeekPlan.sessions.find(
+      (s) =>
+        s.session_type === 'cardio' &&
+        s.planned_date === todayStr &&
+        s.segments.length > 0 &&
+        s.segments[0].activity_type_id === activityTypeId,
+    )
+    return match?.id ?? null
+  })()
 
   useEffect(() => {
     if (titleTouched) return
@@ -593,6 +634,28 @@ function CardioForm({
         </div>
       </div>
 
+      {/* Adapt this session (shown when a matching planned cardio session is resolved) */}
+      {resolvedPlannedSessionId !== null && (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          {hasApiKey ? (
+            <button
+              type="button"
+              onClick={() => setShowAdaptCardioModal(true)}
+              className="w-full text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1.5"
+            >
+              <span>✨</span> Adapt this session
+            </button>
+          ) : (
+            <p className="text-sm text-slate-500">
+              <a href="/profile" className="text-blue-600 hover:underline font-medium">
+                Add an API key in Profile
+              </a>{' '}
+              to adapt this session with AI suggestions.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Segments */}
       <div>
         <h2 className="font-medium text-gray-900 mb-3">Segments</h2>
@@ -715,6 +778,14 @@ function CardioForm({
         </button>
       </div>
     </form>
+
+    {showAdaptCardioModal && resolvedPlannedSessionId !== null && (
+      <AdaptCardioModal
+        hasApiKey={hasApiKey}
+        plannedSessionId={resolvedPlannedSessionId}
+        onClose={() => setShowAdaptCardioModal(false)}
+      />
+    )}
     </>
   )
 }
