@@ -272,31 +272,31 @@ A user can open the Plan tab, build a week's plan with strength and cardio sessi
 
 ---
 
-## Phase 12 — Analytics Fixes & Navigation Revamp
+## ✅ Phase 12 — Analytics Fixes & Navigation Revamp
 
 **Goal:** Fix broken analytics charts, reorganize the analytics UX, and clean up navigation before building on top of either.
 
 ### Deliverables
 
 #### Analytics bug fixes
-- [ ] **Activity Type Split** — fix SQL; chart currently returns no data
-- [ ] **Walk Segments per Session** — fix SQL; all values currently zero
-- [ ] **Distance Progression** — fix SQL; no distance data shown
+- [x] **Activity Type Split** — fix SQL; chart currently returns no data
+- [x] **Walk Segments per Session** — fix SQL; all values currently zero
+- [x] **Distance Progression** — fix SQL; no distance data shown
 
 #### Analytics UX reorganization
-- [ ] **Consistency heatmap repositioned** — moved to directly below the all-time summary header (currently buried at the bottom)
-- [ ] **New overview charts** — sessions per week, total training time per week, total volume per week; visible by default
-- [ ] **Strength section layout** — Weekly Volume by Type + Weekly Exercises by Type visible by default; all other strength charts collapsed
-- [ ] **Cardio section** — collapsed by default
+- [x] **Consistency heatmap repositioned** — moved to directly below the all-time summary header (currently buried at the bottom)
+- [x] **New overview charts** — sessions per week, total training time per week, total volume per week; visible by default
+- [x] **Strength section layout** — Weekly Volume by Type + Weekly Exercises by Type visible by default; all other strength charts collapsed
+- [x] **Cardio section** — collapsed by default
 
 #### Navigation revamp
-- [ ] **Tab consolidation** — fewer top-level tabs, centered, clearer labels; resolve the "too many tabs" feedback
+- [x] **Tab consolidation** — fewer top-level tabs, centered, clearer labels; resolve the "too many tabs" feedback
 
 #### Profile
-- [ ] **API key simplification** — single provider selector + one key field; replaces the current separate Anthropic / OpenAI fields
+- [x] **API key simplification** — single provider selector + one key field; replaces the current separate Anthropic / OpenAI fields
 
 #### Plan tab
-- [ ] **Plan vs. actual summary** — weekly card showing planned vs. logged totals: distance and time for cardio; exercises and volume for strength
+- [x] **Plan vs. actual summary** — weekly card showing planned vs. logged totals: distance and time for cardio; exercises and volume for strength
 
 ### Definition of Done
 
