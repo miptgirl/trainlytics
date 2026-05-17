@@ -37,8 +37,7 @@ interface UserProfile {
   goals: GoalItem[] | null
   injury_notes: string | null
   coach_notes: string | null
-  has_anthropic_key: boolean
-  has_openai_key: boolean
+  ai_key_configured: boolean
   ai_provider: AIProvider | null
 }
 
@@ -277,7 +276,7 @@ export default function ProfilePage() {
   })
 
   const patchMutation = useMutation({
-    mutationFn: (body: Partial<UserProfile> & { anthropic_api_key?: string | null; openai_api_key?: string | null }) =>
+    mutationFn: (body: Partial<UserProfile> & { ai_key?: string | null }) =>
       api.patch<UserProfile>('/profile', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
   })
@@ -341,6 +340,21 @@ export default function ProfilePage() {
       setCoachNotes(profile.coach_notes ?? '')
     }
   }, [profile])
+
+  // ── AI Provider ────────────────────────────────────────────────────────
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('anthropic')
+  const [keyResetNoticeDismissed, setKeyResetNoticeDismissed] = useState(
+    () => !!localStorage.getItem('key_reset_notice_v1')
+  )
+
+  useEffect(() => {
+    if (profile?.ai_provider) setSelectedProvider(profile.ai_provider)
+  }, [profile?.ai_provider])
+
+  function dismissKeyResetNotice() {
+    localStorage.setItem('key_reset_notice_v1', '1')
+    setKeyResetNoticeDismissed(true)
+  }
 
   if (isLoading) {
     return (
@@ -474,41 +488,47 @@ export default function ProfilePage() {
         {/* ── AI Provider ── */}
         <SectionCard title="AI Provider">
           <div className="flex flex-col gap-5">
-            <ApiKeyField
-              label="Anthropic API Key"
-              isConfigured={profile?.has_anthropic_key ?? false}
-              isSaving={patchMutation.isPending}
-              onSave={(key) => patchMutation.mutate({ anthropic_api_key: key })}
-              onRemove={() => patchMutation.mutate({ anthropic_api_key: null })}
-            />
-
-            <ApiKeyField
-              label="OpenAI API Key"
-              isConfigured={profile?.has_openai_key ?? false}
-              isSaving={patchMutation.isPending}
-              onSave={(key) => patchMutation.mutate({ openai_api_key: key })}
-              onRemove={() => patchMutation.mutate({ openai_api_key: null })}
-            />
-
-            {profile?.has_anthropic_key && profile?.has_openai_key && (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-600">Active provider</span>
-                <SegmentedControl<AIProvider>
-                  options={[
-                    { label: 'Anthropic', value: 'anthropic' },
-                    { label: 'OpenAI', value: 'openai' },
-                  ]}
-                  value={profile?.ai_provider ?? 'anthropic'}
-                  onChange={(v) => patchMutation.mutate({ ai_provider: v })}
-                />
+            {!keyResetNoticeDismissed && (
+              <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+                <span>API key has been reset. Please re-enter your key.</span>
+                <button
+                  type="button"
+                  onClick={dismissKeyResetNotice}
+                  className="text-amber-500 hover:text-amber-700 shrink-0 leading-none"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
               </div>
             )}
 
-            {!profile?.has_anthropic_key && !profile?.has_openai_key && (
-              <p className="text-sm text-slate-400">
-                Add an API key above to enable AI features.
-              </p>
-            )}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-600">Provider</span>
+              <SegmentedControl<AIProvider>
+                options={[
+                  { label: 'Anthropic', value: 'anthropic' },
+                  { label: 'OpenAI', value: 'openai' },
+                ]}
+                value={selectedProvider}
+                onChange={(v) => {
+                  setSelectedProvider(v)
+                  if (profile?.ai_key_configured) {
+                    patchMutation.mutate({ ai_provider: v })
+                  }
+                }}
+              />
+            </div>
+
+            <ApiKeyField
+              label="API Key"
+              isConfigured={profile?.ai_key_configured ?? false}
+              isSaving={patchMutation.isPending}
+              onSave={(key) => {
+                patchMutation.mutate({ ai_provider: selectedProvider, ai_key: key })
+                dismissKeyResetNotice()
+              }}
+              onRemove={() => patchMutation.mutate({ ai_key: null })}
+            />
           </div>
         </SectionCard>
 

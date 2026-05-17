@@ -245,11 +245,11 @@ function CardioForm({
     queryFn: () => api.get<CardioType[]>('/cardio-types'),
   })
 
-  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+  const { data: profile } = useQuery<{ ai_key_configured: boolean }>({
     queryKey: ['profile'],
     queryFn: () => api.get('/profile'),
   })
-  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+  const hasApiKey = !!profile?.ai_key_configured
 
   const { data: weekPlanForCardio } = useQuery<{ sessions: PlannedSessionOut[] }>({
     queryKey: ['plans', initialWeekStart ?? ''],
@@ -807,11 +807,11 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
   const [showAdaptModal, setShowAdaptModal] = useState(false)
   const hasMounted = useRef(false)
 
-  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+  const { data: profile } = useQuery<{ ai_key_configured: boolean }>({
     queryKey: ['profile'],
     queryFn: () => api.get('/profile'),
   })
-  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+  const hasApiKey = !!profile?.ai_key_configured
 
   const { data: exercises = [] } = useQuery({
     queryKey: ['exercises'],

@@ -461,11 +461,11 @@ export function HistoryPageContent() {
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+  const { data: profile } = useQuery<{ ai_key_configured: boolean }>({
     queryKey: ['profile'],
     queryFn: () => api.get('/profile'),
   })
-  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+  const hasApiKey = !!profile?.ai_key_configured
 
   const params = new URLSearchParams()
   if (type !== 'all') params.set('type', type)

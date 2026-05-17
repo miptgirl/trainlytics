@@ -10,7 +10,7 @@
 | Group 4 — Navigation Revamp | ✅ Complete | StatsPage with Analytics/History sub-nav; /history and /analytics redirect; Layout has 7 tabs |
 | Group 5 — Analytics UX Reorganization | ✅ Complete | Heatmap moved; 3 overview charts; strength collapsible; cardio collapsed; plan adherence section |
 | Group 6 — Plan vs. Actual Card | ✅ Complete | PlanVsActualCard on Plan tab; fetches /plan/weekly-summary; refetches on week navigation |
-| Group 7 — Profile API Key (Frontend) | ⬜ Not started | Depends on Group 3 |
+| Group 7 — Profile API Key (Frontend) | ✅ Complete | Provider selector + single key field; reset notice; ai_key_configured API shape |
 | Group 8 — SQL Debug Tools | ⬜ Not started | Depends on Group 1.4 (done) |
 | Group 9 — Tests & Cleanup | ⬜ Not started | |
 
