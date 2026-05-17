@@ -12,7 +12,7 @@ import {
 } from '../components/ExerciseEntryBlock'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
-import { datetimeLocalToUTC, localDateTimeNow } from '../lib/dateUtils'
+import { datetimeLocalToUTC, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import StepsForm from '../components/StepsForm'
@@ -269,9 +269,9 @@ function CardioForm({
     const diff = day === 0 ? -6 : 1 - day
     const monday = new Date(today)
     monday.setDate(today.getDate() + diff)
-    return monday.toISOString().split('T')[0]
+    return toLocalDateStr(monday)
   })()
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = toLocalDateStr(new Date())
 
   const { data: todayWeekPlan } = useQuery<WeekPlanOut>({
     queryKey: ['plans', todayWeekStart],

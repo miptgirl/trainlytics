@@ -4,6 +4,7 @@ import { WeekGrid } from '../components/plan/WeekGrid'
 import { PlanSessionForm } from '../components/plan/PlanSessionForm'
 import { WeeklyOverviewCard } from '../components/plan/WeeklyOverviewCard'
 import { useWeekPlan, useCopyFromLastWeek, type PlannedSessionOut } from '../lib/planApi'
+import { toLocalDateStr } from '../lib/dateUtils'
 
 function getMondayOfCurrentWeek(): string {
   const today = new Date()
@@ -11,13 +12,13 @@ function getMondayOfCurrentWeek(): string {
   const diff = day === 0 ? -6 : 1 - day
   const monday = new Date(today)
   monday.setDate(today.getDate() + diff)
-  return monday.toISOString().split('T')[0]
+  return toLocalDateStr(monday)
 }
 
 function shiftWeek(weekStart: string, direction: -1 | 1): string {
   const date = new Date(weekStart + 'T00:00:00')
   date.setDate(date.getDate() + direction * 7)
-  return date.toISOString().split('T')[0]
+  return toLocalDateStr(date)
 }
 
 function formatWeekRange(weekStart: string): string {
