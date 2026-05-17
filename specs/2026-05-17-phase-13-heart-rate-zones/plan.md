@@ -4,7 +4,7 @@
 
 | Group | Status | Notes |
 |---|---|---|
-| Group 1 — DB Migration & Schema | ⬜ Not started | |
+| Group 1 — DB Migration & Schema | ✅ Done | |
 | Group 2 — Cardio Log Form: HR Input | ⬜ Not started | |
 | Group 3 — Session Detail: HR Zone Donut | ⬜ Not started | |
 | Group 4 — History List: Avg HR Badge | ⬜ Not started | |

@@ -10,7 +10,6 @@ class CardioSegmentCreate(BaseModel):
     duration_seconds: int
     distance_meters: float | None = None
     pace_seconds_per_km: float | None = None
-    heart_rate_avg: int | None = None
     title: str | None = None
     activity_type_id: int | None = None
 
@@ -20,7 +19,6 @@ class CardioSegmentPatch(BaseModel):
     duration_seconds: int | None = None
     distance_meters: float | None = None
     pace_seconds_per_km: float | None = None
-    heart_rate_avg: int | None = None
     title: str | None = None
 
 
@@ -32,7 +30,6 @@ class CardioSegmentOut(BaseModel):
     duration_seconds: int
     distance_meters: float | None
     pace_seconds_per_km: float | None
-    heart_rate_avg: int | None
     title: str | None = None
     activity_type_id: int | None = None
 
@@ -46,6 +43,12 @@ class CardioSessionCreate(BaseModel):
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
     rpe: int | None = Field(default=None, ge=1, le=5)
+    avg_hr_bpm: int | None = None
+    z1_seconds: int | None = None
+    z2_seconds: int | None = None
+    z3_seconds: int | None = None
+    z4_seconds: int | None = None
+    z5_seconds: int | None = None
     segments: list[CardioSegmentCreate]
 
 
@@ -58,6 +61,12 @@ class CardioSessionPatch(BaseModel):
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
     rpe: int | None = Field(default=None, ge=1, le=5)
+    avg_hr_bpm: int | None = None
+    z1_seconds: int | None = None
+    z2_seconds: int | None = None
+    z3_seconds: int | None = None
+    z4_seconds: int | None = None
+    z5_seconds: int | None = None
     segments: list[CardioSegmentCreate] | None = None
 
 
@@ -73,6 +82,12 @@ class CardioSessionOut(BaseModel):
     calories: int | None = None
     wellbeing: int | None = None
     rpe: int | None = None
+    avg_hr_bpm: int | None = None
+    z1_seconds: int | None = None
+    z2_seconds: int | None = None
+    z3_seconds: int | None = None
+    z4_seconds: int | None = None
+    z5_seconds: int | None = None
     created_at: datetime
     segments: list[CardioSegmentOut]
 
@@ -164,6 +179,7 @@ class SessionSummaryOut(BaseModel):
     # cardio summary
     total_duration_seconds: int | None = None
     total_distance_meters: float | None = None
+    avg_hr_bpm: int | None = None
     # strength summary
     total_sets: int | None = None
     exercise_count: int | None = None

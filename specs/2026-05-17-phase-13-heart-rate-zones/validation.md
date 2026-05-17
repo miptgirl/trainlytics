@@ -4,7 +4,7 @@
 
 | Area | Status |
 |---|---|
-| DB migration & schema (drop segment HR, add session-level fields) | ⬜ Not started |
+| DB migration & schema (drop segment HR, add session-level fields) | ✅ Done |
 | Cardio log form: HR input section | ⬜ Not started |
 | Session detail: HR zone donut | ⬜ Not started |
 | History list: avg HR badge | ⬜ Not started |
