@@ -6,9 +6,9 @@
 |---|---|---|
 | Group 1 — DB Migration & Schema | ✅ Done | |
 | Group 2 — Cardio Log Form: HR Input | ✅ Done | |
-| Group 3 — Session Detail: HR Zone Donut | ⬜ Not started | |
-| Group 4 — History List: Avg HR Badge | ⬜ Not started | |
-| Group 5 — Analytics: hr-zone-trends Endpoint | ⬜ Not started | |
+| Group 3 — Session Detail: HR Zone Donut | ✅ Done | |
+| Group 4 — History List: Avg HR Badge | ✅ Done | |
+| Group 5 — Analytics: hr-zone-trends Endpoint | ✅ Done | |
 | Group 6 — Analytics: HR Zone Trends Chart (Frontend) | ⬜ Not started | |
 | Group 7 — Tests & Cleanup | ⬜ Not started | |
 

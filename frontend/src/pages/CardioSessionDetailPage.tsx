@@ -9,6 +9,7 @@ import { kmToMetres, metresToKm, minPerKmToSecPerKm, minsToSeconds, secPerKmToMi
 import { formatCardioSession } from '../lib/exportUtils'
 import { EmojiRatingDisplay } from '../components/EmojiRating'
 import { HrInputSection } from '../components/HrInputSection'
+import { HrZoneDonut } from '../components/HrZoneDonut'
 
 interface CardioType {
   id: number
@@ -485,6 +486,22 @@ export default function CardioSessionDetailPage() {
           </div>
         ))}
       </div>
+
+      {/* HR Zone Distribution */}
+      {(session.avg_hr_bpm != null ||
+        [session.z1_seconds, session.z2_seconds, session.z3_seconds, session.z4_seconds, session.z5_seconds]
+          .some((v) => v != null && v > 0)) && (
+        <HrZoneDonut
+          avgHrBpm={session.avg_hr_bpm}
+          zones={{
+            z1: session.z1_seconds,
+            z2: session.z2_seconds,
+            z3: session.z3_seconds,
+            z4: session.z4_seconds,
+            z5: session.z5_seconds,
+          }}
+        />
+      )}
     </Layout>
   )
 }

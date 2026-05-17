@@ -6,9 +6,9 @@
 |---|---|
 | DB migration & schema (drop segment HR, add session-level fields) | ✅ Done |
 | Cardio log form: HR input section | ✅ Done |
-| Session detail: HR zone donut | ⬜ Not started |
-| History list: avg HR badge | ⬜ Not started |
-| Analytics hr-zone-trends endpoint | ⬜ Not started |
+| Session detail: HR zone donut | ✅ Done |
+| History list: avg HR badge | ✅ Done |
+| Analytics hr-zone-trends endpoint | ✅ Done |
 | Analytics HR zone trends chart (frontend) | ⬜ Not started |
 | Tests & cleanup | ⬜ Not started |
 

@@ -27,6 +27,7 @@ from app.schemas.analytics import (
     DistanceProgressionPoint,
     ExercisesByTypePoint,
     HeatmapDay,
+    HrZoneTrendsRow,
     OverviewTrendsPoint,
     PersonalRecord,
     PlanAdherencePoint,
@@ -992,4 +993,68 @@ async def plan_adherence(
 
     if debug:
         return _debug_wrap(result, _render_sql(q_planned, q_logged_str, q_logged_cardio))
+    return result
+
+
+# ── 2.5  HR zone trends ───────────────────────────────────────────────────────
+
+@router.get("/cardio/hr-zone-trends", response_model=list[HrZoneTrendsRow])
+async def hr_zone_trends(
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    debug: bool = Query(False),
+):
+    today = DateType.today()
+    current_monday = today - timedelta(days=today.weekday())
+    range_start = current_monday - timedelta(weeks=12)
+    range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
+
+    query = (
+        select(
+            WorkoutSession.date,
+            WorkoutSession.z1_seconds,
+            WorkoutSession.z2_seconds,
+            WorkoutSession.z3_seconds,
+            WorkoutSession.z4_seconds,
+            WorkoutSession.z5_seconds,
+        )
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.date >= range_start_dt,
+        )
+    )
+    rows = (await db.execute(query)).all()
+
+    def week_of(d) -> DateType:
+        dd = d.date() if hasattr(d, "date") else d
+        return dd - timedelta(days=dd.weekday())
+
+    secs: dict[DateType, list[int]] = defaultdict(lambda: [0, 0, 0, 0, 0])
+    for row_date, z1, z2, z3, z4, z5 in rows:
+        w = week_of(row_date)
+        zone_vals = secs[w]
+        zone_vals[0] += z1 or 0
+        zone_vals[1] += z2 or 0
+        zone_vals[2] += z3 or 0
+        zone_vals[3] += z4 or 0
+        zone_vals[4] += z5 or 0
+
+    # Build all 13 weeks (range_start through current_monday inclusive)
+    result = []
+    w = range_start
+    while w <= current_monday:
+        zone_vals = secs.get(w, [0, 0, 0, 0, 0])
+        result.append(HrZoneTrendsRow(
+            week_start=w,
+            z1_minutes=round(zone_vals[0] / 60, 1),
+            z2_minutes=round(zone_vals[1] / 60, 1),
+            z3_minutes=round(zone_vals[2] / 60, 1),
+            z4_minutes=round(zone_vals[3] / 60, 1),
+            z5_minutes=round(zone_vals[4] / 60, 1),
+        ))
+        w += timedelta(weeks=1)
+
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
     return result

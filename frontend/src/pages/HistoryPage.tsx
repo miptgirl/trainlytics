@@ -38,6 +38,7 @@ interface SessionSummary {
   // cardio
   total_duration_seconds: number | null
   total_distance_meters: number | null
+  avg_hr_bpm: number | null
   // strength
   total_sets: number | null
   exercise_count: number | null
@@ -402,8 +403,19 @@ function CardioStats({ s }: { s: SessionSummary }) {
     const paceSecPerKm = s.total_duration_seconds / (s.total_distance_meters / 1000)
     parts.push(formatPace(paceSecPerKm))
   }
-  if (parts.length === 0) return null
-  return <span>{parts.join(' · ')}</span>
+  return (
+    <span className="flex items-center gap-2 flex-wrap justify-end">
+      {parts.length > 0 && <span>{parts.join(' · ')}</span>}
+      {s.avg_hr_bpm != null && (
+        <span className="flex items-center gap-1 text-rose-500">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+            <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-2.09C4.03 12.348 2.5 10.005 2.5 7.5a4.5 4.5 0 018.25-2.519A4.5 4.5 0 0119.5 7.5c0 2.505-1.531 4.848-3.385 6.63a22.049 22.049 0 01-2.582 2.09 20.537 20.537 0 01-1.162.682l-.019.01-.005.003h-.002a.75.75 0 01-.69 0h-.002z" />
+          </svg>
+          <span className="text-slate-600">{s.avg_hr_bpm} bpm</span>
+        </span>
+      )}
+    </span>
+  )
 }
 
 function StrengthStats({ s }: { s: SessionSummary }) {
