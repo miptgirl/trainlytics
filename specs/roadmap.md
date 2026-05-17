@@ -323,19 +323,19 @@ A user can log a cardio session with HR data from Apple Watch, see a zone donut 
 
 ---
 
-## Phase 14 — Plan vs. Actual Deep Analytics
+## ✅ Phase 14 — Plan vs. Actual Deep Analytics *(completed)*
 
 **Goal:** Make the gap (or match) between planned and completed training visible both per-session and as a rolling trend.
 
 ### Deliverables
 
-- [ ] **Per-session comparison** — on a "Done" planned session card, show planned vs. actual side-by-side: distance/time for cardio; exercises, sets, reps, and total volume for strength
-- [ ] **Plan tab weekly totals** — weekly summary card shows planned total volume/distance vs. actual logged totals with a delta
-- [ ] **Analytics: Plan Adherence section** — rolling weekly chart of completion % and volume delta (planned vs. actual); helps spot weeks of under- or over-delivery over time
+- [x] **Per-session comparison** — on a "Done" planned session card, show planned vs. actual side-by-side: distance/time for cardio; exercises, sets, reps, and total volume for strength; Diff % column highlights over/under-delivery
+- [x] **Plan tab weekly totals** — weekly summary card shows planned total volume/distance vs. actual logged totals with a delta
+- [x] **Template versioning** — template history tables (`strength_template_history`, `_exercises`, `_sets`) snapshot every create/update; `current_version` on template, `template_version` on planned sessions; migration 0013 adds schema, migration 0014 backfills pre-Phase-14 sessions
 
 ### Definition of Done
 
-A user can tap a completed planned session and immediately see what they planned vs. what they actually did. The Analytics tab shows a multi-week view of how closely they've been following their plan.
+A user can tap a completed planned session and immediately see what they planned vs. what they actually did, including a per-exercise Diff % column. The Plan tab weekly summary card shows planned vs. actual totals for both cardio and strength. ✅ **Achieved.**
 
 ---
 

@@ -4,6 +4,60 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-05-17 — Phase 14: Plan vs. Actual Deep Analytics
+
+### Added
+
+- **Template versioning** — every template create/update snapshots the full exercise+set structure into three history tables (`strength_template_history`, `strength_template_history_exercises`, `strength_template_history_sets`); `strength_templates.current_version` tracks the latest version number; `planned_sessions.template_version` records which snapshot the planned session was built against; Alembic migration 0013
+- **Comparison endpoint** — `GET /api/plan/sessions/{id}/comparison` returns a per-exercise diff between the planned template snapshot (at `template_version`) and the matched logged session; response includes planned/actual sets, reps, weight, and volume per exercise; `source` field marks exercises as `planned_only`, `actual_only`, or `both`; 404 returned when `template_version` is null and no snapshot exists
+- **SessionComparisonPanel** — collapsible panel on "Done" plan cards; strength view shows per-exercise table with Planned / Actual columns, Diff % column (green >+1%, red <-1%, neutral otherwise), and set-count + volume summary ("3 sets · 660 kg"); cardio view shows distance, duration, and avg pace; totals section shows total volume and total exercises rows; shared `StrengthCols` colgroup keeps all exercise tables pixel-aligned with `table-fixed`
+- **Backfill migration** — Alembic migration 0014 backfills `template_version` on pre-Phase-14 planned sessions by joining to `strength_templates.current_version`; downgrade is a no-op
+
+### Changed
+
+- **Strength session matching** — `_compute_status` (plans.py) and weekly summary + comparison matching (plan_summary.py) now use `or_(StrengthSession.template_id == …, StrengthSession.template_id.is_(None))` so sessions logged without a template link still count as done
+- **Cardio duration fallback** — weekly summary actual cardio duration falls back to summing segment `duration_seconds` when `CardioSession.total_duration_seconds` is null
+- **Debug SQL enabled** — `DEBUG_SQL_ENABLED=true` added to both `docker-compose.yml` and `docker-compose.prod.yml`; gates the `/api/debug/sql` endpoint for ad-hoc SQL inspection in profile
+
+### Tests
+
+- **3 template versioning tests** in `test_templates.py` — version 1 history written on create, version incremented on update, original history row unchanged after update
+- **4 plan versioning tests** in `test_plans.py` — `template_version` stored on plan session create, unchanged on edit with same template, updated on edit with new template, preserved across copy-from-last-week
+- **8 comparison tests** in `test_plan_comparison.py` (new file) — strength happy path, cardio happy path, exercises with null weight excluded, planned-only / actual-only exercises, mismatched template returns empty, no matched session returns 404, null `template_version` returns 404
+
+---
+
+## 2026-05-17 — Phase 12: Analytics Fixes & Navigation Revamp
+
+### Added
+
+- **Stats tab** — `/history` and `/analytics` merged into a single `/stats` route with an inline sub-nav (Analytics | History); Analytics is the default sub-tab; `/history` and `/analytics` redirect to the appropriate `?tab=` URL; `StatsPage.tsx` wraps both pages
+- **Overview trends charts** — three new week-by-week bar charts visible by default above the Strength section: Sessions per Week, Total Training Time per Week, and Total Volume per Week; backed by `GET /analytics/overview-trends` returning `{week_start, session_count, total_minutes, total_volume}` for the last 12 weeks
+- **Weekly Exercises by Type chart** — stacked bar chart of exercise *count* (not volume) per muscle-group tag per week, last 12 weeks; visible by default in the Strength section alongside the existing Volume by Type chart; backed by `GET /analytics/strength/exercises-by-type`
+- **Plan vs. Actual card on Plan tab** — `PlanVsActualCard` component below the weekly overview; shows planned vs. actual distance (km) and duration (min) for cardio, and planned vs. actual exercise count and volume (kg·reps) for strength; backed by `GET /plan/weekly-summary?week_start=YYYY-MM-DD`
+- **Plan Adherence chart in Analytics** — rolling 12-week stacked bar chart (visible by default at bottom of Analytics sub-tab) showing completion % and signed volume/distance delta per week; backed by `GET /analytics/plan-adherence?weeks=12`
+- **Per-chart SQL debug viewer** — small `</>` icon in each analytics chart header; clicking it re-fetches the endpoint with `?debug=true` and displays the rendered SQL in `SqlDebugModal` with monospace formatting and horizontal scroll; all analytics endpoints support `?debug=true` wrapping the normal payload in `{ "data": [...], "debug": { "sql": "..." } }`
+- **Profile: SQL executor** — new collapsible SQL sub-section in the Debug panel at the bottom of the Profile page; textarea + Run button; results rendered as a scrollable table; errors shown inline; backed by `POST /debug/sql` returning `{columns, rows, rowcount}` (capped at 500 rows); route registered only when `DEBUG_SQL_ENABLED=true` env var is set (404 otherwise)
+- **Alembic migration 0011** — API key simplification: adds `ai_provider` (string, nullable) and `ai_key_encrypted` (string, nullable) to `user_settings`; drops separate Anthropic/OpenAI encrypted columns; wipes both old key columns on deploy
+
+### Changed
+
+- **Analytics bug fixes** — fixed three broken Phase 10 SQL queries: Activity Type Split (was returning no rows), Walk Segments per Session (was returning all-zero counts), and Distance Progression (was returning no distance data); queries now use `session`-level `activity_type_id` consistently
+- **Analytics UX layout** — Consistency heatmap moved to immediately below the all-time summary header; Strength section shows Weekly Volume by Type and Weekly Exercises by Type visible by default, all other strength charts collapsed; Cardio section collapsed by default
+- **Profile: API key simplification** — single provider selector (Anthropic | OpenAI) + one masked key field replaces the previous separate Anthropic/OpenAI fields; `PATCH /profile` accepts `{ai_provider, ai_key}`; `GET /profile` returns `{ai_provider, ai_key_configured: bool}`; migration wipes both previous keys on deploy
+
+### Tests
+
+- **Analytics bug-fix tests** — `test_cardio_time_split_uses_session_activity_type`, `test_cardio_walk_segments_uses_session_activity_type`, `test_cardio_distance_progression_uses_session_activity_type`
+- **Analytics debug flag tests** — `test_analytics_debug_flag`, `test_analytics_debug_false_returns_normal_shape`
+- **New analytics endpoint tests** — `test_overview_trends`, `test_exercises_by_type`, `test_plan_adherence`
+- **Debug SQL tests** in `test_debug.py` — `test_debug_sql_disabled_returns_404`, `test_debug_sql_select`, `test_debug_sql_invalid`
+- **Profile key tests** in `test_profile.py` — `test_patch_ai_key`, `test_patch_ai_key_openai`, `test_patch_ai_provider_invalid`, `test_raw_key_not_returned_in_get`, `test_clear_ai_key`, `test_patch_ai_provider`, `test_migration_wipes_keys`
+- **`StatsPage.test.tsx`** — 4 Vitest tests: renders Analytics sub-tab by default, renders History sub-tab on `?tab=history`, shows both sub-tab buttons, switches tabs on click
+- **`PlanVsActualCard.test.tsx`** — 4 Vitest tests: planned/actual cardio distance, planned/actual strength volume, renders nothing without data, uses provided `weekStart` in API request
+
+---
+
 ## 2026-05-17 — Phase 13: Heart Rate Zones
 
 ### Added
