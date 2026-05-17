@@ -17,6 +17,19 @@ function fmtSet(reps: number | null, weight: number | null): string {
   return `${r} × ${w}`
 }
 
+function diffText(planned: number | null, actual: number | null): { text: string; cls: string } {
+  if (planned == null || actual == null || planned === 0) return { text: '—', cls: 'text-slate-400' }
+  const pct = ((actual - planned) / planned) * 100
+  const sign = pct > 0 ? '+' : ''
+  const cls = pct > 1 ? 'text-emerald-600' : pct < -1 ? 'text-red-500' : 'text-slate-500'
+  return { text: `${sign}${pct.toFixed(0)}%`, cls }
+}
+
+function DiffCell({ planned, actual, className = '' }: { planned: number | null; actual: number | null; className?: string }) {
+  const { text, cls } = diffText(planned, actual)
+  return <td className={`text-right ${cls} ${className}`}>{text}</td>
+}
+
 export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props) {
   const { data, isLoading, isError } = useSessionComparison(plannedSessionId)
 
@@ -37,6 +50,7 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
             <th className="text-left font-medium pb-1 w-1/3"></th>
             <th className="text-right font-medium pb-1">Planned</th>
             <th className="text-right font-medium pb-1">Actual</th>
+            <th className="text-right font-medium pb-1">Diff</th>
           </tr>
         </thead>
         <tbody className="text-slate-700">
@@ -44,11 +58,13 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
             <td className="py-0.5 text-slate-500">Distance</td>
             <td className="text-right py-0.5">{fmt(c.planned_distance_km, 'km')}</td>
             <td className="text-right py-0.5">{fmt(c.actual_distance_km, 'km')}</td>
+            <DiffCell planned={c.planned_distance_km} actual={c.actual_distance_km} className="py-0.5" />
           </tr>
           <tr>
             <td className="py-0.5 text-slate-500">Duration</td>
             <td className="text-right py-0.5">{fmt(c.planned_duration_min, 'min')}</td>
             <td className="text-right py-0.5">{fmt(c.actual_duration_min, 'min')}</td>
+            <DiffCell planned={c.planned_duration_min} actual={c.actual_duration_min} className="py-0.5" />
           </tr>
         </tbody>
       </table>
@@ -76,6 +92,7 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
                   <th className="text-left font-medium pb-0.5 w-8">Set</th>
                   <th className="text-right font-medium pb-0.5">Planned</th>
                   <th className="text-right font-medium pb-0.5">Actual</th>
+                  <th className="text-right font-medium pb-0.5 w-10">Diff</th>
                 </tr>
               </thead>
               <tbody className="text-slate-700">
@@ -88,12 +105,14 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
                     <td className="text-right py-0.5">
                       {fmtSet(row.actual_reps, row.actual_weight_kg)}
                     </td>
+                    <td className="text-right py-0.5 text-slate-300">—</td>
                   </tr>
                 ))}
                 <tr className="italic text-slate-500">
                   <td className="pt-1">Volume</td>
                   <td className="text-right pt-1">{ex.planned_volume.toFixed(0)} kg</td>
                   <td className="text-right pt-1">{ex.actual_volume.toFixed(0)} kg</td>
+                  <DiffCell planned={ex.planned_volume} actual={ex.actual_volume} className="pt-1 not-italic font-medium" />
                 </tr>
               </tbody>
             </table>
@@ -106,6 +125,7 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
                 <td>Total volume</td>
                 <td className="text-right">{s.planned_total_volume.toFixed(0)} kg</td>
                 <td className="text-right">{s.actual_total_volume.toFixed(0)} kg</td>
+                <DiffCell planned={s.planned_total_volume} actual={s.actual_total_volume} className="w-10" />
               </tr>
             </tbody>
           </table>

@@ -306,6 +306,10 @@ async def session_comparison(
                 actual_distance_km = dist_m / 1000
             if actual_cardio.total_duration_seconds is not None:
                 actual_duration_min = actual_cardio.total_duration_seconds / 60
+            elif actual_cardio.segments:
+                seg_dur_s = sum(seg.duration_seconds for seg in actual_cardio.segments if seg.duration_seconds is not None)
+                if seg_dur_s > 0:
+                    actual_duration_min = seg_dur_s / 60
 
         return SessionComparisonOut(
             planned_session_id=ps.id,
