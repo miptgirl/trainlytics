@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { type PlannedSessionOut } from '../../lib/planApi'
+import { toLocalDateStr } from '../../lib/dateUtils'
 import { PlannedSessionCard } from './PlannedSessionCard'
 
 interface CardioType {
@@ -21,7 +22,7 @@ function getDaysOfWeek(weekStart: string): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    days.push(d.toISOString().split('T')[0])
+    days.push(toLocalDateStr(d))
   }
   return days
 }
@@ -32,7 +33,7 @@ function formatDayHeader(dateStr: string): string {
 }
 
 export function WeekGrid({ weekStart, sessions, onAddSession, onEditSession }: WeekGridProps) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDateStr(new Date())
   const days = getDaysOfWeek(weekStart)
 
   const { data: cardioTypes = [] } = useQuery({

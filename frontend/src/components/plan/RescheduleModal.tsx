@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { type PlannedSessionOut, useUpdatePlannedSession } from '../../lib/planApi'
+import { toLocalDateStr } from '../../lib/dateUtils'
 
 interface RescheduleModalProps {
   session: PlannedSessionOut
@@ -13,7 +14,7 @@ function getDaysOfWeek(weekStart: string): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    days.push(d.toISOString().split('T')[0])
+    days.push(toLocalDateStr(d))
   }
   return days
 }
@@ -24,7 +25,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function RescheduleModal({ session, weekStart, onClose }: RescheduleModalProps) {
-  const today = new Date().toISOString().split('T')[0]
+  const today = toLocalDateStr(new Date())
   const days = getDaysOfWeek(weekStart)
   const [selectedDate, setSelectedDate] = useState(session.planned_date)
   const mutation = useUpdatePlannedSession()

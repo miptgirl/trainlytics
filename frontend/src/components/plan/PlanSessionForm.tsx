@@ -8,6 +8,7 @@ import {
   useUpdatePlannedSession,
   type PlannedSessionOut,
 } from '../../lib/planApi'
+import { toLocalDateStr } from '../../lib/dateUtils'
 
 interface CardioType {
   id: number
@@ -53,7 +54,7 @@ function getDaysOfWeek(weekStart: string): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
-    days.push(d.toISOString().split('T')[0])
+    days.push(toLocalDateStr(d))
   }
   return days
 }
