@@ -9,6 +9,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.exercise import Exercise
 from app.models.template import StrengthTemplate, StrengthTemplateExercise, StrengthTemplateSet
+from app.services.template_versioning import _write_template_history
 from app.schemas.template import (
     StrengthTemplateCreate,
     StrengthTemplateRead,
@@ -108,6 +109,8 @@ async def create_template(
         for s in entry.sets:
             db.add(StrengthTemplateSet(exercise_entry_id=ee.id, **s.model_dump()))
 
+    await db.flush()
+    await _write_template_history(db, tmpl)
     await db.commit()
     return _build_template_out(await _load_template(db, tmpl.id, user))
 
@@ -187,6 +190,10 @@ async def update_template(
             await db.flush()
             for s in entry.sets:
                 db.add(StrengthTemplateSet(exercise_entry_id=ee.id, **s.model_dump()))
+
+        await db.flush()
+        tmpl.current_version += 1
+        await _write_template_history(db, tmpl)
 
     tmpl.updated_at = datetime.now(timezone.utc)
     await db.commit()

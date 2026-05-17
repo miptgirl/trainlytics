@@ -148,3 +148,50 @@ export function useWeeklySummary(weekStart: string) {
       api.get<WeeklySummaryOut>(`/plan/weekly-summary?week_start=${weekStart}`),
   })
 }
+
+interface SetComparisonRow {
+  planned_reps: number | null
+  planned_weight_kg: number | null
+  actual_reps: number | null
+  actual_weight_kg: number | null
+}
+
+interface ExerciseComparison {
+  exercise_id: number | null
+  exercise_name: string
+  source: 'both' | 'planned_only' | 'actual_only'
+  planned_volume: number
+  actual_volume: number
+  sets: SetComparisonRow[]
+}
+
+interface StrengthComparisonOut {
+  exercises: ExerciseComparison[]
+  planned_total_volume: number
+  actual_total_volume: number
+}
+
+interface CardioComparisonOut {
+  planned_distance_km: number | null
+  actual_distance_km: number | null
+  planned_duration_min: number | null
+  actual_duration_min: number | null
+}
+
+export interface SessionComparisonOut {
+  planned_session_id: number
+  actual_session_id: number
+  session_type: 'cardio' | 'strength'
+  cardio: CardioComparisonOut | null
+  strength: StrengthComparisonOut | null
+}
+
+export function useSessionComparison(plannedSessionId: number | null) {
+  return useQuery({
+    queryKey: ['session-comparison', plannedSessionId],
+    queryFn: () => api.get<SessionComparisonOut>(`/plan/sessions/${plannedSessionId}/comparison`),
+    enabled: plannedSessionId != null,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}

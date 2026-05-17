@@ -6,5 +6,5 @@ from app.models.exercise_type import ExerciseType, exercise_exercise_types  # no
 from app.models.plan import PlannedCardioSegment, PlannedSession, WeeklyPlan  # noqa: F401
 from app.models.session import CardioSegment, CardioSession, StrengthExerciseEntry, StrengthSession, StrengthSet, WorkoutSession  # noqa: F401
 from app.models.step import DailySteps  # noqa: F401
-from app.models.template import StrengthTemplate, StrengthTemplateExercise, StrengthTemplateSet  # noqa: F401
+from app.models.template import StrengthTemplate, StrengthTemplateExercise, StrengthTemplateHistory, StrengthTemplateHistoryExercise, StrengthTemplateHistorySet, StrengthTemplateSet  # noqa: F401
 from app.models.user_settings import UserSettings  # noqa: F401

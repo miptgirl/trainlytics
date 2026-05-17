@@ -84,3 +84,40 @@ class WeeklySummaryTotals(BaseModel):
 class WeeklySummaryOut(BaseModel):
     planned: WeeklySummaryTotals
     actual: WeeklySummaryTotals
+
+
+class SetComparisonRow(BaseModel):
+    planned_reps: int | None
+    planned_weight_kg: float | None
+    actual_reps: int | None
+    actual_weight_kg: float | None
+
+
+class ExerciseComparison(BaseModel):
+    exercise_id: int | None
+    exercise_name: str
+    source: Literal["both", "planned_only", "actual_only"]
+    planned_volume: float
+    actual_volume: float
+    sets: list[SetComparisonRow]
+
+
+class StrengthComparisonOut(BaseModel):
+    exercises: list[ExerciseComparison]
+    planned_total_volume: float
+    actual_total_volume: float
+
+
+class CardioComparisonOut(BaseModel):
+    planned_distance_km: float | None
+    actual_distance_km: float | None
+    planned_duration_min: float | None
+    actual_duration_min: float | None
+
+
+class SessionComparisonOut(BaseModel):
+    planned_session_id: int
+    actual_session_id: int
+    session_type: Literal["cardio", "strength"]
+    cardio: CardioComparisonOut | None = None
+    strength: StrengthComparisonOut | None = None

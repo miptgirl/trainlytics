@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -73,7 +73,10 @@ async def _compute_status(
                 WorkoutSession.type == "strength",
                 WorkoutSession.date >= day_start,
                 WorkoutSession.date < day_end,
-                StrengthSession.template_id == session.template_id,
+                or_(
+                    StrengthSession.template_id == session.template_id,
+                    StrengthSession.template_id.is_(None),
+                ),
             )
         )
         match = result.scalar_one_or_none()
@@ -181,11 +184,14 @@ async def add_planned_session(
     plan = await _get_or_create_plan(db, user, d)
 
     title = body.title
-    if body.session_type == "strength" and title is None:
+    template_version = None
+    if body.session_type == "strength":
         template = await db.get(StrengthTemplate, body.template_id)
         if template is None or template.user_id != user:
             raise HTTPException(status_code=400, detail="Template not found")
-        title = template.name
+        if title is None:
+            title = template.name
+        template_version = template.current_version
 
     session = PlannedSession(
         plan_id=plan.id,
@@ -196,6 +202,7 @@ async def add_planned_session(
         title=title,
         notes=body.notes,
         display_order=body.display_order,
+        template_version=template_version,
     )
     db.add(session)
     await db.flush()
@@ -226,12 +233,19 @@ async def update_planned_session(
     plan = await _get_or_create_plan(db, user, d)
     session = await _load_session(db, user, plan.id, session_id)
 
+    old_template_id = session.template_id
     title = body.title
-    if body.session_type == "strength" and title is None:
-        template = await db.get(StrengthTemplate, body.template_id)
-        if template is None or template.user_id != user:
-            raise HTTPException(status_code=400, detail="Template not found")
-        title = template.name
+
+    if body.session_type == "strength" and body.template_id is not None:
+        template_changed = body.template_id != old_template_id
+        if template_changed or title is None:
+            template = await db.get(StrengthTemplate, body.template_id)
+            if template is None or template.user_id != user:
+                raise HTTPException(status_code=400, detail="Template not found")
+            if title is None:
+                title = template.name
+            if template_changed:
+                session.template_version = template.current_version
 
     session.planned_date = body.planned_date
     session.session_type = body.session_type
@@ -321,8 +335,27 @@ async def copy_from_last_week(
     prev_plan = await _load_plan(db, user, prev_week_start)
 
     if prev_plan and prev_plan.sessions:
+        strength_template_ids = {
+            s.template_id
+            for s in prev_plan.sessions
+            if s.session_type == "strength" and s.template_id is not None
+        }
+        template_versions: dict[int, int] = {}
+        if strength_template_ids:
+            result = await db.execute(
+                select(StrengthTemplate.id, StrengthTemplate.current_version)
+                .where(StrengthTemplate.id.in_(strength_template_ids))
+            )
+            for tid, ver in result.all():
+                template_versions[tid] = ver
+
         for prev_session in prev_plan.sessions:
             new_date = prev_session.planned_date + timedelta(days=7)
+            template_version = (
+                template_versions.get(prev_session.template_id)
+                if prev_session.session_type == "strength" and prev_session.template_id is not None
+                else None
+            )
             new_session = PlannedSession(
                 plan_id=current_plan.id,
                 planned_date=new_date,
@@ -333,6 +366,7 @@ async def copy_from_last_week(
                 notes=prev_session.notes,
                 skip_note=None,
                 display_order=prev_session.display_order,
+                template_version=template_version,
             )
             db.add(new_session)
             await db.flush()

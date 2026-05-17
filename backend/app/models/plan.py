@@ -39,6 +39,7 @@ class PlannedSession(Base):
     template_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("strength_templates.id", ondelete="SET NULL"), nullable=True
     )
+    template_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
     activity_type_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("cardio_activity_types.id", ondelete="SET NULL"), nullable=True
     )
