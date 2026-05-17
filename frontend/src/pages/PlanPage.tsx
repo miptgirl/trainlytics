@@ -4,6 +4,7 @@ import { WeekGrid } from '../components/plan/WeekGrid'
 import { PlanSessionForm } from '../components/plan/PlanSessionForm'
 import { WeeklyOverviewCard } from '../components/plan/WeeklyOverviewCard'
 import { useWeekPlan, useCopyFromLastWeek, type PlannedSessionOut } from '../lib/planApi'
+import { PlanVsActualCard } from '../components/plan/PlanVsActualCard'
 import { toLocalDateStr } from '../lib/dateUtils'
 
 function getMondayOfCurrentWeek(): string {
@@ -133,6 +134,9 @@ export default function PlanPage() {
 
         {/* Weekly overview */}
         <WeeklyOverviewCard sessions={data?.sessions ?? []} isLoading={isLoading} />
+
+        {/* Plan vs. Actual */}
+        <PlanVsActualCard weekStart={weekStart} />
 
         {/* Copy from last week — only when the week is empty */}
         {!isLoading && (data?.sessions ?? []).length === 0 && (

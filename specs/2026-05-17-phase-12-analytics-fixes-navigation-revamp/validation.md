@@ -9,7 +9,7 @@
 | New Analytics Backend Endpoints (Group 2) | ✅ Complete — 4 endpoints: overview-trends, exercises-by-type, plan-adherence, plan/weekly-summary |
 | Navigation Revamp | ✅ Complete — /stats route with Analytics (default) / History sub-tabs; /history → /stats?tab=history redirect; /analytics → /stats redirect; nav shows 7 tabs |
 | Analytics UX Reorganization | ✅ Complete — heatmap below summary; OverviewTrendsChart (sessions/time/volume); WeeklyExercisesByTypeChart; ExerciseProgression+PersonalRecords in "Show more" collapsible; Cardio collapsed; PlanAdherenceChart at bottom |
-| Plan vs. Actual Card | ⬜ Not started |
+| Plan vs. Actual Card | ✅ Complete — PlanVsActualCard renders below WeeklyOverviewCard; shows planned/actual/delta for cardio (distance, duration) and strength (exercises, volume); refetches when weekStart changes |
 | API Key Simplification | ✅ Complete — migration 0011 adds ai_key_encrypted; old columns wiped; PATCH /profile accepts {ai_provider, ai_key}; GET returns {ai_provider, ai_key_configured} |
 | SQL Executor (Profile Debug) | ⬜ Not started |
 
