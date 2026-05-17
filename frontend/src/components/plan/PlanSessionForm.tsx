@@ -20,7 +20,6 @@ interface TemplateSummary {
 }
 
 interface PlanSegmentFormValues {
-  activity_type_id: string
   title: string
   duration_secs: number | null
   distance_km: string
@@ -32,6 +31,7 @@ interface PlanSessionFormValues {
   session_type: 'strength' | 'cardio'
   planned_date: string
   template_id: string
+  activity_type_id: string
   title: string
   notes: string
   segments: PlanSegmentFormValues[]
@@ -39,7 +39,6 @@ interface PlanSessionFormValues {
 
 function emptySegment(): PlanSegmentFormValues {
   return {
-    activity_type_id: '',
     title: '',
     duration_secs: null,
     distance_km: '',
@@ -100,12 +99,13 @@ export function PlanSessionForm({
         planned_date: editingSession.planned_date,
         template_id:
           editingSession.template_id != null ? String(editingSession.template_id) : '',
+        activity_type_id:
+          editingSession.activity_type_id != null ? String(editingSession.activity_type_id) : '',
         title: editingSession.title ?? '',
         notes: editingSession.notes ?? '',
         segments:
           editingSession.segments.length > 0
             ? editingSession.segments.map((s) => ({
-                activity_type_id: String(s.activity_type_id),
                 title: s.title ?? '',
                 duration_secs: s.duration_secs,
                 distance_km:
@@ -119,6 +119,7 @@ export function PlanSessionForm({
         session_type: 'strength',
         planned_date: initialDate,
         template_id: '',
+        activity_type_id: '',
         title: '',
         notes: '',
         segments: [emptySegment()],
@@ -174,12 +175,12 @@ export function PlanSessionForm({
     return {
       planned_date: data.planned_date,
       session_type: 'cardio' as const,
+      activity_type_id: parseInt(data.activity_type_id, 10),
       notes: data.notes || null,
       segments: data.segments.map((seg, i) => {
         const distKm = parseFloat(seg.distance_km)
         return {
           segment_order: i + 1,
-          activity_type_id: parseInt(seg.activity_type_id, 10),
           title: seg.title || null,
           duration_secs: seg.duration_secs,
           distance_metres: !isNaN(distKm) && distKm > 0 ? Math.round(distKm * 1000) : null,
@@ -338,6 +339,31 @@ export function PlanSessionForm({
             {/* Cardio fields */}
             {sessionType === 'cardio' && (
               <div className="space-y-4">
+                {/* Session-level activity type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Activity Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...register('activity_type_id', {
+                      validate: (val, formValues) =>
+                        formValues.session_type !== 'cardio' || !!val || 'Activity type is required',
+                    })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">— select —</option>
+                    {cardioTypes.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.activity_type_id && (
+                    <p className="mt-1 text-xs text-red-600">{errors.activity_type_id.message}</p>
+                  )}
+                </div>
+
+                {/* Segments */}
                 <div>
                   <span className="block text-sm font-medium text-gray-700 mb-2">Segments</span>
                   <div className="space-y-3">
@@ -374,35 +400,11 @@ export function PlanSessionForm({
                         </div>
                         <div>
                           <label className="block text-xs text-gray-500 mb-1">
-                            Activity Type <span className="text-red-500">*</span>
-                          </label>
-                          <select
-                            {...register(`segments.${index}.activity_type_id`, {
-                              validate: (val, formValues) =>
-                                formValues.session_type !== 'cardio' || !!val || 'Required',
-                            })}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="">— select —</option>
-                            {cardioTypes.map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.name}
-                              </option>
-                            ))}
-                          </select>
-                          {errors.segments?.[index]?.activity_type_id && (
-                            <p className="mt-0.5 text-xs text-red-600">
-                              {errors.segments[index]?.activity_type_id?.message}
-                            </p>
-                          )}
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-500 mb-1">
-                            Title (optional)
+                            Label (optional)
                           </label>
                           <input
                             type="text"
-                            placeholder="e.g. Easy run"
+                            placeholder="e.g. Easy jog, Tempo interval…"
                             className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             {...register(`segments.${index}.title`)}
                           />

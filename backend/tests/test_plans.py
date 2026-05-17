@@ -73,6 +73,7 @@ async def _log_strength_session(client: AsyncClient, on_date: date, template_id:
 async def _log_cardio_session(client: AsyncClient, on_date: date, activity_type_id: int) -> dict:
     payload = {
         "date": f"{on_date.isoformat()}T08:00:00Z",
+        "activity_type_id": activity_type_id,
         "segments": [
             {
                 "order": 1,
@@ -86,6 +87,21 @@ async def _log_cardio_session(client: AsyncClient, on_date: date, activity_type_
     resp = await client.post("/api/sessions/cardio", json=payload)
     assert resp.status_code == 201
     return resp.json()
+
+
+def _cardio_body(
+    on_date: date,
+    activity_type_id: int,
+    segments: list[dict] | None = None,
+) -> dict:
+    """Helper: build a minimal valid planned cardio session body."""
+    return {
+        "planned_date": on_date.isoformat(),
+        "session_type": "cardio",
+        "activity_type_id": activity_type_id,
+        "segments": segments
+        or [{"segment_order": 1, "distance_metres": 5000, "duration_secs": 1800}],
+    }
 
 
 # ── GET /plans/{week_start} ───────────────────────────────────────────────────
@@ -115,7 +131,7 @@ async def test_get_plan_second_call_returns_same_plan(db_session, auth_client: A
 
 async def test_planned_strength_session_status_done(db_session, auth_client: AsyncClient):
     tmpl_id = await _create_template(auth_client)
-    on_date = THIS_MONDAY  # today or future — we just need a valid date in the week
+    on_date = THIS_MONDAY
 
     await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
@@ -167,24 +183,13 @@ async def test_planned_session_future_date_no_log_is_planned(db_session, auth_cl
     assert session["matched_session_id"] is None
 
 
-async def test_planned_cardio_matched_by_primary_activity_type(db_session, auth_client: AsyncClient):
+async def test_planned_cardio_matched_by_activity_type(db_session, auth_client: AsyncClient):
     activity_id = await _create_cardio_type(auth_client)
     on_date = THIS_MONDAY
 
     await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
-        json={
-            "planned_date": on_date.isoformat(),
-            "session_type": "cardio",
-            "segments": [
-                {
-                    "segment_order": 1,
-                    "activity_type_id": activity_id,
-                    "distance_metres": 8000,
-                    "duration_secs": 3000,
-                }
-            ],
-        },
+        json=_cardio_body(on_date, activity_id),
     )
     await _log_cardio_session(auth_client, on_date, activity_id)
 
@@ -192,6 +197,7 @@ async def test_planned_cardio_matched_by_primary_activity_type(db_session, auth_
     session = resp.json()["sessions"][0]
     assert session["status"] == "done"
     assert session["matched_session_id"] is not None
+    assert session["activity_type_id"] == activity_id
 
 
 # ── POST /plans/{week_start}/sessions ────────────────────────────────────────
@@ -209,12 +215,26 @@ async def test_post_strength_without_template_id_returns_422(db_session, auth_cl
 
 
 async def test_post_cardio_without_segments_returns_422(db_session, auth_client: AsyncClient):
+    activity_id = await _create_cardio_type(auth_client)
     resp = await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
         json={
             "planned_date": THIS_MONDAY.isoformat(),
             "session_type": "cardio",
+            "activity_type_id": activity_id,
             "segments": [],
+        },
+    )
+    assert resp.status_code == 422
+
+
+async def test_post_cardio_without_activity_type_returns_422(db_session, auth_client: AsyncClient):
+    resp = await auth_client.post(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
+        json={
+            "planned_date": THIS_MONDAY.isoformat(),
+            "session_type": "cardio",
+            "segments": [{"segment_order": 1, "distance_metres": 5000}],
         },
     )
     assert resp.status_code == 422
@@ -258,25 +278,17 @@ async def test_post_cardio_with_segments(db_session, auth_client: AsyncClient):
         json={
             "planned_date": THIS_MONDAY.isoformat(),
             "session_type": "cardio",
+            "activity_type_id": activity_id,
             "segments": [
-                {
-                    "segment_order": 1,
-                    "activity_type_id": activity_id,
-                    "distance_metres": 8000,
-                    "duration_secs": 3000,
-                },
-                {
-                    "segment_order": 2,
-                    "activity_type_id": activity_id,
-                    "distance_metres": 1000,
-                    "duration_secs": 600,
-                },
+                {"segment_order": 1, "distance_metres": 8000, "duration_secs": 3000},
+                {"segment_order": 2, "distance_metres": 1000, "duration_secs": 600},
             ],
         },
     )
     assert resp.status_code == 201
     data = resp.json()
     assert data["session_type"] == "cardio"
+    assert data["activity_type_id"] == activity_id
     assert len(data["segments"]) == 2
     assert data["segments"][0]["distance_metres"] == 8000
     assert data["segments"][1]["distance_metres"] == 1000
@@ -295,29 +307,31 @@ async def test_put_cardio_replaces_segments(db_session, auth_client: AsyncClient
         json={
             "planned_date": THIS_MONDAY.isoformat(),
             "session_type": "cardio",
+            "activity_type_id": activity_id,
             "segments": [
-                {"segment_order": 1, "activity_type_id": activity_id, "distance_metres": 5000},
-                {"segment_order": 2, "activity_type_id": activity_id, "distance_metres": 3000},
+                {"segment_order": 1, "distance_metres": 5000},
+                {"segment_order": 2, "distance_metres": 3000},
             ],
         },
     )
     session_id = create_resp.json()["id"]
 
-    # Update with 1 new segment of a different type
+    # Update: switch activity type and replace segments
     update_resp = await auth_client.put(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions/{session_id}",
         json={
             "planned_date": THIS_MONDAY.isoformat(),
             "session_type": "cardio",
+            "activity_type_id": activity_id2,
             "segments": [
-                {"segment_order": 1, "activity_type_id": activity_id2, "distance_metres": 10000},
+                {"segment_order": 1, "distance_metres": 10000},
             ],
         },
     )
     assert update_resp.status_code == 200
     data = update_resp.json()
+    assert data["activity_type_id"] == activity_id2
     assert len(data["segments"]) == 1
-    assert data["segments"][0]["activity_type_id"] == activity_id2
     assert data["segments"][0]["distance_metres"] == 10000
 
 
@@ -356,13 +370,7 @@ async def test_delete_cardio_session_cascades_segments(db_session, auth_client: 
     activity_id = await _create_cardio_type(auth_client)
     create_resp = await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
-        json={
-            "planned_date": THIS_MONDAY.isoformat(),
-            "session_type": "cardio",
-            "segments": [
-                {"segment_order": 1, "activity_type_id": activity_id, "distance_metres": 5000}
-            ],
-        },
+        json=_cardio_body(THIS_MONDAY, activity_id),
     )
     session_id = create_resp.json()["id"]
 
@@ -388,7 +396,6 @@ async def test_skip_note_set_and_clear(db_session, auth_client: AsyncClient):
     session_id = create_resp.json()["id"]
     week = THIS_MONDAY.isoformat()
 
-    # Set the skip note
     patch_resp = await auth_client.patch(
         f"/api/plans/{week}/sessions/{session_id}/skip-note",
         json={"skip_note": "knee pain"},
@@ -396,7 +403,6 @@ async def test_skip_note_set_and_clear(db_session, auth_client: AsyncClient):
     assert patch_resp.status_code == 200
     assert patch_resp.json()["skip_note"] == "knee pain"
 
-    # Clear the skip note
     clear_resp = await auth_client.patch(
         f"/api/plans/{week}/sessions/{session_id}/skip-note",
         json={"skip_note": None},
@@ -412,26 +418,21 @@ async def test_copy_from_last_week_clones_sessions(db_session, auth_client: Asyn
     activity_id = await _create_cardio_type(auth_client)
     prev_monday = PAST_MONDAY
 
-    # Create a session with a skip note in the previous week
     create_resp = await auth_client.post(
         f"/api/plans/{prev_monday.isoformat()}/sessions",
-        json={
-            "planned_date": (prev_monday + timedelta(days=1)).isoformat(),
-            "session_type": "cardio",
-            "segments": [
-                {"segment_order": 1, "activity_type_id": activity_id, "distance_metres": 5000}
-            ],
-        },
+        json=_cardio_body(
+            prev_monday + timedelta(days=1),
+            activity_id,
+            segments=[{"segment_order": 1, "distance_metres": 5000}],
+        ),
     )
     session_id = create_resp.json()["id"]
 
-    # Set a skip note on the previous week's session
     await auth_client.patch(
         f"/api/plans/{prev_monday.isoformat()}/sessions/{session_id}/skip-note",
         json={"skip_note": "was sick"},
     )
 
-    # Copy to next week relative to prev_monday (i.e., THIS_MONDAY)
     copy_resp = await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/copy-from-last-week"
     )
@@ -440,14 +441,10 @@ async def test_copy_from_last_week_clones_sessions(db_session, auth_client: Asyn
     assert len(data["sessions"]) == 1
     cloned = data["sessions"][0]
 
-    # Date should be shifted +7 days
     expected_date = (prev_monday + timedelta(days=1) + timedelta(weeks=1)).isoformat()
     assert cloned["planned_date"] == expected_date
-
-    # Skip note must NOT be copied
     assert cloned["skip_note"] is None
-
-    # Segments preserved
+    assert cloned["activity_type_id"] == activity_id
     assert len(cloned["segments"]) == 1
     assert cloned["segments"][0]["distance_metres"] == 5000
 
@@ -455,7 +452,6 @@ async def test_copy_from_last_week_clones_sessions(db_session, auth_client: Asyn
 async def test_copy_from_last_week_non_empty_week_returns_409(db_session, auth_client: AsyncClient):
     tmpl_id = await _create_template(auth_client)
 
-    # Add a session to the target week first
     await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
         json={
@@ -473,7 +469,6 @@ async def test_copy_from_last_week_non_empty_week_returns_409(db_session, auth_c
 
 
 async def test_copy_from_empty_last_week_returns_empty_plan(db_session, auth_client: AsyncClient):
-    # No sessions in the previous week — copy should succeed but yield no sessions
     resp = await auth_client.post(
         f"/api/plans/{THIS_MONDAY.isoformat()}/copy-from-last-week"
     )

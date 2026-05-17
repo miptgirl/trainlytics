@@ -314,8 +314,7 @@ function CardioForm({
       (s) =>
         s.session_type === 'cardio' &&
         s.planned_date === todayStr &&
-        s.segments.length > 0 &&
-        s.segments[0].activity_type_id === activityTypeId,
+        s.activity_type_id === activityTypeId,
     )
     return match?.id ?? null
   })()
@@ -346,11 +345,10 @@ function CardioForm({
   }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function injectPlannedSession(session: PlannedSessionOut) {
-    const firstSeg = session.segments[0]
     setTitleTouched(true)
     reset({
       title: session.title ?? '',
-      activity_type_id: firstSeg ? String(firstSeg.activity_type_id) : '',
+      activity_type_id: session.activity_type_id != null ? String(session.activity_type_id) : '',
       date: localDateTimeNow(),
       notes: session.notes ?? '',
       total_duration_seconds: null,

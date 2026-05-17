@@ -39,6 +39,9 @@ class PlannedSession(Base):
     template_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("strength_templates.id", ondelete="SET NULL"), nullable=True
     )
+    activity_type_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("cardio_activity_types.id", ondelete="SET NULL"), nullable=True
+    )
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     skip_note: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -62,9 +65,6 @@ class PlannedCardioSegment(Base):
     )
     segment_order: Mapped[int] = mapped_column(Integer, nullable=False)
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
-    activity_type_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("cardio_activity_types.id", ondelete="RESTRICT"), nullable=False
-    )
     duration_secs: Mapped[int | None] = mapped_column(Integer, nullable=True)
     distance_metres: Mapped[int | None] = mapped_column(Integer, nullable=True)
     pace_secs_per_km: Mapped[int | None] = mapped_column(Integer, nullable=True)

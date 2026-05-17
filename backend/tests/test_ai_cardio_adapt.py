@@ -33,10 +33,10 @@ async def _create_planned_cardio_session(client: AsyncClient, activity_type_id: 
         json={
             "planned_date": THIS_MONDAY.isoformat(),
             "session_type": "cardio",
+            "activity_type_id": activity_type_id,
             "segments": [
                 {
                     "segment_order": 1,
-                    "activity_type_id": activity_type_id,
                     "distance_metres": 8000,
                     "duration_secs": 3000,
                     "pace_secs_per_km": 375,

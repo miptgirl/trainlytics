@@ -18,15 +18,12 @@ function formatDistKm(metres: number | null): string | null {
   return km % 1 === 0 ? `${km} km` : `${parseFloat(km.toFixed(1))} km`
 }
 
-function buildSegmentSummary(
-  segments: PlannedSessionOut['segments'],
-  activityTypeMap: Map<number, string>
-): string {
+function buildSegmentSummary(segments: PlannedSessionOut['segments']): string {
   return segments
-    .map((seg) => {
-      const type = activityTypeMap.get(seg.activity_type_id) ?? 'Segment'
+    .map((seg, i) => {
+      const label = seg.title || `Segment ${i + 1}`
       const dist = formatDistKm(seg.distance_metres)
-      return dist ? `${type} ${dist}` : type
+      return dist ? `${label} ${dist}` : label
     })
     .join(' · ')
 }
@@ -61,9 +58,14 @@ export function PlannedSessionCard({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const deleteMutation = useDeletePlannedSession()
 
+  const activityTypeName =
+    session.session_type === 'cardio' && session.activity_type_id != null
+      ? (activityTypeMap.get(session.activity_type_id) ?? null)
+      : null
+
   const segmentSummary =
     session.session_type === 'cardio' && session.segments.length > 0
-      ? buildSegmentSummary(session.segments, activityTypeMap)
+      ? buildSegmentSummary(session.segments)
       : null
 
   function handleStart() {
@@ -89,6 +91,7 @@ export function PlannedSessionCard({
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 truncate">
               {session.title ??
+                activityTypeName ??
                 (session.session_type === 'strength' ? 'Strength Session' : 'Cardio Session')}
             </p>
             {segmentSummary && (

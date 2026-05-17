@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.plan import PlannedCardioSegment, PlannedSession, WeeklyPlan
-from app.models.session import CardioSegment, CardioSession, StrengthSession, WorkoutSession
+from app.models.session import CardioSession, StrengthSession, WorkoutSession
 from app.models.template import StrengthTemplate
 from app.schemas.plan import (
     PlannedSessionIn,
@@ -80,21 +80,17 @@ async def _compute_status(
         if match:
             return "done", match.id
     else:
-        # Cardio: match if any logged cardio session has a segment matching the primary activity type
-        if not session.cardio_segments:
-            pass
-        else:
-            primary_activity_type_id = session.cardio_segments[0].activity_type_id
+        # Cardio: match if any logged cardio session on that day has the same activity type
+        if session.activity_type_id is not None:
             result = await db.execute(
                 select(WorkoutSession)
                 .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
-                .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
                 .where(
                     WorkoutSession.user_id == user,
                     WorkoutSession.type == "cardio",
                     WorkoutSession.date >= day_start,
                     WorkoutSession.date < day_end,
-                    CardioSegment.activity_type_id == primary_activity_type_id,
+                    CardioSession.activity_type_id == session.activity_type_id,
                 )
             )
             match = result.scalar_one_or_none()
@@ -115,6 +111,7 @@ async def _build_session_out(
         planned_date=session.planned_date,
         session_type=session.session_type,
         template_id=session.template_id,
+        activity_type_id=session.activity_type_id,
         title=session.title,
         notes=session.notes,
         skip_note=session.skip_note,
@@ -195,6 +192,7 @@ async def add_planned_session(
         planned_date=body.planned_date,
         session_type=body.session_type,
         template_id=body.template_id,
+        activity_type_id=body.activity_type_id,
         title=title,
         notes=body.notes,
         display_order=body.display_order,
@@ -238,6 +236,7 @@ async def update_planned_session(
     session.planned_date = body.planned_date
     session.session_type = body.session_type
     session.template_id = body.template_id
+    session.activity_type_id = body.activity_type_id
     session.title = title
     session.notes = body.notes
     session.display_order = body.display_order
@@ -329,6 +328,7 @@ async def copy_from_last_week(
                 planned_date=new_date,
                 session_type=prev_session.session_type,
                 template_id=prev_session.template_id,
+                activity_type_id=prev_session.activity_type_id,
                 title=prev_session.title,
                 notes=prev_session.notes,
                 skip_note=None,
@@ -341,7 +341,6 @@ async def copy_from_last_week(
                     planned_session_id=new_session.id,
                     segment_order=seg.segment_order,
                     title=seg.title,
-                    activity_type_id=seg.activity_type_id,
                     duration_secs=seg.duration_secs,
                     distance_metres=seg.distance_metres,
                     pace_secs_per_km=seg.pace_secs_per_km,

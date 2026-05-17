@@ -629,19 +629,19 @@ async def call_adapt_cardio_session(
     if session is None:
         raise ValueError("not_found")
 
-    # Resolve activity type names
-    activity_type_ids = [seg.activity_type_id for seg in session.cardio_segments]
-    act_names: dict[int, str] = {}
-    if activity_type_ids:
+    # Resolve session-level activity type name
+    activity_type_name = "Unknown"
+    if session.activity_type_id is not None:
         at_result = await db.execute(
-            select(CardioActivityType).where(CardioActivityType.id.in_(activity_type_ids))
+            select(CardioActivityType).where(CardioActivityType.id == session.activity_type_id)
         )
-        for at in at_result.scalars().all():
-            act_names[at.id] = at.name
+        at = at_result.scalar_one_or_none()
+        if at:
+            activity_type_name = at.name
 
     segments_data = [
         {
-            "activity_type_name": act_names.get(seg.activity_type_id, "Unknown"),
+            "activity_type_name": activity_type_name,
             "title": seg.title,
             "distance_metres": seg.distance_metres,
             "duration_secs": seg.duration_secs,

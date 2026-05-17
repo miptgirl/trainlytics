@@ -5,7 +5,6 @@ export interface PlannedCardioSegmentOut {
   id: number
   segment_order: number
   title: string | null
-  activity_type_id: number
   duration_secs: number | null
   distance_metres: number | null
   pace_secs_per_km: number | null
@@ -17,6 +16,7 @@ export interface PlannedSessionOut {
   planned_date: string
   session_type: 'strength' | 'cardio'
   template_id: number | null
+  activity_type_id: number | null
   title: string | null
   notes: string | null
   skip_note: string | null
@@ -35,7 +35,6 @@ export interface WeekPlanOut {
 export interface PlannedCardioSegmentIn {
   segment_order: number
   title?: string | null
-  activity_type_id: number
   duration_secs?: number | null
   distance_metres?: number | null
   pace_secs_per_km?: number | null
@@ -46,6 +45,7 @@ export interface PlannedSessionIn {
   planned_date: string
   session_type: 'strength' | 'cardio'
   template_id?: number | null
+  activity_type_id?: number | null
   title?: string | null
   notes?: string | null
   display_order?: number
