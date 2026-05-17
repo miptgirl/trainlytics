@@ -1,1 +1,2 @@
 - For cardio sessions: overall heart rate, share of pulse in each zone
+- For plan: let's be able to compare plan volume vs what was done (for cardio in terms of distance or time) and be able to see changes in details, for strength planned exercise and repeats and weights (high level weight lifted)

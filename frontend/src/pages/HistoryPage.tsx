@@ -18,7 +18,7 @@ import { WeeklyInsightsCard } from '../components/WeeklyInsightsCard'
 import { api } from '../lib/api'
 import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
 import { usePaceTrends } from '../lib/hooks/usePaceTrends'
-import { formatSessionDateTime } from '../lib/dateUtils'
+import { formatSessionDateTime, toLocalDateStr } from '../lib/dateUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
   formatStrengthSession,
@@ -78,9 +78,9 @@ const PACE_COLORS = [
 function getMonday(d: Date): string {
   const date = new Date(d)
   const day = date.getDay()
-  const diff = (day === 0 ? -6 : 1 - day)
+  const diff = day === 0 ? -6 : 1 - day
   date.setDate(date.getDate() + diff)
-  return date.toISOString().slice(0, 10)
+  return toLocalDateStr(date)
 }
 
 function formatDuration(seconds: number): string {

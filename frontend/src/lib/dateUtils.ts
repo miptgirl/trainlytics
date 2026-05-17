@@ -1,4 +1,14 @@
 /**
+ * Formats a Date as "YYYY-MM-DD" in the user's local timezone.
+ * Use this instead of toISOString().slice(0,10) which uses UTC and can
+ * return the wrong date for users in UTC+ timezones.
+ */
+export function toLocalDateStr(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/**
  * Returns the current local date/time as a value suitable for
  * <input type="datetime-local"> (format: "YYYY-MM-DDTHH:MM").
  */

@@ -35,6 +35,7 @@ export function Layout({ children }: { children: ReactNode }) {
             <NavLink to="/history" className={navLinkClass}>History</NavLink>
             <NavLink to="/log" className={navLinkClass}>Log Workout</NavLink>
             <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
+            <NavLink to="/plan" className={navLinkClass}>Plan</NavLink>
             <NavLink to="/analytics" className={navLinkClass}>Analytics</NavLink>
             <NavLink to="/steps" className={navLinkClass}>Steps</NavLink>
             <NavLink to="/profile" className={navLinkClass}>Profile</NavLink>
@@ -80,6 +81,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <NavLink to="/history" className={mobileNavLinkClass} onClick={handleNavClick}>History</NavLink>
               <NavLink to="/log" className={mobileNavLinkClass} onClick={handleNavClick}>Log Workout</NavLink>
               <NavLink to="/templates" className={mobileNavLinkClass} onClick={handleNavClick}>Templates</NavLink>
+              <NavLink to="/plan" className={mobileNavLinkClass} onClick={handleNavClick}>Plan</NavLink>
               <NavLink to="/analytics" className={mobileNavLinkClass} onClick={handleNavClick}>Analytics</NavLink>
               <NavLink to="/steps" className={mobileNavLinkClass} onClick={handleNavClick}>Steps</NavLink>
               <NavLink to="/profile" className={mobileNavLinkClass} onClick={handleNavClick}>Profile</NavLink>
