@@ -14,12 +14,46 @@ import { TrainingLoadChart } from '../components/analytics/TrainingLoadChart'
 import { ReadinessTrendsChart } from '../components/analytics/ReadinessTrendsChart'
 import { WellbeingCorrelationChart } from '../components/analytics/WellbeingCorrelationChart'
 import { PlanAdherenceChart } from '../components/analytics/PlanAdherenceChart'
+import { SqlDebugModal } from '../components/analytics/SqlDebugModal'
 
-function SectionCard({ title, children }: { title: string; children?: React.ReactNode }) {
+function DebugIcon({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-xs text-slate-300 hover:text-slate-500 font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
+      title="View SQL"
+    >
+      {'</>'}
+    </button>
+  )
+}
+
+function SectionCard({
+  title,
+  debugUrl,
+  children,
+}: {
+  title: string
+  debugUrl?: string
+  children?: React.ReactNode
+}) {
+  const [debugOpen, setDebugOpen] = useState(false)
   return (
     <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
-      <h2 className="text-lg font-semibold text-slate-800 mb-4">{title}</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+        {debugUrl && <DebugIcon onClick={() => setDebugOpen(true)} />}
+      </div>
       {children ?? <p className="text-slate-400 text-sm">Coming soon.</p>}
+      {debugUrl && (
+        <SqlDebugModal
+          fetchUrl={debugUrl}
+          isOpen={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          title={title}
+        />
+      )}
     </section>
   )
 }
@@ -48,6 +82,33 @@ function CollapsibleSectionCard({
   )
 }
 
+function ChartPanel({
+  title,
+  debugUrl,
+  children,
+}: {
+  title: string
+  debugUrl: string
+  children: React.ReactNode
+}) {
+  const [debugOpen, setDebugOpen] = useState(false)
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-slate-600">{title}</h3>
+        <DebugIcon onClick={() => setDebugOpen(true)} />
+      </div>
+      {children}
+      <SqlDebugModal
+        fetchUrl={debugUrl}
+        isOpen={debugOpen}
+        onClose={() => setDebugOpen(false)}
+        title={title}
+      />
+    </div>
+  )
+}
+
 export function AnalyticsPageContent() {
   const [showMoreStrength, setShowMoreStrength] = useState(false)
 
@@ -55,39 +116,47 @@ export function AnalyticsPageContent() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
 
-      <SectionCard title="All-time Summary">
+      <SectionCard title="All-time Summary" debugUrl="/analytics/summary">
         <SummaryHeader />
       </SectionCard>
 
-      <SectionCard title="Consistency">
+      <SectionCard title="Consistency" debugUrl="/analytics/heatmap">
         <ConsistencyHeatmap />
       </SectionCard>
 
-      <SectionCard title="Overview">
+      <SectionCard title="Overview" debugUrl="/analytics/overview-trends">
         <OverviewTrendsChart />
       </SectionCard>
 
       <SectionCard title="Strength">
         <div className="space-y-8">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Weekly Volume by Type</h3>
+          <ChartPanel
+            title="Weekly Volume by Type"
+            debugUrl="/analytics/strength/volume-by-tag?weeks=12"
+          >
             <StrengthVolumeBreakdown />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Weekly Exercises by Type</h3>
+          </ChartPanel>
+          <ChartPanel
+            title="Weekly Exercises by Type"
+            debugUrl="/analytics/strength/exercises-by-type?weeks=12"
+          >
             <WeeklyExercisesByTypeChart />
-          </div>
+          </ChartPanel>
 
           {showMoreStrength ? (
             <>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-600 mb-3">Exercise Progression</h3>
+              <ChartPanel
+                title="Exercise Progression"
+                debugUrl="/analytics/strength/progression"
+              >
                 <ExerciseProgressionChart />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-slate-600 mb-3">Personal Records</h3>
+              </ChartPanel>
+              <ChartPanel
+                title="Personal Records"
+                debugUrl="/analytics/strength/records"
+              >
                 <PersonalRecordsPanel />
-              </div>
+              </ChartPanel>
               <button
                 className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
                 onClick={() => setShowMoreStrength(false)}
@@ -108,39 +177,51 @@ export function AnalyticsPageContent() {
 
       <CollapsibleSectionCard title="Cardio" defaultOpen={false}>
         <div className="space-y-8">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Activity Time Split</h3>
+          <ChartPanel
+            title="Activity Time Split"
+            debugUrl="/analytics/cardio/time-split?period=90"
+          >
             <ActivityTimeSplitChart />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Walk Segments per Session</h3>
+          </ChartPanel>
+          <ChartPanel
+            title="Walk Segments per Session"
+            debugUrl="/analytics/cardio/walk-segments"
+          >
             <WalkSegmentsTrendChart />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Distance Progression</h3>
+          </ChartPanel>
+          <ChartPanel
+            title="Distance Progression"
+            debugUrl="/analytics/cardio/distance-progression"
+          >
             <CardioDistanceProgressionChart />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Training Load</h3>
+          </ChartPanel>
+          <ChartPanel
+            title="Training Load"
+            debugUrl="/analytics/training-load"
+          >
             <TrainingLoadChart />
-          </div>
+          </ChartPanel>
         </div>
       </CollapsibleSectionCard>
 
       <SectionCard title="Readiness">
         <div className="space-y-8">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Weekly Trends</h3>
+          <ChartPanel
+            title="Weekly Trends"
+            debugUrl="/analytics/readiness/trends"
+          >
             <ReadinessTrendsChart />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-600 mb-3">Wellbeing vs RPE Correlation</h3>
+          </ChartPanel>
+          <ChartPanel
+            title="Wellbeing vs RPE Correlation"
+            debugUrl="/analytics/readiness/correlation"
+          >
             <WellbeingCorrelationChart />
-          </div>
+          </ChartPanel>
         </div>
       </SectionCard>
 
-      <SectionCard title="Plan Adherence">
+      <SectionCard title="Plan Adherence" debugUrl="/analytics/plan-adherence?weeks=12">
         <PlanAdherenceChart />
       </SectionCard>
     </div>

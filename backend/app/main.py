@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -36,6 +38,10 @@ app.include_router(plan_summary_module.router, prefix="/api")
 app.include_router(plans_module.router, prefix="/api")
 app.include_router(profile_module.router, prefix="/api")
 app.include_router(ai_module.router, prefix="/api")
+
+if os.environ.get("DEBUG_SQL_ENABLED") == "true":
+    from app.api import debug as debug_module
+    app.include_router(debug_module.router, prefix="/api")
 
 
 @app.get("/api/health")
