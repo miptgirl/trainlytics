@@ -72,3 +72,15 @@ class WeekPlanOut(BaseModel):
 
 class SkipNoteIn(BaseModel):
     skip_note: str | None = None
+
+
+class WeeklySummaryTotals(BaseModel):
+    cardio_distance_km: float
+    cardio_duration_min: float
+    strength_exercise_count: int
+    strength_volume_kg_reps: float
+
+
+class WeeklySummaryOut(BaseModel):
+    planned: WeeklySummaryTotals
+    actual: WeeklySummaryTotals

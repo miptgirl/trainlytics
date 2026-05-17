@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python -m pytest tests/test_analytics.py -v)",
-      "Bash(python3 -m pytest tests/test_analytics.py -v)"
+      "Bash(python3 -m pytest tests/test_analytics.py -v)",
+      "Bash(python -m pytest tests/test_analytics.py -q)",
+      "Bash(python3 -m pytest tests/test_analytics.py -q)"
     ]
   }
 }

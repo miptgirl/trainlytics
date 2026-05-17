@@ -5,7 +5,7 @@
 | Group | Status | Notes |
 |---|---|---|
 | Group 1 — Analytics Bug Fixes + SQL Debug | ✅ Complete | All 3 SQL bugs fixed; debug=true on all /analytics/* endpoints; 18 tests pass |
-| Group 2 — New Analytics Backend Endpoints | ⬜ Not started | |
+| Group 2 — New Analytics Backend Endpoints | ✅ Complete | 4 endpoints added; all existing tests pass |
 | Group 3 — API Key Simplification | ⬜ Not started | |
 | Group 4 — Navigation Revamp | ⬜ Not started | |
 | Group 5 — Analytics UX Reorganization | ⬜ Not started | Depends on Groups 2 + 4 |

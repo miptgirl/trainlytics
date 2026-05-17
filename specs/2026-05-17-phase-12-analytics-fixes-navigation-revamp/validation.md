@@ -6,6 +6,7 @@
 |---|---|
 | Analytics Bug Fixes (SQL) | ✅ Complete — root cause: segments had NULL activity_type_id; fixed with COALESCE(segment.at_id, session.at_id) |
 | Per-Chart SQL Viewer (?debug=true backend) | ✅ Complete — all /analytics/* endpoints support ?debug=true |
+| New Analytics Backend Endpoints (Group 2) | ✅ Complete — 4 endpoints: overview-trends, exercises-by-type, plan-adherence, plan/weekly-summary |
 | Navigation Revamp | ⬜ Not started |
 | Analytics UX Reorganization | ⬜ Not started |
 | Plan vs. Actual Card | ⬜ Not started |
