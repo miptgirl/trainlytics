@@ -4,8 +4,8 @@
 
 | Area | Status |
 |---|---|
-| DB migration (new tables + columns + data migration) | ⬜ Not started |
-| SQLAlchemy models for history tables | ⬜ Not started |
+| DB migration (new tables + columns + data migration) | ✅ Done |
+| SQLAlchemy models for history tables | ✅ Done |
 | Template create: write version 1 history snapshot | ⬜ Not started |
 | Template edit: increment version + write history snapshot | ⬜ Not started |
 | Plan create (strength): store `template_version` | ⬜ Not started |
