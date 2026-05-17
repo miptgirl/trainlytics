@@ -17,3 +17,4 @@ class UserSettings(Base):
     anthropic_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     openai_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     ai_provider: Mapped[str | None] = mapped_column(String, nullable=True)
+    ai_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)

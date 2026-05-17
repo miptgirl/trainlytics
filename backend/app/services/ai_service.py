@@ -47,25 +47,15 @@ async def get_active_provider(username: str, db: AsyncSession) -> tuple[str, str
     if row is None:
         return None
 
-    # Determine which provider to use
-    preferred = row.ai_provider or "anthropic"
-    # Try preferred first, then the other
-    candidates: list[tuple[str, str | None]] = []
-    if preferred == "anthropic":
-        candidates = [("anthropic", row.anthropic_api_key_encrypted), ("openai", row.openai_api_key_encrypted)]
-    else:
-        candidates = [("openai", row.openai_api_key_encrypted), ("anthropic", row.anthropic_api_key_encrypted)]
+    if not row.ai_key_encrypted:
+        return None
 
-    for provider, ciphertext in candidates:
-        if ciphertext:
-            try:
-                key = decrypt(ciphertext)
-                return (provider, key)
-            except (InvalidToken, Exception):
-                # Key changed or corrupted — treat as missing
-                continue
-
-    return None
+    provider = row.ai_provider or "anthropic"
+    try:
+        key = decrypt(row.ai_key_encrypted)
+        return (provider, key)
+    except (InvalidToken, Exception):
+        return None
 
 
 # ── Athlete context block ─────────────────────────────────────────────────────

@@ -31,9 +31,8 @@ def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
         goals=goals,
         injury_notes=row.injury_notes,
         coach_notes=row.coach_notes,
-        has_anthropic_key=row.anthropic_api_key_encrypted is not None,
-        has_openai_key=row.openai_api_key_encrypted is not None,
         ai_provider=row.ai_provider,
+        ai_key_configured=row.ai_key_encrypted is not None,
     )
 
 
@@ -53,7 +52,6 @@ async def patch_profile(
     username: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserSettingsOut:
-    # Fetch existing row (or start fresh)
     result = await db.execute(select(UserSettings).where(UserSettings.username == username))
     row = result.scalar_one_or_none()
 
@@ -78,18 +76,11 @@ async def patch_profile(
     if "ai_provider" in fields_set:
         row.ai_provider = body.ai_provider
 
-    # Key fields: presence in fields_set means intentionally sent
-    if "anthropic_api_key" in fields_set:
-        if body.anthropic_api_key is None:
-            row.anthropic_api_key_encrypted = None
+    if "ai_key" in fields_set:
+        if body.ai_key is None:
+            row.ai_key_encrypted = None
         else:
-            row.anthropic_api_key_encrypted = crypto.encrypt(body.anthropic_api_key)
-
-    if "openai_api_key" in fields_set:
-        if body.openai_api_key is None:
-            row.openai_api_key_encrypted = None
-        else:
-            row.openai_api_key_encrypted = crypto.encrypt(body.openai_api_key)
+            row.ai_key_encrypted = crypto.encrypt(body.ai_key)
 
     await db.commit()
     await db.refresh(row)

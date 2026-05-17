@@ -453,7 +453,7 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function HistoryPage() {
+export function HistoryPageContent() {
   const [chartTab, setChartTab] = useState<'trends' | 'pace'>('trends')
   const [type, setType] = useState<'all' | 'cardio' | 'strength'>('all')
   const [dateFrom, setDateFrom] = useState('')
@@ -461,11 +461,11 @@ export default function HistoryPage() {
   const [page, setPage] = useState(1)
   const pageSize = 20
 
-  const { data: profile } = useQuery<{ has_anthropic_key: boolean; has_openai_key: boolean }>({
+  const { data: profile } = useQuery<{ ai_key_configured: boolean }>({
     queryKey: ['profile'],
     queryFn: () => api.get('/profile'),
   })
-  const hasApiKey = !!(profile?.has_anthropic_key || profile?.has_openai_key)
+  const hasApiKey = !!profile?.ai_key_configured
 
   const params = new URLSearchParams()
   if (type !== 'all') params.set('type', type)
@@ -486,7 +486,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <Layout>
+    <>
       <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
 
       <WeeklySummaryCard />
@@ -648,6 +648,14 @@ export default function HistoryPage() {
           )}
         </>
       )}
+    </>
+  )
+}
+
+export default function HistoryPage() {
+  return (
+    <Layout>
+      <HistoryPageContent />
     </Layout>
   )
 }

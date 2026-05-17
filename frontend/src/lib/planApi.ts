@@ -128,3 +128,23 @@ export function useCopyFromLastWeek() {
     },
   })
 }
+
+export interface WeeklySummaryTotals {
+  cardio_distance_km: number
+  cardio_duration_min: number
+  strength_exercise_count: number
+  strength_volume_kg_reps: number
+}
+
+export interface WeeklySummaryOut {
+  planned: WeeklySummaryTotals
+  actual: WeeklySummaryTotals
+}
+
+export function useWeeklySummary(weekStart: string) {
+  return useQuery<WeeklySummaryOut>({
+    queryKey: ['plan-weekly-summary', weekStart],
+    queryFn: () =>
+      api.get<WeeklySummaryOut>(`/plan/weekly-summary?week_start=${weekStart}`),
+  })
+}

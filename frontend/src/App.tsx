@@ -9,11 +9,10 @@ import SettingsPage from './pages/SettingsPage'
 import LogWorkoutPage from './pages/LogWorkoutPage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
-import HistoryPage from './pages/HistoryPage'
 import TemplatesPage from './pages/TemplatesPage'
 import StepsPage from './pages/StepsPage'
 import ProfilePage from './pages/ProfilePage'
-import AnalyticsPage from './pages/AnalyticsPage'
+import StatsPage from './pages/StatsPage'
 import PlanPage from './pages/PlanPage'
 import { api } from './lib/api'
 
@@ -29,7 +28,7 @@ function SessionDetailRouter() {
 }
 
 function Dashboard() {
-  return <Navigate to="/history" replace />
+  return <Navigate to="/stats" replace />
 }
 
 function AppRoutes() {
@@ -74,9 +73,13 @@ function AppRoutes() {
         />
         <Route
           path="/history"
+          element={<Navigate to="/stats?tab=history" replace />}
+        />
+        <Route
+          path="/stats"
           element={
             <ProtectedRoute>
-              <HistoryPage />
+              <StatsPage />
             </ProtectedRoute>
           }
         />
@@ -106,11 +109,7 @@ function AppRoutes() {
         />
         <Route
           path="/analytics"
-          element={
-            <ProtectedRoute>
-              <AnalyticsPage />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/stats" replace />}
         />
         <Route
           path="/plan"

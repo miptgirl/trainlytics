@@ -80,3 +80,23 @@ class ReadinessCorrelationPoint(BaseModel):
 class HeatmapDay(BaseModel):
     date: DateType
     session_types: list[str]
+
+
+class OverviewTrendsPoint(BaseModel):
+    week_start: DateType
+    session_count: int
+    total_minutes: int
+    total_volume: float
+
+
+class ExercisesByTypePoint(BaseModel):
+    week_start: DateType
+    muscle_group_tag: str
+    exercise_count: int
+
+
+class PlanAdherencePoint(BaseModel):
+    week_start: DateType
+    completion_pct: float | None
+    strength_volume_delta: float | None
+    cardio_distance_delta: float | None

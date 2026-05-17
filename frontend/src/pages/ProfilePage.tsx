@@ -37,8 +37,7 @@ interface UserProfile {
   goals: GoalItem[] | null
   injury_notes: string | null
   coach_notes: string | null
-  has_anthropic_key: boolean
-  has_openai_key: boolean
+  ai_key_configured: boolean
   ai_provider: AIProvider | null
 }
 
@@ -170,11 +169,23 @@ function ApiKeyField({
   )
 }
 
-// ── Debug Logs Section ──────────────────────────────────────────────────────
+// ── Debug Section (AI logs + SQL executor) ─────────────────────────────────
+
+interface SqlResult {
+  columns: string[]
+  rows: unknown[][]
+  rowcount: number
+}
 
 function DebugLogsSection() {
   const [open, setOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  // SQL executor state
+  const [sql, setSql] = useState('')
+  const [sqlResult, setSqlResult] = useState<SqlResult | null>(null)
+  const [sqlError, setSqlError] = useState<string | null>(null)
+  const [sqlRunning, setSqlRunning] = useState(false)
 
   const { data: logs, isLoading, refetch } = useQuery<AiLog[]>({
     queryKey: ['ai-logs'],
@@ -182,6 +193,20 @@ function DebugLogsSection() {
     enabled: open,
     staleTime: 0,
   })
+
+  async function runSql() {
+    setSqlRunning(true)
+    setSqlResult(null)
+    setSqlError(null)
+    try {
+      const result = await api.post<SqlResult>('/debug/sql', { sql })
+      setSqlResult(result)
+    } catch (err) {
+      setSqlError(err instanceof Error ? err.message : 'Request failed')
+    } finally {
+      setSqlRunning(false)
+    }
+  }
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
@@ -191,75 +216,148 @@ function DebugLogsSection() {
         className="w-full flex items-center justify-between px-5 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
       >
         <span className="text-xs font-mono font-semibold text-slate-400 tracking-widest uppercase">
-          ⚙ Debug — AI request logs
+          ⚙ Debug
         </span>
         <span className="text-slate-400 text-xs">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div className="bg-white divide-y divide-slate-100">
-          {isLoading && (
-            <p className="px-5 py-4 text-sm text-slate-400">Loading…</p>
-          )}
-          {!isLoading && (!logs || logs.length === 0) && (
-            <p className="px-5 py-4 text-sm text-slate-400">No logs yet.</p>
-          )}
-          {logs?.map((log) => {
-            const isExpanded = expandedId === log.id
-            const ts = log.created_at
-              ? new Date(log.created_at).toLocaleString()
-              : '—'
-            const statusColor = log.error ? 'text-red-600' : 'text-emerald-600'
-            const statusLabel = log.error ? '✗ error' : '✓ ok'
+        <div className="bg-white">
+          {/* AI request logs */}
+          <div className="border-b border-slate-100">
+            <p className="px-5 pt-4 pb-2 text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest">
+              AI request logs
+            </p>
+            <div className="divide-y divide-slate-100">
+              {isLoading && (
+                <p className="px-5 py-4 text-sm text-slate-400">Loading…</p>
+              )}
+              {!isLoading && (!logs || logs.length === 0) && (
+                <p className="px-5 py-4 text-sm text-slate-400">No logs yet.</p>
+              )}
+              {logs?.map((log) => {
+                const isExpanded = expandedId === log.id
+                const ts = log.created_at
+                  ? new Date(log.created_at).toLocaleString()
+                  : '—'
+                const statusColor = log.error ? 'text-red-600' : 'text-emerald-600'
+                const statusLabel = log.error ? '✗ error' : '✓ ok'
 
-            return (
-              <div key={log.id} className="px-5 py-3">
-                {/* Summary row */}
-                <button
-                  type="button"
-                  className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-left"
-                  onClick={() => setExpandedId(isExpanded ? null : log.id)}
-                >
-                  <span className="text-xs font-mono text-slate-500 shrink-0">{ts}</span>
-                  <span className="text-xs font-semibold text-slate-700 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
-                    {log.endpoint}
-                  </span>
-                  <span className="text-xs text-slate-500">{log.provider} / {log.model}</span>
-                  {log.input_tokens != null && (
-                    <span className="text-xs text-slate-400">
-                      {log.input_tokens}↑ {log.output_tokens}↓ tokens
-                    </span>
-                  )}
-                  <span className="text-xs text-slate-400">{log.duration_ms} ms</span>
-                  <span className={`text-xs font-semibold ml-auto ${statusColor}`}>{statusLabel}</span>
-                </button>
+                return (
+                  <div key={log.id} className="px-5 py-3">
+                    <button
+                      type="button"
+                      className="w-full flex flex-wrap items-center gap-x-3 gap-y-1 text-left"
+                      onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                    >
+                      <span className="text-xs font-mono text-slate-500 shrink-0">{ts}</span>
+                      <span className="text-xs font-semibold text-slate-700 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                        {log.endpoint}
+                      </span>
+                      <span className="text-xs text-slate-500">{log.provider} / {log.model}</span>
+                      {log.input_tokens != null && (
+                        <span className="text-xs text-slate-400">
+                          {log.input_tokens}↑ {log.output_tokens}↓ tokens
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-400">{log.duration_ms} ms</span>
+                      <span className={`text-xs font-semibold ml-auto ${statusColor}`}>{statusLabel}</span>
+                    </button>
 
-                {/* Expanded detail */}
-                {isExpanded && (
-                  <div className="mt-3 flex flex-col gap-3">
-                    {log.error && (
-                      <div>
-                        <p className="text-xs font-semibold text-red-600 mb-1">Error</p>
-                        <pre className="text-xs bg-red-50 text-red-700 rounded p-2 whitespace-pre-wrap break-all">{log.error}</pre>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-xs font-semibold text-slate-500 mb-1">Prompt</p>
-                      <pre className="text-xs bg-slate-50 text-slate-700 rounded p-2 whitespace-pre-wrap break-all max-h-64 overflow-y-auto">{log.prompt}</pre>
-                    </div>
-                    {log.response && (
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 mb-1">Response (rendered)</p>
-                        <div className="prose prose-sm prose-slate max-w-none bg-slate-50 rounded p-2 max-h-64 overflow-y-auto">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.response}</ReactMarkdown>
+                    {isExpanded && (
+                      <div className="mt-3 flex flex-col gap-3">
+                        {log.error && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-600 mb-1">Error</p>
+                            <pre className="text-xs bg-red-50 text-red-700 rounded p-2 whitespace-pre-wrap break-all">{log.error}</pre>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-semibold text-slate-500 mb-1">Prompt</p>
+                          <pre className="text-xs bg-slate-50 text-slate-700 rounded p-2 whitespace-pre-wrap break-all max-h-64 overflow-y-auto">{log.prompt}</pre>
                         </div>
+                        {log.response && (
+                          <div>
+                            <p className="text-xs font-semibold text-slate-500 mb-1">Response (rendered)</p>
+                            <div className="prose prose-sm prose-slate max-w-none bg-slate-50 rounded p-2 max-h-64 overflow-y-auto">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{log.response}</ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* SQL executor */}
+          <div className="px-5 py-4 flex flex-col gap-3">
+            <p className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest">
+              SQL
+            </p>
+            <p className="text-xs text-amber-600">
+              ⚠ Direct DB access — changes are permanent.
+            </p>
+            <textarea
+              value={sql}
+              onChange={(e) => setSql(e.target.value)}
+              rows={6}
+              placeholder="SELECT * FROM workout_sessions LIMIT 5"
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              disabled={!sql.trim() || sqlRunning}
+              onClick={runSql}
+              className="self-start bg-slate-700 hover:bg-slate-800 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {sqlRunning ? 'Running…' : 'Run'}
+            </button>
+            {sqlError && (
+              <p className="text-xs text-red-600 font-mono">{sqlError}</p>
+            )}
+            {sqlResult && (
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                {sqlResult.columns.length === 0 ? (
+                  <p className="px-4 py-3 text-xs text-slate-500">
+                    Query OK — {sqlResult.rowcount} row{sqlResult.rowcount !== 1 ? 's' : ''} affected.
+                  </p>
+                ) : (
+                  <table className="text-xs w-full">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        {sqlResult.columns.map((col) => (
+                          <th
+                            key={col}
+                            className="px-3 py-2 text-left font-semibold text-slate-700 border-b border-slate-200 whitespace-nowrap"
+                          >
+                            {col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {sqlResult.rows.map((row, i) => (
+                        <tr key={i} className="hover:bg-slate-50">
+                          {row.map((cell, j) => (
+                            <td
+                              key={j}
+                              className="px-3 py-2 text-slate-600 whitespace-nowrap max-w-xs overflow-hidden text-ellipsis"
+                              title={String(cell ?? '')}
+                            >
+                              {cell === null ? <span className="text-slate-300">null</span> : String(cell)}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
-            )
-          })}
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -277,7 +375,7 @@ export default function ProfilePage() {
   })
 
   const patchMutation = useMutation({
-    mutationFn: (body: Partial<UserProfile> & { anthropic_api_key?: string | null; openai_api_key?: string | null }) =>
+    mutationFn: (body: Partial<UserProfile> & { ai_key?: string | null }) =>
       api.patch<UserProfile>('/profile', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
   })
@@ -341,6 +439,21 @@ export default function ProfilePage() {
       setCoachNotes(profile.coach_notes ?? '')
     }
   }, [profile])
+
+  // ── AI Provider ────────────────────────────────────────────────────────
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('anthropic')
+  const [keyResetNoticeDismissed, setKeyResetNoticeDismissed] = useState(
+    () => !!localStorage.getItem('key_reset_notice_v1')
+  )
+
+  useEffect(() => {
+    if (profile?.ai_provider) setSelectedProvider(profile.ai_provider)
+  }, [profile?.ai_provider])
+
+  function dismissKeyResetNotice() {
+    localStorage.setItem('key_reset_notice_v1', '1')
+    setKeyResetNoticeDismissed(true)
+  }
 
   if (isLoading) {
     return (
@@ -474,41 +587,47 @@ export default function ProfilePage() {
         {/* ── AI Provider ── */}
         <SectionCard title="AI Provider">
           <div className="flex flex-col gap-5">
-            <ApiKeyField
-              label="Anthropic API Key"
-              isConfigured={profile?.has_anthropic_key ?? false}
-              isSaving={patchMutation.isPending}
-              onSave={(key) => patchMutation.mutate({ anthropic_api_key: key })}
-              onRemove={() => patchMutation.mutate({ anthropic_api_key: null })}
-            />
-
-            <ApiKeyField
-              label="OpenAI API Key"
-              isConfigured={profile?.has_openai_key ?? false}
-              isSaving={patchMutation.isPending}
-              onSave={(key) => patchMutation.mutate({ openai_api_key: key })}
-              onRemove={() => patchMutation.mutate({ openai_api_key: null })}
-            />
-
-            {profile?.has_anthropic_key && profile?.has_openai_key && (
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-slate-600">Active provider</span>
-                <SegmentedControl<AIProvider>
-                  options={[
-                    { label: 'Anthropic', value: 'anthropic' },
-                    { label: 'OpenAI', value: 'openai' },
-                  ]}
-                  value={profile?.ai_provider ?? 'anthropic'}
-                  onChange={(v) => patchMutation.mutate({ ai_provider: v })}
-                />
+            {!keyResetNoticeDismissed && (
+              <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+                <span>API key has been reset. Please re-enter your key.</span>
+                <button
+                  type="button"
+                  onClick={dismissKeyResetNotice}
+                  className="text-amber-500 hover:text-amber-700 shrink-0 leading-none"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
               </div>
             )}
 
-            {!profile?.has_anthropic_key && !profile?.has_openai_key && (
-              <p className="text-sm text-slate-400">
-                Add an API key above to enable AI features.
-              </p>
-            )}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium text-slate-600">Provider</span>
+              <SegmentedControl<AIProvider>
+                options={[
+                  { label: 'Anthropic', value: 'anthropic' },
+                  { label: 'OpenAI', value: 'openai' },
+                ]}
+                value={selectedProvider}
+                onChange={(v) => {
+                  setSelectedProvider(v)
+                  if (profile?.ai_key_configured) {
+                    patchMutation.mutate({ ai_provider: v })
+                  }
+                }}
+              />
+            </div>
+
+            <ApiKeyField
+              label="API Key"
+              isConfigured={profile?.ai_key_configured ?? false}
+              isSaving={patchMutation.isPending}
+              onSave={(key) => {
+                patchMutation.mutate({ ai_provider: selectedProvider, ai_key: key })
+                dismissKeyResetNotice()
+              }}
+              onRemove={() => patchMutation.mutate({ ai_key: null })}
+            />
           </div>
         </SectionCard>
 

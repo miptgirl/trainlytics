@@ -5,6 +5,7 @@ from datetime import date as DateType
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,8 +25,11 @@ from app.models.session import (
 from app.schemas.analytics import (
     CardioTimeSplitPoint,
     DistanceProgressionPoint,
+    ExercisesByTypePoint,
     HeatmapDay,
+    OverviewTrendsPoint,
     PersonalRecord,
+    PlanAdherencePoint,
     ReadinessCorrelationPoint,
     ReadinessTrendPoint,
     RecordsGroupOut,
@@ -40,52 +44,67 @@ from app.schemas.analytics import (
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
+def _render_sql(*queries) -> str:
+    """Compile SQLAlchemy queries to readable SQL strings, substituting literal bind params."""
+    from sqlalchemy.dialects import postgresql
+
+    parts = []
+    for i, q in enumerate(queries):
+        try:
+            sql = str(q.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+        except Exception:
+            sql = str(q.compile(dialect=postgresql.dialect()))
+        parts.append(f"-- Query {i + 1}:\n{sql}" if len(queries) > 1 else sql)
+    return "\n\n".join(parts)
+
+
+def _debug_wrap(data: list, sql: str) -> JSONResponse:
+    serialized = [item.model_dump(mode="json") if hasattr(item, "model_dump") else item for item in data]
+    return JSONResponse({"data": serialized, "debug": {"sql": sql}})
+
+
 # ── 1.1  Summary ─────────────────────────────────────────────────────────────
 
 @router.get("/summary", response_model=SummaryOut)
 async def get_summary(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> SummaryOut:
-    # Total sessions
-    total_sessions_result = await db.execute(
-        select(func.count(WorkoutSession.id)).where(WorkoutSession.user_id == user)
-    )
-    total_sessions = total_sessions_result.scalar_one() or 0
-
-    # Strength minutes
-    strength_result = await db.execute(
+    debug: bool = Query(False),
+):
+    q_sessions = select(func.count(WorkoutSession.id)).where(WorkoutSession.user_id == user)
+    q_strength = (
         select(func.sum(StrengthSession.duration_seconds))
         .join(WorkoutSession, WorkoutSession.id == StrengthSession.session_id)
         .where(WorkoutSession.user_id == user)
     )
-    strength_seconds = strength_result.scalar_one() or 0
-
-    # Cardio minutes
-    cardio_result = await db.execute(
+    q_cardio = (
         select(func.sum(CardioSession.total_duration_seconds))
         .join(WorkoutSession, WorkoutSession.id == CardioSession.session_id)
         .where(WorkoutSession.user_id == user)
     )
-    cardio_seconds = cardio_result.scalar_one() or 0
-
-    total_minutes = (strength_seconds + cardio_seconds) // 60
-
-    # Total cardio distance (from segments)
-    dist_result = await db.execute(
+    q_dist = (
         select(func.sum(CardioSegment.distance_meters))
         .join(CardioSession, CardioSession.id == CardioSegment.cardio_session_id)
         .join(WorkoutSession, WorkoutSession.id == CardioSession.session_id)
         .where(WorkoutSession.user_id == user)
     )
-    total_distance_m = dist_result.scalar_one() or 0.0
+
+    total_sessions = (await db.execute(q_sessions)).scalar_one() or 0
+    strength_seconds = (await db.execute(q_strength)).scalar_one() or 0
+    cardio_seconds = (await db.execute(q_cardio)).scalar_one() or 0
+    total_distance_m = (await db.execute(q_dist)).scalar_one() or 0.0
+
+    total_minutes = (strength_seconds + cardio_seconds) // 60
     total_distance_km = round(total_distance_m / 1000, 2)
 
-    return SummaryOut(
+    result = SummaryOut(
         total_sessions=total_sessions,
         total_minutes=total_minutes,
         total_distance_km=total_distance_km,
     )
+    if debug:
+        return _debug_wrap([result], _render_sql(q_sessions, q_strength, q_cardio, q_dist))
+    return result
 
 
 # ── 1.2  Strength progression ─────────────────────────────────────────────────
@@ -95,26 +114,26 @@ async def strength_progression(
     exercise_id: int = Query(...),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[StrengthProgressionPoint]:
-    rows = (
-        await db.execute(
-            select(
-                WorkoutSession.date,
-                StrengthSet.weight,
-                StrengthSet.reps,
-            )
-            .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
-            .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
-            .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
-            .where(
-                WorkoutSession.user_id == user,
-                StrengthExerciseEntry.exercise_id == exercise_id,
-                StrengthSet.weight.is_not(None),
-                StrengthSet.reps.is_not(None),
-            )
-            .order_by(WorkoutSession.date)
+    debug: bool = Query(False),
+):
+    query = (
+        select(
+            WorkoutSession.date,
+            StrengthSet.weight,
+            StrengthSet.reps,
         )
-    ).all()
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+        .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
+        .where(
+            WorkoutSession.user_id == user,
+            StrengthExerciseEntry.exercise_id == exercise_id,
+            StrengthSet.weight.is_not(None),
+            StrengthSet.reps.is_not(None),
+        )
+        .order_by(WorkoutSession.date)
+    )
+    rows = (await db.execute(query)).all()
 
     # Group by session date
     by_date: dict[DateType, list[tuple[float, int]]] = defaultdict(list)
@@ -129,6 +148,8 @@ async def strength_progression(
         total_volume = sum(w * r for w, r in sets)
         result.append(StrengthProgressionPoint(date=d, max_weight=max_weight, total_volume=total_volume))
 
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
     return result
 
 
@@ -138,37 +159,34 @@ async def strength_progression(
 async def strength_records(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[RecordsGroupOut]:
-    # Fetch all sets for user's strength sessions, with exercise and types
-    rows = (
-        await db.execute(
-            select(
-                StrengthExerciseEntry.exercise_id,
-                Exercise.name,
-                StrengthSet.weight,
-                StrengthSet.reps,
-            )
-            .join(StrengthExerciseEntry, StrengthExerciseEntry.id == StrengthSet.exercise_entry_id)
-            .join(StrengthSession, StrengthSession.id == StrengthExerciseEntry.strength_session_id)
-            .join(WorkoutSession, WorkoutSession.id == StrengthSession.session_id)
-            .join(Exercise, Exercise.id == StrengthExerciseEntry.exercise_id)
-            .where(
-                WorkoutSession.user_id == user,
-                StrengthSet.weight.is_not(None),
-                StrengthSet.reps.is_not(None),
-            )
+    debug: bool = Query(False),
+):
+    q_rows = (
+        select(
+            StrengthExerciseEntry.exercise_id,
+            Exercise.name,
+            StrengthSet.weight,
+            StrengthSet.reps,
         )
-    ).all()
+        .join(StrengthExerciseEntry, StrengthExerciseEntry.id == StrengthSet.exercise_entry_id)
+        .join(StrengthSession, StrengthSession.id == StrengthExerciseEntry.strength_session_id)
+        .join(WorkoutSession, WorkoutSession.id == StrengthSession.session_id)
+        .join(Exercise, Exercise.id == StrengthExerciseEntry.exercise_id)
+        .where(
+            WorkoutSession.user_id == user,
+            StrengthSet.weight.is_not(None),
+            StrengthSet.reps.is_not(None),
+        )
+    )
+    rows = (await db.execute(q_rows)).all()
 
-    # Fetch exercise → type tags mapping
-    tag_rows = (
-        await db.execute(
-            select(exercise_exercise_types.c.exercise_id, ExerciseType.name)
-            .join(ExerciseType, ExerciseType.id == exercise_exercise_types.c.exercise_type_id)
-            .join(Exercise, Exercise.id == exercise_exercise_types.c.exercise_id)
-            .where(Exercise.user_id == user)
-        )
-    ).all()
+    q_tags = (
+        select(exercise_exercise_types.c.exercise_id, ExerciseType.name)
+        .join(ExerciseType, ExerciseType.id == exercise_exercise_types.c.exercise_type_id)
+        .join(Exercise, Exercise.id == exercise_exercise_types.c.exercise_id)
+        .where(Exercise.user_id == user)
+    )
+    tag_rows = (await db.execute(q_tags)).all()
 
     exercise_tags: dict[int, list[str]] = defaultdict(list)
     for ex_id, tag_name in tag_rows:
@@ -220,6 +238,8 @@ async def strength_records(
     if "untagged" in groups:
         sorted_groups.append(RecordsGroupOut(tag="untagged", records=groups["untagged"]))
 
+    if debug:
+        return _debug_wrap(sorted_groups, _render_sql(q_rows, q_tags))
     return sorted_groups
 
 
@@ -230,33 +250,33 @@ async def strength_volume_by_tag(
     weeks: int = Query(12, ge=1, le=52),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[VolumeByTagPoint]:
+    debug: bool = Query(False),
+):
     today = DateType.today()
     current_monday = today - timedelta(days=today.weekday())
     range_start = current_monday - timedelta(weeks=weeks)
     range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
 
-    rows = (
-        await db.execute(
-            select(
-                WorkoutSession.date,
-                ExerciseType.name,
-                StrengthSet.weight,
-                StrengthSet.reps,
-            )
-            .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
-            .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
-            .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
-            .join(exercise_exercise_types, exercise_exercise_types.c.exercise_id == StrengthExerciseEntry.exercise_id)
-            .join(ExerciseType, ExerciseType.id == exercise_exercise_types.c.exercise_type_id)
-            .where(
-                WorkoutSession.user_id == user,
-                WorkoutSession.date >= range_start_dt,
-                StrengthSet.weight.is_not(None),
-                StrengthSet.reps.is_not(None),
-            )
+    query = (
+        select(
+            WorkoutSession.date,
+            ExerciseType.name,
+            StrengthSet.weight,
+            StrengthSet.reps,
         )
-    ).all()
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+        .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
+        .join(exercise_exercise_types, exercise_exercise_types.c.exercise_id == StrengthExerciseEntry.exercise_id)
+        .join(ExerciseType, ExerciseType.id == exercise_exercise_types.c.exercise_type_id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.date >= range_start_dt,
+            StrengthSet.weight.is_not(None),
+            StrengthSet.reps.is_not(None),
+        )
+    )
+    rows = (await db.execute(query)).all()
 
     def week_of(d: datetime) -> DateType:
         dd = d.date() if hasattr(d, "date") else d
@@ -271,6 +291,8 @@ async def strength_volume_by_tag(
         VolumeByTagPoint(week_start=w, tag=tag, total_volume=round(vol, 2))
         for (w, tag), vol in sorted(volume.items())
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
     return result
 
 
@@ -281,31 +303,36 @@ async def cardio_time_split(
     period: int = Query(90, ge=1),
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[CardioTimeSplitPoint]:
+    debug: bool = Query(False),
+):
     since = datetime.now(timezone.utc) - timedelta(days=period)
+    # Use COALESCE so sessions without per-segment activity types fall back to the session-level type.
+    eff_at = func.coalesce(CardioSegment.activity_type_id, CardioSession.activity_type_id)
 
-    rows = (
-        await db.execute(
-            select(CardioActivityType.name, CardioSegment.duration_seconds)
-            .join(CardioSession, CardioSession.id == CardioSegment.cardio_session_id)
-            .join(WorkoutSession, WorkoutSession.id == CardioSession.session_id)
-            .join(CardioActivityType, CardioActivityType.id == CardioSegment.activity_type_id)
-            .where(
-                WorkoutSession.user_id == user,
-                WorkoutSession.date >= since,
-                CardioSegment.activity_type_id.is_not(None),
-            )
+    query = (
+        select(CardioActivityType.name, CardioSegment.duration_seconds)
+        .select_from(CardioSegment)
+        .join(CardioSession, CardioSession.id == CardioSegment.cardio_session_id)
+        .join(WorkoutSession, WorkoutSession.id == CardioSession.session_id)
+        .join(CardioActivityType, CardioActivityType.id == eff_at)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.date >= since,
         )
-    ).all()
+    )
+    rows = (await db.execute(query)).all()
 
     totals: dict[str, float] = defaultdict(float)
     for name, dur in rows:
         totals[name] += dur / 60.0
 
-    return [
+    result = [
         CardioTimeSplitPoint(activity_type=name, total_minutes=round(mins, 2))
         for name, mins in sorted(totals.items(), key=lambda x: -x[1])
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
+    return result
 
 
 # ── 1.6  Walk segments ────────────────────────────────────────────────────────
@@ -314,36 +341,35 @@ async def cardio_time_split(
 async def cardio_walk_segments(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[WalkSegmentsPoint]:
-    # Get all cardio sessions
-    sessions_rows = (
-        await db.execute(
-            select(WorkoutSession.id, WorkoutSession.date, WorkoutSession.title)
-            .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
-            .where(WorkoutSession.user_id == user)
-            .order_by(WorkoutSession.date)
-        )
-    ).all()
+    debug: bool = Query(False),
+):
+    q_sessions = (
+        select(WorkoutSession.id, WorkoutSession.date, WorkoutSession.title)
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user)
+        .order_by(WorkoutSession.date)
+    )
+    sessions_rows = (await db.execute(q_sessions)).all()
 
     if not sessions_rows:
         return []
 
     session_ids = [r.id for r in sessions_rows]
-    session_map = {r.id: r for r in sessions_rows}
 
-    # Get walk segment counts per session
-    walk_rows = (
-        await db.execute(
-            select(CardioSession.session_id, func.count(CardioSegment.id))
-            .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
-            .join(CardioActivityType, CardioActivityType.id == CardioSegment.activity_type_id)
-            .where(
-                CardioSession.session_id.in_(session_ids),
-                func.lower(CardioActivityType.name) == "walk",
-            )
-            .group_by(CardioSession.session_id)
+    # Use COALESCE so that sessions without per-segment activity types use the session-level type.
+    eff_at = func.coalesce(CardioSegment.activity_type_id, CardioSession.activity_type_id)
+    q_walk = (
+        select(CardioSession.session_id, func.count(CardioSegment.id))
+        .select_from(CardioSegment)
+        .join(CardioSession, CardioSession.id == CardioSegment.cardio_session_id)
+        .join(CardioActivityType, CardioActivityType.id == eff_at)
+        .where(
+            CardioSession.session_id.in_(session_ids),
+            func.lower(CardioActivityType.name) == "walk",
         )
-    ).all()
+        .group_by(CardioSession.session_id)
+    )
+    walk_rows = (await db.execute(q_walk)).all()
 
     walk_counts: dict[int, int] = {sid: count for sid, count in walk_rows}
 
@@ -357,6 +383,8 @@ async def cardio_walk_segments(
                 walk_segment_count=walk_counts.get(sid, 0),
             )
         )
+    if debug:
+        return _debug_wrap(result, _render_sql(q_sessions, q_walk))
     return result
 
 
@@ -366,26 +394,27 @@ async def cardio_walk_segments(
 async def cardio_distance_progression(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[DistanceProgressionPoint]:
-    rows = (
-        await db.execute(
-            select(
-                WorkoutSession.date,
-                CardioActivityType.name,
-                CardioSegment.distance_meters,
-            )
-            .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
-            .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
-            .join(CardioActivityType, CardioActivityType.id == CardioSegment.activity_type_id)
-            .where(
-                WorkoutSession.user_id == user,
-                CardioSegment.distance_meters.is_not(None),
-                CardioSegment.distance_meters > 0,
-                CardioSegment.activity_type_id.is_not(None),
-            )
-            .order_by(WorkoutSession.date)
+    debug: bool = Query(False),
+):
+    # Use COALESCE so sessions without per-segment activity types use the session-level type.
+    eff_at = func.coalesce(CardioSegment.activity_type_id, CardioSession.activity_type_id)
+    query = (
+        select(
+            WorkoutSession.date,
+            CardioActivityType.name,
+            CardioSegment.distance_meters,
         )
-    ).all()
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
+        .join(CardioActivityType, CardioActivityType.id == eff_at)
+        .where(
+            WorkoutSession.user_id == user,
+            CardioSegment.distance_meters.is_not(None),
+            CardioSegment.distance_meters > 0,
+        )
+        .order_by(WorkoutSession.date)
+    )
+    rows = (await db.execute(query)).all()
 
     if not rows:
         return []
@@ -435,6 +464,8 @@ async def cardio_distance_progression(
                 )
 
     result.sort(key=lambda x: (x.month_start, x.activity_type))
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
     return result
 
 
@@ -444,38 +475,35 @@ async def cardio_distance_progression(
 async def training_load(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[TrainingLoadWindow]:
+    debug: bool = Query(False),
+):
     today = DateType.today()
     current_monday = today - timedelta(days=today.weekday())
     # We need 8+1 weeks of data
     range_start = current_monday - timedelta(weeks=52)
     range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
 
+    q_cardio = (
+        select(WorkoutSession.date, CardioSession.total_duration_seconds)
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    q_cardio_dist = (
+        select(WorkoutSession.date, CardioSegment.distance_meters)
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    q_strength = (
+        select(WorkoutSession.date, StrengthSession.duration_seconds)
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+
     # Cardio: total duration + distance per week
-    cardio_rows = (
-        await db.execute(
-            select(WorkoutSession.date, CardioSession.total_duration_seconds)
-            .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
-            .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
-        )
-    ).all()
-
-    cardio_dist_rows = (
-        await db.execute(
-            select(WorkoutSession.date, CardioSegment.distance_meters)
-            .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
-            .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
-            .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
-        )
-    ).all()
-
-    strength_rows = (
-        await db.execute(
-            select(WorkoutSession.date, StrengthSession.duration_seconds)
-            .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
-            .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
-        )
-    ).all()
+    cardio_rows = (await db.execute(q_cardio)).all()
+    cardio_dist_rows = (await db.execute(q_cardio_dist)).all()
+    strength_rows = (await db.execute(q_strength)).all()
 
     def week_of(d: datetime) -> DateType:
         dd = d.date() if hasattr(d, "date") else d
@@ -514,10 +542,13 @@ async def training_load(
             )
         return points
 
-    return [
+    result = [
         TrainingLoadWindow(window=4, data=rolling(4)),
         TrainingLoadWindow(window=8, data=rolling(8)),
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(q_cardio, q_cardio_dist, q_strength))
+    return result
 
 
 # ── 1.9  Readiness trends ─────────────────────────────────────────────────────
@@ -526,14 +557,14 @@ async def training_load(
 async def readiness_trends(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[ReadinessTrendPoint]:
-    rows = (
-        await db.execute(
-            select(WorkoutSession.date, WorkoutSession.wellbeing, WorkoutSession.rpe)
-            .where(WorkoutSession.user_id == user)
-            .order_by(WorkoutSession.date)
-        )
-    ).all()
+    debug: bool = Query(False),
+):
+    query = (
+        select(WorkoutSession.date, WorkoutSession.wellbeing, WorkoutSession.rpe)
+        .where(WorkoutSession.user_id == user)
+        .order_by(WorkoutSession.date)
+    )
+    rows = (await db.execute(query)).all()
 
     def week_of(d: datetime) -> DateType:
         dd = d.date() if hasattr(d, "date") else d
@@ -551,7 +582,7 @@ async def readiness_trends(
 
     all_weeks = sorted(set(list(wellbeing_by_week.keys()) + list(rpe_by_week.keys())))
 
-    return [
+    result = [
         ReadinessTrendPoint(
             week_start=w,
             avg_wellbeing=round(sum(wellbeing_by_week[w]) / len(wellbeing_by_week[w]), 2)
@@ -563,6 +594,9 @@ async def readiness_trends(
         )
         for w in all_weeks
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
+    return result
 
 
 # ── 1.10 Readiness correlation ────────────────────────────────────────────────
@@ -571,20 +605,20 @@ async def readiness_trends(
 async def readiness_correlation(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[ReadinessCorrelationPoint]:
-    rows = (
-        await db.execute(
-            select(WorkoutSession.date, WorkoutSession.wellbeing, WorkoutSession.rpe, WorkoutSession.type)
-            .where(
-                WorkoutSession.user_id == user,
-                WorkoutSession.wellbeing.is_not(None),
-                WorkoutSession.rpe.is_not(None),
-            )
-            .order_by(WorkoutSession.date)
+    debug: bool = Query(False),
+):
+    query = (
+        select(WorkoutSession.date, WorkoutSession.wellbeing, WorkoutSession.rpe, WorkoutSession.type)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.wellbeing.is_not(None),
+            WorkoutSession.rpe.is_not(None),
         )
-    ).all()
+        .order_by(WorkoutSession.date)
+    )
+    rows = (await db.execute(query)).all()
 
-    return [
+    result = [
         ReadinessCorrelationPoint(
             date=(row_date.date() if hasattr(row_date, "date") else row_date),
             wellbeing=wellbeing,
@@ -593,6 +627,9 @@ async def readiness_correlation(
         )
         for row_date, wellbeing, rpe, session_type in rows
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
+    return result
 
 
 # ── 1.11 Heatmap ──────────────────────────────────────────────────────────────
@@ -601,25 +638,358 @@ async def readiness_correlation(
 async def heatmap(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[HeatmapDay]:
+    debug: bool = Query(False),
+):
     today = DateType.today()
     since = today - timedelta(days=364)
     since_dt = datetime(since.year, since.month, since.day, tzinfo=timezone.utc)
 
-    rows = (
-        await db.execute(
-            select(WorkoutSession.date, WorkoutSession.type)
-            .where(WorkoutSession.user_id == user, WorkoutSession.date >= since_dt)
-            .order_by(WorkoutSession.date)
-        )
-    ).all()
+    query = (
+        select(WorkoutSession.date, WorkoutSession.type)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= since_dt)
+        .order_by(WorkoutSession.date)
+    )
+    rows = (await db.execute(query)).all()
 
     by_date: dict[DateType, set[str]] = defaultdict(set)
     for row_date, session_type in rows:
         d = row_date.date() if hasattr(row_date, "date") else row_date
         by_date[d].add(session_type)
 
-    return [
+    result = [
         HeatmapDay(date=d, session_types=sorted(types))
         for d, types in sorted(by_date.items())
     ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
+    return result
+
+
+# ── 2.1  Overview trends ──────────────────────────────────────────────────────
+
+@router.get("/overview-trends", response_model=list[OverviewTrendsPoint])
+async def overview_trends(
+    weeks: int = Query(12, ge=1, le=52),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    debug: bool = Query(False),
+):
+    today = DateType.today()
+    current_monday = today - timedelta(days=today.weekday())
+    range_start = current_monday - timedelta(weeks=weeks)
+    range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
+
+    q_sessions = (
+        select(WorkoutSession.date)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    q_strength_dur = (
+        select(WorkoutSession.date, StrengthSession.duration_seconds)
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    q_cardio_dur = (
+        select(WorkoutSession.date, CardioSession.total_duration_seconds)
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    q_volume = (
+        select(WorkoutSession.date, StrengthSet.weight, StrengthSet.reps)
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+        .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.date >= range_start_dt,
+            StrengthSet.weight.is_not(None),
+            StrengthSet.reps.is_not(None),
+        )
+    )
+
+    session_dates = (await db.execute(q_sessions)).scalars().all()
+    strength_dur_rows = (await db.execute(q_strength_dur)).all()
+    cardio_dur_rows = (await db.execute(q_cardio_dur)).all()
+    volume_rows = (await db.execute(q_volume)).all()
+
+    def week_of(d: datetime) -> DateType:
+        dd = d.date() if hasattr(d, "date") else d
+        return dd - timedelta(days=dd.weekday())
+
+    count_by_week: dict[DateType, int] = defaultdict(int)
+    for row_date in session_dates:
+        count_by_week[week_of(row_date)] += 1
+
+    secs_by_week: dict[DateType, int] = defaultdict(int)
+    for row_date, dur in strength_dur_rows:
+        secs_by_week[week_of(row_date)] += dur or 0
+    for row_date, dur in cardio_dur_rows:
+        secs_by_week[week_of(row_date)] += dur or 0
+
+    vol_by_week: dict[DateType, float] = defaultdict(float)
+    for row_date, weight, reps in volume_rows:
+        vol_by_week[week_of(row_date)] += weight * reps
+
+    # All weeks in range (range_start through current_monday inclusive)
+    all_weeks: set[DateType] = set()
+    w = range_start
+    while w <= current_monday:
+        all_weeks.add(w)
+        w += timedelta(weeks=1)
+
+    result = [
+        OverviewTrendsPoint(
+            week_start=w,
+            session_count=count_by_week.get(w, 0),
+            total_minutes=secs_by_week.get(w, 0) // 60,
+            total_volume=round(vol_by_week.get(w, 0.0), 2),
+        )
+        for w in sorted(all_weeks)
+    ]
+    if debug:
+        return _debug_wrap(result, _render_sql(q_sessions, q_strength_dur, q_cardio_dur, q_volume))
+    return result
+
+
+# ── 2.2  Weekly exercises by type ─────────────────────────────────────────────
+
+@router.get("/strength/exercises-by-type", response_model=list[ExercisesByTypePoint])
+async def strength_exercises_by_type(
+    weeks: int = Query(12, ge=1, le=52),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    debug: bool = Query(False),
+):
+    today = DateType.today()
+    current_monday = today - timedelta(days=today.weekday())
+    range_start = current_monday - timedelta(weeks=weeks)
+    range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
+
+    query = (
+        select(
+            WorkoutSession.date,
+            ExerciseType.name,
+            StrengthExerciseEntry.exercise_id,
+        )
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+        .join(exercise_exercise_types, exercise_exercise_types.c.exercise_id == StrengthExerciseEntry.exercise_id)
+        .join(ExerciseType, ExerciseType.id == exercise_exercise_types.c.exercise_type_id)
+        .where(
+            WorkoutSession.user_id == user,
+            WorkoutSession.date >= range_start_dt,
+        )
+    )
+    rows = (await db.execute(query)).all()
+
+    def week_of(d: datetime) -> DateType:
+        dd = d.date() if hasattr(d, "date") else d
+        return dd - timedelta(days=dd.weekday())
+
+    by_week_tag: dict[tuple[DateType, str], set[int]] = defaultdict(set)
+    for row_date, tag_name, exercise_id in rows:
+        by_week_tag[(week_of(row_date), tag_name)].add(exercise_id)
+
+    result = [
+        ExercisesByTypePoint(week_start=w, muscle_group_tag=tag, exercise_count=len(ex_ids))
+        for (w, tag), ex_ids in sorted(by_week_tag.items())
+    ]
+    if debug:
+        return _debug_wrap(result, _render_sql(query))
+    return result
+
+
+# ── 2.4  Plan adherence trends ────────────────────────────────────────────────
+
+@router.get("/plan-adherence", response_model=list[PlanAdherencePoint])
+async def plan_adherence(
+    weeks: int = Query(12, ge=1, le=52),
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    debug: bool = Query(False),
+):
+    from app.models.plan import PlannedCardioSegment, PlannedSession, WeeklyPlan
+    from app.models.template import StrengthTemplateExercise, StrengthTemplateSet
+
+    today = DateType.today()
+    current_monday = today - timedelta(days=today.weekday())
+    # Only include fully complete past weeks (exclude current in-progress week)
+    range_start = current_monday - timedelta(weeks=weeks)
+    range_start_dt = datetime(range_start.year, range_start.month, range_start.day, tzinfo=timezone.utc)
+
+    # Load all planned sessions for the range with aggregated planned cardio totals
+    q_planned = (
+        select(
+            WeeklyPlan.week_start,
+            PlannedSession.id,
+            PlannedSession.planned_date,
+            PlannedSession.session_type,
+            PlannedSession.template_id,
+            PlannedSession.activity_type_id,
+            func.coalesce(func.sum(PlannedCardioSegment.distance_metres), 0).label("planned_dist_m"),
+            func.coalesce(func.sum(PlannedCardioSegment.duration_secs), 0).label("planned_dur_s"),
+        )
+        .join(PlannedSession, PlannedSession.plan_id == WeeklyPlan.id)
+        .outerjoin(PlannedCardioSegment, PlannedCardioSegment.planned_session_id == PlannedSession.id)
+        .where(
+            WeeklyPlan.user_id == user,
+            WeeklyPlan.week_start >= range_start,
+            WeeklyPlan.week_start < current_monday,
+        )
+        .group_by(WeeklyPlan.week_start, PlannedSession.id)
+    )
+    planned_rows = (await db.execute(q_planned)).all()
+
+    # Load template volumes for all planned strength sessions
+    template_ids = list({row.template_id for row in planned_rows if row.session_type == "strength" and row.template_id is not None})
+    tmpl_vol: dict[int, float] = defaultdict(float)
+    if template_ids:
+        q_tmpl = (
+            select(
+                StrengthTemplateExercise.template_id,
+                StrengthTemplateSet.weight_kg,
+                StrengthTemplateSet.reps,
+            )
+            .join(StrengthTemplateSet, StrengthTemplateSet.exercise_entry_id == StrengthTemplateExercise.id)
+            .where(
+                StrengthTemplateExercise.template_id.in_(template_ids),
+                StrengthTemplateSet.weight_kg.is_not(None),
+                StrengthTemplateSet.reps.is_not(None),
+            )
+        )
+        for tmpl_id, w_kg, reps in (await db.execute(q_tmpl)).all():
+            tmpl_vol[tmpl_id] += w_kg * reps
+
+    # Batch-load logged strength sessions in range: (date, template_id) -> ws_id
+    q_logged_str = (
+        select(WorkoutSession.date, WorkoutSession.id, StrengthSession.template_id)
+        .join(StrengthSession, StrengthSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    str_done: dict[tuple[DateType, int], int] = {}
+    for row_date, ws_id, tmpl_id in (await db.execute(q_logged_str)).all():
+        d = row_date.date() if hasattr(row_date, "date") else row_date
+        if tmpl_id is not None:
+            str_done[(d, tmpl_id)] = ws_id
+
+    # Batch-load logged cardio sessions in range: (date, activity_type_id) -> ws_id
+    q_logged_cardio = (
+        select(WorkoutSession.date, WorkoutSession.id, CardioSession.activity_type_id)
+        .join(CardioSession, CardioSession.session_id == WorkoutSession.id)
+        .where(WorkoutSession.user_id == user, WorkoutSession.date >= range_start_dt)
+    )
+    cardio_done: dict[tuple[DateType, int], int] = {}
+    for row_date, ws_id, at_id in (await db.execute(q_logged_cardio)).all():
+        d = row_date.date() if hasattr(row_date, "date") else row_date
+        if at_id is not None:
+            cardio_done[(d, at_id)] = ws_id
+
+    # Determine matched ws_ids
+    matched_str_ws_ids: set[int] = set()
+    matched_cardio_ws_ids: set[int] = set()
+    for row in planned_rows:
+        pd = row.planned_date
+        if row.session_type == "strength" and row.template_id is not None:
+            ws_id = str_done.get((pd, row.template_id))
+            if ws_id:
+                matched_str_ws_ids.add(ws_id)
+        elif row.session_type == "cardio" and row.activity_type_id is not None:
+            ws_id = cardio_done.get((pd, row.activity_type_id))
+            if ws_id:
+                matched_cardio_ws_ids.add(ws_id)
+
+    # Load actual strength volumes for matched sessions
+    actual_str_vol_by_ws: dict[int, float] = defaultdict(float)
+    if matched_str_ws_ids:
+        q_actual_str = (
+            select(StrengthSession.session_id, StrengthSet.weight, StrengthSet.reps)
+            .join(StrengthExerciseEntry, StrengthExerciseEntry.strength_session_id == StrengthSession.id)
+            .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
+            .where(
+                StrengthSession.session_id.in_(matched_str_ws_ids),
+                StrengthSet.weight.is_not(None),
+                StrengthSet.reps.is_not(None),
+            )
+        )
+        for ws_id, w, r in (await db.execute(q_actual_str)).all():
+            actual_str_vol_by_ws[ws_id] += w * r
+
+    # Load actual cardio distances for matched sessions
+    actual_cardio_dist_by_ws: dict[int, float] = defaultdict(float)
+    if matched_cardio_ws_ids:
+        q_actual_cardio = (
+            select(CardioSession.session_id, func.sum(CardioSegment.distance_meters))
+            .join(CardioSegment, CardioSegment.cardio_session_id == CardioSession.id)
+            .where(
+                CardioSession.session_id.in_(matched_cardio_ws_ids),
+                CardioSegment.distance_meters.is_not(None),
+            )
+            .group_by(CardioSession.session_id)
+        )
+        for ws_id, total_dist in (await db.execute(q_actual_cardio)).all():
+            actual_cardio_dist_by_ws[ws_id] = total_dist or 0.0
+
+    # Aggregate per week
+    by_week: dict[DateType, dict] = {
+        range_start + timedelta(weeks=i): {
+            "done": 0, "skipped": 0,
+            "planned_str_vol": 0.0, "actual_str_vol": 0.0,
+            "planned_cardio_dist_m": 0.0, "actual_cardio_dist_m": 0.0,
+        }
+        for i in range(weeks)
+    }
+
+    for row in planned_rows:
+        ws = row.week_start
+        if ws not in by_week:
+            continue
+        pd = row.planned_date
+        ws_id = None
+        if row.session_type == "strength" and row.template_id is not None:
+            ws_id = str_done.get((pd, row.template_id))
+        elif row.session_type == "cardio" and row.activity_type_id is not None:
+            ws_id = cardio_done.get((pd, row.activity_type_id))
+
+        if ws_id is not None:
+            status = "done"
+        elif pd >= today:
+            status = "planned"
+        else:
+            status = "skipped"
+
+        if status == "done":
+            by_week[ws]["done"] += 1
+        elif status == "skipped":
+            by_week[ws]["skipped"] += 1
+
+        # Planned totals (all sessions regardless of status)
+        if row.session_type == "strength" and row.template_id is not None:
+            by_week[ws]["planned_str_vol"] += tmpl_vol.get(row.template_id, 0.0)
+        elif row.session_type == "cardio":
+            by_week[ws]["planned_cardio_dist_m"] += row.planned_dist_m or 0.0
+
+        # Actual totals (done sessions only)
+        if ws_id is not None:
+            if row.session_type == "strength":
+                by_week[ws]["actual_str_vol"] += actual_str_vol_by_ws.get(ws_id, 0.0)
+            elif row.session_type == "cardio":
+                by_week[ws]["actual_cardio_dist_m"] += actual_cardio_dist_by_ws.get(ws_id, 0.0)
+
+    result = []
+    for w_start in sorted(by_week.keys()):
+        d = by_week[w_start]
+        total = d["done"] + d["skipped"]
+        completion_pct = round(d["done"] / total * 100, 1) if total > 0 else None
+
+        has_str = d["planned_str_vol"] > 0
+        has_cardio = d["planned_cardio_dist_m"] > 0
+
+        result.append(PlanAdherencePoint(
+            week_start=w_start,
+            completion_pct=completion_pct,
+            strength_volume_delta=round(d["actual_str_vol"] - d["planned_str_vol"], 2) if has_str else None,
+            cardio_distance_delta=round((d["actual_cardio_dist_m"] - d["planned_cardio_dist_m"]) / 1000, 3) if has_cardio else None,
+        ))
+
+    if debug:
+        return _debug_wrap(result, _render_sql(q_planned, q_logged_str, q_logged_cardio))
+    return result

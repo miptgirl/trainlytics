@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -7,6 +9,7 @@ from app.api import auth as auth_module
 from app.api import cardio_types as cardio_types_module
 from app.api import exercise_types as exercise_types_module
 from app.api import exercises as exercises_module
+from app.api import plan_summary as plan_summary_module
 from app.api import plans as plans_module
 from app.api import profile as profile_module
 from app.api import sessions as sessions_module
@@ -31,9 +34,14 @@ app.include_router(cardio_types_module.router, prefix="/api")
 app.include_router(sessions_module.router, prefix="/api")
 app.include_router(steps_module.router, prefix="/api")
 app.include_router(templates_module.router, prefix="/api")
+app.include_router(plan_summary_module.router, prefix="/api")
 app.include_router(plans_module.router, prefix="/api")
 app.include_router(profile_module.router, prefix="/api")
 app.include_router(ai_module.router, prefix="/api")
+
+if os.environ.get("DEBUG_SQL_ENABLED") == "true":
+    from app.api import debug as debug_module
+    app.include_router(debug_module.router, prefix="/api")
 
 
 @app.get("/api/health")

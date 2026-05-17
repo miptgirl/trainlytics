@@ -474,3 +474,66 @@ async def test_copy_from_empty_last_week_returns_empty_plan(db_session, auth_cli
     )
     assert resp.status_code == 200
     assert resp.json()["sessions"] == []
+
+
+# ── Phase 12: plan weekly-summary ─────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_plan_weekly_summary_empty_week(db_session, auth_client: AsyncClient):
+    """A week with no planned sessions returns zero totals for all metrics."""
+    resp = await auth_client.get(f"/api/plan/weekly-summary?week_start={THIS_MONDAY.isoformat()}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["planned"]["cardio_distance_km"] == 0.0
+    assert data["planned"]["cardio_duration_min"] == 0.0
+    assert data["planned"]["strength_exercise_count"] == 0
+    assert data["planned"]["strength_volume_kg_reps"] == 0.0
+    assert data["actual"]["cardio_distance_km"] == 0.0
+    assert data["actual"]["strength_volume_kg_reps"] == 0.0
+
+
+@pytest.mark.asyncio
+async def test_plan_weekly_summary_mixed(db_session, auth_client: AsyncClient):
+    """A week with a planned cardio session that's been logged shows non-zero planned and actual."""
+    at_id = await _create_cardio_type(auth_client, "Run")
+
+    # Create the plan and add a planned cardio session for THIS_MONDAY
+    await auth_client.get(f"/api/plans/{THIS_MONDAY.isoformat()}")
+    plan_sess_resp = await auth_client.post(
+        f"/api/plans/{THIS_MONDAY.isoformat()}/sessions",
+        json=_cardio_body(
+            THIS_MONDAY,
+            at_id,
+            segments=[{"segment_order": 1, "distance_metres": 5000, "duration_secs": 1800}],
+        ),
+    )
+    assert plan_sess_resp.status_code == 201
+
+    # Log a matching cardio session: same date + activity type; set total_duration_seconds explicitly
+    log_resp = await auth_client.post(
+        "/api/sessions/cardio",
+        json={
+            "date": f"{THIS_MONDAY.isoformat()}T08:00:00Z",
+            "activity_type_id": at_id,
+            "total_duration_seconds": 1800,
+            "segments": [
+                {
+                    "order": 1,
+                    "duration_seconds": 1800,
+                    "distance_meters": 5000.0,
+                    "activity_type_id": at_id,
+                }
+            ],
+        },
+    )
+    assert log_resp.status_code == 201
+
+    resp = await auth_client.get(f"/api/plan/weekly-summary?week_start={THIS_MONDAY.isoformat()}")
+    assert resp.status_code == 200
+    data = resp.json()
+
+    assert data["planned"]["cardio_distance_km"] == pytest.approx(5.0)
+    assert data["planned"]["cardio_duration_min"] == pytest.approx(30.0)
+    # Actual from the logged session
+    assert data["actual"]["cardio_distance_km"] == pytest.approx(5.0)
+    assert data["actual"]["cardio_duration_min"] == pytest.approx(30.0)
