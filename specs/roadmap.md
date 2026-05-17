@@ -243,25 +243,32 @@ A user can open the Analytics tab and see: their all-time training summary at a 
 
 ---
 
-## Phase 11 — Planning & Weekly Overview *(deferred)*
+## ✅ Phase 11 — Planning & Weekly Overview *(completed)*
 
 **Goal:** A user can plan their training week in advance and log against that plan.
 
-> Deferred in favour of user-feedback–driven phases (5–9). No active work scheduled.
-
 ### Deliverables
 
-- [ ] **Weekly training plan** — build a week-by-week plan by assigning workout templates (or ad-hoc sessions) to days
-- [ ] **Planned vs. completed view** — see which workouts were done, skipped, or modified vs. the plan
-- [ ] **Weekly overview** — summary card showing the week at a glance (volume, completion rate)
+- [x] **Weekly training plan** — `/plan` tab in the nav bar; build a week by adding strength sessions (choose a template) or cardio sessions (choose activity type + one or more distance/duration segments); Mon–Sun grid with `←` / `→` week navigation
+- [x] **Planned vs. completed view** — each planned session shows a live-computed status: **Planned** (future, no log), **Done** (matched log found for that day), or **Skipped** (past day, no match); strength matched by template, cardio matched by activity type
+- [x] **Weekly overview** — summary card at the top of the Plan tab: Planned / Done / Skipped counts and a completion % bar (Done ÷ (Done + Skipped); Planned sessions excluded from the denominator)
+- [x] **Skip notes** — on a Skipped card, add or edit a free-text reason (e.g. "knee pain"); note is shown on the card and cleared automatically on copy-from-last-week
+- [x] **Copy from last week** — one-tap button clones all sessions from the previous week with dates shifted +7 days and skip notes stripped; returns a conflict error if the target week already has sessions
+- [x] **Start session from plan** — "Start" button on today's Planned cards pre-fills the log form: strength opens `/log?type=strength&templateId=…`; cardio opens `/log?type=cardio&plannedSessionId=…` with all segments (distance, duration, pace) pre-filled; a three-way prompt appears if a draft already exists
+- [x] **Reschedule** — modal shows the Mon–Sun days of the current week with past days disabled; moving the session updates its `planned_date`
+- [x] **Swap / Edit** — Skipped cards show "Swap" (opens the plan form pre-filled so the user can change the session type or segments); Planned cards show "Edit"; inline delete with a Yes/No confirmation prompt
+- [x] **AI Cardio Adapt modal** *(from Phase 11 backlog)* — "Adapt this session" button appears in the cardio log form when the logged activity type matches a today-planned cardio session; user describes a complaint; `POST /ai/adapt-cardio-session` sends the planned session structure + cardio history; suggestions rendered as markdown
 
-### Backlog (to pick up alongside Phase 11)
+### Technical notes
 
-- **Adaptive session helper for cardio** — the "Adapt this session" AI helper (introduced in Phase 9 for strength) is deferred for cardio until the planning layer is in place; adapting a cardio session is most useful when the user has a planned target to modify against (e.g. shorten a planned 10 km run)
+- Three new tables: `weekly_plans`, `planned_sessions`, `planned_cardio_segments`; `week_start` enforced as a Monday (400 otherwise); plan auto-created on first `GET`
+- Activity type lives at session level (`planned_sessions.activity_type_id`), matching the logging model — not per segment
+- `toLocalDateStr()` helper in `dateUtils.ts` replaces all `toISOString().split('T')[0]` calls throughout the app to prevent UTC date-shift for UTC+ users
+- Cardio plan card titles auto-generated as "Run – 8 km" or "Run – 45 min" from aggregated segment distance / duration when no explicit title is set
 
 ### Definition of Done
 
-A user can build a training week, log sessions against it, and see at a glance how the week went.
+A user can open the Plan tab, build a week's plan with strength and cardio sessions, navigate prev/next weeks, and see planned sessions flip to Done when a matching session is logged — or to Skipped when a day passes with no log. They can annotate skipped sessions with a reason, copy last week's plan in one tap, and — when logging a cardio session that matches today's plan — tap "Adapt this session" to get AI-powered modification suggestions. ✅ **Achieved.**
 
 ---
 
