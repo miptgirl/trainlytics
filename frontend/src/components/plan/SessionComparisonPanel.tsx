@@ -157,10 +157,20 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
             <StrengthCols />
             <tbody>
               <tr className="font-semibold text-slate-700">
-                <td className="w-auto">Total volume</td>
+                <td>Total volume</td>
                 <td className="text-right tabular-nums">{fmtVol(totalPlannedSets, s.planned_total_volume)}</td>
                 <td className="text-right tabular-nums">{fmtVol(totalActualSets,  s.actual_total_volume)}</td>
                 <DiffCell planned={s.planned_total_volume} actual={s.actual_total_volume} />
+              </tr>
+              <tr className="text-slate-500">
+                <td className="pt-0.5">Total exercises</td>
+                <td className="text-right pt-0.5 tabular-nums">
+                  {s.exercises.filter(e => e.source !== 'actual_only').length}
+                </td>
+                <td className="text-right pt-0.5 tabular-nums">
+                  {s.exercises.filter(e => e.source !== 'planned_only').length}
+                </td>
+                <td />
               </tr>
             </tbody>
           </table>
