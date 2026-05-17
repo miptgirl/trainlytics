@@ -12,9 +12,9 @@
 | Plan edit: update `template_version` when template changes | ✅ Done |
 | Copy-from-last-week: carry current version | ✅ Done |
 | Comparison endpoint + schemas | ✅ Done |
-| `useSessionComparison` hook + TypeScript types | ⬜ Not started |
-| `SessionComparisonPanel` component | ⬜ Not started |
-| `PlannedSessionCard` toggle + panel integration | ⬜ Not started |
+| `useSessionComparison` hook + TypeScript types | ✅ Done |
+| `SessionComparisonPanel` component | ✅ Done |
+| `PlannedSessionCard` toggle + panel integration | ✅ Done |
 | Tests | ⬜ Not started |
 
 ---

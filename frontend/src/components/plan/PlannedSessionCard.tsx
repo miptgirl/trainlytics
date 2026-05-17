@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { type PlannedSessionOut, useDeletePlannedSession } from '../../lib/planApi'
 import { SkipNoteModal } from './SkipNoteModal'
 import { RescheduleModal } from './RescheduleModal'
+import { SessionComparisonPanel } from './SessionComparisonPanel'
 
 interface PlannedSessionCardProps {
   session: PlannedSessionOut
@@ -74,6 +75,7 @@ export function PlannedSessionCard({
   const [showSkipNoteModal, setShowSkipNoteModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [comparisonOpen, setComparisonOpen] = useState(false)
   const deleteMutation = useDeletePlannedSession()
 
   const activityTypeName =
@@ -149,6 +151,14 @@ export function PlannedSessionCard({
             >
               View session →
             </Link>
+          )}
+          {session.status === 'done' && (
+            <button
+              onClick={() => setComparisonOpen(v => !v)}
+              className="text-xs text-slate-500 hover:text-slate-700 font-medium"
+            >
+              {comparisonOpen ? '▾' : '▸'} Compare planned vs. actual
+            </button>
           )}
 
           {session.status !== 'done' && (
@@ -264,6 +274,15 @@ export function PlannedSessionCard({
             </>
           )}
         </div>
+
+        {comparisonOpen && (
+          <div className="mt-2 pt-2 border-t border-slate-100">
+            <SessionComparisonPanel
+              plannedSessionId={session.id}
+              sessionType={session.session_type as 'cardio' | 'strength'}
+            />
+          </div>
+        )}
       </div>
 
       {showSkipNoteModal && (

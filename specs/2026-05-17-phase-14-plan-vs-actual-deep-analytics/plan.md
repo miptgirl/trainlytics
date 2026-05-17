@@ -7,7 +7,7 @@
 | Group 1 — DB Migration & History Models | ✅ Complete | Migration 0013, models, _write_template_history helper |
 | Group 2 — Template Versioning Logic | ✅ Complete | _write_template_history async; wired into create/update/plan endpoints |
 | Group 3 — Backend: Comparison Endpoint & Schemas | ✅ Complete | Schemas in plan.py; GET /plan/sessions/{id}/comparison in plan_summary.py |
-| Group 4 — Frontend: Comparison Panel & Card Update | ⬜ Not started | |
+| Group 4 — Frontend: Comparison Panel & Card Update | ✅ Complete | Types + hook in planApi.ts; SessionComparisonPanel.tsx; toggle in PlannedSessionCard.tsx |
 | Group 5 — Tests & Cleanup | ⬜ Not started | |
 
 ---
