@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -86,11 +86,10 @@ async def plan_weekly_summary(
             WorkoutSession.date < ws_end_dt,
         )
     )
-    str_done: dict[tuple[date, int], int] = {}
+    str_done: dict[tuple[date, int | None], int] = {}
     for row_date, ws_id, tmpl_id in (await db.execute(q_logged_str)).all():
         d = row_date.date() if hasattr(row_date, "date") else row_date
-        if tmpl_id is not None:
-            str_done[(d, tmpl_id)] = ws_id
+        str_done[(d, tmpl_id)] = ws_id
 
     q_logged_cardio = (
         select(WorkoutSession.date, WorkoutSession.id, CardioSession.activity_type_id)
@@ -113,7 +112,7 @@ async def plan_weekly_summary(
     for ps in plan.sessions:
         pd = ps.planned_date
         if ps.session_type == "strength" and ps.template_id is not None:
-            ws_id = str_done.get((pd, ps.template_id))
+            ws_id = str_done.get((pd, ps.template_id)) or str_done.get((pd, None))
             if ws_id:
                 matched_str_ws_ids.append(ws_id)
         elif ps.session_type == "cardio" and ps.activity_type_id is not None:
@@ -270,7 +269,10 @@ async def session_comparison(
                 WorkoutSession.type == "strength",
                 WorkoutSession.date >= day_start,
                 WorkoutSession.date < day_end,
-                StrengthSession.template_id == ps.template_id,
+                or_(
+                    StrengthSession.template_id == ps.template_id,
+                    StrengthSession.template_id.is_(None),
+                ),
             )
         )
 

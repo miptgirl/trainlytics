@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -73,7 +73,10 @@ async def _compute_status(
                 WorkoutSession.type == "strength",
                 WorkoutSession.date >= day_start,
                 WorkoutSession.date < day_end,
-                StrengthSession.template_id == session.template_id,
+                or_(
+                    StrengthSession.template_id == session.template_id,
+                    StrengthSession.template_id.is_(None),
+                ),
             )
         )
         match = result.scalar_one_or_none()
