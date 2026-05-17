@@ -135,3 +135,21 @@ async def test_patch_ai_provider(db_session, auth_client: AsyncClient):
     resp = await auth_client.patch("/api/profile", json={"ai_provider": "openai"})
     assert resp.status_code == 200
     assert resp.json()["ai_provider"] == "openai"
+
+
+@pytest.mark.anyio
+async def test_migration_wipes_keys(db_session, auth_client: AsyncClient):
+    """Old per-provider key column names are not exposed and old-style fields are ignored."""
+    # Unknown field names from the old schema are silently ignored
+    resp = await auth_client.patch("/api/profile", json={"anthropic_api_key": "sk-old"})
+    assert resp.status_code == 200
+    data = resp.json()
+    # Old-style field had no effect — key is still not configured
+    assert data["ai_key_configured"] is False
+
+    # Raw column names never appear in the GET response
+    resp = await auth_client.get("/api/profile")
+    data = resp.json()
+    assert "anthropic_api_key_encrypted" not in data
+    assert "openai_api_key_encrypted" not in data
+    assert "ai_key_encrypted" not in data
