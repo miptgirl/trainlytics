@@ -9,7 +9,7 @@
 | Session detail: HR zone donut | ✅ Done |
 | History list: avg HR badge | ✅ Done |
 | Analytics hr-zone-trends endpoint | ✅ Done |
-| Analytics HR zone trends chart (frontend) | ⬜ Not started |
+| Analytics HR zone trends chart (frontend) | ✅ Done |
 | Tests & cleanup | ⬜ Not started |
 
 ---
