@@ -10,7 +10,7 @@
 | Navigation Revamp | ⬜ Not started |
 | Analytics UX Reorganization | ⬜ Not started |
 | Plan vs. Actual Card | ⬜ Not started |
-| API Key Simplification | ⬜ Not started |
+| API Key Simplification | ✅ Complete — migration 0011 adds ai_key_encrypted; old columns wiped; PATCH /profile accepts {ai_provider, ai_key}; GET returns {ai_provider, ai_key_configured} |
 | SQL Executor (Profile Debug) | ⬜ Not started |
 
 ---

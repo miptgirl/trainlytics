@@ -4,7 +4,9 @@
       "Bash(python -m pytest tests/test_analytics.py -v)",
       "Bash(python3 -m pytest tests/test_analytics.py -v)",
       "Bash(python -m pytest tests/test_analytics.py -q)",
-      "Bash(python3 -m pytest tests/test_analytics.py -q)"
+      "Bash(python3 -m pytest tests/test_analytics.py -q)",
+      "Bash(.venv/bin/pytest tests/test_profile.py -v)",
+      "Bash(.venv/bin/pytest -v)"
     ]
   }
 }

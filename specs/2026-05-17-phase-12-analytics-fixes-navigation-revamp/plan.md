@@ -6,7 +6,7 @@
 |---|---|---|
 | Group 1 — Analytics Bug Fixes + SQL Debug | ✅ Complete | All 3 SQL bugs fixed; debug=true on all /analytics/* endpoints; 18 tests pass |
 | Group 2 — New Analytics Backend Endpoints | ✅ Complete | 4 endpoints added; all existing tests pass |
-| Group 3 — API Key Simplification | ⬜ Not started | |
+| Group 3 — API Key Simplification | ✅ Complete | ai_key_encrypted column added; old columns wiped; single ai_key field in API; 14 tests pass |
 | Group 4 — Navigation Revamp | ⬜ Not started | |
 | Group 5 — Analytics UX Reorganization | ⬜ Not started | Depends on Groups 2 + 4 |
 | Group 6 — Plan vs. Actual Card | ⬜ Not started | Depends on Group 2.3 |

@@ -18,8 +18,7 @@ async def test_get_profile_no_row(db_session, auth_client: AsyncClient):
     assert data["goals"] == []
     assert data["injury_notes"] is None
     assert data["coach_notes"] is None
-    assert data["has_anthropic_key"] is False
-    assert data["has_openai_key"] is False
+    assert data["ai_key_configured"] is False
     assert data["ai_provider"] is None
 
 
@@ -29,7 +28,6 @@ async def test_patch_display_name(db_session, auth_client: AsyncClient):
     assert resp.status_code == 200
     assert resp.json()["display_name"] == "Marie"
 
-    # Verify persistence
     resp2 = await auth_client.get("/api/profile")
     assert resp2.json()["display_name"] == "Marie"
 
@@ -63,7 +61,6 @@ async def test_patch_goals_add_and_remove(db_session, auth_client: AsyncClient):
     assert len(returned) == 2
     assert returned[0]["text"] == "Run a 5K"
 
-    # Remove one goal (full-array replacement)
     resp2 = await auth_client.patch("/api/profile", json={"goals": [goals[0]]})
     assert len(resp2.json()["goals"]) == 1
 
@@ -89,62 +86,48 @@ async def test_patch_coach_notes(db_session, auth_client: AsyncClient):
 
 
 @pytest.mark.anyio
-async def test_patch_anthropic_key(db_session, auth_client: AsyncClient):
-    resp = await auth_client.patch("/api/profile", json={"anthropic_api_key": "sk-ant-test"})
+async def test_patch_ai_key(db_session, auth_client: AsyncClient):
+    resp = await auth_client.patch("/api/profile", json={"ai_provider": "anthropic", "ai_key": "sk-ant-test"})
     assert resp.status_code == 200
     data = resp.json()
-    assert data["has_anthropic_key"] is True
+    assert data["ai_key_configured"] is True
+    assert data["ai_provider"] == "anthropic"
     # Raw key must not be returned
-    assert "anthropic_api_key" not in data
-    assert "anthropic_api_key_encrypted" not in data
+    assert "ai_key" not in data
+    assert "ai_key_encrypted" not in data
 
 
 @pytest.mark.anyio
-async def test_patch_openai_key(db_session, auth_client: AsyncClient):
-    resp = await auth_client.patch("/api/profile", json={"openai_api_key": "sk-openai-test"})
+async def test_patch_ai_key_openai(db_session, auth_client: AsyncClient):
+    resp = await auth_client.patch("/api/profile", json={"ai_provider": "openai", "ai_key": "sk-openai-test"})
     assert resp.status_code == 200
     data = resp.json()
-    assert data["has_openai_key"] is True
-    assert "openai_api_key" not in data
+    assert data["ai_key_configured"] is True
+    assert data["ai_provider"] == "openai"
 
 
 @pytest.mark.anyio
-async def test_neither_key_returned_in_get(db_session, auth_client: AsyncClient):
-    await auth_client.patch("/api/profile", json={"anthropic_api_key": "sk-ant", "openai_api_key": "sk-oai"})
+async def test_patch_ai_provider_invalid(db_session, auth_client: AsyncClient):
+    resp = await auth_client.patch("/api/profile", json={"ai_provider": "gemini"})
+    assert resp.status_code == 422
+
+
+@pytest.mark.anyio
+async def test_raw_key_not_returned_in_get(db_session, auth_client: AsyncClient):
+    await auth_client.patch("/api/profile", json={"ai_provider": "anthropic", "ai_key": "sk-ant"})
     resp = await auth_client.get("/api/profile")
     data = resp.json()
-    assert "anthropic_api_key" not in data
-    assert "openai_api_key" not in data
-    assert "anthropic_api_key_encrypted" not in data
-    assert data["has_anthropic_key"] is True
-    assert data["has_openai_key"] is True
+    assert "ai_key" not in data
+    assert "ai_key_encrypted" not in data
+    assert data["ai_key_configured"] is True
 
 
 @pytest.mark.anyio
-async def test_clear_anthropic_key(db_session, auth_client: AsyncClient):
-    await auth_client.patch("/api/profile", json={"anthropic_api_key": "sk-ant"})
-    resp = await auth_client.patch("/api/profile", json={"anthropic_api_key": None})
+async def test_clear_ai_key(db_session, auth_client: AsyncClient):
+    await auth_client.patch("/api/profile", json={"ai_key": "sk-ant"})
+    resp = await auth_client.patch("/api/profile", json={"ai_key": None})
     assert resp.status_code == 200
-    assert resp.json()["has_anthropic_key"] is False
-
-
-@pytest.mark.anyio
-async def test_clear_openai_key(db_session, auth_client: AsyncClient):
-    await auth_client.patch("/api/profile", json={"openai_api_key": "sk-oai"})
-    resp = await auth_client.patch("/api/profile", json={"openai_api_key": None})
-    assert resp.status_code == 200
-    assert resp.json()["has_openai_key"] is False
-
-
-@pytest.mark.anyio
-async def test_clear_keys_independently(db_session, auth_client: AsyncClient):
-    """Clearing one key does not affect the other."""
-    await auth_client.patch("/api/profile", json={"anthropic_api_key": "sk-ant", "openai_api_key": "sk-oai"})
-    await auth_client.patch("/api/profile", json={"anthropic_api_key": None})
-    resp = await auth_client.get("/api/profile")
-    data = resp.json()
-    assert data["has_anthropic_key"] is False
-    assert data["has_openai_key"] is True
+    assert resp.json()["ai_key_configured"] is False
 
 
 @pytest.mark.anyio
