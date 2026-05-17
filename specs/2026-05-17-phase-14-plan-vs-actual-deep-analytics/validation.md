@@ -11,7 +11,7 @@
 | Plan create (strength): store `template_version` | ✅ Done |
 | Plan edit: update `template_version` when template changes | ✅ Done |
 | Copy-from-last-week: carry current version | ✅ Done |
-| Comparison endpoint + schemas | ⬜ Not started |
+| Comparison endpoint + schemas | ✅ Done |
 | `useSessionComparison` hook + TypeScript types | ⬜ Not started |
 | `SessionComparisonPanel` component | ⬜ Not started |
 | `PlannedSessionCard` toggle + panel integration | ⬜ Not started |
