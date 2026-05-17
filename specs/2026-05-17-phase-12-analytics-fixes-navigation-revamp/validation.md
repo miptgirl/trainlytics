@@ -7,7 +7,7 @@
 | Analytics Bug Fixes (SQL) | ✅ Complete — root cause: segments had NULL activity_type_id; fixed with COALESCE(segment.at_id, session.at_id) |
 | Per-Chart SQL Viewer (?debug=true backend) | ✅ Complete — all /analytics/* endpoints support ?debug=true |
 | New Analytics Backend Endpoints (Group 2) | ✅ Complete — 4 endpoints: overview-trends, exercises-by-type, plan-adherence, plan/weekly-summary |
-| Navigation Revamp | ⬜ Not started |
+| Navigation Revamp | ✅ Complete — /stats route with Analytics (default) / History sub-tabs; /history → /stats?tab=history redirect; /analytics → /stats redirect; nav shows 7 tabs |
 | Analytics UX Reorganization | ⬜ Not started |
 | Plan vs. Actual Card | ⬜ Not started |
 | API Key Simplification | ✅ Complete — migration 0011 adds ai_key_encrypted; old columns wiped; PATCH /profile accepts {ai_provider, ai_key}; GET returns {ai_provider, ai_key_configured} |

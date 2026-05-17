@@ -453,7 +453,7 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function HistoryPage() {
+export function HistoryPageContent() {
   const [chartTab, setChartTab] = useState<'trends' | 'pace'>('trends')
   const [type, setType] = useState<'all' | 'cardio' | 'strength'>('all')
   const [dateFrom, setDateFrom] = useState('')
@@ -486,7 +486,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <Layout>
+    <>
       <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
 
       <WeeklySummaryCard />
@@ -648,6 +648,14 @@ export default function HistoryPage() {
           )}
         </>
       )}
+    </>
+  )
+}
+
+export default function HistoryPage() {
+  return (
+    <Layout>
+      <HistoryPageContent />
     </Layout>
   )
 }
