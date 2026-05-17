@@ -5,7 +5,7 @@
 | Group | Status | Notes |
 |---|---|---|
 | Group 1 — DB Migration & History Models | ✅ Complete | Migration 0013, models, _write_template_history helper |
-| Group 2 — Template Versioning Logic | ⬜ Not started | |
+| Group 2 — Template Versioning Logic | ✅ Complete | _write_template_history async; wired into create/update/plan endpoints |
 | Group 3 — Backend: Comparison Endpoint & Schemas | ⬜ Not started | |
 | Group 4 — Frontend: Comparison Panel & Card Update | ⬜ Not started | |
 | Group 5 — Tests & Cleanup | ⬜ Not started | |

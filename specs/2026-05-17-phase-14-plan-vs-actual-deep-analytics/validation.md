@@ -6,11 +6,11 @@
 |---|---|
 | DB migration (new tables + columns + data migration) | ✅ Done |
 | SQLAlchemy models for history tables | ✅ Done |
-| Template create: write version 1 history snapshot | ⬜ Not started |
-| Template edit: increment version + write history snapshot | ⬜ Not started |
-| Plan create (strength): store `template_version` | ⬜ Not started |
-| Plan edit: update `template_version` when template changes | ⬜ Not started |
-| Copy-from-last-week: carry current version | ⬜ Not started |
+| Template create: write version 1 history snapshot | ✅ Done |
+| Template edit: increment version + write history snapshot | ✅ Done |
+| Plan create (strength): store `template_version` | ✅ Done |
+| Plan edit: update `template_version` when template changes | ✅ Done |
+| Copy-from-last-week: carry current version | ✅ Done |
 | Comparison endpoint + schemas | ⬜ Not started |
 | `useSessionComparison` hook + TypeScript types | ⬜ Not started |
 | `SessionComparisonPanel` component | ⬜ Not started |
