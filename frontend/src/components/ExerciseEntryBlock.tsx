@@ -266,7 +266,6 @@ export function ExerciseEntryBlock({
   errors,
   showDone = false,
   isCollapsed = false,
-  isAdHoc = false,
   onToggleCollapse,
   onAutoCollapse,
   onAutoExpand,
@@ -281,7 +280,6 @@ export function ExerciseEntryBlock({
   errors: any
   showDone?: boolean
   isCollapsed?: boolean
-  isAdHoc?: boolean
   onToggleCollapse?: () => void
   onAutoCollapse?: () => void
   onAutoExpand?: () => void
@@ -319,7 +317,7 @@ export function ExerciseEntryBlock({
       return
     }
 
-    if (!isAdHoc || !selectedId) {
+    if (!selectedId) {
       setFilledFromSession(false)
       return
     }
@@ -347,7 +345,7 @@ export function ExerciseEntryBlock({
       })
 
     return () => { cancelled = true }
-  }, [selectedId, isAdHoc]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!selectedId) {

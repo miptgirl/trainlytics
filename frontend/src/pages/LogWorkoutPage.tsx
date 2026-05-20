@@ -1185,7 +1185,6 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
                 setValue={setValue}
                 exercises={exercises}
                 canRemove={exerciseFields.length > 1}
-                isAdHoc={templateSnapshot === null}
                 onRemove={() => {
                   removeExercise(exIndex)
                   setCollapsedExercises((prev) => {
