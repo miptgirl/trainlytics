@@ -68,7 +68,7 @@ async def test_adapt_cardio_402_no_api_key(db_session, auth_client: AsyncClient)
 async def test_adapt_cardio_404_unknown_session(db_session, auth_client: AsyncClient):
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     with patch("anthropic.Anthropic") as MockAnthropic:
@@ -90,7 +90,7 @@ async def test_adapt_cardio_happy_path_returns_response(db_session, auth_client:
 
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     fake_text = "Reduce distance to 4km and walk the last 2km."
@@ -114,7 +114,7 @@ async def test_adapt_cardio_logs_request(db_session, auth_client: AsyncClient):
 
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     with patch("anthropic.Anthropic") as MockAnthropic:

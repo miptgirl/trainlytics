@@ -6,7 +6,7 @@
 | Task Group | Status |
 |---|---|
 | 1. Database & Environment Setup | ✅ Done — migration `bdc9905e1b7f` applied 2026-05-23 |
-| 2. Strava OAuth & Token Management | ⬜ Not started |
+| 2. Strava OAuth & Token Management | ✅ Done |
 | 3. Strava Activity Fetch & Mapping | ⬜ Not started |
 | 4. Apple Health XML Parser | ⬜ Not started |
 | 5. Import Review Queue (Backend) | ⬜ Not started |

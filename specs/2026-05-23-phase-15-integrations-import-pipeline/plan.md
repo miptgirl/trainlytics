@@ -31,7 +31,7 @@
 
 ---
 
-### 2. Strava OAuth & Token Management (Backend)
+### 2. Strava OAuth & Token Management (Backend) ✅ DONE
 
 2.1 `GET /strava/auth-url` — construct and return the Strava authorization URL with `activity:read_all` scope; return 503 if Strava env vars not configured
 
