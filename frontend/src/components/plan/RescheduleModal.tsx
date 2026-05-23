@@ -36,7 +36,27 @@ export function RescheduleModal({ session, weekStart, onClose }: RescheduleModal
       return
     }
     mutation.mutate(
-      { weekStart, sessionId: session.id, body: { planned_date: selectedDate } },
+      {
+        weekStart,
+        sessionId: session.id,
+        body: {
+          planned_date: selectedDate,
+          session_type: session.session_type,
+          template_id: session.template_id,
+          activity_type_id: session.activity_type_id,
+          title: session.title,
+          notes: session.notes,
+          display_order: session.display_order,
+          segments: session.segments.map((seg) => ({
+            segment_order: seg.segment_order,
+            title: seg.title,
+            duration_secs: seg.duration_secs,
+            distance_metres: seg.distance_metres,
+            pace_secs_per_km: seg.pace_secs_per_km,
+            notes: seg.notes,
+          })),
+        },
+      },
       { onSuccess: onClose }
     )
   }

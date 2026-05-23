@@ -9,7 +9,6 @@ interface PlannedSessionCardProps {
   session: PlannedSessionOut
   weekStart: string
   activityTypeMap: Map<number, string>
-  isPast: boolean
   onEdit: () => void
 }
 
@@ -68,7 +67,6 @@ export function PlannedSessionCard({
   session,
   weekStart,
   activityTypeMap,
-  isPast,
   onEdit,
 }: PlannedSessionCardProps) {
   const navigate = useNavigate()
@@ -90,7 +88,8 @@ export function PlannedSessionCard({
 
   function handleStart() {
     if (session.session_type === 'strength' && session.template_id) {
-      navigate(`/log?type=strength&templateId=${session.template_id}`)
+      const dateSuffix = session.status === 'skipped' ? `&date=${session.planned_date}T10:00` : ''
+      navigate(`/log?type=strength&templateId=${session.template_id}${dateSuffix}`)
     } else if (session.session_type === 'cardio') {
       navigate(`/log?type=cardio&plannedSessionId=${session.id}&weekStart=${weekStart}`)
     }
@@ -163,8 +162,8 @@ export function PlannedSessionCard({
 
           {session.status !== 'done' && (
             <>
-              {/* Start — today/future planned only */}
-              {!isPast && session.status === 'planned' && (
+              {/* Start — planned (today/future) or skipped (past not done) */}
+              {(session.status === 'planned' || session.status === 'skipped') && (
                 <button
                   onClick={handleStart}
                   className="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"

@@ -71,7 +71,6 @@ export function WeekGrid({ weekStart, sessions, onAddSession, onEditSession }: W
                   session={session}
                   weekStart={weekStart}
                   activityTypeMap={activityTypeMap}
-                  isPast={isPast}
                   onEdit={() => onEditSession(session)}
                 />
               ))}

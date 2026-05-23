@@ -351,11 +351,14 @@ function CardioForm({
   }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function injectPlannedSession(session: PlannedSessionOut) {
+    const sessionDateStr = session.planned_date === todayStr
+      ? localDateTimeNow()
+      : `${session.planned_date}T10:00`
     setTitleTouched(true)
     reset({
       title: session.title ?? '',
       activity_type_id: session.activity_type_id != null ? String(session.activity_type_id) : '',
-      date: localDateTimeNow(),
+      date: sessionDateStr,
       notes: session.notes ?? '',
       total_duration_seconds: null,
       calories: '',
@@ -808,7 +811,7 @@ function CardioForm({
 // Strength Form
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
+function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: number; initialDate?: string }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
 
@@ -847,7 +850,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     getValues,
     setValue,
     formState: { errors, isDirty },
-  } = useForm<StrengthFormValues>({ defaultValues: emptyStrengthDefaults() })
+  } = useForm<StrengthFormValues>({
+    defaultValues: { ...emptyStrengthDefaults(), date: initialDate ?? localDateTimeNow() },
+  })
 
   const watchedFormValues = useWatch({ control })
 
@@ -912,7 +917,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
       const detail = await api.get<TemplateSnapshot>(`/templates/strength/${id}`)
       setSelectedTemplateId(id)
       setTemplateSnapshot(detail)
+      const currentDate = getValues('date')
       const newValues = templateToFormValues(detail)
+      newValues.date = currentDate
       if (titleTouched) {
         newValues.title = getValues('title')
       }
@@ -926,7 +933,9 @@ function StrengthForm({ initialTemplateId }: { initialTemplateId?: number }) {
     if (!value) {
       setSelectedTemplateId(null)
       setTemplateSnapshot(null)
+      const currentDate = getValues('date')
       const defaults = emptyStrengthDefaults()
+      defaults.date = currentDate
       if (titleTouched) {
         defaults.title = getValues('title')
       }
@@ -1378,6 +1387,7 @@ export default function LogWorkoutPage() {
   const typeParam = searchParams.get('type')
   const plannedSessionIdParam = searchParams.get('plannedSessionId')
   const weekStartParam = searchParams.get('weekStart')
+  const dateParam = searchParams.get('date')
 
   const [workoutType, setWorkoutType] = useState<WorkoutType | null>(
     typeParam === 'cardio'
@@ -1431,6 +1441,7 @@ export default function LogWorkoutPage() {
       {workoutType === 'strength' && (
         <StrengthForm
           initialTemplateId={templateIdParam ? parseInt(templateIdParam, 10) : undefined}
+          initialDate={dateParam ?? undefined}
         />
       )}
     </Layout>
