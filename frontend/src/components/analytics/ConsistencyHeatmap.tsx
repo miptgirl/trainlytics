@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAnalyticsHeatmap } from '../../lib/analyticsApi'
 import type { HeatmapDay } from '../../lib/analyticsApi'
 
@@ -96,6 +96,13 @@ interface TooltipState {
 export function ConsistencyHeatmap() {
   const { data, isLoading } = useAnalyticsHeatmap()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
+    }
+  }, [data])
 
   if (isLoading) return <div className="h-40 bg-slate-50 rounded-lg animate-pulse" />
   if (!data) return null
@@ -127,7 +134,7 @@ export function ConsistencyHeatmap() {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto pb-2">
+      <div ref={scrollRef} className="overflow-x-auto pb-2">
         {/* Month labels */}
         <div className="flex" style={{ paddingLeft: 28, marginBottom: 4 }}>
           {weeks.map((_, wi) => {

@@ -48,12 +48,12 @@ export default function StepsForm({ compact = false, defaultValues, onSuccess }:
         onSubmit={handleSubmit(onSubmit)}
         className={compact ? 'flex items-end gap-3' : 'flex flex-col gap-3 sm:flex-row sm:items-end'}
       >
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-600 block mb-1">Date</label>
           <input
             type="date"
             {...register('date', { required: 'Date is required' })}
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full min-w-0 border rounded-lg px-3 py-2"
           />
           {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
         </div>

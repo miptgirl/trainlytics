@@ -404,7 +404,7 @@ function CardioStats({ s }: { s: SessionSummary }) {
     parts.push(formatPace(paceSecPerKm))
   }
   return (
-    <span className="flex items-center gap-2 flex-wrap justify-end">
+    <span className="flex items-center gap-2 flex-wrap">
       {parts.length > 0 && <span>{parts.join(' · ')}</span>}
       {s.avg_hr_bpm != null && (
         <span className="flex items-center gap-1 text-rose-500">
@@ -460,6 +460,56 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
     >
       {status === 'loading' ? '…' : status === 'copied' ? 'Copied!' : status === 'error' ? 'Failed' : 'Copy'}
     </button>
+  )
+}
+
+// ── History Card ─────────────────────────────────────────────────────────────
+
+function HistoryCard({ s }: { s: SessionSummary }) {
+  const [notesOpen, setNotesOpen] = useState(false)
+  return (
+    <li className="bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all overflow-hidden">
+      <div className="flex items-start gap-3 px-4 py-3">
+        <span
+          className={`shrink-0 mt-0.5 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+            s.type === 'cardio'
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}
+        >
+          {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
+        </span>
+        <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0">
+          <p className="text-sm text-slate-500">{formatSessionDateTime(s.date)}</p>
+          {s.title && (
+            <p className="font-medium text-slate-900 mt-0.5">{s.title}</p>
+          )}
+          <div className="text-sm text-slate-600 mt-1">
+            {s.type === 'cardio' ? <CardioStats s={s} /> : <StrengthStats s={s} />}
+          </div>
+        </Link>
+        <div className="shrink-0 flex items-center gap-1">
+          {s.notes && (
+            <button
+              onClick={e => { e.preventDefault(); setNotesOpen(o => !o) }}
+              className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
+              title="Toggle notes"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                className={`w-4 h-4 transition-transform ${notesOpen ? 'rotate-180' : ''}`}>
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z" clipRule="evenodd" />
+              </svg>
+            </button>
+          )}
+          <CopyRowButton session={s} />
+        </div>
+      </div>
+      {s.notes && notesOpen && (
+        <div className="border-t border-slate-100 px-4 py-2">
+          <p className="text-sm text-slate-600">{s.notes}</p>
+        </div>
+      )}
+    </li>
   )
 }
 
@@ -594,45 +644,7 @@ export function HistoryPageContent() {
         <>
           <ul className="space-y-2">
             {data.items.map((s) => (
-              <li key={s.id} className="flex items-center bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all">
-                <Link
-                  to={`/sessions/${s.id}`}
-                  className="flex flex-1 items-center justify-between px-4 py-3 min-w-0"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span
-                      className={`shrink-0 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        s.type === 'cardio'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
-                      {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
-                    </span>
-                    <div className="min-w-0">
-                      {s.title ? (
-                        <span className="font-medium text-slate-900 truncate block">{s.title}</span>
-                      ) : null}
-                      <span className={`text-slate-${s.title ? '500' : '900'} ${s.title ? 'text-sm' : 'font-medium'}`}>
-                        {formatSessionDateTime(s.date)}
-                      </span>
-                    </div>
-                    {s.notes && !s.title && (
-                      <span className="text-sm text-slate-500 truncate">{s.notes}</span>
-                    )}
-                  </div>
-                  <div className="shrink-0 text-sm text-slate-500 ml-3 text-right">
-                    {s.type === 'cardio' ? (
-                      <CardioStats s={s} />
-                    ) : (
-                      <StrengthStats s={s} />
-                    )}
-                  </div>
-                </Link>
-                <div className="shrink-0 pr-3">
-                  <CopyRowButton session={s} />
-                </div>
-              </li>
+              <HistoryCard key={s.id} s={s} />
             ))}
           </ul>
 
