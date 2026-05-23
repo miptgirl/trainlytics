@@ -1,6 +1,24 @@
 # Phase 15 — Integrations: Import Pipeline
 ## Validation
 
+### Progress
+
+| Task Group | Status |
+|---|---|
+| 1. Database & Environment Setup | ✅ Done — migration `bdc9905e1b7f` applied 2026-05-23 |
+| 2. Strava OAuth & Token Management | ⬜ Not started |
+| 3. Strava Activity Fetch & Mapping | ⬜ Not started |
+| 4. Apple Health XML Parser | ⬜ Not started |
+| 5. Import Review Queue (Backend) | ⬜ Not started |
+| 6. Import Review Queue (Frontend) | ⬜ Not started |
+| 7. Strava Profile UI | ⬜ Not started |
+| 8. Apple Health Profile UI | ⬜ Not started |
+| 9. Health Analytics Section | ⬜ Not started |
+| 10. AI Context Enrichment | ⬜ Not started |
+| 11. Tests | ⬜ Not started |
+
+---
+
 ### Definition of Done
 
 Phase 15 is complete when all of the following are true:

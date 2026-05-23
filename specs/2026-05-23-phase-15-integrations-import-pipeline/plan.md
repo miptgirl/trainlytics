@@ -1,7 +1,7 @@
 # Phase 15 — Integrations: Import Pipeline
 ## Implementation Plan
 
-### 1. Database & Environment Setup
+### 1. Database & Environment Setup ✅ DONE
 
 1.1 Add Strava columns to `user_settings` Alembic migration:
 - `strava_access_token` (Text, nullable, encrypted)
@@ -26,6 +26,8 @@
 - `health_metric_active_energy` (Boolean, default true)
 
 1.5 Add env var support: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI` (all optional; Strava features disabled when absent)
+
+> Migration: `bdc9905e1b7f_phase15_strava_imports_body_metrics.py` — applied 2026-05-23
 
 ---
 

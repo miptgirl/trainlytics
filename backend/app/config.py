@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     # Comma-separated: "alice:$2b$...,bob:$2b$..."
     users: str = ""
 
+    # Strava OAuth — all optional; Strava features disabled when absent
+    strava_client_id: str | None = None
+    strava_client_secret: str | None = None
+    strava_redirect_uri: str | None = None
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
