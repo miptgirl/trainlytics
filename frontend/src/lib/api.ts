@@ -1,3 +1,14 @@
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: unknown,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 let _token: string | null = null
 let _onUnauthorized: (() => void) | null = null
 
@@ -29,7 +40,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     const err = await res.json().catch(() => ({})) as Record<string, unknown>
     const message = String(err['detail'] ?? 'Request failed')
     console.error(`[api] ${method} ${path} → ${res.status}:`, message, err)
-    throw new Error(message)
+    throw new ApiError(message, res.status, err)
   }
 
   if (res.status === 204) return undefined as T

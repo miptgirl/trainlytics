@@ -113,7 +113,7 @@
 
 ---
 
-### 6. Import Review Queue (Frontend)
+### 6. Import Review Queue (Frontend) ✅ DONE
 
 6.1 Profile page gains a tab bar with three tabs: **Connections**, **Imports**, **Settings**; the Imports tab shows a count badge when `pending_imports` is non-empty
 
@@ -128,6 +128,8 @@
 6.4 "Accept All" button at the top of the list with a count badge; after completion shows "X accepted, Y conflicts to review"
 
 6.5 Empty state: "No pending imports" with links to Strava sync and Apple Health upload (navigates to Connections tab)
+
+> Implemented in `frontend/src/components/imports/ImportRow.tsx` and `ImportsTab.tsx`; `ProfilePage.tsx` updated with Connections/Imports/Settings tab bar using URL query params; `ApiError` class added to `api.ts` for typed 409 handling; Connections tab is a placeholder pending tasks 7 & 8
 
 ---
 
