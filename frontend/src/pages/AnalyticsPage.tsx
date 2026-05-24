@@ -16,6 +16,7 @@ import { ReadinessTrendsChart } from '../components/analytics/ReadinessTrendsCha
 import { WellbeingCorrelationChart } from '../components/analytics/WellbeingCorrelationChart'
 import { PlanAdherenceChart } from '../components/analytics/PlanAdherenceChart'
 import { SqlDebugModal } from '../components/analytics/SqlDebugModal'
+import { HealthMetricsSection } from '../components/analytics/HealthMetricsSection'
 
 function DebugIcon({ onClick }: { onClick: () => void }) {
   return (
@@ -231,6 +232,8 @@ export function AnalyticsPageContent() {
       <SectionCard title="Plan Adherence" debugUrl="/analytics/plan-adherence?weeks=12">
         <PlanAdherenceChart />
       </SectionCard>
+
+      <HealthMetricsSection />
     </div>
   )
 }

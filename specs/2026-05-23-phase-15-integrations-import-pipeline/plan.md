@@ -173,7 +173,7 @@
 
 ---
 
-### 9. Health Analytics Section
+### 9. Health Analytics Section ✅ DONE
 
 9.1 New "Health" collapsible section at the bottom of the Analytics tab (below Readiness & Wellbeing)
 
@@ -190,6 +190,8 @@
 9.4 Charts show a "No data — import Apple Health data to see this section" empty state when no body_metrics rows exist for that metric
 
 9.5 If all metrics are disabled: show an "All metrics are disabled — enable them in Profile → Apple Health" message in place of the section
+
+> Implemented in `frontend/src/components/analytics/HealthMetricsSection.tsx`; `AnalyticsPage.tsx` updated to render the Health section at the bottom; `HealthMetricsPoint` schema added to `app/schemas/analytics.py`; `GET /analytics/health-metrics?days=N` endpoint added to `app/api/analytics.py` (days=0 means all-time); `useHealthMetrics` hook and `HealthMetricsPoint` interface added to `analyticsApi.ts`
 
 ---
 
