@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -66,6 +66,21 @@ async def strava_callback(
 
     await db.commit()
     return RedirectResponse(f"{frontend_url}/#/profile?strava=connected")
+
+
+@router.post("/fetch")
+async def fetch_activities(
+    background_tasks: BackgroundTasks,
+    username: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    _require_strava()
+    result = await db.execute(select(UserSettings).where(UserSettings.username == username))
+    row = result.scalar_one_or_none()
+    if not row or not row.strava_access_token:
+        raise HTTPException(status_code=400, detail="Strava not connected")
+    background_tasks.add_task(strava_service.fetch_activities_worker, username)
+    return {"queued": True}
 
 
 @router.delete("/disconnect")

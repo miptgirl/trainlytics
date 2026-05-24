@@ -43,7 +43,7 @@
 
 ---
 
-### 3. Strava Activity Fetch & Mapping (Backend)
+### 3. Strava Activity Fetch & Mapping (Backend) ✅ DONE
 
 3.1 `POST /strava/fetch` — validate Strava is connected; enqueue background task; return `{ queued: true }` immediately
 
@@ -56,6 +56,8 @@
 - Update `strava_last_synced_at` on completion
 
 3.3 Activity type mapping function: case-insensitive match of Strava type to existing Trainlytics activity types; fall back to `null` with `proposed_type_name` in the mapped JSON
+
+> Implemented in `strava_service.py` — `map_strava_type()`, `fetch_activities_worker()`, `_stage_activity()`; endpoint `POST /strava/fetch` added to `strava.py`
 
 ---
 
