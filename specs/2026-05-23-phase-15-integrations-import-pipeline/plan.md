@@ -222,7 +222,7 @@ Rows are omitted when all windows have no data for that metric, or when the metr
 
 ---
 
-### 11. Tests
+### 11. Tests ✅ DONE
 
 11.1 Backend — Strava:
 - Token encryption/decryption round-trip
@@ -256,3 +256,5 @@ Rows are omitted when all windows have no data for that metric, or when the metr
 - ImportRow renders source badge, activity type, date
 - Accept flow: success → row removed; 409 → duplicate warning shown
 - Discard flow: confirmation → row removed
+
+> 11.1: 16 tests in `tests/test_strava.py` — all passing; 11.4: 8 tests in `tests/test_health_analytics.py` — all passing; 11.6: 12 tests in `src/__tests__/ImportRow.test.tsx` — all passing; 11.2/11.3/11.5 were already covered by existing test files. Full suite: 321 backend tests, 109 frontend tests — all passing.
