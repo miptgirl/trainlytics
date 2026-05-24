@@ -195,27 +195,30 @@
 
 ---
 
-### 10. AI Context Enrichment
+### 10. AI Context Enrichment ✅ DONE
 
-10.1 In `ai_service.py`, add a `get_health_context_block(db, user_prefs)` helper that computes weekly averages for four time windows (skipping nulls and disabled metrics):
+10.1 In `ai_service.py`, add a `get_health_context_block(row, db)` helper that computes weekly averages for five time windows (skipping nulls and disabled metrics):
 - Last 7 days ("this week")
 - 7-day window centred on 1 month ago (days −35 to −28)
 - 7-day window centred on 3 months ago (days −97 to −90)
+- 7-day window centred on 1 year ago (days −369 to −362)
 
 10.2 Format the block as a compact comparison table so the AI can interpret trends:
 ```
 Health metrics (weekly averages):
-                  Now     ~1mo ago   ~3mo ago
-Resting HR (bpm)   52        55         58
-HRV SDNN (ms)      68        62         55
-Sleep (h)          7.3       6.8        7.1
-Weight (kg)        64.2      65.1       66.0
+                       Now    ~1mo ago   ~3mo ago   ~1yr ago
+Resting HR (bpm)        52        55         58         60
+HRV SDNN (ms)           68        62         55         50
+Sleep (h)              7.3       6.8        7.1        7.0
+Weight (kg)           64.2      65.1       66.0       67.0
 ```
-Rows are omitted when all three windows have no data for that metric, or when the metric is disabled in user preferences. Entire block omitted when no data exists at all.
+Rows are omitted when all windows have no data for that metric, or when the metric is disabled in user preferences. Entire block omitted when no data exists at all.
 
-10.3 Inject the block between the athlete profile block and the training history block in `build_prompt()` for all three AI endpoints (weekly insights, adapt session, adapt cardio session)
+10.3 Inject the block between the athlete profile block and the training history block for all three AI endpoints (weekly insights, adapt session, adapt cardio session) via `call_ai()` in `ai_service.py`
 
-10.4 Include the health context block within the existing prompt cache region
+10.4 Include the health context block within the existing prompt cache region (the full_prompt is sent with `cache_control: ephemeral`)
+
+> Implemented in `app/services/ai_service.py` — `get_health_context_block()` added; `call_ai()` updated to inject the block between athlete profile and prompt; 11 tests in `tests/test_ai_context.py` — all passing
 
 ---
 
