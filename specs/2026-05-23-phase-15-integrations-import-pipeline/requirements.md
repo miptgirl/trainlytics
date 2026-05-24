@@ -73,6 +73,12 @@ Strava OAuth access and refresh tokens are stored encrypted in the `user_setting
 **Strava OAuth configuration**
 Three new env vars required: `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, `STRAVA_REDIRECT_URI`. The redirect URI must point to the backend callback endpoint (e.g. `https://your-server.example.com/api/strava/callback`). These are optional — Strava features are hidden in Profile if not configured.
 
+**Profile page tab structure**
+The Profile page is reorganised into three tabs:
+- **Connections** — Strava and Apple Health controls (OAuth, sync, upload, metric preferences)
+- **Imports** — the full import review queue; tab label shows a count badge when pending imports exist; clicking from a completion state in the Connections tab navigates here
+- **Settings** — existing profile fields (display name, units, AI key, etc.)
+
 ---
 
 ### New Database Tables
@@ -129,7 +135,7 @@ Updated via `PATCH /profile` with the existing profile endpoint. No separate end
 - `GET /apple-health/status/{task_id}` → parse progress: `{ status, workouts_staged, metrics_saved, errors }`
 
 **Import queue**
-- `GET /imports/pending` → list of staged import rows with mapped session preview
+- `GET /imports/pending` → list of staged import rows with mapped session preview; also returns `total_pending` count for the tab badge
 - `POST /imports/{id}/accept` → commit as a real session; returns 409 on duplicate
 - `POST /imports/{id}/accept?force=true` → commit despite duplicate warning
 - `POST /imports/{id}/discard` → mark discarded, remove from queue

@@ -113,7 +113,7 @@
 
 ### 6. Import Review Queue (Frontend)
 
-6.1 New "Imports" section in the Profile page (below Strava and Apple Health controls), visible when `pending_imports` is non-empty
+6.1 Profile page gains a tab bar with three tabs: **Connections**, **Imports**, **Settings**; the Imports tab shows a count badge when `pending_imports` is non-empty
 
 6.2 Import row component:
 - Source badge (Strava / Apple Health) + activity type + date + duration + distance (if cardio)
@@ -125,7 +125,7 @@
 
 6.4 "Accept All" button at the top of the list with a count badge; after completion shows "X accepted, Y conflicts to review"
 
-6.5 Empty state: "No pending imports" with links to Strava sync and Apple Health upload
+6.5 Empty state: "No pending imports" with links to Strava sync and Apple Health upload (navigates to Connections tab)
 
 ---
 
