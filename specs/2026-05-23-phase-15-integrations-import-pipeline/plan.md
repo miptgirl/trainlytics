@@ -133,7 +133,7 @@
 
 ---
 
-### 7. Strava Profile UI
+### 7. Strava Profile UI ✅ DONE
 
 7.1 "Connections" section in Profile above the API key section
 
@@ -146,6 +146,8 @@
 - Last synced: "{timestamp}" or "Never"
 - "Sync now" button → calls `POST /strava/fetch`; shows spinner while pending; on complete shows "Queued X activities for review"
 - "Disconnect" button with confirmation
+
+> Implemented in `frontend/src/components/StravaSection.tsx`; `ProfilePage.tsx` Connections tab wired up; `UserSettingsOut`/`UserSettingsPatch` updated to expose `strava_configured`, `strava_connected`, `strava_athlete_name`, `strava_athlete_avatar_url`, `strava_last_synced_at`, `strava_sync_start_date`; `strava.py` callback now stores athlete name + avatar; new Alembic migration `a1b2c3d4e5f6` adds `strava_athlete_name` and `strava_athlete_avatar_url` columns; `strava=connected|error` query params from OAuth callback auto-switch to Connections tab and show banner
 
 ---
 

@@ -7,13 +7,14 @@ from app.dependencies import get_current_user
 from app.models.user_settings import UserSettings
 from app.schemas.user_settings import UserSettingsOut, UserSettingsPatch
 from app.services import crypto
+from app.services import strava_service
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 
 def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
     if row is None:
-        return UserSettingsOut()
+        return UserSettingsOut(strava_configured=strava_service.is_configured())
     from app.schemas.user_settings import GoalItem
 
     goals: list[GoalItem] = []
@@ -33,6 +34,12 @@ def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
         coach_notes=row.coach_notes,
         ai_provider=row.ai_provider,
         ai_key_configured=row.ai_key_encrypted is not None,
+        strava_configured=strava_service.is_configured(),
+        strava_connected=row.strava_access_token is not None,
+        strava_athlete_name=row.strava_athlete_name,
+        strava_athlete_avatar_url=row.strava_athlete_avatar_url,
+        strava_last_synced_at=row.strava_last_synced_at,
+        strava_sync_start_date=row.strava_sync_start_date,
     )
 
 
@@ -81,6 +88,9 @@ async def patch_profile(
             row.ai_key_encrypted = None
         else:
             row.ai_key_encrypted = crypto.encrypt(body.ai_key)
+
+    if "strava_sync_start_date" in fields_set:
+        row.strava_sync_start_date = body.strava_sync_start_date
 
     await db.commit()
     await db.refresh(row)

@@ -62,7 +62,12 @@ async def strava_callback(
     row.strava_access_token = crypto.encrypt(data["access_token"])
     row.strava_refresh_token = crypto.encrypt(data["refresh_token"])
     row.strava_token_expires_at = datetime.fromtimestamp(data["expires_at"], tz=timezone.utc)
-    row.strava_athlete_id = data.get("athlete", {}).get("id")
+    athlete = data.get("athlete", {})
+    row.strava_athlete_id = athlete.get("id")
+    first = athlete.get("firstname") or ""
+    last = athlete.get("lastname") or ""
+    row.strava_athlete_name = f"{first} {last}".strip() or None
+    row.strava_athlete_avatar_url = athlete.get("profile_medium") or athlete.get("profile")
 
     await db.commit()
     return RedirectResponse(f"{frontend_url}/#/profile?strava=connected")

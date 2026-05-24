@@ -26,6 +26,8 @@ class UserSettings(Base):
     strava_refresh_token: Mapped[str | None] = mapped_column(Text, nullable=True)
     strava_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     strava_athlete_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    strava_athlete_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    strava_athlete_avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     strava_last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     strava_sync_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
 

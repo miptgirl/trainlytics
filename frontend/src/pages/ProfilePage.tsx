@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { ImportsTab } from '../components/imports/ImportsTab'
+import { StravaSection } from '../components/StravaSection'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,12 @@ interface UserProfile {
   coach_notes: string | null
   ai_key_configured: boolean
   ai_provider: AIProvider | null
+  strava_configured: boolean
+  strava_connected: boolean
+  strava_athlete_name: string | null
+  strava_athlete_avatar_url: string | null
+  strava_last_synced_at: string | null
+  strava_sync_start_date: string | null
 }
 
 const PRIORITY_ORDER: Priority[] = ['high', 'medium', 'low']
@@ -374,8 +381,11 @@ export default function ProfilePage() {
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
 
+  // strava=connected|error arrives from the OAuth callback redirect
+  const stravaParam = searchParams.get('strava')
+
   const activeTab: ProfileTab =
-    (searchParams.get('tab') as ProfileTab | null) === 'connections'
+    (searchParams.get('tab') as ProfileTab | null) === 'connections' || stravaParam != null
       ? 'connections'
       : searchParams.get('tab') === 'imports'
         ? 'imports'
@@ -524,11 +534,34 @@ export default function ProfilePage() {
 
         {/* ── Connections tab ── */}
         {activeTab === 'connections' && (
-          <SectionCard title="Connections">
-            <p className="text-sm text-slate-400">
-              Data source connections — Strava and Apple Health — coming soon.
-            </p>
-          </SectionCard>
+          <>
+            {stravaParam === 'error' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                Strava connection failed. Please try again.
+              </div>
+            )}
+            {stravaParam === 'connected' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                Strava connected successfully.
+              </div>
+            )}
+            <SectionCard title="Connections">
+              <StravaSection
+                configured={profile?.strava_configured ?? false}
+                connected={profile?.strava_connected ?? false}
+                athleteName={profile?.strava_athlete_name ?? null}
+                athleteAvatarUrl={profile?.strava_athlete_avatar_url ?? null}
+                lastSyncedAt={profile?.strava_last_synced_at ?? null}
+                syncStartDate={profile?.strava_sync_start_date ?? null}
+                onNavigateToImports={() => setTab('imports')}
+              />
+              {!(profile?.strava_configured) && (
+                <p className="text-sm text-slate-400">
+                  No data source connections configured. Apple Health upload coming soon.
+                </p>
+              )}
+            </SectionCard>
+          </>
         )}
 
         {/* ── Imports tab ── */}

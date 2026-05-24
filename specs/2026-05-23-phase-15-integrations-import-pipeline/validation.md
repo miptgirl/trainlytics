@@ -11,7 +11,7 @@
 | 4. Apple Health XML Parser | ✅ Done |
 | 5. Import Review Queue (Backend) | ✅ Done |
 | 6. Import Review Queue (Frontend) | ✅ Done |
-| 7. Strava Profile UI | ⬜ Not started |
+| 7. Strava Profile UI | ✅ Done |
 | 8. Apple Health Profile UI | ⬜ Not started |
 | 9. Health Analytics Section | ⬜ Not started |
 | 10. AI Context Enrichment | ⬜ Not started |
