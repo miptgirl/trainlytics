@@ -27,6 +27,14 @@ class UserSettingsOut(BaseModel):
     strava_last_synced_at: datetime | None = None
     strava_sync_start_date: date | None = None
 
+    # Health metric preferences
+    health_metric_resting_hr: bool = True
+    health_metric_hrv: bool = True
+    health_metric_weight: bool = True
+    health_metric_sleep: bool = True
+    health_metric_vo2_max: bool = True
+    health_metric_active_energy: bool = True
+
 
 class UserSettingsPatch(BaseModel):
     display_name: str | None = None
@@ -38,6 +46,14 @@ class UserSettingsPatch(BaseModel):
     ai_provider: str | None = None
     ai_key: str | None = None
     strava_sync_start_date: date | None = None
+
+    # Health metric preferences
+    health_metric_resting_hr: bool | None = None
+    health_metric_hrv: bool | None = None
+    health_metric_weight: bool | None = None
+    health_metric_sleep: bool | None = None
+    health_metric_vo2_max: bool | None = None
+    health_metric_active_energy: bool | None = None
 
     @field_validator("ai_provider")
     @classmethod

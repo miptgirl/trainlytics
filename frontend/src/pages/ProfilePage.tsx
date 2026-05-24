@@ -7,6 +7,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { ImportsTab } from '../components/imports/ImportsTab'
 import { StravaSection } from '../components/StravaSection'
+import { AppleHealthSection } from '../components/AppleHealthSection'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,12 @@ interface UserProfile {
   strava_athlete_avatar_url: string | null
   strava_last_synced_at: string | null
   strava_sync_start_date: string | null
+  health_metric_resting_hr: boolean
+  health_metric_hrv: boolean
+  health_metric_weight: boolean
+  health_metric_sleep: boolean
+  health_metric_vo2_max: boolean
+  health_metric_active_energy: boolean
 }
 
 const PRIORITY_ORDER: Priority[] = ['high', 'medium', 'low']
@@ -546,20 +553,28 @@ export default function ProfilePage() {
               </div>
             )}
             <SectionCard title="Connections">
-              <StravaSection
-                configured={profile?.strava_configured ?? false}
-                connected={profile?.strava_connected ?? false}
-                athleteName={profile?.strava_athlete_name ?? null}
-                athleteAvatarUrl={profile?.strava_athlete_avatar_url ?? null}
-                lastSyncedAt={profile?.strava_last_synced_at ?? null}
-                syncStartDate={profile?.strava_sync_start_date ?? null}
-                onNavigateToImports={() => setTab('imports')}
-              />
-              {!(profile?.strava_configured) && (
-                <p className="text-sm text-slate-400">
-                  No data source connections configured. Apple Health upload coming soon.
-                </p>
-              )}
+              <div className="flex flex-col gap-6">
+                {profile?.strava_configured ? (
+                  <StravaSection
+                    configured={profile.strava_configured}
+                    connected={profile.strava_connected}
+                    athleteName={profile.strava_athlete_name}
+                    athleteAvatarUrl={profile.strava_athlete_avatar_url}
+                    lastSyncedAt={profile.strava_last_synced_at}
+                    syncStartDate={profile.strava_sync_start_date}
+                    onNavigateToImports={() => setTab('imports')}
+                  />
+                ) : null}
+                <AppleHealthSection
+                  health_metric_resting_hr={profile?.health_metric_resting_hr ?? true}
+                  health_metric_hrv={profile?.health_metric_hrv ?? true}
+                  health_metric_weight={profile?.health_metric_weight ?? true}
+                  health_metric_sleep={profile?.health_metric_sleep ?? true}
+                  health_metric_vo2_max={profile?.health_metric_vo2_max ?? true}
+                  health_metric_active_energy={profile?.health_metric_active_energy ?? true}
+                  onNavigateToImports={() => setTab('imports')}
+                />
+              </div>
             </SectionCard>
           </>
         )}

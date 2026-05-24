@@ -40,6 +40,12 @@ def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
         strava_athlete_avatar_url=row.strava_athlete_avatar_url,
         strava_last_synced_at=row.strava_last_synced_at,
         strava_sync_start_date=row.strava_sync_start_date,
+        health_metric_resting_hr=row.health_metric_resting_hr,
+        health_metric_hrv=row.health_metric_hrv,
+        health_metric_weight=row.health_metric_weight,
+        health_metric_sleep=row.health_metric_sleep,
+        health_metric_vo2_max=row.health_metric_vo2_max,
+        health_metric_active_energy=row.health_metric_active_energy,
     )
 
 
@@ -91,6 +97,17 @@ async def patch_profile(
 
     if "strava_sync_start_date" in fields_set:
         row.strava_sync_start_date = body.strava_sync_start_date
+
+    for field in (
+        "health_metric_resting_hr",
+        "health_metric_hrv",
+        "health_metric_weight",
+        "health_metric_sleep",
+        "health_metric_vo2_max",
+        "health_metric_active_energy",
+    ):
+        if field in fields_set:
+            setattr(row, field, getattr(body, field))
 
     await db.commit()
     await db.refresh(row)

@@ -12,7 +12,7 @@
 | 5. Import Review Queue (Backend) | ✅ Done |
 | 6. Import Review Queue (Frontend) | ✅ Done |
 | 7. Strava Profile UI | ✅ Done |
-| 8. Apple Health Profile UI | ⬜ Not started |
+| 8. Apple Health Profile UI | ✅ Done |
 | 9. Health Analytics Section | ⬜ Not started |
 | 10. AI Context Enrichment | ⬜ Not started |
 | 11. Tests | ⬜ Not started |

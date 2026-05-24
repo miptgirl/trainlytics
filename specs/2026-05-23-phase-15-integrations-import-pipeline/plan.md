@@ -151,7 +151,7 @@
 
 ---
 
-### 8. Apple Health Profile UI
+### 8. Apple Health Profile UI ✅ DONE
 
 8.1 "Apple Health" subsection in Connections (below Strava)
 
@@ -168,6 +168,8 @@
 8.5 Completion state: "X workouts staged for review · Y health metric days imported"; link to the imports list
 
 8.6 Error state: show parser error messages from the status response
+
+> Implemented in `frontend/src/components/AppleHealthSection.tsx`; `ProfilePage.tsx` Connections tab updated to show Apple Health section below Strava; backend `UserSettingsOut`/`UserSettingsPatch` updated to expose/accept all six `health_metric_*` boolean fields; `profile.py` `_row_to_out` and `patch_profile` updated accordingly
 
 ---
 
