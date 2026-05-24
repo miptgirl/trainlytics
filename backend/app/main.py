@@ -14,6 +14,7 @@ from app.api import plans as plans_module
 from app.api import profile as profile_module
 from app.api import sessions as sessions_module
 from app.api import steps as steps_module
+from app.api import apple_health as apple_health_module
 from app.api import strava as strava_module
 from app.api import templates as templates_module
 
@@ -38,6 +39,7 @@ app.include_router(templates_module.router, prefix="/api")
 app.include_router(plan_summary_module.router, prefix="/api")
 app.include_router(plans_module.router, prefix="/api")
 app.include_router(profile_module.router, prefix="/api")
+app.include_router(apple_health_module.router, prefix="/api")
 app.include_router(strava_module.router, prefix="/api")
 app.include_router(ai_module.router, prefix="/api")
 

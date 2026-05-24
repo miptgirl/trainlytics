@@ -61,7 +61,7 @@
 
 ---
 
-### 4. Apple Health XML Parser (Backend)
+### 4. Apple Health XML Parser (Backend) ✅ DONE
 
 4.1 `POST /apple-health/upload` — accept multipart form with zip file; write to temp dir; start background parse task via FastAPI `BackgroundTasks`; return `{ task_id }`
 
@@ -90,6 +90,8 @@
 4.6 Task status tracking: store progress dict in a module-level dict keyed by `task_id`; `GET /apple-health/status/{task_id}` reads from it; keys: `status` (running/done/error), `workouts_staged`, `metrics_saved`, `errors`
 
 4.7 Temp directory cleanup after parsing completes (success or error)
+
+> Implemented in `apple_health_service.py` — `MetricPreferences`, `_parse_xml()`, `map_apple_health_type()`, `_stage_workout()`, `_upsert_body_metrics()`, `parse_xml_worker()`; endpoints `POST /apple-health/upload` and `GET /apple-health/status/{task_id}` added to `apple_health.py`; router registered in `main.py`; 33 tests in `tests/test_apple_health.py` — all passing
 
 ---
 

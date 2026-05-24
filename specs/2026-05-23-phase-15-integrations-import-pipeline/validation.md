@@ -8,7 +8,7 @@
 | 1. Database & Environment Setup | ✅ Done — migration `bdc9905e1b7f` applied 2026-05-23 |
 | 2. Strava OAuth & Token Management | ✅ Done |
 | 3. Strava Activity Fetch & Mapping | ✅ Done |
-| 4. Apple Health XML Parser | ⬜ Not started |
+| 4. Apple Health XML Parser | ✅ Done |
 | 5. Import Review Queue (Backend) | ⬜ Not started |
 | 6. Import Review Queue (Frontend) | ⬜ Not started |
 | 7. Strava Profile UI | ⬜ Not started |
