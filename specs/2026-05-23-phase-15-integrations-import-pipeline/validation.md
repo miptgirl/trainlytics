@@ -9,7 +9,7 @@
 | 2. Strava OAuth & Token Management | ✅ Done |
 | 3. Strava Activity Fetch & Mapping | ✅ Done |
 | 4. Apple Health XML Parser | ✅ Done |
-| 5. Import Review Queue (Backend) | ⬜ Not started |
+| 5. Import Review Queue (Backend) | ✅ Done |
 | 6. Import Review Queue (Frontend) | ⬜ Not started |
 | 7. Strava Profile UI | ⬜ Not started |
 | 8. Apple Health Profile UI | ⬜ Not started |

@@ -95,7 +95,7 @@
 
 ---
 
-### 5. Import Review Queue (Backend)
+### 5. Import Review Queue (Backend) ✅ DONE
 
 5.1 `GET /imports/pending` — return all `pending` rows ordered by date desc; include mapped_session preview and source badge
 
@@ -108,6 +108,8 @@
 5.5 `PATCH /imports/{id}` — update `mapped_session` fields (date, activity_type, title, notes); re-validate structure with Pydantic before saving
 
 5.6 `POST /imports/accept-all` — iterate pending rows in date order; accept each with dedup check; collect conflicts; return `{ accepted, conflicts: [{ import_id, session_id }] }`
+
+> Implemented in `app/api/imports.py` and `app/schemas/imports.py`; router registered in `main.py`; 22 tests in `tests/test_imports.py` — all passing
 
 ---
 
