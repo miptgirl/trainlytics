@@ -45,3 +45,7 @@ class ImportPatch(BaseModel):
 class AcceptAllOut(BaseModel):
     accepted: int
     conflicts: list[dict[str, Any]]
+
+
+class DiscardAllOut(BaseModel):
+    discarded: int

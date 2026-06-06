@@ -373,7 +373,9 @@ async def _upsert_body_metrics(db: AsyncSession, d: date, m: dict) -> bool:
     return True
 
 
-async def parse_xml_worker(task_id: str, zip_path: str, temp_dir: str, username: str) -> None:
+async def parse_xml_worker(
+    task_id: str, zip_path: str, temp_dir: str, username: str, include_workouts: bool = True
+) -> None:
     """Background worker: extract zip, parse XML, stage workouts, upsert body metrics."""
     _task_status[task_id] = {
         "status": "running",
@@ -400,13 +402,14 @@ async def parse_xml_worker(task_id: str, zip_path: str, temp_dir: str, username:
         parsed: _ParsedData = await asyncio.to_thread(_parse_xml, xml_path, prefs)
 
         workouts_staged = 0
-        for workout in parsed.workouts:
-            try:
-                async with AsyncSessionLocal() as db:
-                    if await _stage_workout(db, workout, username):
-                        workouts_staged += 1
-            except Exception as e:
-                _task_status[task_id]["errors"].append(f"Workout staging error: {e}")
+        if include_workouts:
+            for workout in parsed.workouts:
+                try:
+                    async with AsyncSessionLocal() as db:
+                        if await _stage_workout(db, workout, username):
+                            workouts_staged += 1
+                except Exception as e:
+                    _task_status[task_id]["errors"].append(f"Workout staging error: {e}")
 
         metrics_saved = 0
         for d, m in parsed.metrics_by_date.items():

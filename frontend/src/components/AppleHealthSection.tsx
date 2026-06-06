@@ -47,6 +47,7 @@ export function AppleHealthSection({
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [uploadState, setUploadState] = useState<UploadState>({ phase: 'idle' })
   const [isDragOver, setIsDragOver] = useState(false)
+  const [includeWorkouts, setIncludeWorkouts] = useState(true)
 
   const prefMutation = useMutation({
     mutationFn: (patch: Partial<MetricPrefs>) => api.patch('/profile', patch),
@@ -101,7 +102,8 @@ export function AppleHealthSection({
     formData.append('file', file)
 
     const xhr = new XMLHttpRequest()
-    xhr.open('POST', '/api/apple-health/upload')
+    const url = includeWorkouts ? '/api/apple-health/upload' : '/api/apple-health/upload?workouts=false'
+    xhr.open('POST', url)
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
 
     xhr.upload.onprogress = (e) => {
@@ -206,7 +208,27 @@ export function AppleHealthSection({
 
       {/* Upload zone */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-slate-600">Import data</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-600">Import data</p>
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={includeWorkouts}
+              onClick={() => setIncludeWorkouts((v) => !v)}
+              className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${
+                includeWorkouts ? 'bg-blue-600' : 'bg-slate-200'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                  includeWorkouts ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            <span className="text-sm text-slate-600">Include workouts</span>
+          </label>
+        </div>
 
         {uploadState.phase === 'idle' || uploadState.phase === 'error' ? (
           <>

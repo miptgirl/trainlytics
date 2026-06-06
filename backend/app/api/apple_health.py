@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile
 
 from app.dependencies import get_current_user
 from app.services import apple_health_service
@@ -14,6 +14,7 @@ async def upload_apple_health(
     file: UploadFile,
     background_tasks: BackgroundTasks,
     username: str = Depends(get_current_user),
+    workouts: bool = Query(True, description="Stage workouts in the import queue"),
 ) -> dict:
     filename = file.filename or ""
     if not filename.lower().endswith(".zip"):
@@ -37,6 +38,7 @@ async def upload_apple_health(
         zip_path,
         temp_dir,
         username,
+        workouts,
     )
     return {"task_id": task_id}
 

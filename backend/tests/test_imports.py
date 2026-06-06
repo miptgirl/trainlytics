@@ -113,7 +113,7 @@ async def test_list_pending_returns_only_pending(db_session, auth_client: AsyncC
     await _insert_import(db_session, _cardio_mapped(date="2026-01-11", duration=1800), status="accepted")
     await _insert_import(db_session, _cardio_mapped(date="2026-01-12", duration=900), status="discarded")
 
-    resp = await auth_client.get("/api/imports")
+    resp = await auth_client.get("/api/imports/pending")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_pending"] == 1
@@ -123,7 +123,7 @@ async def test_list_pending_returns_only_pending(db_session, auth_client: AsyncC
 
 @pytest.mark.asyncio
 async def test_list_pending_empty(db_session, auth_client: AsyncClient):
-    resp = await auth_client.get("/api/imports")
+    resp = await auth_client.get("/api/imports/pending")
     assert resp.status_code == 200
     data = resp.json()
     assert data["total_pending"] == 0

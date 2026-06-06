@@ -16,6 +16,7 @@ from app.models.session import (
 )
 from app.schemas.imports import (
     AcceptAllOut,
+    DiscardAllOut,
     ImportAcceptOut,
     ImportConflict,
     ImportPatch,
@@ -169,7 +170,7 @@ async def _create_session_from_import(
 
 # ── endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=PendingImportListOut)
+@router.get("/pending", response_model=PendingImportListOut)
 async def list_pending(
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -226,6 +227,21 @@ async def accept_all(
         accepted_count += 1
 
     return AcceptAllOut(accepted=accepted_count, conflicts=conflicts)
+
+
+@router.post("/discard-all", response_model=DiscardAllOut)
+async def discard_all(
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> DiscardAllOut:
+    result = await db.execute(
+        select(PendingImport).where(PendingImport.status == ImportStatus.pending.value)
+    )
+    rows = result.scalars().all()
+    for row in rows:
+        row.status = ImportStatus.discarded.value
+    await db.commit()
+    return DiscardAllOut(discarded=len(rows))
 
 
 @router.post("/{import_id}/accept", response_model=ImportAcceptOut)
