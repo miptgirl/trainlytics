@@ -9,6 +9,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "cryptography>=44.0.0",
     "fastapi[standard]>=0.136.1",
+    "httpx>=0.28.1",
     "openai>=1.50.0",
     "passlib[bcrypt]>=1.7.4",
     "pydantic-settings>=2.14.0",

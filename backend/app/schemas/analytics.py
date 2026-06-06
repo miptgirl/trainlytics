@@ -109,3 +109,13 @@ class HrZoneTrendsRow(BaseModel):
     z3_minutes: float
     z4_minutes: float
     z5_minutes: float
+
+
+class HealthMetricsPoint(BaseModel):
+    date: DateType
+    resting_hr_bpm: float | None
+    hrv_sdnn_ms: float | None
+    weight_kg: float | None
+    sleep_duration_seconds: int | None
+    vo2_max: float | None
+    active_energy_kcal: float | None

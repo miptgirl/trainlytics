@@ -7,7 +7,10 @@
       "Bash(python3 -m pytest tests/test_analytics.py -q)",
       "Bash(.venv/bin/pytest tests/test_profile.py -v)",
       "Bash(.venv/bin/pytest -v)",
-      "Bash(python -m pytest tests/ -q --tb=short)"
+      "Bash(python -m pytest tests/ -q --tb=short)",
+      "Bash(DOCKER_HOST=unix:///var/run/docker.sock docker ps)",
+      "Bash(open -a \"Docker Desktop\")",
+      "Bash(curl -s \"http://localhost:5173/api/profile\" -H \"Authorization: Bearer bad\")"
     ]
   }
 }

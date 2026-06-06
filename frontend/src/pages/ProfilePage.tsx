@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { ImportsTab } from '../components/imports/ImportsTab'
+import { StravaSection } from '../components/StravaSection'
+import { AppleHealthSection } from '../components/AppleHealthSection'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -39,6 +43,18 @@ interface UserProfile {
   coach_notes: string | null
   ai_key_configured: boolean
   ai_provider: AIProvider | null
+  strava_configured: boolean
+  strava_connected: boolean
+  strava_athlete_name: string | null
+  strava_athlete_avatar_url: string | null
+  strava_last_synced_at: string | null
+  strava_sync_start_date: string | null
+  health_metric_resting_hr: boolean
+  health_metric_hrv: boolean
+  health_metric_weight: boolean
+  health_metric_sleep: boolean
+  health_metric_vo2_max: boolean
+  health_metric_active_energy: boolean
 }
 
 const PRIORITY_ORDER: Priority[] = ['high', 'medium', 'low']
@@ -366,12 +382,36 @@ function DebugLogsSection() {
 
 // ── Main Page ───────────────────────────────────────────────────────────────
 
+type ProfileTab = 'connections' | 'imports' | 'settings'
+
 export default function ProfilePage() {
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // strava=connected|error arrives from the OAuth callback redirect
+  const stravaParam = searchParams.get('strava')
+
+  const activeTab: ProfileTab =
+    (searchParams.get('tab') as ProfileTab | null) === 'connections' || stravaParam != null
+      ? 'connections'
+      : searchParams.get('tab') === 'imports'
+        ? 'imports'
+        : 'settings'
+
+  function setTab(tab: ProfileTab) {
+    setSearchParams(tab === 'settings' ? {} : { tab })
+  }
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: () => api.get<UserProfile>('/profile'),
+  })
+
+  // Fetch pending count for the tab badge (shared cache with ImportsTab)
+  const { data: pendingData } = useQuery<{ total_pending: number }>({
+    queryKey: ['pending-imports'],
+    queryFn: () => api.get('/imports/pending'),
+    select: (d) => ({ total_pending: (d as { total_pending: number }).total_pending }),
   })
 
   const patchMutation = useMutation({
@@ -463,176 +503,261 @@ export default function ProfilePage() {
     )
   }
 
+  const pendingCount = pendingData?.total_pending ?? 0
+
   return (
     <Layout>
       <div className="max-w-xl mx-auto flex flex-col gap-6 pb-10">
         <h1 className="text-xl font-bold text-slate-800">Profile</h1>
 
-        {/* ── About ── */}
-        <SectionCard title="About">
-          <div className="flex flex-col gap-4">
-            <Field label="Display name">
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                onBlur={() => patchMutation.mutate({ display_name: displayName || null })}
-                placeholder="Your name"
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </Field>
-
-            <Field label="Birth year">
-              <input
-                type="number"
-                value={birthYear}
-                onChange={(e) => setBirthYear(e.target.value)}
-                onBlur={() =>
-                  patchMutation.mutate({
-                    birth_year: birthYear ? parseInt(birthYear, 10) : null,
-                  })
-                }
-                placeholder="e.g. 1990"
-                min={1900}
-                max={new Date().getFullYear()}
-                className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-36"
-              />
-            </Field>
-
-            <Field label="Experience level">
-              <SegmentedControl<ExperienceLevel>
-                options={[
-                  { label: 'Beginner', value: 'beginner' },
-                  { label: 'Intermediate', value: 'intermediate' },
-                  { label: 'Advanced', value: 'advanced' },
-                ]}
-                value={profile?.experience_level ?? null}
-                onChange={(v) => patchMutation.mutate({ experience_level: v })}
-              />
-            </Field>
-          </div>
-        </SectionCard>
-
-        {/* ── Training Goals ── */}
-        <SectionCard title="Training Goals">
-          <div className="flex flex-col gap-3">
-            {goals.length === 0 && (
-              <p className="text-sm text-slate-400">No goals yet. Add one below.</p>
-            )}
-            {goals.map((goal, idx) => (
-              <div key={idx} className="flex gap-2 items-start">
-                <input
-                  type="text"
-                  value={goal.text}
-                  onChange={(e) => updateGoalText(idx, e.target.value)}
-                  onBlur={saveGoalText}
-                  placeholder="Goal description"
-                  className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <select
-                  value={goal.priority}
-                  onChange={(e) => updateGoalPriority(idx, e.target.value as Priority)}
-                  className="border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => removeGoal(idx)}
-                  className="text-slate-400 hover:text-red-500 transition-colors mt-2 leading-none text-lg"
-                  aria-label="Remove goal"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
+        {/* ── Tab bar ── */}
+        <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+          {(
+            [
+              { id: 'connections', label: 'Connections' },
+              { id: 'imports', label: 'Imports', badge: pendingCount > 0 ? pendingCount : undefined },
+              { id: 'settings', label: 'Settings' },
+            ] as { id: ProfileTab; label: string; badge?: number }[]
+          ).map(({ id, label, badge }) => (
             <button
+              key={id}
               type="button"
-              onClick={addGoal}
-              className="self-start text-sm text-blue-600 hover:text-blue-700 font-medium mt-1"
+              onClick={() => setTab(id)}
+              className={`text-sm px-4 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+                activeTab === id
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
             >
-              + Add goal
+              {label}
+              {badge != null && (
+                <span className="text-xs bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none font-semibold min-w-[18px] text-center">
+                  {badge}
+                </span>
+              )}
             </button>
-          </div>
-        </SectionCard>
+          ))}
+        </div>
 
-        {/* ── Injury / Limitation Notes ── */}
-        <SectionCard title="Injury / Limitation Notes">
-          <textarea
-            value={injuryNotes}
-            onChange={(e) => setInjuryNotes(e.target.value)}
-            onBlur={() => patchMutation.mutate({ injury_notes: injuryNotes || null })}
-            placeholder="e.g. bad left knee, lower back issues…"
-            rows={3}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-slate-400 mt-1">Saved automatically when you leave this field.</p>
-        </SectionCard>
-
-        {/* ── AI Coach Notes ── */}
-        <SectionCard title="AI Coach Notes">
-          <textarea
-            value={coachNotes}
-            onChange={(e) => setCoachNotes(e.target.value)}
-            onBlur={() => patchMutation.mutate({ coach_notes: coachNotes || null })}
-            placeholder="e.g. I train at 6am before work, I prefer compound movements…"
-            rows={3}
-            className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <p className="text-xs text-slate-400 mt-1">Saved automatically when you leave this field.</p>
-        </SectionCard>
-
-        {/* ── AI Provider ── */}
-        <SectionCard title="AI Provider">
-          <div className="flex flex-col gap-5">
-            {!keyResetNoticeDismissed && (
-              <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
-                <span>API key has been reset. Please re-enter your key.</span>
-                <button
-                  type="button"
-                  onClick={dismissKeyResetNotice}
-                  className="text-amber-500 hover:text-amber-700 shrink-0 leading-none"
-                  aria-label="Dismiss"
-                >
-                  ✕
-                </button>
+        {/* ── Connections tab ── */}
+        {activeTab === 'connections' && (
+          <>
+            {stravaParam === 'error' && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
+                Strava connection failed. Please try again.
               </div>
             )}
+            {stravaParam === 'connected' && (
+              <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3 text-sm text-green-700">
+                Strava connected successfully.
+              </div>
+            )}
+            <SectionCard title="Connections">
+              <div className="flex flex-col gap-6">
+                {profile?.strava_configured ? (
+                  <StravaSection
+                    configured={profile.strava_configured}
+                    connected={profile.strava_connected}
+                    athleteName={profile.strava_athlete_name}
+                    athleteAvatarUrl={profile.strava_athlete_avatar_url}
+                    lastSyncedAt={profile.strava_last_synced_at}
+                    syncStartDate={profile.strava_sync_start_date}
+                    onNavigateToImports={() => setTab('imports')}
+                  />
+                ) : null}
+                <AppleHealthSection
+                  health_metric_resting_hr={profile?.health_metric_resting_hr ?? true}
+                  health_metric_hrv={profile?.health_metric_hrv ?? true}
+                  health_metric_weight={profile?.health_metric_weight ?? true}
+                  health_metric_sleep={profile?.health_metric_sleep ?? true}
+                  health_metric_vo2_max={profile?.health_metric_vo2_max ?? true}
+                  health_metric_active_energy={profile?.health_metric_active_energy ?? true}
+                  onNavigateToImports={() => setTab('imports')}
+                />
+              </div>
+            </SectionCard>
+          </>
+        )}
 
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-slate-600">Provider</span>
-              <SegmentedControl<AIProvider>
-                options={[
-                  { label: 'Anthropic', value: 'anthropic' },
-                  { label: 'OpenAI', value: 'openai' },
-                ]}
-                value={selectedProvider}
-                onChange={(v) => {
-                  setSelectedProvider(v)
-                  if (profile?.ai_key_configured) {
-                    patchMutation.mutate({ ai_provider: v })
-                  }
-                }}
+        {/* ── Imports tab ── */}
+        {activeTab === 'imports' && (
+          <ImportsTab onNavigateToConnections={() => setTab('connections')} />
+        )}
+
+        {/* ── Settings tab ── */}
+        {activeTab === 'settings' && (
+          <>
+            {/* ── About ── */}
+            <SectionCard title="About">
+              <div className="flex flex-col gap-4">
+                <Field label="Display name">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    onBlur={() => patchMutation.mutate({ display_name: displayName || null })}
+                    placeholder="Your name"
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </Field>
+
+                <Field label="Birth year">
+                  <input
+                    type="number"
+                    value={birthYear}
+                    onChange={(e) => setBirthYear(e.target.value)}
+                    onBlur={() =>
+                      patchMutation.mutate({
+                        birth_year: birthYear ? parseInt(birthYear, 10) : null,
+                      })
+                    }
+                    placeholder="e.g. 1990"
+                    min={1900}
+                    max={new Date().getFullYear()}
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-36"
+                  />
+                </Field>
+
+                <Field label="Experience level">
+                  <SegmentedControl<ExperienceLevel>
+                    options={[
+                      { label: 'Beginner', value: 'beginner' },
+                      { label: 'Intermediate', value: 'intermediate' },
+                      { label: 'Advanced', value: 'advanced' },
+                    ]}
+                    value={profile?.experience_level ?? null}
+                    onChange={(v) => patchMutation.mutate({ experience_level: v })}
+                  />
+                </Field>
+              </div>
+            </SectionCard>
+
+            {/* ── Training Goals ── */}
+            <SectionCard title="Training Goals">
+              <div className="flex flex-col gap-3">
+                {goals.length === 0 && (
+                  <p className="text-sm text-slate-400">No goals yet. Add one below.</p>
+                )}
+                {goals.map((goal, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <input
+                      type="text"
+                      value={goal.text}
+                      onChange={(e) => updateGoalText(idx, e.target.value)}
+                      onBlur={saveGoalText}
+                      placeholder="Goal description"
+                      className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select
+                      value={goal.priority}
+                      onChange={(e) => updateGoalPriority(idx, e.target.value as Priority)}
+                      className="border border-slate-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeGoal(idx)}
+                      className="text-slate-400 hover:text-red-500 transition-colors mt-2 leading-none text-lg"
+                      aria-label="Remove goal"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addGoal}
+                  className="self-start text-sm text-blue-600 hover:text-blue-700 font-medium mt-1"
+                >
+                  + Add goal
+                </button>
+              </div>
+            </SectionCard>
+
+            {/* ── Injury / Limitation Notes ── */}
+            <SectionCard title="Injury / Limitation Notes">
+              <textarea
+                value={injuryNotes}
+                onChange={(e) => setInjuryNotes(e.target.value)}
+                onBlur={() => patchMutation.mutate({ injury_notes: injuryNotes || null })}
+                placeholder="e.g. bad left knee, lower back issues…"
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-            </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Saved automatically when you leave this field.
+              </p>
+            </SectionCard>
 
-            <ApiKeyField
-              label="API Key"
-              isConfigured={profile?.ai_key_configured ?? false}
-              isSaving={patchMutation.isPending}
-              onSave={(key) => {
-                patchMutation.mutate({ ai_provider: selectedProvider, ai_key: key })
-                dismissKeyResetNotice()
-              }}
-              onRemove={() => patchMutation.mutate({ ai_key: null })}
-            />
-          </div>
-        </SectionCard>
+            {/* ── AI Coach Notes ── */}
+            <SectionCard title="AI Coach Notes">
+              <textarea
+                value={coachNotes}
+                onChange={(e) => setCoachNotes(e.target.value)}
+                onBlur={() => patchMutation.mutate({ coach_notes: coachNotes || null })}
+                placeholder="e.g. I train at 6am before work, I prefer compound movements…"
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Saved automatically when you leave this field.
+              </p>
+            </SectionCard>
 
-        {/* ── Debug: AI Request Logs ── */}
-        <DebugLogsSection />
+            {/* ── AI Provider ── */}
+            <SectionCard title="AI Provider">
+              <div className="flex flex-col gap-5">
+                {!keyResetNoticeDismissed && (
+                  <div className="flex items-start justify-between gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+                    <span>API key has been reset. Please re-enter your key.</span>
+                    <button
+                      type="button"
+                      onClick={dismissKeyResetNotice}
+                      className="text-amber-500 hover:text-amber-700 shrink-0 leading-none"
+                      aria-label="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-slate-600">Provider</span>
+                  <SegmentedControl<AIProvider>
+                    options={[
+                      { label: 'Anthropic', value: 'anthropic' },
+                      { label: 'OpenAI', value: 'openai' },
+                    ]}
+                    value={selectedProvider}
+                    onChange={(v) => {
+                      setSelectedProvider(v)
+                      if (profile?.ai_key_configured) {
+                        patchMutation.mutate({ ai_provider: v })
+                      }
+                    }}
+                  />
+                </div>
+
+                <ApiKeyField
+                  label="API Key"
+                  isConfigured={profile?.ai_key_configured ?? false}
+                  isSaving={patchMutation.isPending}
+                  onSave={(key) => {
+                    patchMutation.mutate({ ai_provider: selectedProvider, ai_key: key })
+                    dismissKeyResetNotice()
+                  }}
+                  onRemove={() => patchMutation.mutate({ ai_key: null })}
+                />
+              </div>
+            </SectionCard>
+
+            {/* ── Debug: AI Request Logs ── */}
+            <DebugLogsSection />
+          </>
+        )}
       </div>
     </Layout>
   )

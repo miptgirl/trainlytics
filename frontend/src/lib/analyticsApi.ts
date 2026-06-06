@@ -220,3 +220,21 @@ export function useHrZoneTrends() {
     queryFn: () => api.get<HrZoneTrendsRow[]>('/analytics/cardio/hr-zone-trends'),
   })
 }
+
+export interface HealthMetricsPoint {
+  date: string
+  resting_hr_bpm: number | null
+  hrv_sdnn_ms: number | null
+  weight_kg: number | null
+  sleep_duration_seconds: number | null
+  vo2_max: number | null
+  active_energy_kcal: number | null
+}
+
+export function useHealthMetrics(days: number) {
+  return useQuery<HealthMetricsPoint[]>({
+    queryKey: ['analytics', 'health-metrics', days],
+    queryFn: () =>
+      api.get<HealthMetricsPoint[]>(`/analytics/health-metrics?days=${days}`),
+  })
+}

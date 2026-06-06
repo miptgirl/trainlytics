@@ -130,7 +130,7 @@ async def test_weekly_insights_happy_path_anthropic(db_session, auth_client: Asy
     # Set up API key via profile endpoint
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     fake_response = _make_anthropic_response("Nice training week!")
@@ -153,7 +153,7 @@ async def test_adapt_session_happy_path_anthropic(db_session, auth_client: Async
     """Happy path: returns suggestions string when Anthropic key is set."""
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     fake_response = _make_anthropic_response("Swap squats for leg press.")
@@ -187,7 +187,7 @@ async def test_weekly_insights_writes_log_row(db_session, auth_client: AsyncClie
     """Successful call writes a row to ai_request_logs with correct fields."""
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     fake_response = _make_anthropic_response("Good progress!")
@@ -225,7 +225,7 @@ async def test_adapt_session_writes_log_row(db_session, auth_client: AsyncClient
     """Successful adapt-session call writes a row with endpoint='adapt-session'."""
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     fake_response = _make_anthropic_response("Try lighter weights.")
@@ -259,7 +259,7 @@ async def test_failed_ai_call_writes_log_with_error(db_session, auth_client: Asy
     """SDK exception writes a log row with error set; HTTP handler gets a 502, not 500."""
     await auth_client.patch(
         "/api/profile",
-        json={"anthropic_api_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
+        json={"ai_key": "sk-ant-fake-key", "ai_provider": "anthropic"},
     )
 
     with patch("anthropic.Anthropic") as MockAnthropic:

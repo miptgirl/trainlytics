@@ -316,6 +316,100 @@ def compact_session_summary(ws: WorkoutSession) -> str:
     return "\n".join(lines)
 
 
+# ── Health context block ──────────────────────────────────────────────────────
+
+async def get_health_context_block(row: UserSettings, db: AsyncSession) -> str | None:
+    """Compute 7-day averages across five time windows and format as a comparison table.
+
+    Windows:
+      Now        last 7 days
+      ~1mo ago   days −35 to −28
+      ~3mo ago   days −97 to −90
+      ~1yr ago   days −369 to −362
+
+    Returns None when there is no body_metrics data or all metrics are disabled.
+    """
+    from app.models.body_metrics import BodyMetrics
+
+    today = datetime.date.today()
+
+    windows = [
+        ("Now",      -6,   0),
+        ("~1mo ago", -35, -28),
+        ("~3mo ago", -97, -90),
+        ("~1yr ago", -369, -362),
+    ]
+
+    def _fmt(precision: int, scale: float = 1.0):
+        return lambda v: f"{v * scale:.{precision}f}"
+
+    enabled: list[tuple[str, str, Any]] = []
+    if row.health_metric_resting_hr:
+        enabled.append(("resting_hr_bpm", "Resting HR (bpm)", _fmt(0)))
+    if row.health_metric_hrv:
+        enabled.append(("hrv_sdnn_ms", "HRV SDNN (ms)", _fmt(0)))
+    if row.health_metric_weight:
+        enabled.append(("weight_kg", "Weight (kg)", _fmt(1)))
+    if row.health_metric_sleep:
+        enabled.append(("sleep_duration_seconds", "Sleep (h)", _fmt(1, 1 / 3600)))
+    if row.health_metric_vo2_max:
+        enabled.append(("vo2_max", "VO2 Max", _fmt(1)))
+    if row.health_metric_active_energy:
+        enabled.append(("active_energy_kcal", "Active energy (kcal)", _fmt(0)))
+
+    if not enabled:
+        return None
+
+    oldest_date = today + datetime.timedelta(days=-369)
+    result = await db.execute(
+        select(BodyMetrics)
+        .where(BodyMetrics.date >= oldest_date)
+        .where(BodyMetrics.date <= today)
+    )
+    all_rows = result.scalars().all()
+
+    if not all_rows:
+        return None
+
+    by_date = {r.date: r for r in all_rows}
+
+    window_avgs: list[dict[str, float | None]] = []
+    for _, start_off, end_off in windows:
+        start_d = today + datetime.timedelta(days=start_off)
+        end_d = today + datetime.timedelta(days=end_off)
+        n = (end_d - start_d).days + 1
+        w_rows = [
+            by_date[start_d + datetime.timedelta(days=i)]
+            for i in range(n)
+            if (start_d + datetime.timedelta(days=i)) in by_date
+        ]
+        avgs: dict[str, float | None] = {}
+        for col, _, _ in enabled:
+            vals = [v for r in w_rows if (v := getattr(r, col)) is not None]
+            avgs[col] = sum(vals) / len(vals) if vals else None
+        window_avgs.append(avgs)
+
+    active = [
+        (col, lbl, fmt)
+        for col, lbl, fmt in enabled
+        if any(a[col] is not None for a in window_avgs)
+    ]
+    if not active:
+        return None
+
+    w_labels = [w[0] for w in windows]
+    lbl_w = max(len(m[1]) for m in active)
+    col_w = max(len(lbl) for lbl in w_labels) + 3
+
+    header = " " * lbl_w + "".join(f"{lbl:>{col_w}}" for lbl in w_labels)
+    lines = ["Health metrics (weekly averages):", header]
+    for col, metric_lbl, fmt in active:
+        cells = [fmt(a[col]) if a[col] is not None else "—" for a in window_avgs]
+        lines.append(f"{metric_lbl:{lbl_w}}" + "".join(f"{c:>{col_w}}" for c in cells))
+
+    return "\n".join(lines)
+
+
 # ── Weekly history prompt ─────────────────────────────────────────────────────
 
 async def build_weekly_history_prompt(username: str, db: AsyncSession) -> str:
@@ -413,8 +507,10 @@ async def call_ai(
     result = await db.execute(select(UserSettings).where(UserSettings.username == username))
     row = result.scalar_one_or_none()
     context_block = build_athlete_context_block(row)
+    health_block = await get_health_context_block(row, db) if row is not None else None
 
-    full_prompt = (context_block + "\n\n" + prompt).strip() if context_block else prompt
+    parts = [p for p in [context_block, health_block, prompt] if p]
+    full_prompt = "\n\n".join(parts) if parts else prompt
 
     provider_info = await get_active_provider(username, db)
     if provider_info is None:

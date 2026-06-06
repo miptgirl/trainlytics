@@ -22,11 +22,14 @@ from app.models.session import (
     StrengthSet,
     WorkoutSession,
 )
+from app.models.body_metrics import BodyMetrics
+from app.models.user_settings import UserSettings
 from app.schemas.analytics import (
     CardioTimeSplitPoint,
     DistanceProgressionPoint,
     ExercisesByTypePoint,
     HeatmapDay,
+    HealthMetricsPoint,
     HrZoneTrendsRow,
     OverviewTrendsPoint,
     PersonalRecord,
@@ -1058,3 +1061,36 @@ async def hr_zone_trends(
     if debug:
         return _debug_wrap(result, _render_sql(query))
     return result
+
+
+# ── Health metrics ────────────────────────────────────────────────────────────
+
+@router.get("/health-metrics", response_model=list[HealthMetricsPoint])
+async def health_metrics(
+    user: str = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    days: int = Query(90, ge=0),
+):
+    settings = await db.get(UserSettings, user)
+    prefs = settings or UserSettings()
+
+    query = select(BodyMetrics)
+    if days > 0:
+        cutoff = DateType.today() - timedelta(days=days)
+        query = query.where(BodyMetrics.date >= cutoff)
+    query = query.order_by(BodyMetrics.date)
+
+    rows = (await db.execute(query)).scalars().all()
+
+    return [
+        HealthMetricsPoint(
+            date=row.date,
+            resting_hr_bpm=row.resting_hr_bpm if prefs.health_metric_resting_hr else None,
+            hrv_sdnn_ms=row.hrv_sdnn_ms if prefs.health_metric_hrv else None,
+            weight_kg=row.weight_kg if prefs.health_metric_weight else None,
+            sleep_duration_seconds=row.sleep_duration_seconds if prefs.health_metric_sleep else None,
+            vo2_max=row.vo2_max if prefs.health_metric_vo2_max else None,
+            active_energy_kcal=row.active_energy_kcal if prefs.health_metric_active_energy else None,
+        )
+        for row in rows
+    ]
