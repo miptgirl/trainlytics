@@ -55,10 +55,11 @@ output *looks* polished.
 
 ---
 
-## 2. The plan: 8 workstreams
+## 2. The plan: 9 workstreams
 
-Letters are stable handles for discussion. **B, C, D, G** carry the weight; **I** (interaction model, added
-in v0.7) defines the surface they ship into. The dropped Workstream A
+Letters are stable handles for discussion. **B, C, D, G** carry the weight; **I** (interaction model) and
+**J** (agent memory), added in v0.7, define the surface the AI ships into and the user-facts it accumulates.
+The dropped Workstream A
 (log-mining) is replaced by the single anchor case in [Appendix A](#appendix-a--production-anchor-case).
 Each workstream lists **Purpose → How we execute → Artifacts produced**.
 
@@ -294,7 +295,9 @@ defaulting to a pattern.
    `when used · strengths · weaknesses · cost · latency · provider-portability (BYO) · maturity`. Patterns to
    cover: single-shot+context; **vector RAG** (for the C playbook); **knowledge graph / GraphRAG** (candidate
    for both the KB *and* the athlete-state model — exercise→muscle-group→imbalance, goal→capability→gap);
-   **structured DB + derived-metrics layer**; **tool-use agent loop**; **structured output**; **memory**.
+   **structured DB + derived-metrics layer**; **tool-use agent loop**; **structured output**; **memory**
+   (this row also decides the representation of the Workstream J user-fact store — structured rows vs.
+   freeform notes vs. vector vs. knowledge-graph — alongside the C KB-representation choice).
    Sources (named): Anthropic cookbook + the `claude-api` skill (Claude tool use / structured outputs /
    prompt caching / agent SDK), OpenAI function-calling docs, and WebSearch — *"RAG vs GraphRAG when to
    use"*, *"LLM agent over personal/structured data reference architecture"*, *"AI coach LLM health data
@@ -345,6 +348,7 @@ Three sub-parts:
 - propose & create a new strength session / weekly plan,
 - modify an existing plan (move/remove/add/adjust-volume sessions),
 - update notes on the user profile (coach notes, goals, limitations),
+- **propose a memory write** — record a *learned* fact about the user (Workstream J) through the same approve gate,
 - adjust templates, log/annotate sessions.
 Each action is classified **read** (analysis) vs. **write/propose** — and every write goes through the
 **propose + approve, never auto-apply** gate **and is checked against the athlete's safety constraints (the
@@ -420,8 +424,9 @@ current fire-and-forget model can't carry.
    `F5` $/insight) versus a one-shot report, so reserve it for jobs that genuinely need it.
 3. 🤖 **Turn & state model → `I3-turn-model.md`.** For conversational surfaces: session lifecycle, and **what
    persists between turns and across sessions** — ties to F's *memory* pattern, `C4` personalization, and the
-   record of which proposals the user accepted/rejected. Place the `G4` propose+approve gate explicitly in
-   the flow.
+   record of which proposals the user accepted/rejected. The *content* of cross-session memory is owned by
+   **Workstream J**; I3 only defines where it plugs into the turn flow. Place the `G4` propose+approve gate
+   explicitly in the flow.
 4. 🤖👤 **Map to existing UI → `I4-ui-map.md`.** Reuse current surfaces (weekly-insights view,
    [AdaptSessionModal.tsx](frontend/src/components/AdaptSessionModal.tsx),
    [plan/](frontend/src/components/plan/)) vs. introduce a new conversational surface; hand the UX +
@@ -431,6 +436,52 @@ current fire-and-forget model can't carry.
 turn/memory model is a hard input to the architecture and the `F1` pattern catalog's *memory* row).
 
 **Artifacts:** `I1-surfaces.md`, `I2-modality.md`, `I3-turn-model.md`, `I4-ui-map.md`.
+
+---
+
+### Workstream J — Agent memory (learned user-facts)
+*The AI's evolving model of **this** user — inferred and accumulated over time. The third leg of grounding,
+distinct from C and D7.*
+
+**Purpose:** Give the agent a durable, growing memory of facts about the user that live in neither the raw
+data nor the onboarding snapshot — so advice gets *more* personal over time instead of restarting cold each
+session. The three groundings are complementary: **C = "what's true in general"** (best practice), **D7 =
+"what's computed from the data"** (athlete-state), **J = "what we've learned about this person."** Without J,
+every session re-meets a stranger.
+
+Fact categories J must hold:
+- **preferences** — "prefers morning runs," "won't do burpees,"
+- **learned patterns** — "knee flares after back-to-back run days,"
+- **signal-quality meta-facts** — "rates wellbeing 'okay' regardless → treat as non-signal *for this user*"
+  (directly fixes anchor fail #4),
+- **advice history** — what was proposed, accepted, or rejected, and why,
+- **drifting goals/constraints** — updates that diverge from the `D6` onboarding snapshot.
+
+**How we execute:**
+1. 🤖 **Memory content model → `J1-memory-schema.md`.** A schema per fact: `fact · category · provenance
+   (who/what asserted it) · confidence · evidence (linked sessions/metrics) · created/updated · status
+   (active / superseded)`. Seed categories from the `B4` JTBD table and the anchor case.
+2. 🤖👤 **Governance & write model → `J2-governance.md`.** Writes go through **propose + approve** (the same
+   `G4` gate as plan edits): the agent surfaces "remember that…?" and the user confirms — chosen so a wrong
+   *inferred* fact can't silently corrupt all downstream advice. Define edit / supersede / forget flows,
+   conflict handling (a new fact contradicts an old one), and review/decay of stale facts. Draw the line vs.
+   neighbors: `D6` onboarding = explicit one-time capture; `G1` profile coach-notes = user-authored; **J =
+   agent-inferred, user-confirmed.**
+3. 🤖 **Retrieval & injection → `J3-retrieval.md`.** How relevant memory is selected and fed into a given
+   interaction (inject-all vs. retrieve-by-relevance) — ties to F's retrieval pattern and the `F5` cost model,
+   since memory adds to context tokens. **Representation (structured rows vs. notes vs. vector vs.
+   knowledge-graph) is routed to F** alongside the KB-representation choice; J3 finalizes once F4 lands.
+4. 🤖 **Memory-write tool** — folded into `G3` as a `propose_memory_write` tool (class *propose*, approval
+   *required*), backing the profile/memory store; provisional until F4 like the rest of `G3`.
+5. 🤖👤 **Validate against the anchor case + `B5`:** would the right facts have been captured, and would
+   *having* them have improved a later week's advice? Wrong or low-confidence facts must be visibly hedged —
+   a confidently-asserted wrong memory is a safety/quality failure, so this feeds H's `safety/harm-avoidance`
+   and `signal-vs-noise` dimensions.
+
+**Depends on:** `B4` (categories), F (representation — J3 provisional until F4). **Feeds:** G (the
+`propose_memory_write` tool), I (cross-session persistence), H (memory-correctness as an eval concern).
+
+**Artifacts:** `J1-memory-schema.md`, `J2-governance.md`, `J3-retrieval.md`.
 
 ---
 
@@ -478,20 +529,21 @@ but E's *validation* needs C's cards. So **E-discovery runs before C; E-validati
 | 2 | **E-discovery** (E1–E2) + D1–D2 (inventory + data-quality) | Signal catalog & candidate insights; what to look for in C |
 | 3 | **C** (knowledge base) | Coaching playbook, incl. health-signal cards driven by E's catalog (validated against the rubric) |
 | 4 | **E-validation** (E gates incl. backtest) + D3–D7 | Validated insights; decision→data matrix; new-capture & athlete-state |
-| 5 | **I** (interaction model) → **G** (capabilities/actions/tools + safety) | Surface & turn model; capability + provisional tool spec + safety guards |
-| 6 | F | Architecture & framework decision (consumes I's turn/memory model; finalizes G3) |
+| 5 | **I** (interaction model) + **J** (memory design) → **G** (capabilities/actions/tools + safety) | Surface & turn model; memory schema + governance; capability + provisional tool spec + safety guards |
+| 6 | F | Architecture & framework decision (consumes I's turn/memory model; finalizes G3, J3's representation, the cost & tiering verdict) |
 | 7 | H (apply: re-score the design vs. baseline) | Validated design ready to implement |
 
 (B's JTBD + E-discovery's signal catalog together scope C — we go in knowing both the *questions* to answer
 and the *signals* available to answer them with. H2/H3 are built up front in step 1 because C5 and the F
-spike both score against them; step 7 *applies* the rubric, it doesn't build it. I precedes G in step 5 so
-capabilities and tools are shaped by the chosen surface, and feeds F's memory/turn requirements in step 6.)
+spike both score against them; step 7 *applies* the rubric, it doesn't build it. I and J precede G in step 5
+so capabilities and tools are shaped by the chosen surface and the memory model; both feed F's
+memory/turn/representation requirements in step 6 — J's representation, like G3, is provisional until F4.)
 
 **Final output of this plan:** a *design brief* (`specs/ai-redesign/DESIGN-BRIEF.md`) assembled from the
 workstream artifacts — chosen architecture + cost model (`F4`/`F5`), coaching playbook (`C3`),
-athlete-state/data layer (`D7`), interaction & turn model (`I2`/`I3`), capability + tool spec + safety guards
-(`G1`/`G3`/`G5`), new-data-capture plan (`D4`/`D5`/`D6`), and eval harness (`H`) — ready to turn into
-implementation specs.
+athlete-state/data layer (`D7`), interaction & turn model (`I2`/`I3`), agent-memory design (`J1`/`J2`),
+capability + tool spec + safety guards (`G1`/`G3`/`G5`), new-data-capture plan (`D4`/`D5`/`D6`), and eval
+harness (`H`) — ready to turn into implementation specs.
 
 ---
 
@@ -567,7 +619,13 @@ quality, and no ability to act. This single case is eval target #1.
   round-trips × output, priced on both Anthropic and OpenAI); the F spike now instruments token/cost and is
   where the single-model-vs-tiering question is settled; cost stays a *weighted* F2 criterion (no hard ceiling
   — single-user BYO, absolute cost is small), prompt-caching of the static prefix is a default, and modality
-  choice (I2) is flagged as a cost lever.
+  choice (I2) is flagged as a cost lever. **Added Workstream J — Agent memory (learned user-facts):** the
+  third leg of grounding alongside C (general best practice) and D7 (computed athlete-state) — an inferred,
+  accumulated store of preferences, learned patterns, signal-quality meta-facts (fixes anchor fail #4),
+  advice history, and drifting goals. Writes go through **propose + approve** (same G4 gate, so a wrong
+  inferred fact can't silently corrupt advice); a `propose_memory_write` tool folds into G3; representation
+  (rows/notes/vector/graph) is **routed to F** alongside the KB-representation choice; memory-correctness
+  feeds H's safety + signal-vs-noise dimensions. Sequencing now runs I+J → G in step 5.
 - **v0.6 (2026-06-06):** Resolved the C/E overlap and reordered. Apple Health insight *science* now lives in
   the C knowledge base (added "health-signal interpretation" topic + a C↔E split note); E owns
   operationalization only. Split E into **E-discovery (before C)** and **E-validation (after C)** so the
