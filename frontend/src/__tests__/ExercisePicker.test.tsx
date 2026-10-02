@@ -11,7 +11,8 @@ vi.mock('../lib/api', () => ({
 
 import { api } from '../lib/api'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
-import { emptyEntry, type ExerciseOption } from '../components/ExerciseEntryBlock'
+import type { ExerciseOption } from '../components/ExerciseEntryBlock'
+import { emptyEntry } from '../components/exerciseEntryDefaults'
 
 const mockGet = vi.mocked(api.get)
 const mockPost = vi.mocked(api.post)

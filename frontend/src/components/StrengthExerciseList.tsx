@@ -1,10 +1,7 @@
 import { useState } from 'react'
 import { useFieldArray } from 'react-hook-form'
-import {
-  ExerciseEntryBlock,
-  emptyEntry,
-  type ExerciseOption,
-} from './ExerciseEntryBlock'
+import { ExerciseEntryBlock, type ExerciseOption } from './ExerciseEntryBlock'
+import { emptyEntry } from './exerciseEntryDefaults'
 
 /**
  * Shared strength exercise list: heading, collapsible exercise blocks and the

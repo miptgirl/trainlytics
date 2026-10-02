@@ -158,7 +158,7 @@ export function PlanSessionForm({
         }
       }
     })
-  }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [watchedSegments, setValue])  
 
   const { fields, append, remove } = useFieldArray({ control, name: 'segments' })
   const days = getDaysOfWeek(weekStart)

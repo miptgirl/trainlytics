@@ -10,6 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts'
+import type { DotItemDotProps } from 'recharts'
 import { api } from '../../lib/api'
 import { useStrengthProgression } from '../../lib/analyticsApi'
 
@@ -125,7 +126,7 @@ export function ExerciseProgressionChart() {
                 dataKey="Max Weight (kg)"
                 stroke="#3b82f6"
                 strokeWidth={2}
-                dot={(props: any) => {
+                dot={(props: DotItemDotProps) => {
                   const { cx, cy, payload } = props
                   if (payload['_raw_weight'] === maxWeight) {
                     return (

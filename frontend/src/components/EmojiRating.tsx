@@ -1,4 +1,6 @@
-interface EmojiOption {
+import { RPE_OPTIONS, WELLBEING_OPTIONS } from './emojiRatingOptions'
+
+export interface EmojiOption {
   emoji: string
   label: string
 }
@@ -42,22 +44,6 @@ export function EmojiRating({ label, options, value, onChange }: EmojiRatingProp
     </div>
   )
 }
-
-export const WELLBEING_OPTIONS: EmojiOption[] = [
-  { emoji: '😫', label: 'Exhausted' },
-  { emoji: '😞', label: 'Not great' },
-  { emoji: '😐', label: 'Okay' },
-  { emoji: '🙂', label: 'Good' },
-  { emoji: '😄', label: 'Great' },
-]
-
-export const RPE_OPTIONS: EmojiOption[] = [
-  { emoji: '😫', label: 'All-out' },
-  { emoji: '😞', label: 'Hard' },
-  { emoji: '😐', label: 'Moderate' },
-  { emoji: '🙂', label: 'Easy' },
-  { emoji: '😄', label: 'Very easy' },
-]
 
 interface EmojiDisplayProps {
   wellbeing: number | null

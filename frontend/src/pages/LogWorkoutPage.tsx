@@ -6,16 +6,17 @@ import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
-  emptyEntry,
   type ExerciseEntryFormValues,
 } from '../components/ExerciseEntryBlock'
+import { emptyEntry } from '../components/exerciseEntryDefaults'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
-import { EmojiRating, WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/EmojiRating'
+import { EmojiRating } from '../components/EmojiRating'
+import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions'
 import { AdaptSessionModal } from '../components/AdaptSessionModal'
 import { AdaptCardioModal } from '../components/plan/AdaptCardioModal'
 import { HrInputSection } from '../components/HrInputSection'
@@ -348,7 +349,7 @@ function CardioForm({
         }
       }
     })
-  }, [watchedSegments, setValue]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [watchedSegments, setValue])  
 
   function injectPlannedSession(session: PlannedSessionOut) {
     const sessionDateStr = session.planned_date === todayStr

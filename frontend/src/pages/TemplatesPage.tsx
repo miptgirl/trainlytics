@@ -5,11 +5,11 @@ import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
-  emptyEntry,
   ExerciseEntryBlock,
   type ExerciseEntryFormValues,
   type ExerciseOption,
 } from '../components/ExerciseEntryBlock'
+import { emptyEntry } from '../components/exerciseEntryDefaults'
 import { api } from '../lib/api'
 
 // ── API types ─────────────────────────────────────────────────────────────────

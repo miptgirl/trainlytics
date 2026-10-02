@@ -1,7 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, vi } from 'vitest'
-import { formatSeconds, parseTimeString, TimeInput } from '../components/TimeInput'
+import { TimeInput } from '../components/TimeInput'
+import { formatSeconds, parseTimeString } from '../lib/timeFormat'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers
