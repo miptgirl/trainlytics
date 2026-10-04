@@ -90,11 +90,13 @@ const heartPath =
     .join('') +
   'Z'
 
-const BAR_W = 80
-const BAR_GAP = 31
-const BAR_BASE = 687
-const BAR_HEIGHTS = [133, 193, 259]
-const BAR_CORNER = 16
+// The bars are holes cut through the heart, so they sit inside its outline
+// with a clay wall of at least ~35 units around each.
+const BAR_W = 72
+const BAR_GAP = 28
+const BAR_BASE = 620
+const BAR_HEIGHTS = [90, 150, 220]
+const BAR_CORNER = 18
 
 function barRect(i) {
   const x = CX - (3 * BAR_W + 2 * BAR_GAP) / 2 + i * (BAR_W + BAR_GAP)
@@ -120,15 +122,31 @@ const profileTable = (profile, top) =>
   Array.from({ length: 65 }, (_, i) => f(PROFILES[profile](i / 64, top))).join(' ')
 
 // Matte relief lit from the top-left: diffuse shading of the height map, a
-// soft sheen on the lit side, a faint contact line and a soft cast shadow. The light maps are blurred because lighting an 8-bit
-// height map leaves visible contour terraces.
-function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth = 235, elevation = 58, ambient = 0, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+// soft sheen on the lit side, a faint contact line and a soft cast shadow.
+// The light maps are blurred because lighting an 8-bit height map leaves
+// visible contour terraces.
+//
+// `holes`: the element is painted light with black cut-outs. Black becomes
+// transparent, the outer outline drives a broad dome, and the solid shape
+// (with a `holes`-sized blur) rolls the surface down into each cut-out.
+function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, holes, azimuth = 235, elevation = 58, ambient = 0, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+  const shape = holes ? 'solid' : 'SourceAlpha'
+  const heightMap = holes
+    ? `<feColorMatrix in="SourceGraphic" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -4.2"/>
+    <feComposite in2="SourceAlpha" operator="in" result="solid"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
+    <feComponentTransfer result="dome"><feFuncA type="table" tableValues="${profileTable(profile, top)}"/></feComponentTransfer>
+    <feGaussianBlur in="solid" stdDeviation="${holes}"/>
+    <feComponentTransfer result="rim"><feFuncA type="table" tableValues="${profileTable('round', 0.97)}"/></feComponentTransfer>
+    <feComposite in="dome" in2="rim" operator="arithmetic" k1="1" result="height"/>`
+    : `<feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
+    <feComponentTransfer result="height"><feFuncA type="table" tableValues="${profileTable(profile, top)}"/></feComponentTransfer>`
   const shadows = cast
-    ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${cast}"/>
+    ? `<feGaussianBlur in="${shape}" stdDeviation="${cast}"/>
     <feOffset dx="${drop / 3}" dy="${drop}" result="castBlur"/>
     <feFlood flood-color="${C.shadow}" flood-opacity="${castOpacity}"/>
     <feComposite in2="castBlur" operator="in" result="cast"/>
-    <feMorphology in="SourceAlpha" operator="dilate" radius="${ao / 2}"/>
+    <feMorphology in="${shape}" operator="dilate" radius="${ao / 2}"/>
     <feGaussianBlur stdDeviation="${ao}"/>
     <feOffset dx="${ao / 3}" dy="${ao / 1.5}" result="aoBlur"/>
     <feFlood flood-color="${C.shadow}" flood-opacity="${aoOpacity}"/>
@@ -140,8 +158,7 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth
   const k1 = f((1 - ambient) / Math.sin((elevation * Math.PI) / 180))
   return `
   <filter id="${id}" filterUnits="userSpaceOnUse" x="-64" y="-64" width="1152" height="1152" color-interpolation-filters="sRGB">
-    <feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
-    <feComponentTransfer result="height"><feFuncA type="table" tableValues="${profileTable(profile, top)}"/></feComponentTransfer>
+    ${heightMap}
     <feDiffuseLighting in="height" surfaceScale="${depth}" diffuseConstant="1" lighting-color="#fff" result="diffRaw">
       <feDistantLight azimuth="${azimuth}" elevation="${elevation}"/>
     </feDiffuseLighting>
@@ -151,9 +168,9 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth
     </feSpecularLighting>
     <feGaussianBlur in="specRaw" stdDeviation="${smooth}" result="spec"/>
     <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="${k1}" k2="${ambient}" result="shaded"/>
-    <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+    <feComposite in="spec" in2="${shape}" operator="in" result="specIn"/>
     <feComposite in="shaded" in2="specIn" operator="arithmetic" k2="1" k3="${sheen}" result="lit"/>
-    <feComposite in="lit" in2="SourceAlpha" operator="in" result="body"/>
+    <feComposite in="lit" in2="${shape}" operator="in" result="body"/>
     ${shadows}
   </filter>`
 }
@@ -186,9 +203,9 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
       <g filter="url(#ringClay)">
         ${SEGMENTS.map(segment).join('\n        ')}
       </g>
-      <path d="${heartPath}" fill="url(#heart)" stroke="url(#heart)" stroke-width="10" stroke-linejoin="round" filter="url(#heartClay)"/>
-      <g fill="url(#bar)" filter="url(#barClay)">
-        ${[0, 1, 2].map(barRect).join('\n        ')}
+      <g filter="url(#heartClay)">
+        <path d="${heartPath}" fill="url(#heart)" stroke="url(#heart)" stroke-width="10" stroke-linejoin="round"/>
+        <g fill="#000">${[0, 1, 2].map(barRect).join('')}</g>
       </g>
     </g>`
 
@@ -208,10 +225,8 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
     ${grad('heart', '#EFE9DD', '#DBD2C1', 400, 340, 600, 750)}
     ${grad('rose', '#D6ACA4', '#BA8B84', 560, 160, 860, 500)}
     ${grad('green', '#94A983', '#728863', 860, 400, 560, 870)}
-    ${grad('bar', '#66785C', '#4F5F48', 512, 428, 512, 687)}
     ${clayFilter('ringClay', { profile: 'round', bevel: 22, top: 0.96, depth: 26, ambient: 0.5, sheen: 0, smooth: 3, ao: 3, cast: 14, drop: 16, aoOpacity: 0.3, castOpacity: 0.4 })}
-    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, depth: 24, ambient: 0.5, sheen: 0, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.3, castOpacity: 0.4 })}
-    ${clayFilter('barClay', { profile: 'round', bevel: 16, top: 0.97, depth: 18, ambient: 0.45, sheen: 0, smooth: 2.5, ao: 2.5, cast: 10, drop: 10, aoOpacity: 0.28, castOpacity: 0.3 })}
+    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, holes: 12, depth: 24, ambient: 0.5, sheen: 0, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.3, castOpacity: 0.4 })}
     ${clayFilter('tileRim', { bevel: 30, depth: 10, sheen: 0.6, smooth: 4 })}
     ${clayFilter('plateStep', { bevel: 8, depth: 3, azimuth: 55, sheen: 0, smooth: 2 })}
     <filter id="grain" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
@@ -244,8 +259,8 @@ function faviconSvg() {
   </defs>
   <rect width="1024" height="1024" rx="${CORNER}" fill="url(#bg)"/>
   ${SEGMENTS.map((s) => `<path d="${segmentPath(s)}" fill="${flat[s.paint]}" stroke="${flat[s.paint]}" stroke-width="${2 * SEG_CORNER}" stroke-linejoin="round"/>`).join('\n  ')}
-  <path d="${heartPath}" fill="${flat.cream}" stroke="${flat.cream}" stroke-width="10" stroke-linejoin="round"/>
-  <g fill="#56674E">${[0, 1, 2].map(barRect).join('')}</g>
+  <mask id="holes"><rect width="1024" height="1024" fill="#fff"/><g fill="#000">${[0, 1, 2].map(barRect).join('')}</g></mask>
+  <path d="${heartPath}" fill="${flat.cream}" stroke="${flat.cream}" stroke-width="10" stroke-linejoin="round" mask="url(#holes)"/>
 </svg>
 `
 }

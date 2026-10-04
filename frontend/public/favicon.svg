@@ -7,6 +7,6 @@
   <path d="M596.92 151.88A370 370 0 0 1 821.36 309.03L786.24 332.07A328 328 0 0 0 587.28 192.76Z" fill="#C99D95" stroke="#C99D95" stroke-width="52" stroke-linejoin="round"/>
   <path d="M860.28 387.08A370 370 0 0 1 581.13 875.48L573.28 834.22A328 328 0 0 0 820.74 401.26Z" fill="#8FA47E" stroke="#8FA47E" stroke-width="52" stroke-linejoin="round"/>
   <path d="M497.35 881.71A370 370 0 0 1 168.38 649.22L207.39 633.64A328 328 0 0 0 499.02 839.74Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="52" stroke-linejoin="round"/>
-  <path d="M512 393C472 359.4 455.5 339.5 410.5 339.5C335.1 339.5 274 396.4 274 466.5C274 600 395 690 512 750C629 690 750 600 750 466.5C750 396.4 688.9 339.5 613.5 339.5C568.5 339.5 552 359.4 512 393Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="10" stroke-linejoin="round"/>
-  <g fill="#56674E"><rect x="361" y="554" width="80" height="133" rx="16"/><rect x="472" y="494" width="80" height="193" rx="16"/><rect x="583" y="428" width="80" height="259" rx="16"/></g>
+  <mask id="holes"><rect width="1024" height="1024" fill="#fff"/><g fill="#000"><rect x="376" y="530" width="72" height="90" rx="18"/><rect x="476" y="470" width="72" height="150" rx="18"/><rect x="576" y="400" width="72" height="220" rx="18"/></g></mask>
+  <path d="M512 393C472 359.4 455.5 339.5 410.5 339.5C335.1 339.5 274 396.4 274 466.5C274 600 395 690 512 750C629 690 750 600 750 466.5C750 396.4 688.9 339.5 613.5 339.5C568.5 339.5 552 359.4 512 393Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="10" stroke-linejoin="round" mask="url(#holes)"/>
 </svg>
