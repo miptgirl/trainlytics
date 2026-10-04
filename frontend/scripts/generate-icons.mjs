@@ -122,7 +122,7 @@ const profileTable = (profile, top) =>
 // Matte relief lit from the top-left: diffuse shading of the height map, a
 // soft sheen on the lit side, a faint contact line and a soft cast shadow. The light maps are blurred because lighting an 8-bit
 // height map leaves visible contour terraces.
-function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth = 235, elevation = 58, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth = 235, elevation = 58, ambient = 0, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
   const shadows = cast
     ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${cast}"/>
     <feOffset dx="${drop / 3}" dy="${drop}" result="castBlur"/>
@@ -135,6 +135,9 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth
     <feComposite in2="aoBlur" operator="in" result="ao"/>
     <feMerge><feMergeNode in="cast"/><feMergeNode in="ao"/><feMergeNode in="body"/></feMerge>`
     : ''
+  // Flat areas keep their base colour. `ambient` keeps part of the base colour
+  // out of the lighting, which narrows the light-to-dark range: matte, not plastic.
+  const k1 = f((1 - ambient) / Math.sin((elevation * Math.PI) / 180))
   return `
   <filter id="${id}" filterUnits="userSpaceOnUse" x="-64" y="-64" width="1152" height="1152" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
@@ -143,11 +146,11 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth
       <feDistantLight azimuth="${azimuth}" elevation="${elevation}"/>
     </feDiffuseLighting>
     <feGaussianBlur in="diffRaw" stdDeviation="${smooth}" result="diff"/>
-    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="${profile === 'round' ? 12 : 18}" lighting-color="#fff" result="specRaw">
+    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="18" lighting-color="#fff" result="specRaw">
       <feDistantLight azimuth="${azimuth}" elevation="38"/>
     </feSpecularLighting>
     <feGaussianBlur in="specRaw" stdDeviation="${smooth}" result="spec"/>
-    <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="${f(1 / Math.sin((elevation * Math.PI) / 180))}" result="shaded"/>
+    <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="${k1}" k2="${ambient}" result="shaded"/>
     <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
     <feComposite in="shaded" in2="specIn" operator="arithmetic" k2="1" k3="${sheen}" result="lit"/>
     <feComposite in="lit" in2="SourceAlpha" operator="in" result="body"/>
@@ -206,9 +209,9 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
     ${grad('rose', '#D6ACA4', '#BA8B84', 560, 160, 860, 500)}
     ${grad('green', '#94A983', '#728863', 860, 400, 560, 870)}
     ${grad('bar', '#66785C', '#4F5F48', 512, 428, 512, 687)}
-    ${clayFilter('ringClay', { profile: 'round', bevel: 22, top: 0.96, depth: 16, sheen: 0.25, smooth: 3, ao: 3, cast: 14, drop: 16, aoOpacity: 0.22, castOpacity: 0.4 })}
-    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, depth: 17, sheen: 0.2, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.22, castOpacity: 0.4 })}
-    ${clayFilter('barClay', { profile: 'round', bevel: 16, top: 0.97, depth: 12, sheen: 0.2, smooth: 2.5, ao: 2.5, cast: 10, drop: 10, aoOpacity: 0.2, castOpacity: 0.3 })}
+    ${clayFilter('ringClay', { profile: 'round', bevel: 22, top: 0.96, depth: 26, ambient: 0.5, sheen: 0, smooth: 3, ao: 3, cast: 14, drop: 16, aoOpacity: 0.3, castOpacity: 0.4 })}
+    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, depth: 24, ambient: 0.5, sheen: 0, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.3, castOpacity: 0.4 })}
+    ${clayFilter('barClay', { profile: 'round', bevel: 16, top: 0.97, depth: 18, ambient: 0.45, sheen: 0, smooth: 2.5, ao: 2.5, cast: 10, drop: 10, aoOpacity: 0.28, castOpacity: 0.3 })}
     ${clayFilter('tileRim', { bevel: 30, depth: 10, sheen: 0.6, smooth: 4 })}
     ${clayFilter('plateStep', { bevel: 8, depth: 3, azimuth: 55, sheen: 0, smooth: 2 })}
     <filter id="grain" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
