@@ -2,7 +2,7 @@
 // Generates the Trainlytics PWA icon set: a skeuomorphic sage tile with a
 // segmented progress ring around a heart holding a bar chart.
 //
-// The artwork is SVG (lighting filters give the soft clay look). Headless
+// The artwork is SVG (lighting filters give the matte clay look). Headless
 // Chromium renders a 2048px master per variant and macOS `sips` downsamples
 // it, so every PNG is supersampled.
 //
@@ -30,19 +30,22 @@ const C = {
   shadow: '#1C2A1E',
 }
 
-// All geometry lives in a 1024×1024 artboard.
+// All geometry lives in a 1024×1024 artboard; proportions are measured off
+// the reference artwork.
 const CX = 512
 const CY = 512
-const RING_R = 330
-const RING_W = 82
 const CORNER = 229 // ≈ Apple's 22.4% icon corner
 
-// Angles in degrees, clockwise from 3 o'clock.
+// Ring of four flat-ended segments. Angles in degrees, clockwise from
+// 3 o'clock, at the visible ends.
+const RING_R = 349
+const RING_W = 94
+const SEG_CORNER = 26
 const SEGMENTS = [
-  { from: 186, to: 264, paint: 'cream' },
-  { from: 285.2, to: 329.2, paint: 'rose' },
-  { from: 350.4, to: 436.4, paint: 'green' },
-  { from: 97.6, to: 164.8, paint: 'cream' },
+  { from: 167, to: 274.5, paint: 'cream' },
+  { from: 279, to: 331, paint: 'rose' },
+  { from: 336, to: 443.5, paint: 'green' },
+  { from: 88, to: 162.5, paint: 'cream' },
 ]
 
 const f = (n) => +n.toFixed(2)
@@ -52,77 +55,95 @@ function polar(r, deg) {
   return [f(CX + r * Math.cos(a)), f(CY + r * Math.sin(a))]
 }
 
-function arc(r, from, to) {
-  const [x1, y1] = polar(r, from)
-  const [x2, y2] = polar(r, to)
-  return `M${x1} ${y1}A${r} ${r} 0 ${to - from > 180 ? 1 : 0} 1 ${x2} ${y2}`
+// Annular sector shrunk by SEG_CORNER; drawn with a round-joined stroke of
+// 2 × SEG_CORNER it grows back to full size with rounded corners.
+function segmentPath({ from, to }) {
+  const ri = RING_R - RING_W / 2 + SEG_CORNER
+  const ro = RING_R + RING_W / 2 - SEG_CORNER
+  const d = (SEG_CORNER / RING_R) * (180 / Math.PI)
+  const [a1, a2] = [from + d, to - d]
+  const large = a2 - a1 > 180 ? 1 : 0
+  const [x1, y1] = polar(ro, a1)
+  const [x2, y2] = polar(ro, a2)
+  const [x3, y3] = polar(ri, a2)
+  const [x4, y4] = polar(ri, a1)
+  return `M${x1} ${y1}A${ro} ${ro} 0 ${large} 1 ${x2} ${y2}L${x3} ${y3}A${ri} ${ri} 0 ${large} 0 ${x4} ${y4}Z`
 }
 
-// A full, rounded heart: x ∈ [-1, 1], y ∈ [-0.85, 0.95].
-const HEART = [
-  ['M', [0, 0.95]],
-  ['C', [-0.4, 0.75], [-1, 0.35], [-1, -0.25]],
-  ['C', [-1, -0.62], [-0.72, -0.85], [-0.48, -0.85]],
-  ['C', [-0.22, -0.85], [-0.06, -0.7], [0, -0.54]],
-  ['C', [0.06, -0.7], [0.22, -0.85], [0.48, -0.85]],
-  ['C', [0.72, -0.85], [1, -0.62], [1, -0.25]],
-  ['C', [1, 0.35], [0.4, 0.75], [0, 0.95]],
+// Wide, squat heart with a sharp notch; its tip pokes out below the bars.
+// Left half as cubic segments from the notch to the tip, mirrored for the right.
+const HEART_LEFT = [
+  [[472, 359.4], [455.5, 339.5], [410.5, 339.5]],
+  [[335.1, 339.5], [274, 396.4], [274, 466.5]],
+  [[274, 600], [395, 690], [512, 750]],
 ]
-const HEART_SCALE = 210
-const HEART_CY = 544 // heart sits a little low inside the ring, like the reference
+const mirror = ([x, y]) => [1024 - x, y]
+const heartPath =
+  'M512 393' +
+  HEART_LEFT.map((seg) => 'C' + seg.map((p) => p.join(' ')).join(' ')).join('') +
+  [...HEART_LEFT]
+    .reverse()
+    .map((seg, i, all) => {
+      const end = i + 1 < all.length ? all[i + 1][2] : [512, 393]
+      return 'C' + [seg[1], seg[0], end].map((p) => mirror(p).join(' ')).join(' ')
+    })
+    .join('') +
+  'Z'
 
-const heartPt = ([x, y]) => `${f(CX + x * HEART_SCALE)} ${f(HEART_CY + (y - 0.05) * HEART_SCALE)}`
-const heartPath = HEART.map(([cmd, ...pts]) => cmd + pts.map(heartPt).join(' ')).join('') + 'Z'
+const BAR_W = 80
+const BAR_GAP = 31
+const BAR_BASE = 687
+const BAR_HEIGHTS = [133, 193, 259]
+const BAR_CORNER = 16
 
-const BAR_W = 54
-const BAR_GAP = 24
-const BAR_BASE = 630
-const BAR_HEIGHTS = [98, 150, 202]
-
-function barPath(i) {
+function barRect(i) {
   const x = CX - (3 * BAR_W + 2 * BAR_GAP) / 2 + i * (BAR_W + BAR_GAP)
-  const top = BAR_BASE - BAR_HEIGHTS[i]
-  const r = BAR_W / 2
-  const rb = 9
-  return (
-    `M${x} ${top + r}A${r} ${r} 0 0 1 ${x + BAR_W} ${top + r}` +
-    `V${BAR_BASE - rb}Q${x + BAR_W} ${BAR_BASE} ${x + BAR_W - rb} ${BAR_BASE}` +
-    `H${x + rb}Q${x} ${BAR_BASE} ${x} ${BAR_BASE - rb}Z`
-  )
+  const h = BAR_HEIGHTS[i]
+  return `<rect x="${x}" y="${BAR_BASE - h}" width="${BAR_W}" height="${h}" rx="${BAR_CORNER}"/>`
 }
 
-// Soft "clay" relief: a blurred alpha bump map lit from the top-left, plus a
-// cast shadow and a tight contact shadow. The light maps are blurred again
-// because lighting an 8-bit bump map leaves visible contour terraces.
-function clayFilter(id, { bump, depth, spec, smooth = 3, shadow, drop, shadowOpacity }) {
+const smoothstep = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
+  return t * t * (3 - 2 * t)
+}
+// Maps blurred alpha to a height profile: zero at the outline, a rounded
+// shoulder just inside it, then a flat top — pressed clay, not a balloon.
+const PLATEAU = Array.from({ length: 41 }, (_, i) => f(smoothstep(0.5, 0.97, i / 40))).join(' ')
+
+// Matte relief lit from the top-left: diffuse shading of the plateau height
+// map, a faint sheen on the lit shoulder, a tight dark contact line and a
+// soft cast shadow. The light maps are blurred because lighting an 8-bit
+// height map leaves visible contour terraces.
+function clayFilter(id, { bevel, depth, azimuth = 235, elevation = 58, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+  const shadows = cast
+    ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${cast}"/>
+    <feOffset dx="${drop / 3}" dy="${drop}" result="castBlur"/>
+    <feFlood flood-color="${C.shadow}" flood-opacity="${castOpacity}"/>
+    <feComposite in2="castBlur" operator="in" result="cast"/>
+    <feMorphology in="SourceAlpha" operator="dilate" radius="${ao / 2}"/>
+    <feGaussianBlur stdDeviation="${ao}"/>
+    <feOffset dx="${ao / 3}" dy="${ao / 1.5}" result="aoBlur"/>
+    <feFlood flood-color="${C.shadow}" flood-opacity="${aoOpacity}"/>
+    <feComposite in2="aoBlur" operator="in" result="ao"/>
+    <feMerge><feMergeNode in="cast"/><feMergeNode in="ao"/><feMergeNode in="body"/></feMerge>`
+    : ''
   return `
   <filter id="${id}" filterUnits="userSpaceOnUse" x="-64" y="-64" width="1152" height="1152" color-interpolation-filters="sRGB">
-    <feGaussianBlur in="SourceAlpha" stdDeviation="${bump}" result="bump"/>
-    <feDiffuseLighting in="bump" surfaceScale="${depth}" diffuseConstant="1.25" lighting-color="#fff" result="diffRaw">
-      <feDistantLight azimuth="225" elevation="53"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
+    <feComponentTransfer result="height"><feFuncA type="table" tableValues="${PLATEAU}"/></feComponentTransfer>
+    <feDiffuseLighting in="height" surfaceScale="${depth}" diffuseConstant="1" lighting-color="#fff" result="diffRaw">
+      <feDistantLight azimuth="${azimuth}" elevation="${elevation}"/>
     </feDiffuseLighting>
     <feGaussianBlur in="diffRaw" stdDeviation="${smooth}" result="diff"/>
-    <feSpecularLighting in="bump" surfaceScale="${depth}" specularConstant="0.75" specularExponent="26" lighting-color="#fff" result="specRaw">
-      <feDistantLight azimuth="225" elevation="58"/>
+    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="18" lighting-color="#fff" result="specRaw">
+      <feDistantLight azimuth="${azimuth}" elevation="38"/>
     </feSpecularLighting>
     <feGaussianBlur in="specRaw" stdDeviation="${smooth}" result="spec"/>
-    <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="1" result="shaded"/>
+    <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="${f(1 / Math.sin((elevation * Math.PI) / 180))}" result="shaded"/>
     <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
-    <feComposite in="shaded" in2="specIn" operator="arithmetic" k2="1" k3="${spec}" result="lit"/>
+    <feComposite in="shaded" in2="specIn" operator="arithmetic" k2="1" k3="${sheen}" result="lit"/>
     <feComposite in="lit" in2="SourceAlpha" operator="in" result="body"/>
-    ${
-      shadow
-        ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${shadow}"/>
-    <feOffset dx="${drop / 4}" dy="${drop}" result="castBlur"/>
-    <feFlood flood-color="${C.shadow}" flood-opacity="${shadowOpacity}"/>
-    <feComposite in2="castBlur" operator="in" result="cast"/>
-    <feGaussianBlur in="SourceAlpha" stdDeviation="${Math.max(2, shadow / 5)}"/>
-    <feOffset dy="${Math.max(2, drop / 4)}" result="contactBlur"/>
-    <feFlood flood-color="${C.shadow}" flood-opacity="${shadowOpacity * 0.7}"/>
-    <feComposite in2="contactBlur" operator="in" result="contact"/>
-    <feMerge><feMergeNode in="cast"/><feMergeNode in="contact"/><feMergeNode in="body"/></feMerge>`
-        : ''
-    }
+    ${shadows}
   </filter>`
 }
 
@@ -130,48 +151,60 @@ function clayFilter(id, { bump, depth, spec, smooth = 3, shadow, drop, shadowOpa
 // tile with shadow on transparent canvas, macOS icon grid: 824px body).
 function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
   const tile = variant === 'tile'
-  const grad = (id, a, b, x1 = 230, y1 = 160, x2 = 800, y2 = 880) =>
+  const grad = (id, a, b, x1, y1, x2, y2) =>
     `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
       <stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`
 
-  const paints = { cream: 'url(#cream)', rose: 'url(#rose)', green: 'url(#green)' }
-
+  const PLATE = 50
   const background = `
     <rect width="1024" height="1024" fill="url(#bg)"/>
-    ${bevel ? `<rect width="1024" height="1024" rx="${CORNER}" fill="url(#bg)" filter="url(#tileRelief)"/>` : ''}
-    <rect width="1024" height="1024" fill="url(#bgGlow)"/>`
+    ${
+      bevel
+        ? `<rect width="1024" height="1024" rx="${CORNER}" fill="url(#bg)" filter="url(#tileRim)"/>
+    <rect x="${PLATE}" y="${PLATE}" width="${1024 - 2 * PLATE}" height="${1024 - 2 * PLATE}" rx="${CORNER - PLATE}" fill="url(#plate)" filter="url(#plateStep)"/>`
+        : ''
+    }
+    <rect width="1024" height="1024" fill="url(#bgGlow)"/>
+    <rect width="1024" height="1024" filter="url(#grain)" opacity="0.2" style="mix-blend-mode:overlay"/>`
+
+  const segment = (s) =>
+    `<path d="${segmentPath(s)}" fill="url(#${s.paint})" stroke="url(#${s.paint})" stroke-width="${2 * SEG_CORNER}" stroke-linejoin="round"/>`
 
   const art = `
     <g transform="translate(${CX} ${CY}) scale(${artScale}) translate(${-CX} ${-CY})">
       <g filter="url(#ringClay)">
-        ${SEGMENTS.map((s) => `<path d="${arc(RING_R, s.from, s.to)}" fill="none" stroke="${paints[s.paint]}" stroke-width="${RING_W}" stroke-linecap="round"/>`).join('\n        ')}
+        ${SEGMENTS.map(segment).join('\n        ')}
       </g>
-      <path d="${heartPath}" fill="url(#cream)" stroke="url(#cream)" stroke-width="22" stroke-linejoin="round" filter="url(#heartClay)"/>
-      <g filter="url(#barClay)" fill="url(#bar)">
-        ${[0, 1, 2].map((i) => `<path d="${barPath(i)}"/>`).join('\n        ')}
+      <path d="${heartPath}" fill="url(#heart)" stroke="url(#heart)" stroke-width="10" stroke-linejoin="round" filter="url(#heartClay)"/>
+      <g fill="url(#bar)" filter="url(#barClay)">
+        ${[0, 1, 2].map(barRect).join('\n        ')}
       </g>
     </g>`
 
-  const grain = `<rect width="1024" height="1024" filter="url(#grain)" opacity="0.14" style="mix-blend-mode:overlay"/>`
+  // Felt-like grain sits on the tile; the clay pieces only get a whisper of it.
+  const grain = `<rect width="1024" height="1024" filter="url(#grain)" opacity="0.06" style="mix-blend-mode:overlay"/>`
 
   const body = `${background}${art}${grain}`
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">
   <defs>
-    ${grad('bg', '#5F7D5A', '#3B533E', 512, 0, 512, 1024)}
-    <radialGradient id="bgGlow" gradientUnits="userSpaceOnUse" cx="330" cy="220" r="760">
+    ${grad('bg', '#667D62', '#334231', 180, 80, 900, 960)}
+    ${grad('plate', '#62795E', '#314030', 180, 80, 900, 960)}
+    <radialGradient id="bgGlow" gradientUnits="userSpaceOnUse" cx="300" cy="180" r="700">
       <stop offset="0" stop-color="#fff" stop-opacity="0.08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-    ${grad('cream', '#FBF8F0', '#D8D0BE')}
-    ${grad('rose', '#DCAAA7', '#B67877', 600, 180, 860, 470)}
-    ${grad('green', '#A9C1A0', '#6C8A66', 760, 380, 600, 860)}
-    ${grad('bar', '#6C8B67', C.deepSage, 512, 430, 512, 630)}
-    ${clayFilter('ringClay', { bump: 14, depth: 11, spec: 0.6, shadow: 13, drop: 16, shadowOpacity: 0.45 })}
-    ${clayFilter('heartClay', { bump: 28, depth: 14, spec: 0.55, shadow: 15, drop: 18, shadowOpacity: 0.45 })}
-    ${clayFilter('barClay', { bump: 8, depth: 7, spec: 0.4, smooth: 1.5, shadow: 5, drop: 6, shadowOpacity: 0.35 })}
-    ${clayFilter('tileRelief', { bump: 34, depth: 12, spec: 0.3, smooth: 5 })}
+    ${grad('cream', '#F2ECE1', '#DDD4C3', 512, 160, 512, 870)}
+    ${grad('heart', '#F5F0E6', '#E1D9C9', 400, 340, 600, 750)}
+    ${grad('rose', '#D6ACA4', '#BA8B84', 560, 160, 860, 500)}
+    ${grad('green', '#94A983', '#728863', 860, 400, 560, 870)}
+    ${grad('bar', '#66785C', '#4F5F48', 512, 428, 512, 687)}
+    ${clayFilter('ringClay', { bevel: 20, depth: 6, ao: 3, cast: 12, drop: 14, aoOpacity: 0.4 })}
+    ${clayFilter('heartClay', { bevel: 26, depth: 6, ao: 3, cast: 14, drop: 16, aoOpacity: 0.4 })}
+    ${clayFilter('barClay', { bevel: 10, depth: 5, sheen: 0.12, smooth: 1.5, ao: 2.5, cast: 8, drop: 8, aoOpacity: 0.35, castOpacity: 0.25 })}
+    ${clayFilter('tileRim', { bevel: 30, depth: 10, sheen: 0.6, smooth: 4 })}
+    ${clayFilter('plateStep', { bevel: 8, depth: 3, azimuth: 55, sheen: 0, smooth: 2 })}
     <filter id="grain" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
-      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" seed="7" stitchTiles="stitch"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" seed="7" stitchTiles="stitch"/>
       <feColorMatrix values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1"/>
     </filter>
     <filter id="tileShadow" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
@@ -193,14 +226,15 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
 
 // Flat, filter-free version that stays crisp at 16–32px.
 function faviconSvg() {
+  const flat = { cream: '#F0EADF', rose: '#C99D95', green: '#8FA47E' }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E8D68"/><stop offset="1" stop-color="#46604A"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#647B60"/><stop offset="1" stop-color="#364634"/></linearGradient>
   </defs>
   <rect width="1024" height="1024" rx="${CORNER}" fill="url(#bg)"/>
-  ${SEGMENTS.map((s) => `<path d="${arc(RING_R, s.from, s.to)}" fill="none" stroke="${{ cream: '#F5F1E8', rose: C.dustyRose, green: '#9DB594' }[s.paint]}" stroke-width="${RING_W + 14}" stroke-linecap="round"/>`).join('\n  ')}
-  <path d="${heartPath}" fill="#F5F1E8" stroke="#F5F1E8" stroke-width="22" stroke-linejoin="round"/>
-  ${[0, 1, 2].map((i) => `<path d="${barPath(i)}" fill="${C.deepSage}"/>`).join('\n  ')}
+  ${SEGMENTS.map((s) => `<path d="${segmentPath(s)}" fill="${flat[s.paint]}" stroke="${flat[s.paint]}" stroke-width="${2 * SEG_CORNER}" stroke-linejoin="round"/>`).join('\n  ')}
+  <path d="${heartPath}" fill="${flat.cream}" stroke="${flat.cream}" stroke-width="10" stroke-linejoin="round"/>
+  <g fill="#56674E">${[0, 1, 2].map(barRect).join('')}</g>
 </svg>
 `
 }

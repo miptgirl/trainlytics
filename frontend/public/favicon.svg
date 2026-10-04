@@ -1,14 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E8D68"/><stop offset="1" stop-color="#46604A"/></linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#647B60"/><stop offset="1" stop-color="#364634"/></linearGradient>
   </defs>
   <rect width="1024" height="1024" rx="229" fill="url(#bg)"/>
-  <path d="M183.81 477.51A330 330 0 0 1 477.51 183.81" fill="none" stroke="#F5F1E8" stroke-width="96" stroke-linecap="round"/>
-  <path d="M598.52 193.54A330 330 0 0 1 795.46 343.03" fill="none" stroke="#C98F8F" stroke-width="96" stroke-linecap="round"/>
-  <path d="M837.38 456.97A330 330 0 0 1 589.6 832.75" fill="none" stroke="#9DB594" stroke-width="96" stroke-linecap="round"/>
-  <path d="M468.36 839.1A330 330 0 0 1 193.54 598.52" fill="none" stroke="#F5F1E8" stroke-width="96" stroke-linecap="round"/>
-  <path d="M512 733C428 691 302 607 302 481C302 403.3 360.8 355 411.2 355C465.8 355 499.4 386.5 512 420.1C524.6 386.5 558.2 355 612.8 355C663.2 355 722 403.3 722 481C722 607 596 691 512 733Z" fill="#F5F1E8" stroke="#F5F1E8" stroke-width="22" stroke-linejoin="round"/>
-  <path d="M407 559A27 27 0 0 1 461 559V621Q461 630 452 630H416Q407 630 407 621Z" fill="#4F6B52"/>
-  <path d="M485 507A27 27 0 0 1 539 507V621Q539 630 530 630H494Q485 630 485 621Z" fill="#4F6B52"/>
-  <path d="M563 455A27 27 0 0 1 617 455V621Q617 630 608 630H572Q563 630 563 621Z" fill="#4F6B52"/>
+  <path d="M146.29 568.17A370 370 0 0 1 513.5 142L513.33 184A328 328 0 0 0 187.8 561.79Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="52" stroke-linejoin="round"/>
+  <path d="M596.92 151.88A370 370 0 0 1 821.36 309.03L786.24 332.07A328 328 0 0 0 587.28 192.76Z" fill="#C99D95" stroke="#C99D95" stroke-width="52" stroke-linejoin="round"/>
+  <path d="M860.28 387.08A370 370 0 0 1 581.13 875.48L573.28 834.22A328 328 0 0 0 820.74 401.26Z" fill="#8FA47E" stroke="#8FA47E" stroke-width="52" stroke-linejoin="round"/>
+  <path d="M497.35 881.71A370 370 0 0 1 168.38 649.22L207.39 633.64A328 328 0 0 0 499.02 839.74Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="52" stroke-linejoin="round"/>
+  <path d="M512 393C472 359.4 455.5 339.5 410.5 339.5C335.1 339.5 274 396.4 274 466.5C274 600 395 690 512 750C629 690 750 600 750 466.5C750 396.4 688.9 339.5 613.5 339.5C568.5 339.5 552 359.4 512 393Z" fill="#F0EADF" stroke="#F0EADF" stroke-width="10" stroke-linejoin="round"/>
+  <g fill="#56674E"><rect x="361" y="554" width="80" height="133" rx="16"/><rect x="472" y="494" width="80" height="193" rx="16"/><rect x="583" y="428" width="80" height="259" rx="16"/></g>
 </svg>
