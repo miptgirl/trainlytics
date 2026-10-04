@@ -106,15 +106,23 @@ const smoothstep = (a, b, x) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
 }
-// Maps blurred alpha to a height profile: zero at the outline, a rounded
-// shoulder just inside it, then a flat top — pressed clay, not a balloon.
-const PLATEAU = Array.from({ length: 41 }, (_, i) => f(smoothstep(0.5, 0.97, i / 40))).join(' ')
+// Height profiles over blurred alpha (0.5 = the outline, `top` = deepest
+// point inside the shape). 'plateau' gives a rounded shoulder and a flat
+// top, used for the tile rim; 'round' rises like a quarter sine all the way
+// to the crest, so pieces read as rolled, well-rounded clay. Its ramp starts
+// just outside the outline so smoothing the light maps doesn't pull a flat-lit
+// halo onto the edge.
+const PROFILES = {
+  plateau: (a, top) => smoothstep(0.5, top, a),
+  round: (a, top) => Math.sin((Math.min(1, Math.max(0, (a - 0.3) / (top - 0.3))) * Math.PI) / 2),
+}
+const profileTable = (profile, top) =>
+  Array.from({ length: 65 }, (_, i) => f(PROFILES[profile](i / 64, top))).join(' ')
 
-// Matte relief lit from the top-left: diffuse shading of the plateau height
-// map, a faint sheen on the lit shoulder, a tight dark contact line and a
-// soft cast shadow. The light maps are blurred because lighting an 8-bit
+// Matte relief lit from the top-left: diffuse shading of the height map, a
+// soft sheen on the lit side, a faint contact line and a soft cast shadow. The light maps are blurred because lighting an 8-bit
 // height map leaves visible contour terraces.
-function clayFilter(id, { bevel, depth, azimuth = 235, elevation = 58, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, azimuth = 235, elevation = 58, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
   const shadows = cast
     ? `<feGaussianBlur in="SourceAlpha" stdDeviation="${cast}"/>
     <feOffset dx="${drop / 3}" dy="${drop}" result="castBlur"/>
@@ -130,12 +138,12 @@ function clayFilter(id, { bevel, depth, azimuth = 235, elevation = 58, sheen = 0
   return `
   <filter id="${id}" filterUnits="userSpaceOnUse" x="-64" y="-64" width="1152" height="1152" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceAlpha" stdDeviation="${bevel}"/>
-    <feComponentTransfer result="height"><feFuncA type="table" tableValues="${PLATEAU}"/></feComponentTransfer>
+    <feComponentTransfer result="height"><feFuncA type="table" tableValues="${profileTable(profile, top)}"/></feComponentTransfer>
     <feDiffuseLighting in="height" surfaceScale="${depth}" diffuseConstant="1" lighting-color="#fff" result="diffRaw">
       <feDistantLight azimuth="${azimuth}" elevation="${elevation}"/>
     </feDiffuseLighting>
     <feGaussianBlur in="diffRaw" stdDeviation="${smooth}" result="diff"/>
-    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="18" lighting-color="#fff" result="specRaw">
+    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="${profile === 'round' ? 12 : 18}" lighting-color="#fff" result="specRaw">
       <feDistantLight azimuth="${azimuth}" elevation="38"/>
     </feSpecularLighting>
     <feGaussianBlur in="specRaw" stdDeviation="${smooth}" result="spec"/>
@@ -193,14 +201,14 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
     <radialGradient id="bgGlow" gradientUnits="userSpaceOnUse" cx="300" cy="180" r="700">
       <stop offset="0" stop-color="#fff" stop-opacity="0.08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-    ${grad('cream', '#F2ECE1', '#DDD4C3', 512, 160, 512, 870)}
-    ${grad('heart', '#F5F0E6', '#E1D9C9', 400, 340, 600, 750)}
+    ${grad('cream', '#EFE8DC', '#D9D0BE', 512, 160, 512, 870)}
+    ${grad('heart', '#EFE9DD', '#DBD2C1', 400, 340, 600, 750)}
     ${grad('rose', '#D6ACA4', '#BA8B84', 560, 160, 860, 500)}
     ${grad('green', '#94A983', '#728863', 860, 400, 560, 870)}
     ${grad('bar', '#66785C', '#4F5F48', 512, 428, 512, 687)}
-    ${clayFilter('ringClay', { bevel: 20, depth: 6, ao: 3, cast: 12, drop: 14, aoOpacity: 0.4 })}
-    ${clayFilter('heartClay', { bevel: 26, depth: 6, ao: 3, cast: 14, drop: 16, aoOpacity: 0.4 })}
-    ${clayFilter('barClay', { bevel: 10, depth: 5, sheen: 0.12, smooth: 1.5, ao: 2.5, cast: 8, drop: 8, aoOpacity: 0.35, castOpacity: 0.25 })}
+    ${clayFilter('ringClay', { profile: 'round', bevel: 22, top: 0.96, depth: 16, sheen: 0.25, smooth: 3, ao: 3, cast: 14, drop: 16, aoOpacity: 0.22, castOpacity: 0.4 })}
+    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, depth: 17, sheen: 0.2, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.22, castOpacity: 0.4 })}
+    ${clayFilter('barClay', { profile: 'round', bevel: 16, top: 0.97, depth: 12, sheen: 0.2, smooth: 2.5, ao: 2.5, cast: 10, drop: 10, aoOpacity: 0.2, castOpacity: 0.3 })}
     ${clayFilter('tileRim', { bevel: 30, depth: 10, sheen: 0.6, smooth: 4 })}
     ${clayFilter('plateStep', { bevel: 8, depth: 3, azimuth: 55, sheen: 0, smooth: 2 })}
     <filter id="grain" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
