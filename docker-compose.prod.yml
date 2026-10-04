@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    command: postgres -c synchronous_commit=off
     restart: always
     environment:
       POSTGRES_USER: trainlytics
@@ -10,7 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trainlytics"]
-      interval: 5s
+      interval: 60s
       timeout: 5s
       retries: 5
 
