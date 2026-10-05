@@ -7,7 +7,9 @@ import {
   type StrengthProgressionPoint,
 } from '../../lib/analyticsApi'
 import { api } from '../../lib/api'
-import { useWeekPlan, useWeeklySummary } from '../../lib/planApi'
+import { useWeekPlan } from '../../lib/planApi'
+import { useQuery } from '@tanstack/react-query'
+import { useMediaQuery } from '../../lib/hooks/useMediaQuery'
 import { summarizeWeek } from '../../lib/planStats'
 import { formatShortDate, getMondayOfCurrentWeek, toLocalDateStr } from '../../lib/dateUtils'
 import { formatMinutes } from '../../lib/timeFormat'
@@ -15,6 +17,11 @@ import { formatMinutes } from '../../lib/timeFormat'
 const CARD = 'bg-surface rounded-xl border border-border p-4'
 const LABEL = 'text-xs font-semibold uppercase tracking-wide text-text-muted-strong'
 const MAX_PR_LOOKUPS = 30
+const PR_STALE_MS = 5 * 60 * 1000
+
+interface CardioListItem {
+  total_distance_meters: number | null
+}
 
 function Card({
   label,
@@ -66,17 +73,25 @@ function Big({ children, unit }: { children: ReactNode; unit?: string }) {
 function ThisWeekCard() {
   const weekStart = getMondayOfCurrentWeek()
   const plan = useWeekPlan(weekStart)
-  const summary = useWeeklySummary(weekStart)
+  // All cardio sessions this week (planned or not): the plan summary only counts plan-matched ones
+  const cardio = useQuery({
+    queryKey: ['sessions', 'glance-week-cardio', weekStart],
+    queryFn: () =>
+      api.get<{ items: CardioListItem[] }>(
+        `/sessions?type=cardio&date_from=${weekStart}&page_size=100`,
+      ),
+  })
   const trends = useOverviewTrends()
 
-  if (plan.isLoading || summary.isLoading || trends.isLoading) return <Skeleton label="This week" />
-  if (plan.isError || summary.isError || trends.isError) return <ErrorCard label="This week" />
+  if (plan.isLoading || cardio.isLoading || trends.isLoading) return <Skeleton label="This week" />
+  if (plan.isError || cardio.isError || trends.isError) return <ErrorCard label="This week" />
 
   // Same status semantics as WeeklyOverviewCard; "planned" total = every session on the plan
   const { planned, done, skipped } = summarizeWeek(plan.data?.sessions ?? [])
   const total = planned + done + skipped
   const minutes = trends.data?.find((p) => p.week_start === weekStart)?.total_minutes ?? 0
-  const km = summary.data?.actual.cardio_distance_km ?? 0
+  const km =
+    (cardio.data?.items ?? []).reduce((sum, c) => sum + (c.total_distance_meters ?? 0), 0) / 1000
 
   return (
     <Card label="This week" testId="glance-week">
@@ -94,7 +109,7 @@ function ThisWeekCard() {
         </div>
         <div>
           <Big unit="km">{km.toFixed(1)}</Big>
-          <p className="text-xs text-text-muted-strong mt-0.5">run</p>
+          <p className="text-xs text-text-muted-strong mt-0.5">cardio</p>
         </div>
       </div>
     </Card>
@@ -104,7 +119,10 @@ function ThisWeekCard() {
 /**
  * The records endpoint has no date, so the PR date comes from each exercise's
  * progression series (same query key as ExerciseProgressionChart): the first
- * day its max weight reached the record weight.
+ * day its max weight reached the record weight. Looks at the first
+ * MAX_PR_LOOKUPS exercises, so "latest" is approximate beyond that until the
+ * records endpoint returns dates. Renders the best PR known so far instead of
+ * waiting for the slowest request.
  */
 function LatestPrCard() {
   const records = useStrengthRecords()
@@ -112,6 +130,7 @@ function LatestPrCard() {
   const exercises = new Map<number, { name: string; weight: number; reps: number }>()
   for (const group of records.data ?? []) {
     for (const r of group.records) {
+      if (r.heaviest_weight <= 0) continue // bodyweight records have no weight to date
       exercises.set(r.exercise_id, {
         name: r.exercise_name,
         weight: r.heaviest_weight,
@@ -126,12 +145,9 @@ function LatestPrCard() {
       queryKey: ['analytics', 'strength', 'progression', id],
       queryFn: () =>
         api.get<StrengthProgressionPoint[]>(`/analytics/strength/progression?exercise_id=${id}`),
+      staleTime: PR_STALE_MS,
     })),
   })
-
-  if (records.isLoading || (ids.length > 0 && progressions.some((q) => q.isLoading))) {
-    return <Skeleton label="Latest personal record" />
-  }
 
   let best: { name: string; weight: number; reps: number; date: string } | null = null
   progressions.forEach((q, i) => {
@@ -140,17 +156,32 @@ function LatestPrCard() {
     if (ex && hit && (!best || hit.date > best.date)) best = { ...ex, date: hit.date }
   })
   const pr = best as { name: string; weight: number; reps: number; date: string } | null
+
+  const anyResolved = progressions.some((q) => q.isSuccess)
+  if (records.isLoading || (!pr && ids.length > 0 && progressions.some((q) => q.isLoading) && !anyResolved)) {
+    return <Skeleton label="Latest personal record" />
+  }
   if (!pr) return null
 
   return (
-    <section className="bg-accent-light/50 rounded-xl border border-accent-light p-4" data-testid="glance-pr">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-accent-text mb-2">
-        Latest personal record
-      </h3>
-      <p className="text-lg font-bold text-text">{pr.name}</p>
-      <p className="text-sm text-accent-text">
-        {pr.weight} kg × {pr.reps} · {formatShortDate(pr.date)}
-      </p>
+    <section className="bg-surface rounded-xl border border-border p-4 flex items-start gap-3" data-testid="glance-pr">
+      <span
+        className="shrink-0 w-10 h-10 rounded-full bg-accent-light flex items-center justify-center text-accent-text"
+        aria-hidden="true"
+      >
+        <svg viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+          <path d="M6 2h8v2h3v2.5a4 4 0 0 1-3.4 3.96A4.5 4.5 0 0 1 11 12.9V15h2.5v2h-7v-2H9v-2.1a4.5 4.5 0 0 1-2.6-2.44A4 4 0 0 1 3 6.5V4h3V2zm-1 4v.5c0 .8.5 1.5 1.1 1.8A9 9 0 0 1 6 6H5zm10 0h-1c0 .9-.04 1.7-.1 2.3.6-.3 1.1-1 1.1-1.8V6z" />
+        </svg>
+      </span>
+      <div className="min-w-0">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-accent-text mb-1">
+          Latest personal record
+        </h3>
+        <p className="text-lg font-bold text-text">{pr.name}</p>
+        <p className="text-sm text-text-muted-strong">
+          {pr.weight} kg × {pr.reps} · {formatShortDate(pr.date)}
+        </p>
+      </div>
     </section>
   )
 }
@@ -163,8 +194,10 @@ function TrainingTimeCard() {
   // The API returns 13 zero-filled weeks (12 back + current); keep the latest 12
   const weeks = (data ?? []).slice(-12)
   const max = Math.max(1, ...weeks.map((w) => w.total_minutes))
-  const avg = weeks.length
-    ? Math.round(weeks.reduce((s, w) => s + w.total_minutes, 0) / weeks.length)
+  // Average over completed weeks only: the current week is partial and would drag it down
+  const completed = weeks.slice(0, -1)
+  const avg = completed.length
+    ? Math.round(completed.reduce((s, w) => s + w.total_minutes, 0) / completed.length)
     : 0
   const currentIdx = weeks.length - 1
 
@@ -181,7 +214,7 @@ function TrainingTimeCard() {
         ))}
       </div>
       <p className="text-sm text-text-muted-strong mt-2">
-        <span className="font-semibold text-text">{formatMinutes(avg)}</span> weekly average
+        <span className="font-semibold text-text">{formatMinutes(avg)}</span> weekly average (excl. this week)
       </p>
     </Card>
   )
@@ -218,8 +251,11 @@ function ReadinessCard() {
 }
 
 export function StatsGlance() {
+  // Gate on the media query, not just CSS, so desktop never fires these requests
+  const isMobile = useMediaQuery('(max-width: 767px)')
+  if (!isMobile) return null
   return (
-    <div className="space-y-3 md:hidden" data-testid="stats-glance">
+    <div className="space-y-3" data-testid="stats-glance">
       <ThisWeekCard />
       <LatestPrCard />
       <TrainingTimeCard />

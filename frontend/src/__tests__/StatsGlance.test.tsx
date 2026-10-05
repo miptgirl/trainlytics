@@ -90,9 +90,9 @@ const CORRELATION = [
 function mockApi(overrides: Record<string, unknown> = {}) {
   const responses: Record<string, unknown> = {
     [`/plans/${MONDAY}`]: { plan_id: 1, week_start: MONDAY, sessions: PLAN_SESSIONS },
-    [`/plan/weekly-summary?week_start=${MONDAY}`]: {
-      planned: {},
-      actual: { cardio_distance_km: 12.34, cardio_duration_min: 70, strength_exercise_count: 0, strength_volume_kg_reps: 0 },
+    // 5.2 km planned run + 7.14 km unplanned ride: all cardio counts
+    [`/sessions?type=cardio&date_from=${MONDAY}&page_size=100`]: {
+      items: [{ total_distance_meters: 5200 }, { total_distance_meters: 7140 }, { total_distance_meters: null }],
     },
     '/analytics/overview-trends': TRENDS,
     '/analytics/strength/records': RECORDS,
@@ -116,8 +116,18 @@ function renderGlance() {
   )
 }
 
+function setViewport(mobile: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: mobile && query.includes('max-width: 767px'),
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  })) as never
+}
+
 describe('StatsGlance', () => {
   beforeEach(() => {
+    setViewport(true)
     mockGet.mockReset()
     vi.useFakeTimers({ toFake: ['Date'], now: NOW })
   })
@@ -129,7 +139,7 @@ describe('StatsGlance', () => {
     mockApi()
     renderGlance()
     const card = await screen.findByTestId('glance-week')
-    // 2 done of 4 on the plan; 125 min = 2h 5m; 12.34 km -> 12.3
+    // 2 done of 4 on the plan; 125 min = 2h 5m; 12.34 km of cardio (planned or not) -> 12.3
     expect(await within(card).findByText(/2h 5m/)).toBeInTheDocument()
     expect(card).toHaveTextContent('2 / 4')
     expect(card).toHaveTextContent('12.3km')
@@ -160,8 +170,8 @@ describe('StatsGlance', () => {
     expect(bars).toHaveLength(12)
     expect(bars[11]).toHaveClass('bg-primary-light')
     expect(bars[0]).toHaveClass('bg-primary')
-    // 11 x 60 + 125 = 785 / 12 = 65.4 -> 65 min
-    expect(card).toHaveTextContent('1h 5m')
+    // average of the 11 completed weeks (11 x 60 min / 11): the partial current week is excluded
+    expect(card).toHaveTextContent('1h 0m')
     expect(card).toHaveTextContent('weekly average')
   })
 
@@ -193,6 +203,38 @@ describe('StatsGlance', () => {
       expect(screen.getAllByText(/Couldn.t load this right now/)).toHaveLength(2),
     )
     expect(await screen.findByTestId('glance-readiness')).toBeInTheDocument()
+  })
+
+  it('renders nothing and fires no requests on desktop', async () => {
+    setViewport(false)
+    mockApi()
+    const { container } = renderGlance()
+    expect(container).toBeEmptyDOMElement()
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('skips bodyweight (0 kg) records and ignores a failed progression request', async () => {
+    mockApi({
+      '/analytics/strength/records': [
+        {
+          tag: 'core',
+          records: [
+            { exercise_id: 9, exercise_name: 'Plank', heaviest_weight: 0, best_reps_at_heaviest: 60, best_single_set_volume: 0 },
+            { exercise_id: 3, exercise_name: 'Deadlift', heaviest_weight: 120, best_reps_at_heaviest: 3, best_single_set_volume: 360 },
+          ],
+        },
+        ...RECORDS,
+      ],
+    })
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (url: string) => {
+      if (url.includes('exercise_id=3')) throw new Error('boom')
+      return base(url)
+    })
+    renderGlance()
+    const card = await screen.findByTestId('glance-pr')
+    expect(card).toHaveTextContent('Bench Press')
+    expect(mockGet).not.toHaveBeenCalledWith(expect.stringContaining('exercise_id=9'))
   })
 
   it('matches WeeklyOverviewCard week semantics for the same plan data', async () => {
