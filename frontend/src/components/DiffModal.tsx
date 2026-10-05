@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
+import { useModalEscape } from '../lib/modalStack'
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -33,12 +34,12 @@ export function DiffModal({
     return () => opener?.focus?.()
   }, [])
 
+  // Topmost-modal Escape: ignored while saving, and never reaches a sheet below
+  useModalEscape(() => {
+    if (!isPending) onCancel()
+  })
+
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      if (!isPending) onCancel()
-      return
-    }
     if (e.key !== 'Tab' || !panelRef.current) return
     const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
     if (items.length === 0) return

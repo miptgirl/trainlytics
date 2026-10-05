@@ -27,6 +27,7 @@ import {
   loadRestLength,
   newExerciseSets,
   nextUnfinishedIndex,
+  exerciseProgress,
   saveErrorMessage,
   saveRestLength,
   sessionProgress,
@@ -41,6 +42,38 @@ interface UndoAction {
 }
 
 const UNDO_MS = 5000
+
+/** Remove the current exercise; asks first when it has completed sets (Undo still follows). */
+function RemoveExerciseButton({ name, doneSets, onRemove }: { name: string; doneSets: number; onRemove: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  const btn = 'flex-1 min-h-12 rounded-xl border border-border bg-surface text-base font-medium'
+  if (confirming) {
+    return (
+      <div className="space-y-2" role="group" aria-label={`Remove ${name}?`}>
+        <p className="text-sm text-text">
+          Remove {name} and its {doneSets} completed {doneSets === 1 ? 'set' : 'sets'}?
+        </p>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setConfirming(false)} className={`${btn} text-text`}>
+            Keep
+          </button>
+          <button type="button" onClick={onRemove} className={`${btn} text-error-text`}>
+            Remove
+          </button>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => (doneSets > 0 ? setConfirming(true) : onRemove())}
+      className={`w-full ${btn} text-error-text`}
+    >
+      Remove {name}
+    </button>
+  )
+}
 
 export default function WorkoutModePage() {
   const s = useStrengthSessionForm()
@@ -261,7 +294,10 @@ export default function WorkoutModePage() {
             type="button"
             onClick={openFinish}
             disabled={!decided}
-            className="min-h-11 px-4 rounded-lg bg-primary-dark text-white text-sm font-semibold disabled:opacity-50"
+            // Filled only once everything is done; until then "Complete set" is the primary action
+            className={`min-h-11 px-4 rounded-lg text-sm font-semibold disabled:opacity-50 ${
+              allDone ? 'bg-primary-dark text-white' : 'border border-border bg-surface text-primary-dark'
+            }`}
           >
             Finish
           </button>
@@ -296,6 +332,18 @@ export default function WorkoutModePage() {
                 Discard
               </button>
             </div>
+          </div>
+        ) : s.templateError ? (
+          <div role="alert" className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+            <p className="text-base font-medium">{s.templateError}</p>
+            <p className="text-sm text-text-muted-strong">Check your connection and try again.</p>
+            <button
+              type="button"
+              onClick={s.retryTemplate}
+              className="w-full min-h-12 rounded-xl bg-primary-dark text-white font-semibold"
+            >
+              Retry
+            </button>
           </div>
         ) : !decided || s.isLoadingTemplate ? (
           <p className="text-sm text-text-muted">Loading…</p>
@@ -443,13 +491,11 @@ export default function WorkoutModePage() {
               Full form
             </button>
             {exercises.length > 1 && entry && (
-              <button
-                type="button"
-                onClick={removeCurrentExercise}
-                className="w-full min-h-12 rounded-xl border border-border bg-surface text-base font-medium text-error-text"
-              >
-                Remove {entry.exercise_id ? nameOf(entry.exercise_id) : 'this exercise'}
-              </button>
+              <RemoveExerciseButton
+                name={entry.exercise_id ? nameOf(entry.exercise_id) : 'this exercise'}
+                doneSets={exerciseProgress(entry).done}
+                onRemove={removeCurrentExercise}
+              />
             )}
             <fieldset>
               <legend className="text-sm font-medium text-text-muted-strong mb-2">Rest timer</legend>
@@ -480,7 +526,7 @@ export default function WorkoutModePage() {
           values={s.values}
           onField={s.setField}
           onSave={() => void s.submit()}
-          isSaving={s.saveMutation.isPending || s.templateMutation.isPending}
+          isSaving={s.isSaving}
           errorMessage={s.saveMutation.isError ? saveErrorMessage(s.saveMutation.error) : null}
           onClose={() => setSheet(null)}
         />

@@ -521,3 +521,164 @@ describe('useStrengthSessionForm: review fixes', () => {
     await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(123))
   })
 })
+
+describe('useStrengthSessionForm: second review', () => {
+  const linkedDraft = (workout: Record<string, unknown> = {}) => ({
+    version: 2,
+    title: 'Linked',
+    duration_seconds: null,
+    calories: '',
+    date: '2026-09-01T10:00',
+    notes: '',
+    wellbeing: null,
+    rpe: null,
+    exercises: [{ exercise_id: '1', sets: [set('6', '100', '', true), set('5', '102.5', 'tough')] }],
+    templateId: 3,
+    workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: 1_790_000_000_000, autoDurationSeconds: null, ...workout },
+  })
+
+  it('S1: resume=1 starts from the draft on the first render (start time, values, template link)', () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(linkedDraft()))
+    const { result } = setup('/workout?templateId=3&resume=1')
+    expect(result.current.workout.startedAt).toBe(1_790_000_000_000)
+    expect(result.current.values.title).toBe('Linked')
+    expect(result.current.selectedTemplateId).toBe(3)
+  })
+
+  it('S3: waits for the template with isSaving set, then sends what was typed meanwhile', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(linkedDraft()))
+    let calls = 0
+    let release: (v: unknown) => void = () => {}
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') {
+        calls++
+        if (calls === 1) throw new Error('offline')
+        return new Promise((r) => (release = r)) as never
+      }
+      if (path === '/exercises') return [{ id: 1, name: 'Squat' }] as never
+      return [] as never
+    })
+    const onSaved = vi.fn()
+    const { result } = setup('/log?type=strength', { onSaved })
+    await act(() => result.current.restoreDraft())
+    let saving: Promise<void> = Promise.resolve()
+    act(() => {
+      saving = result.current.requestSave(result.current.form.getValues())
+    })
+    expect(result.current.preparingSave).toBe(true)
+    expect(result.current.isSaving).toBe(true)
+    act(() => result.current.setField('notes', 'typed while waiting'))
+    // The template now equals the session except for set 1 reps: answer "No"
+    await act(async () => {
+      release(legDay)
+      await saving
+    })
+    expect(result.current.isSaving).toBe(false)
+    expect(result.current.diffState?.formData.notes).toBe('typed while waiting')
+    act(() => result.current.keepTemplate())
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+    expect(mockPost.mock.calls[0][1]).toMatchObject({ notes: 'typed while waiting' })
+  })
+
+  it('S3: a template change during the wait cancels that save', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(linkedDraft()))
+    let release: (v: unknown) => void = () => {}
+    let calls = 0
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') {
+        calls++
+        if (calls === 1) throw new Error('offline')
+        return new Promise((r) => (release = r)) as never
+      }
+      return [] as never
+    })
+    const { result } = setup('/log?type=strength')
+    await act(() => result.current.restoreDraft())
+    let saving: Promise<void> = Promise.resolve()
+    act(() => {
+      saving = result.current.requestSave(result.current.form.getValues())
+    })
+    await act(() => result.current.selectTemplate(null))
+    await act(async () => {
+      release(legDay)
+      await saving
+    })
+    expect(result.current.templateSnapshot).toBeNull()
+    expect(result.current.diffState).toBeNull()
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+
+  it('nit: concurrent snapshot loads share one request', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(linkedDraft()))
+    let release: (v: unknown) => void = () => {}
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') return new Promise((r) => (release = r)) as never
+      if (path === '/exercises') return [{ id: 1, name: 'Squat' }] as never
+      return [] as never
+    })
+    const { result } = setup('/log?type=strength')
+    act(() => {
+      void result.current.restoreDraft()
+    })
+    act(() => {
+      void result.current.requestSave(result.current.form.getValues())
+    })
+    await act(async () => release(legDay))
+    await waitFor(() => expect(result.current.diffState).not.toBeNull())
+    expect(mockGet.mock.calls.filter(([p]) => p === '/templates/strength/3')).toHaveLength(1)
+  })
+
+  it('S4: after "Yes" and a failed POST, a new change asks again; the same data does not PATCH twice', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    const onSaved = vi.fn()
+    const { result } = await setupWithTemplate({ onSaved })
+    act(() => result.current.updateSet(0, 0, { reps: '6' }))
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    expect(result.current.diffState?.changes).toEqual(['Changed reps on Squat set 1'])
+    await act(() => result.current.confirmTemplateUpdate())
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(true))
+    expect(mockPatch).toHaveBeenCalledTimes(1)
+
+    act(() => result.current.addExercise({ exercise_id: '2', sets: [set('8', '60')] }))
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    expect(result.current.diffState?.changes).toEqual(['Added Bench'])
+    act(() => result.current.cancelDiff())
+
+    act(() => result.current.removeExercise(1))
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    expect(result.current.diffState).toBeNull()
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+    expect(mockPatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('S4: after "No", the prompt returns only when the diff changes', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    const { result } = await setupWithTemplate({ onSaved: vi.fn() })
+    act(() => result.current.updateSet(0, 0, { reps: '6' }))
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    act(() => result.current.keepTemplate())
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(true))
+
+    act(() => result.current.updateSet(0, 1, { reps: '9' }))
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    expect(result.current.diffState?.changes).toEqual(['Changed reps on Squat set 1', 'Changed reps on Squat set 2'])
+  })
+
+  it('nit: a failed template load shows an error and can be retried', async () => {
+    let fail = true
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') {
+        if (fail) throw new Error('offline')
+        return legDay as never
+      }
+      return [] as never
+    })
+    const { result } = setup('/workout?templateId=3')
+    await waitFor(() => expect(result.current.templateError).toBe("Couldn't load the template."))
+    expect(result.current.isLoadingTemplate).toBe(false)
+    fail = false
+    act(() => result.current.retryTemplate())
+    await waitFor(() => expect(result.current.templateSnapshot?.name).toBe('Leg day'))
+    expect(result.current.templateError).toBeNull()
+  })
+})

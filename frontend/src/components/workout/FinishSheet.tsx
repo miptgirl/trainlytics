@@ -45,7 +45,8 @@ export function FinishSheet({
         </div>
       }
     >
-      <div className="p-4 space-y-4">
+      {/* Read-only while saving: the request carries the values from when Save was tapped */}
+      <fieldset disabled={isSaving} className="p-4 space-y-4 min-w-0 disabled:opacity-60">
         <label className="block">
           <span className="text-sm font-medium text-text-muted-strong">Duration</span>
           <TimeInput
@@ -89,7 +90,7 @@ export function FinishSheet({
             className={field}
           />
         </label>
-      </div>
+      </fieldset>
     </BottomSheet>
   )
 }

@@ -689,6 +689,9 @@ function StrengthForm() {
     adaptSnapshot: buildSessionSnapshot,
     params,
     persistDraft,
+    isSaving,
+    templateError,
+    retryTemplate,
   } = useStrengthSessionForm()
   const showDraftBanner = pendingDraft !== null
   const [showAdaptModal, setShowAdaptModal] = useState(false)
@@ -754,7 +757,12 @@ function StrengthForm() {
           Workout mode
         </button>
       </div>
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {/* Inert while a stored draft awaits Restore/Discard (edits would be lost) and while saving */}
+      <form
+        onSubmit={handleSubmit(handleFormSubmit)}
+        inert={showDraftBanner || isSaving}
+        className={`space-y-6 ${showDraftBanner ? 'opacity-50' : ''}`}
+      >
         {/* Template selector */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -771,6 +779,14 @@ function StrengthForm() {
               <option key={t.id} value={t.id}>{t.name}</option>
             ))}
           </select>
+          {templateError && (
+            <p role="alert" className="mt-1 text-xs text-error-text">
+              {templateError}{' '}
+              <button type="button" onClick={retryTemplate} className="min-h-11 font-medium underline">
+                Retry
+              </button>
+            </p>
+          )}
           {isLoadingTemplate && (
             <p className="mt-1 text-xs text-gray-400">Loading template…</p>
           )}
@@ -912,10 +928,10 @@ function StrengthForm() {
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={createMutation.isPending || showDraftBanner}
+              disabled={isSaving || showDraftBanner}
               className="flex-1 bg-blue-600 text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Saving…' : 'Save Session'}
+              {isSaving ? 'Saving…' : 'Save Session'}
             </button>
             <button
               type="button"

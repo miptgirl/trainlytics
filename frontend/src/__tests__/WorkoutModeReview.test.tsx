@@ -161,6 +161,8 @@ describe('B1: a pending draft is never overwritten and Back never lands on a sta
     await act(() => sleep(400))
     expect(storedDraft()).toEqual(fullBodyDraft)
     expect(screen.getByRole('button', { name: 'Save Session' })).toBeDisabled()
+    // S2: the form is inert until Restore/Discard, so nothing typed can be lost
+    expect(screen.getByRole('button', { name: 'Save Session' }).closest('form')).toHaveAttribute('inert')
   })
 
   it('Full form → Workout mode → ✕ returns to the page before the form, with the draft intact', async () => {
@@ -499,5 +501,101 @@ describe('Add exercise (9)', () => {
         sets: [set('8', '57.5'), set('8', '57.5'), set('8', '57.5')],
       }),
     )
+  })
+})
+
+describe('Second review', () => {
+  it('S1: resuming keeps the start time; Finish fills the real elapsed time', async () => {
+    const user = userEvent.setup()
+    const startedAt = Date.now() - 37 * 60_000
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ ...fullBodyDraft, workout: { ...fullBodyDraft.workout, startedAt } }),
+    )
+    renderAt(['/workout?type=strength&templateId=4&resume=1'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Bench'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(startedAt))
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.getByLabelText('Duration')).toHaveValue('37:00')
+  })
+
+  it('S1: a draft handed over by the full form opens on the first unfinished exercise', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ ...fullBodyDraft, workout: { ...fullBodyDraft.workout, currentExerciseIndex: 0, startedAt: null } }),
+    )
+    renderAt(['/workout?type=strength&templateId=4&resume=1'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Bench'))
+    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+  })
+
+  it('S2: the full form becomes editable again after Restore', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(fullBodyDraft))
+    renderAt(['/log?type=strength&templateId=3'])
+    await user.click(await screen.findByRole('button', { name: 'Restore' }))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save Session' }).closest('form')).not.toHaveAttribute('inert'),
+    )
+    expect(screen.getByRole('button', { name: 'Save Session' })).toBeEnabled()
+  })
+
+  it('nit: Escape while the template PATCH is running closes neither the prompt nor the Finish sheet', async () => {
+    const user = userEvent.setup()
+    let releasePatch: () => void = () => {}
+    mockPatch.mockImplementation(() => new Promise((r) => (releasePatch = () => r({}))) as never)
+    renderAt(['/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Increase reps by 1' }))
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    await user.click(screen.getByRole('button', { name: 'Save workout' }))
+    await user.click(await screen.findByRole('button', { name: 'Yes, update template' }))
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('dialog', { name: /Update template/ })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Finish workout' })).toBeInTheDocument()
+    await act(async () => releasePatch())
+    await screen.findByText('Session detail page')
+  })
+
+  it('nit: removing an exercise with completed sets asks first', async () => {
+    const user = userEvent.setup()
+    renderAt(['/workout?type=strength&templateId=4'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    await user.click(screen.getByRole('button', { name: 'Remove Squat' }))
+    expect(screen.getByText('Remove Squat and its 1 completed set?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Keep' }))
+    expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Remove Squat' }))
+    await user.click(screen.getByRole('button', { name: 'Remove' }))
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expect(screen.getByText('Squat removed')).toBeInTheDocument()
+  })
+
+  it('nit: a failed template load shows Retry instead of an endless Loading…', async () => {
+    const user = userEvent.setup()
+    let fail = true
+    slow['/templates/strength/3'] = async () => {
+      if (fail) throw new Error('offline')
+      return legDay
+    }
+    renderAt(['/workout?type=strength&templateId=3'])
+    expect(await screen.findByText("Couldn't load the template.")).toBeInTheDocument()
+    fail = false
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+  })
+
+  it('header Finish is outlined while sets remain and filled when everything is done', async () => {
+    const user = userEvent.setup()
+    renderAt(['/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    const finish = () => screen.getByRole('button', { name: 'Finish' })
+    expect(finish().className).not.toMatch(/bg-primary-dark/)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    expect(finish().className).toMatch(/bg-primary-dark/)
   })
 })

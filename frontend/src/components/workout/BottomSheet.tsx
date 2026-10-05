@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useModalEscape } from '../../lib/modalStack'
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -38,18 +39,9 @@ export function BottomSheet({
     }
   }, [])
 
-  // Escape on the document, so it works even if focus fell out of the sheet
-  const onCloseRef = useRef(onClose)
-  useEffect(() => {
-    onCloseRef.current = onClose
-  })
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onCloseRef.current()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [])
+  // Escape on the document (works even if focus fell out of the sheet), but
+  // only while no other modal sits on top of this one
+  useModalEscape(onClose)
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key !== 'Tab' || !panelRef.current) return

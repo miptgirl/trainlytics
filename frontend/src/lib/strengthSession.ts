@@ -215,6 +215,22 @@ export function toTemplatePayload(data: StrengthFormValues) {
   }
 }
 
+/** The template as it will be after `PATCH`ing it with `data` (keeps id and name). */
+export function templateSnapshotFromValues(
+  base: TemplateSnapshot,
+  data: StrengthFormValues,
+  exerciseMap: Map<number, string>,
+): TemplateSnapshot {
+  return {
+    id: base.id,
+    name: base.name,
+    exercises: toTemplatePayload(data).exercises.map((e) => ({
+      ...e,
+      exercise_name: exerciseMap.get(e.exercise_id) ?? 'Unknown exercise',
+    })),
+  }
+}
+
 /** Body of `POST /sessions/strength`. Exercises are saved in list order. */
 export function buildStrengthPayload(data: StrengthFormValues): StrengthSessionPayload {
   return {
