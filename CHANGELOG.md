@@ -4,6 +4,34 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Workout mode (Phase 17, part 2)
+
+### Added
+
+- **Workout mode** (`/workout`) — a full-screen strength logger, one set at a time: header with close (keeps the draft), progress ("N of M sets · K of L exercises") and Finish (outlined until every set is done, so "Complete set" stays the one primary action); the current exercise with "Last time: 4 × 8 @ 57.5 kg" from last-session defaults; done sets as compact rows (tap to edit, Cancel restores), the current set as a large editor with separate reps and kg rows (−/+ 52px steppers, step 1 and 2.5, wide 32px typed inputs), an optional note and "Complete set"; delete on every set except the last with a 5-second Undo; "+ Add set" copies the last set
+- **Rest timer** — starts when a set is completed (not after the final set); Reset, +30s and Skip; stores its end time in the draft so it survives reloads and backgrounding; length 60/90/120/180 s (default 90) in the options sheet, remembered on the device; vibrates at zero where supported
+- **Choose exercise sheet** — To do (current highlighted, progress ring, "d of t sets · last …") and Done; "+ Add exercise" searches the exercise library and appends it with 3 sets prefilled from last session; "Choose an exercise" fills an entry that has none; the options sheet can remove the current exercise (asks first when it has completed sets; Undo follows); completing an exercise's last set moves to the next unfinished one, and "All exercises done" offers Finish
+- **Finish sheet** — duration refreshed from the start time on each open unless typed (nearest minute, at least 1:00), how you feel / how hard, note, calories; saves through the same path as the full form, including the "Update template?" prompt (asked once; a retry neither asks again nor patches the template twice); a failed save keeps the sheet and draft with Retry and says "connection" only for network errors (server message for 4xx); Finish is blocked while an entry has no exercise
+- **Entry points** — a strength plan card's Start opens workout mode below 768px and the full form from 768px (checked at tap time); the strength form has a "Workout mode" button and workout mode's options have "Full form"; switching writes the draft, replaces the history entry and resumes on the other side without the Restore prompt
+- **Screen Wake Lock** while workout mode is open, where supported; bottom sheets trap focus, close on Escape (only the topmost modal reacts) and lock page scroll
+
+### Changed
+
+- **`useStrengthSessionForm` hook** now drives the strength form: state, URL params, template prefill, draft autosave/restore, payload, save and template diff live in one place shared with workout mode, so both send the same `POST` body
+- **Strength draft** autosaves within 300 ms of every change (flushed when the page is hidden or closed) and is cleared only after a successful save; it records the current exercise, rest timer end and start time (older drafts still restore); `resume=1` in the URL restores it without asking, starting from the draft on the first render (the workout's start time is kept across reloads and view switches); opening workout mode alone doesn't create one
+- **Restore/Discard prompt** names the waiting draft (title, date, sets done); until the user picks, the full form is inert, nothing is autosaved, Save is disabled and the URL template isn't loaded (Discard loads it); Restore no longer waits for the template request
+- **Template loading** times out after 10 s and shows an error with Retry (a deleted template says so) instead of an endless "Loading…"
+- **Saving** is guarded against double submits (including while the template is fetched for the diff prompt, which shows "Saving…" and keeps the form read-only) and replaces the history entry, so Back can't reopen the form; the "Update template?" answer holds for a retry with the same changes and is asked again when they differ; last-session defaults refresh after a save
+- **`DiffModal`** moved to its own component for both views and is now an accessible modal (focus, Escape, 44px buttons, semantic tokens)
+
+### Tests
+
+- Characterization of the full form's `POST` body before the refactor; hook payload parity, draft round-trip (v1 and v2), draft cleared only on 2xx, set/exercise actions
+- Workout mode: same `POST` body as the full form, complete set → rest timer and auto-advance, delete + undo position, edit done set + Cancel, Add set copy, Add exercise, reload restores exercise/sets/rest, Restore/Discard prompt, failed save + retry, Full form ↔ workout mode switch, sheet Escape/focus, Finish guard; rest timer countdown and vibration (fake timers), Wake Lock; plan card Start routing by viewport
+- Review regressions: pending draft never overwritten, Back after a view switch or save, late template response, undo while editing a done set, stepper layout and weight input, placeholder fill and exercise removal, draft creation, duration refresh, retry without a second diff/PATCH, 4xx message, modal dialog, rest after the final set, double-tap Add exercise, stale-timer and wake-lock races
+
+---
+
 ## 2026-10-05 — Mobile fundamentals (Phase 17, part 1)
 
 ### Fixed

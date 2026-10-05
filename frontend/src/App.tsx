@@ -16,6 +16,7 @@ import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
 import LogWorkoutPage from './pages/LogWorkoutPage'
+import WorkoutModePage from './pages/WorkoutModePage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import TemplatesPage from './pages/TemplatesPage'
@@ -83,6 +84,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <LogWorkoutPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workout"
+          element={
+            <ProtectedRoute>
+              <WorkoutModePage />
             </ProtectedRoute>
           }
         />
