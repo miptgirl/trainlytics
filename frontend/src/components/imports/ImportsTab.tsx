@@ -85,14 +85,14 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
                   type="button"
                   disabled={discardAllMutation.isPending}
                   onClick={() => discardAllMutation.mutate()}
-                  className="text-sm font-medium text-error-text disabled:opacity-40 transition-colors"
+                  className="text-sm font-medium text-error-text hover:underline disabled:opacity-40 transition-colors"
                 >
                   {discardAllMutation.isPending ? 'Discarding…' : 'Yes, discard all'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDiscardAllConfirm(false)}
-                  className="text-sm text-text-muted-strong transition-colors"
+                  className="text-sm text-text-muted-strong hover:text-text transition-colors"
                 >
                   Cancel
                 </button>
@@ -151,7 +151,7 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
           <button
             type="button"
             onClick={onNavigateToConnections}
-            className="text-sm text-primary-dark font-medium transition-colors"
+            className="text-sm text-primary-dark hover:underline font-medium transition-colors"
           >
             Go to Connections to sync Strava or upload Apple Health data
           </button>

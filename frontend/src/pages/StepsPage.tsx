@@ -38,7 +38,7 @@ export default function StepsPage() {
             {editingEntry && (
               <button
                 onClick={handleCancelEdit}
-                className="text-sm text-text-muted-strong"
+                className="text-sm text-text-muted-strong hover:text-text"
               >
                 Cancel
               </button>
@@ -70,7 +70,7 @@ export default function StepsPage() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleEdit(e)}
-                      className="text-sm text-primary-dark min-h-11 px-3"
+                      className="text-sm text-primary-dark hover:underline min-h-11 px-3"
                     >
                       Edit
                     </button>

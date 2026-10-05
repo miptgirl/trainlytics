@@ -120,7 +120,7 @@ export function ChooseExerciseSheet({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. Squat"
-              className="mt-1 w-full min-h-11 rounded-sm border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
+              className="mt-1 w-full min-h-11 rounded-sm border border-border-strong bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
             />
           </label>
           {!startInAddMode && (
@@ -134,7 +134,7 @@ export function ChooseExerciseSheet({
           )}
         </div>
         <ul className="divide-y divide-border">
-          {results.length === 0 && <li className="px-4 py-3 text-sm text-text-muted">No matching exercises.</li>}
+          {results.length === 0 && <li className="px-4 py-3 text-sm text-text-muted-strong">No matching exercises.</li>}
           {results.map((ex) => (
             <li key={ex.id}>
               <button
@@ -169,7 +169,7 @@ export function ChooseExerciseSheet({
     >
       <h3 className="px-4 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-text-muted-strong">To do</h3>
       {todo.length === 0 ? (
-        <p className="px-4 pb-2 text-sm text-text-muted">Everything is done.</p>
+        <p className="px-4 pb-2 text-sm text-text-muted-strong">Everything is done.</p>
       ) : (
         <ul className="divide-y divide-border">{todo.map(row)}</ul>
       )}

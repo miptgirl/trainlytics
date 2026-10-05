@@ -131,7 +131,7 @@ export function StravaSection({
               onBlur={() => {
                 if (localSyncStart) syncStartMutation.mutate(localSyncStart)
               }}
-              className="border border-border rounded-sm px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="border border-border-strong rounded-sm px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-primary-dark"
             />
           </div>
 
@@ -182,14 +182,14 @@ export function StravaSection({
                   type="button"
                   onClick={() => disconnectMutation.mutate()}
                   disabled={disconnectMutation.isPending}
-                  className="text-error-text font-medium"
+                  className="text-error-text hover:underline font-medium"
                 >
                   {disconnectMutation.isPending ? 'Disconnecting…' : 'Yes, disconnect'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDisconnectConfirm(false)}
-                  className="text-text-muted-strong"
+                  className="text-text-muted-strong hover:text-text"
                 >
                   Cancel
                 </button>

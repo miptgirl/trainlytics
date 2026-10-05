@@ -90,8 +90,8 @@ export function TimeInput({
   }
 
   const baseClass =
-    'w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary'
-  const borderClass = error ? 'border-error' : 'border-border'
+    'w-full border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark'
+  const borderClass = error ? 'border-error' : 'border-border-strong'
 
   return (
     <div>

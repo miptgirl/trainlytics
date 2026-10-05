@@ -57,7 +57,7 @@ export function SkipNoteModal({ session, weekStart, onClose, requireNote = false
             onChange={(e) => setNote(e.target.value)}
             placeholder="e.g. Knee pain, rest day, travel…"
             disabled={mutation.isPending}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none disabled:opacity-50"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none disabled:opacity-50"
           />
         </div>
 

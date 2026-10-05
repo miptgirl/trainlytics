@@ -346,7 +346,7 @@ export default function WorkoutModePage() {
             </button>
           </div>
         ) : !decided || s.isLoadingTemplate ? (
-          <p className="text-sm text-text-muted">Loading…</p>
+          <p className="text-sm text-text-muted-strong">Loading…</p>
         ) : (
           <>
             {allDone && (
@@ -455,7 +455,7 @@ export default function WorkoutModePage() {
                   Finish ›
                 </button>
               ) : (
-                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted`}>Last exercise</span>
+                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted-strong`}>Last exercise</span>
               )}
             </div>
           </div>
@@ -509,7 +509,7 @@ export default function WorkoutModePage() {
                     className={`min-h-11 rounded-lg border text-sm font-medium ${
                       restLength === sec
                         ? 'border-primary-dark bg-primary-tint text-primary-dark'
-                        : 'border-border bg-surface text-text'
+                        : 'border-border-strong bg-surface text-text'
                     }`}
                   >
                     {sec}s

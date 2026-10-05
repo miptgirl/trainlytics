@@ -57,7 +57,7 @@ export function ExerciseProgressionChart() {
             setSelectedId(e.target.value ? Number(e.target.value) : null)
             setShowVolume(false)
           }}
-          className="text-sm border border-border rounded-sm px-3 py-1.5 text-text bg-surface focus:outline-none focus:ring-2 focus:ring-primary"
+          className="text-sm border border-border-strong rounded-sm px-3 py-1.5 text-text bg-surface focus:outline-none focus:ring-2 focus:ring-primary-dark"
         >
           <option value="">Select exercise…</option>
           {exercises.map((ex) => (
@@ -70,10 +70,10 @@ export function ExerciseProgressionChart() {
         {selectedId !== null && (
           <button
             onClick={() => setShowVolume((v) => !v)}
-            className={`text-xs px-3 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-lg font-medium transition-colors ${
+            className={`text-xs px-3 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-sm font-medium transition-colors ${
               showVolume
-                ? 'bg-primary-tint text-primary-dark'
-                : 'bg-bg text-text-muted-strong'
+                ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             {showVolume ? 'Hide Volume' : 'Show Volume'}

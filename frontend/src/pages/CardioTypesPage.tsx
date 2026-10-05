@@ -104,14 +104,14 @@ export default function CardioTypesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingId(t.id)}
-                    className="text-sm text-text-muted-strong"
+                    className="text-sm text-text-muted-strong hover:text-text"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(t.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-error-text disabled:opacity-50"
+                    className="text-sm text-error-text hover:underline disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -149,7 +149,7 @@ function TypeForm({
         <input
           type="text"
           placeholder="Activity type name"
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
@@ -168,7 +168,7 @@ function TypeForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm text-text-muted-strong px-3 py-1.5"
+          className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5"
         >
           Cancel
         </button>

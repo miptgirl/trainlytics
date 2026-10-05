@@ -46,8 +46,8 @@ export function chartColor(token: ChartToken): string {
   return FALLBACK[token]
 }
 
-/** Axis tick labels and reference lines. */
-export const axisColor = () => chartColor('text-muted')
+/** Axis tick labels and reference lines (small text, so the contrast-safe muted shade). */
+export const axisColor = () => chartColor('text-muted-strong')
 /** Grid lines. */
 export const gridColor = () => chartColor('border')
 

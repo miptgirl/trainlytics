@@ -73,7 +73,7 @@ function Stepper({
           onFocus={(e) => e.currentTarget.select()}
           placeholder="0"
           aria-label={`${label} for set ${setNumber}`}
-          className="w-28 min-w-0 h-[52px] px-1 text-center text-[2rem]! leading-none font-bold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border focus:outline-none focus:border-primary-dark"
+          className="w-28 min-w-0 h-[52px] px-1 text-center text-[2rem]! leading-none font-bold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border-strong focus:outline-none focus:border-primary-dark"
         />
         <button
           type="button"
@@ -152,7 +152,7 @@ function SetEditor({
             onChange={(e) => onChange({ notes: e.target.value })}
             autoFocus={noteOpen}
             placeholder="e.g. RPE 8, slow negatives"
-            className="mt-1 w-full min-h-11 rounded-sm border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
+            className="mt-1 w-full min-h-11 rounded-sm border border-border-strong bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
           />
         </label>
       ) : (
@@ -218,7 +218,7 @@ export function WorkoutSetList({
 
   return (
     <section aria-label="Sets" className="rounded-xl border border-border bg-surface p-3 space-y-2">
-      {sets.length === 0 && <p className="text-sm text-text-muted px-1 py-2">No sets yet.</p>}
+      {sets.length === 0 && <p className="text-sm text-text-muted-strong px-1 py-2">No sets yet.</p>}
       {sets.map((set, i) => {
         const n = i + 1
         if (i === editorIndex) {
@@ -266,8 +266,8 @@ export function WorkoutSetList({
         }
         return (
           <div key={i} className="flex items-center gap-1 rounded-xl px-3">
-            <span className="text-xs text-text-muted w-10 shrink-0">Set {n}</span>
-            <span className="flex-1 text-base text-text-muted tabular-nums">{formatSet(set)}</span>
+            <span className="text-xs text-text-muted-strong w-10 shrink-0">Set {n}</span>
+            <span className="flex-1 text-base text-text-muted-strong tabular-nums">{formatSet(set)}</span>
             {canDelete && <DeleteButton setNumber={n} onClick={() => handleDelete(i)} />}
           </div>
         )

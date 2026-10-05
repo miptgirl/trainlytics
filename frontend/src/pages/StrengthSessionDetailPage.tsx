@@ -102,7 +102,7 @@ function EditForm({
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title')}
           />
         </div>
@@ -110,7 +110,7 @@ function EditForm({
           <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
           {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
@@ -143,7 +143,7 @@ function EditForm({
           <label className="block text-sm font-medium text-text mb-1">Notes</label>
           <textarea
             rows={2}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
             {...register('notes')}
           />
         </div>
@@ -154,7 +154,7 @@ function EditForm({
             min="0"
             step="any"
             placeholder="Optional, e.g. 60"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('duration_minutes')}
           />
         </div>
@@ -164,7 +164,7 @@ function EditForm({
             type="number"
             min="0"
             placeholder="e.g. 500"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>

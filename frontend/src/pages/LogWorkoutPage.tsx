@@ -338,14 +338,14 @@ function CardioForm({
             <button
               type="button"
               onClick={handleRestore}
-              className="text-sm font-medium text-primary-dark"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Restore
             </button>
             <button
               type="button"
               onClick={handleDiscard}
-              className="text-sm font-medium text-text-muted-strong"
+              className="text-sm font-medium text-text-muted-strong hover:text-text"
             >
               Discard
             </button>
@@ -361,7 +361,7 @@ function CardioForm({
             <button
               type="button"
               onClick={handleRestore}
-              className="text-sm font-medium text-primary-dark"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Restore saved draft
             </button>
@@ -369,7 +369,7 @@ function CardioForm({
             <button
               type="button"
               onClick={handleUsePlannedSession}
-              className="text-sm font-medium text-primary-dark"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Use planned session
             </button>
@@ -377,7 +377,7 @@ function CardioForm({
             <button
               type="button"
               onClick={handleStartFresh}
-              className="text-sm font-medium text-text-muted-strong"
+              className="text-sm font-medium text-text-muted-strong hover:text-text"
             >
               Start fresh
             </button>
@@ -392,7 +392,7 @@ function CardioForm({
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title', {
               onChange: () => setTitleTouched(true),
             })}
@@ -402,7 +402,7 @@ function CardioForm({
         <div>
           <label className="block text-sm font-medium text-text mb-1">Activity Type</label>
           <select
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('activity_type_id')}
           >
             <option value="">— select type —</option>
@@ -416,7 +416,7 @@ function CardioForm({
           <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
           {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
@@ -433,7 +433,7 @@ function CardioForm({
                 onChange={field.onChange}
                 format="duration"
                 placeholder="h:mm:ss"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               />
             )}
           />
@@ -445,7 +445,7 @@ function CardioForm({
             type="number"
             min="0"
             placeholder="e.g. 450"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>
@@ -480,14 +480,14 @@ function CardioForm({
             <textarea
               rows={2}
               placeholder="Optional notes…"
-              className={`w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+              className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
               {...register('notes')}
             />
             {watchedFormValues.notes && (
               <button
                 type="button"
                 onClick={() => setValue('notes', '')}
-                className="absolute right-1 top-1 p-1.5 text-text-muted-strong"
+                className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
                 aria-label="Clear notes"
               >
                 <EraserIcon />
@@ -504,7 +504,7 @@ function CardioForm({
             <button
               type="button"
               onClick={() => setShowAdaptCardioModal(true)}
-              className="w-full text-sm font-medium text-primary-dark flex items-center gap-1.5"
+              className="w-full text-sm font-medium text-primary-dark hover:underline flex items-center gap-1.5"
             >
               <span>✨</span> Adapt this session
             </button>
@@ -547,7 +547,7 @@ function CardioForm({
                   <input
                     type="text"
                     placeholder="Optional title…"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.title`)}
                   />
                 </div>
@@ -577,7 +577,7 @@ function CardioForm({
                     min="0"
                     step="any"
                     placeholder="e.g. 5.0"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.distance_km`)}
                   />
                 </div>
@@ -604,7 +604,7 @@ function CardioForm({
         <button
           type="button"
           onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null })}
-          className="mt-3 w-full text-sm text-primary-dark font-medium border border-dashed border-primary-light rounded-xl py-2"
+          className="mt-3 w-full text-sm text-primary-dark hover:underline font-medium border border-dashed border-primary-light rounded-xl py-2"
         >
           + Add Segment
         </button>
@@ -642,7 +642,7 @@ function CardioForm({
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="text-sm text-text-muted-strong px-4 py-2 max-md:min-h-11"
+            className="text-sm text-text-muted-strong hover:text-text px-4 py-2 max-md:min-h-11"
           >
             Cancel
           </button>
@@ -733,7 +733,7 @@ function StrengthForm() {
               type="button"
               onClick={handleRestore}
               disabled={isLoadingTemplate}
-              className="text-sm font-medium text-primary-dark disabled:opacity-50"
+              className="text-sm font-medium text-primary-dark hover:underline disabled:opacity-50"
             >
               {isLoadingTemplate ? 'Restoring…' : 'Restore'}
             </button>
@@ -741,7 +741,7 @@ function StrengthForm() {
               type="button"
               onClick={handleDiscard}
               disabled={isLoadingTemplate}
-              className="text-sm font-medium text-text-muted-strong disabled:opacity-50"
+              className="text-sm font-medium text-text-muted-strong hover:text-text disabled:opacity-50"
             >
               Discard
             </button>
@@ -772,7 +772,7 @@ function StrengthForm() {
             value={selectedTemplateId ?? ''}
             onChange={(e) => handleTemplateSelect(e.target.value)}
             disabled={isLoadingTemplate}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark disabled:opacity-50"
           >
             <option value="">— no template —</option>
             {templates.map((t) => (
@@ -803,7 +803,7 @@ function StrengthForm() {
             <button
               type="button"
               onClick={() => setShowAdaptModal(true)}
-              className="w-full text-sm font-medium text-primary-dark flex items-center gap-1.5"
+              className="w-full text-sm font-medium text-primary-dark hover:underline flex items-center gap-1.5"
             >
               <span>✨</span> Adapt this session
             </button>
@@ -824,7 +824,7 @@ function StrengthForm() {
             <input
               type="text"
               placeholder="Optional session title…"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('title', { onChange: () => setTitleTouched(true) })}
             />
           </div>
@@ -832,7 +832,7 @@ function StrengthForm() {
             <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
             <input
               type="datetime-local"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('date', { required: 'Date is required' })}
             />
             {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
@@ -867,14 +867,14 @@ function StrengthForm() {
               <textarea
                 rows={2}
                 placeholder="Optional notes…"
-                className={`w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+                className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
                 {...register('notes')}
               />
               {watchedFormValues.notes && (
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong"
+                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
                   aria-label="Clear notes"
                 >
                   <EraserIcon />
@@ -893,7 +893,7 @@ function StrengthForm() {
                   onChange={field.onChange}
                   format="duration"
                   placeholder="h:mm:ss (optional)"
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                 />
               )}
             />
@@ -904,7 +904,7 @@ function StrengthForm() {
               type="number"
               min="0"
               placeholder="e.g. 500"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('calories')}
             />
           </div>
@@ -1002,7 +1002,7 @@ export default function LogWorkoutPage() {
           className={`rounded-xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
             workoutType === 'cardio'
               ? 'border-primary-dark bg-primary-tint text-primary-dark'
-              : 'border-border bg-surface text-text hover:border-primary-light hover:bg-primary-tint/50'
+              : 'border-border-strong bg-surface text-text hover:bg-primary-tint/50'
           }`}
         >
           <span className="text-3xl">🏃</span>
@@ -1014,7 +1014,7 @@ export default function LogWorkoutPage() {
           className={`rounded-xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
             workoutType === 'strength'
               ? 'border-primary-dark bg-primary-tint text-primary-dark'
-              : 'border-border bg-surface text-text hover:border-primary-light hover:bg-primary-tint/50'
+              : 'border-border-strong bg-surface text-text hover:bg-primary-tint/50'
           }`}
         >
           <span className="text-3xl">🏋️</span>

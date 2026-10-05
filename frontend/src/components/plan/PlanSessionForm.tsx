@@ -222,7 +222,7 @@ export function PlanSessionForm({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-text-muted-strong hover:bg-bg"
+            className="p-1.5 rounded-lg text-text-muted-strong hover:text-text hover:bg-bg"
             aria-label="Close"
           >
             <svg
@@ -258,8 +258,8 @@ export function PlanSessionForm({
                     onClick={() => !isEditMode && setValue('session_type', type)}
                     className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-colors ${
                       sessionType === type
-                        ? 'bg-primary-dark text-white'
-                        : 'bg-bg text-text-muted-strong hover:bg-border'
+                        ? 'bg-primary-dark text-white border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     } ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     {type === 'strength' ? 'Strength' : 'Cardio'}
@@ -279,8 +279,8 @@ export function PlanSessionForm({
                     onClick={() => setValue('planned_date', day)}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       plannedDate === day
-                        ? 'bg-primary-dark text-white'
-                        : 'bg-bg text-text-muted-strong hover:bg-border'
+                        ? 'bg-primary-dark text-white border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     }`}
                   >
                     {formatDayShort(day)}
@@ -301,7 +301,7 @@ export function PlanSessionForm({
                       validate: (val, formValues) =>
                         formValues.session_type !== 'strength' || !!val || 'Template is required',
                     })}
-                    className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                   >
                     <option value="">— select template —</option>
                     {templates.map((t) => (
@@ -321,7 +321,7 @@ export function PlanSessionForm({
                   <input
                     type="text"
                     placeholder="Auto-filled from template…"
-                    className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register('title', { onChange: () => setTitleTouched(true) })}
                   />
                 </div>
@@ -330,7 +330,7 @@ export function PlanSessionForm({
                   <textarea
                     rows={2}
                     placeholder="Optional notes…"
-                    className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                     {...register('notes')}
                   />
                 </div>
@@ -350,7 +350,7 @@ export function PlanSessionForm({
                       validate: (val, formValues) =>
                         formValues.session_type !== 'cardio' || !!val || 'Activity type is required',
                     })}
-                    className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                   >
                     <option value="">— select —</option>
                     {cardioTypes.map((t) => (
@@ -406,7 +406,7 @@ export function PlanSessionForm({
                           <input
                             type="text"
                             placeholder="e.g. Easy jog, Tempo interval…"
-                            className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                             {...register(`segments.${index}.title`)}
                           />
                         </div>
@@ -435,7 +435,7 @@ export function PlanSessionForm({
                               min="0"
                               step="any"
                               placeholder="e.g. 5.0"
-                              className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                              className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                               {...register(`segments.${index}.distance_km`)}
                             />
                           </div>
@@ -462,7 +462,7 @@ export function PlanSessionForm({
                           <textarea
                             rows={2}
                             placeholder="Optional notes for this segment…"
-                            className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                            className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                             {...register(`segments.${index}.notes`)}
                           />
                         </div>
@@ -472,7 +472,7 @@ export function PlanSessionForm({
                   <button
                     type="button"
                     onClick={() => append(emptySegment())}
-                    className="mt-3 w-full text-sm text-primary-dark font-medium border border-dashed border-primary-light rounded-xl py-2"
+                    className="mt-3 w-full text-sm text-primary-dark hover:underline font-medium border border-dashed border-primary-light rounded-xl py-2"
                   >
                     + Add Segment
                   </button>
@@ -482,7 +482,7 @@ export function PlanSessionForm({
                   <textarea
                     rows={2}
                     placeholder="Optional session notes…"
-                    className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                     {...register('notes')}
                   />
                 </div>
@@ -506,7 +506,7 @@ export function PlanSessionForm({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-text-muted-strong"
+              className="px-4 py-2 text-sm text-text-muted-strong hover:text-text"
             >
               Cancel
             </button>

@@ -12,7 +12,7 @@ import {
 describe('chartPalette', () => {
   it('falls back to the spec hex when the CSS variable is missing', () => {
     expect(chartColor('chart-strength')).toBe('#7E9B76')
-    expect(axisColor()).toBe('#737A70')
+    expect(axisColor()).toBe('#656B63')
     expect(gridColor()).toBe('#E8E4DA')
   })
 

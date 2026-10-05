@@ -199,13 +199,13 @@ function TrainingTrendsChart() {
         <h2 className="text-sm font-semibold text-text-muted-strong uppercase tracking-wide">
           12-Week Trends (incl. this week)
         </h2>
-        <div className="flex gap-1 bg-bg rounded-lg p-1">
+        <div className="flex gap-1 bg-border rounded-lg p-1">
           <button
             onClick={() => setView('minutes')}
             className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
               view === 'minutes'
                 ? 'bg-surface text-primary-dark shadow-sm'
-                : 'text-text-muted-strong'
+                : 'text-text-muted-strong hover:text-text'
             }`}
           >
             Minutes
@@ -215,7 +215,7 @@ function TrainingTrendsChart() {
             className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
               view === 'calories'
                 ? 'bg-surface text-primary-dark shadow-sm'
-                : 'text-text-muted-strong'
+                : 'text-text-muted-strong hover:text-text'
             }`}
           >
             Calories
@@ -335,7 +335,7 @@ function PaceTrendsChart() {
                 className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-sm font-medium border transition-colors ${
                   !hiddenTypes.has(type)
                     ? 'bg-primary-tint text-primary-dark border-primary-dark'
-                    : 'bg-surface text-text-muted-strong border-border hover:border-text-muted'
+                    : 'bg-surface text-text-muted-strong border-border-strong hover:bg-bg'
                 }`}
               >
                 {type}
@@ -560,13 +560,13 @@ export function HistoryPageContent() {
 
       <WeeklyInsightsCard hasApiKey={hasApiKey} />
 
-      <div className="flex gap-1 bg-bg rounded-lg p-1 mb-4 w-fit">
+      <div className="flex gap-1 bg-border rounded-lg p-1 mb-4 w-fit">
         <button
           onClick={() => setChartTab('trends')}
           className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
             chartTab === 'trends'
               ? 'bg-surface text-primary-dark shadow-sm'
-              : 'text-text-muted-strong'
+              : 'text-text-muted-strong hover:text-text'
           }`}
         >
           Trends
@@ -576,7 +576,7 @@ export function HistoryPageContent() {
           className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
             chartTab === 'pace'
               ? 'bg-surface text-primary-dark shadow-sm'
-              : 'text-text-muted-strong'
+              : 'text-text-muted-strong hover:text-text'
           }`}
         >
           Pace
@@ -592,7 +592,7 @@ export function HistoryPageContent() {
             setType(e.target.value as 'all' | 'cardio' | 'strength')
             handleFilterChange()
           }}
-          className="border border-border rounded-sm px-3 py-1.5 text-sm text-text bg-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="border border-border-strong rounded-sm px-3 py-1.5 text-sm text-text bg-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
         >
           <option value="all">All types</option>
           <option value="cardio">Cardio</option>
@@ -608,7 +608,7 @@ export function HistoryPageContent() {
               setDateFrom(e.target.value)
               handleFilterChange()
             }}
-            className="border border-border rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="border border-border-strong rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           />
         </div>
 
@@ -621,7 +621,7 @@ export function HistoryPageContent() {
               setDateTo(e.target.value)
               handleFilterChange()
             }}
-            className="border border-border rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="border border-border-strong rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           />
         </div>
 

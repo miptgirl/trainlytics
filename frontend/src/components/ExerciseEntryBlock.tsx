@@ -183,7 +183,7 @@ function ExercisePickerDropdown({
       <button
         type="button"
         onClick={openDropdown}
-        className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary text-left`}
+        className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary-dark text-left`}
       >
         <span className={selected ? 'text-text' : 'text-text-muted-strong'}>
           {selected ? selected.name : '— select exercise —'}
@@ -220,7 +220,7 @@ function ExercisePickerDropdown({
                   }
                 }}
                 placeholder="Exercise name"
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               />
               {createError && <p className="text-xs text-error-text">{createError}</p>}
               <div className="flex gap-2">
@@ -278,7 +278,7 @@ function ExercisePickerDropdown({
                 <button
                   type="button"
                   onClick={() => setActiveGroup(null)}
-                  className="flex items-center gap-1 text-xs text-primary-dark font-medium"
+                  className="flex items-center gap-1 text-xs text-primary-dark hover:underline font-medium"
                 >
                   <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
@@ -601,7 +601,7 @@ export function ExerciseEntryBlock({
               <button
                 type="button"
                 onClick={() => appendSet(emptySet())}
-                className="max-sm:hidden text-xs text-primary-dark font-medium"
+                className="max-sm:hidden text-xs text-primary-dark hover:underline font-medium"
               >
                 + Add Set
               </button>
@@ -629,14 +629,14 @@ export function ExerciseEntryBlock({
                       type="number"
                       min="0"
                       placeholder="reps"
-                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border'}`}
+                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
                       placeholder="kg"
-                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border'}`}
+                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
                     {showDone && (
@@ -647,10 +647,10 @@ export function ExerciseEntryBlock({
                           {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
                         />
                         <span
-                          className={`text-lg leading-none select-none transition-colors max-sm:flex max-sm:size-11 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:border max-sm:font-bold max-sm:peer-focus-visible:ring-2 max-sm:peer-focus-visible:ring-primary ${
+                          className={`text-lg leading-none select-none transition-colors max-sm:flex max-sm:size-11 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:border max-sm:font-bold max-sm:peer-focus-visible:ring-2 max-sm:peer-focus-visible:ring-primary-dark ${
                             isDone
                               ? 'text-success-text max-sm:border-primary-dark max-sm:bg-primary-dark max-sm:text-white'
-                              : 'text-text-muted hover:text-text-muted-strong max-sm:border-border max-sm:bg-surface max-sm:text-text-muted'
+                              : 'text-text-muted hover:text-text-muted-strong max-sm:border-border-strong max-sm:bg-surface max-sm:text-text-muted'
                           }`}
                           aria-label={isDone ? 'Mark undone' : 'Mark done'}
                         >
@@ -662,14 +662,14 @@ export function ExerciseEntryBlock({
                       <input
                         type="text"
                         placeholder="note"
-                        className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border'}`}
+                        className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
                         {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
                       />
                       {setValue && setValues[setIndex]?.notes && (
                         <button
                           type="button"
                           onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong"
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong hover:text-text"
                           aria-label="Clear notes"
                         >
                           <EraserIcon />
@@ -697,7 +697,7 @@ export function ExerciseEntryBlock({
             <button
               type="button"
               onClick={() => appendSet(emptySet())}
-              className="sm:hidden mt-3 w-full min-h-11 text-sm text-primary-dark font-medium border border-dashed border-primary-light rounded-lg"
+              className="sm:hidden mt-3 w-full min-h-11 text-sm text-primary-dark hover:underline font-medium border border-dashed border-primary-light rounded-lg"
             >
               + Add set
             </button>

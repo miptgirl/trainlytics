@@ -143,14 +143,14 @@ function EditForm({
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title')}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-text mb-1">Activity Type</label>
           <select
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('activity_type_id')}
           >
             <option value="">— select type —</option>
@@ -163,7 +163,7 @@ function EditForm({
           <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
           {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
@@ -174,7 +174,7 @@ function EditForm({
             type="number"
             min="0"
             step="any"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('total_duration_mins')}
           />
         </div>
@@ -183,7 +183,7 @@ function EditForm({
           <input
             type="number"
             min="0"
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>
@@ -191,7 +191,7 @@ function EditForm({
           <label className="block text-sm font-medium text-text mb-1">Notes</label>
           <textarea
             rows={2}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
             {...register('notes')}
           />
         </div>
@@ -203,7 +203,7 @@ function EditForm({
           <button
             type="button"
             onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '' })}
-            className="text-sm text-primary-dark font-medium"
+            className="text-sm text-primary-dark hover:underline font-medium"
           >
             + Add Segment
           </button>
@@ -214,7 +214,7 @@ function EditForm({
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-text">Segment {index + 1}</span>
                 {fields.length > 1 && (
-                  <button type="button" onClick={() => remove(index)} className="text-xs text-error-text">
+                  <button type="button" onClick={() => remove(index)} className="text-xs text-error-text hover:underline">
                     Remove
                   </button>
                 )}
@@ -223,27 +223,27 @@ function EditForm({
                 <div className="col-span-2">
                   <label className="block text-xs text-text-muted-strong mb-1">Segment Title</label>
                   <input type="text" placeholder="Optional title…"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.title`)} />
                 </div>
                 <div>
                   <label className="block text-xs text-text-muted-strong mb-1">Duration (mins) *</label>
                   <input
                     type="number" min="0" step="any"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.duration_mins`, { required: 'Required' })}
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-text-muted-strong mb-1">Distance (km)</label>
                   <input type="number" min="0" step="any"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.distance_km`)} />
                 </div>
                 <div>
                   <label className="block text-xs text-text-muted-strong mb-1">Pace (min/km)</label>
                   <input type="number" min="0" step="any"
-                    className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.pace_min_per_km`)} />
                 </div>
               </div>
@@ -270,7 +270,7 @@ function EditForm({
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong px-4 py-2">
+        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong hover:text-text px-4 py-2">
           Cancel
         </button>
       </div>
@@ -398,13 +398,13 @@ export default function CardioSessionDetailPage() {
           <button
             onClick={handleCopy}
             disabled={copyStatus !== 'idle'}
-            className="text-sm text-text-muted-strong disabled:opacity-50"
+            className="text-sm text-text-muted-strong hover:text-text disabled:opacity-50"
           >
             {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
           </button>
           <button
             onClick={() => setEditing(true)}
-            className="text-sm text-text-muted-strong"
+            className="text-sm text-text-muted-strong hover:text-text"
           >
             Edit
           </button>
@@ -413,7 +413,7 @@ export default function CardioSessionDetailPage() {
               if (confirm('Delete this session?')) deleteMutation.mutate()
             }}
             disabled={deleteMutation.isPending}
-            className="text-sm text-error-text disabled:opacity-50"
+            className="text-sm text-error-text hover:underline disabled:opacity-50"
           >
             Delete
           </button>

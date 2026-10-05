@@ -18,6 +18,7 @@
   --color-bg: #F7F5EF;
   --color-surface: #FFFDF8;
   --color-border: #E8E4DA;
+  --color-border-strong: #8A857B; /* control boundaries, 3.4:1+ on surface and bg (WCAG 1.4.11) */
   --color-text: #2F342F;
   --color-text-muted: #737A70;
   --color-text-muted-strong: #656B63;

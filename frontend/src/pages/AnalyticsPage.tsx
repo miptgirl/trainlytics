@@ -24,7 +24,7 @@ function DebugIcon({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="hidden sm:block text-xs text-text-muted hover:text-text-muted-strong font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
+      className="hidden sm:block text-xs text-text-muted-strong hover:text-text font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
       title="View SQL"
     >
       {'</>'}
@@ -163,7 +163,7 @@ export function AnalyticsPageContent() {
                 <PersonalRecordsPanel />
               </ChartPanel>
               <button
-                className="text-sm text-text-muted-strong transition-colors"
+                className="text-sm text-text-muted-strong hover:text-text transition-colors"
                 onClick={() => setShowMoreStrength(false)}
               >
                 Show less ▲
@@ -171,7 +171,7 @@ export function AnalyticsPageContent() {
             </>
           ) : (
             <button
-              className="text-sm text-primary-dark transition-colors font-medium"
+              className="text-sm text-primary-dark hover:underline transition-colors font-medium"
               onClick={() => setShowMoreStrength(true)}
             >
               Show more ▼

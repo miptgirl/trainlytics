@@ -137,7 +137,7 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
                       <td className="py-0.5 text-text-muted-strong">{si + 1}</td>
                       <td className="text-right py-0.5 tabular-nums">{fmtSet(row.planned_reps, row.planned_weight_kg)}</td>
                       <td className="text-right py-0.5 tabular-nums">{fmtSet(row.actual_reps, row.actual_weight_kg)}</td>
-                      <td className="text-right py-0.5 text-text-muted">—</td>
+                      <td className="text-right py-0.5 text-text-muted-strong">—</td>
                     </tr>
                   ))}
                   <tr className="border-t border-border text-text-muted-strong">

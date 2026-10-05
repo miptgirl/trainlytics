@@ -30,7 +30,7 @@ function MetricRow({ label, planned, actual, unit, digits }: RowProps) {
   return (
     <div className="flex items-center text-sm">
       <div className="flex-1 min-w-0 text-text-muted-strong pr-1">{label}</div>
-      <div className="w-16 text-right tabular-nums text-text-muted shrink-0 whitespace-nowrap">{planStr}</div>
+      <div className="w-16 text-right tabular-nums text-text-muted-strong shrink-0 whitespace-nowrap">{planStr}</div>
       <div className="w-16 text-right tabular-nums font-medium text-text ml-2 shrink-0 whitespace-nowrap">
         {actStr}
       </div>

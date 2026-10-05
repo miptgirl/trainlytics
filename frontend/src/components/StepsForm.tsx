@@ -53,7 +53,7 @@ export default function StepsForm({ compact = false, defaultValues, onSuccess }:
           <input
             type="date"
             {...register('date', { required: 'Date is required' })}
-            className="w-full min-w-0 border rounded-sm px-3 py-2"
+            className="w-full min-w-0 border border-border-strong rounded-sm px-3 py-2"
           />
           {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
         </div>
@@ -63,7 +63,7 @@ export default function StepsForm({ compact = false, defaultValues, onSuccess }:
             type="number"
             min={0}
             {...register('steps', { required: 'Steps required', min: { value: 0, message: 'Must be ≥ 0' }, valueAsNumber: true })}
-            className="w-full border rounded-sm px-3 py-2"
+            className="w-full border border-border-strong rounded-sm px-3 py-2"
           />
           {errors.steps && <p className="mt-1 text-xs text-error-text">{errors.steps.message}</p>}
         </div>

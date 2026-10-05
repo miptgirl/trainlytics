@@ -152,7 +152,7 @@ export function PlannedSessionCard({
           {session.status === 'done' && (
             <button
               onClick={() => setComparisonOpen(v => !v)}
-              className="text-xs text-text-muted-strong font-medium max-md:min-h-11"
+              className="text-xs text-text-muted-strong hover:text-text font-medium max-md:min-h-11"
             >
               {comparisonOpen ? '▾' : '▸'} Compare planned vs. actual
             </button>
@@ -186,7 +186,7 @@ export function PlannedSessionCard({
               {session.status === 'skipped' && (
                 <button
                   onClick={() => setShowSkipNoteModal(true)}
-                  className="text-xs text-text-muted-strong font-medium underline underline-offset-2 max-md:min-h-11 max-md:px-2"
+                  className="text-xs text-text-muted-strong hover:text-text font-medium underline underline-offset-2 max-md:min-h-11 max-md:px-2"
                 >
                   {session.skip_note ? 'Edit note' : 'Add note'}
                 </button>
@@ -195,7 +195,7 @@ export function PlannedSessionCard({
               {/* Reschedule */}
               <button
                 onClick={() => setShowRescheduleModal(true)}
-                className="flex items-center gap-1 text-xs text-text-muted-strong px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-lg hover:bg-bg transition-colors"
+                className="flex items-center gap-1 text-xs text-text-muted-strong hover:text-text px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-lg hover:bg-bg transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -215,7 +215,7 @@ export function PlannedSessionCard({
               {/* Edit / Swap */}
               <button
                 onClick={onEdit}
-                className="flex items-center gap-1 text-xs text-text-muted-strong px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-lg hover:bg-bg transition-colors"
+                className="flex items-center gap-1 text-xs text-text-muted-strong hover:text-text px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-lg hover:bg-bg transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -236,13 +236,13 @@ export function PlannedSessionCard({
                     <button
                       onClick={handleDelete}
                       disabled={deleteMutation.isPending}
-                      className="text-error-text font-medium disabled:opacity-50 max-md:min-h-11 max-md:min-w-11"
+                      className="text-error-text hover:underline font-medium disabled:opacity-50 max-md:min-h-11 max-md:min-w-11"
                     >
                       Yes
                     </button>
                     <button
                       onClick={() => setConfirmDelete(false)}
-                      className="text-text-muted-strong max-md:min-h-11 max-md:min-w-11"
+                      className="text-text-muted-strong hover:text-text max-md:min-h-11 max-md:min-w-11"
                     >
                       No
                     </button>

@@ -42,7 +42,7 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         {hasApiKey && status === 'success' && (
           <button
             onClick={() => { setStatus('idle'); setAnalysis(null) }}
-            className="text-xs text-text-muted-strong"
+            className="text-xs text-text-muted-strong hover:text-text"
           >
             Clear
           </button>

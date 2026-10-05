@@ -212,8 +212,8 @@ export function HealthMetricsSection() {
                     onClick={() => setDays(opt.days)}
                     className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 rounded text-xs font-medium transition-colors ${
                       days === opt.days
-                        ? 'bg-primary-tint text-primary-dark'
-                        : 'bg-bg text-text-muted-strong hover:bg-border'
+                        ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     }`}
                   >
                     {opt.label}

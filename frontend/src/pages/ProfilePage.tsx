@@ -158,12 +158,12 @@ function ApiKeyField({
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder="Paste API key…"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm pr-10 focus:outline-none focus:ring-2 focus:ring-primary-dark"
             />
             <button
               type="button"
               onClick={() => setRevealed((r) => !r)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted-strong text-xs"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted-strong hover:text-text text-xs"
             >
               {revealed ? 'Hide' : 'Show'}
             </button>
@@ -321,7 +321,7 @@ function DebugLogsSection() {
               onChange={(e) => setSql(e.target.value)}
               rows={6}
               placeholder="SELECT * FROM workout_sessions LIMIT 5"
-              className="w-full border border-border rounded-sm px-3 py-2 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary-dark"
             />
             <button
               type="button"
@@ -363,7 +363,7 @@ function DebugLogsSection() {
                               className="px-3 py-2 text-text-muted-strong whitespace-nowrap max-w-xs overflow-hidden text-ellipsis"
                               title={String(cell ?? '')}
                             >
-                              {cell === null ? <span className="text-text-muted">null</span> : String(cell)}
+                              {cell === null ? <span className="text-text-muted-strong">null</span> : String(cell)}
                             </td>
                           ))}
                         </tr>
@@ -511,7 +511,7 @@ export default function ProfilePage() {
         <h1 className="text-xl font-bold text-text">Profile</h1>
 
         {/* ── Tab bar ── */}
-        <div className="flex gap-1 bg-bg rounded-lg p-1 w-fit">
+        <div className="flex gap-1 bg-border rounded-lg p-1 w-fit">
           {(
             [
               { id: 'connections', label: 'Connections' },
@@ -526,7 +526,7 @@ export default function ProfilePage() {
               className={`text-sm px-4 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
                 activeTab === id
                   ? 'bg-surface text-primary-dark shadow-sm'
-                  : 'text-text-muted-strong'
+                  : 'text-text-muted-strong hover:text-text'
               }`}
             >
               {label}
@@ -597,7 +597,7 @@ export default function ProfilePage() {
                     onChange={(e) => setDisplayName(e.target.value)}
                     onBlur={() => patchMutation.mutate({ display_name: displayName || null })}
                     placeholder="Your name"
-                    className="border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                   />
                 </Field>
 
@@ -614,7 +614,7 @@ export default function ProfilePage() {
                     placeholder="e.g. 1990"
                     min={1900}
                     max={new Date().getFullYear()}
-                    className="border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-36"
+                    className="border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-36"
                   />
                 </Field>
 
@@ -646,12 +646,12 @@ export default function ProfilePage() {
                       onChange={(e) => updateGoalText(idx, e.target.value)}
                       onBlur={saveGoalText}
                       placeholder="Goal description"
-                      className="flex-1 border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="flex-1 border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     />
                     <select
                       value={goal.priority}
                       onChange={(e) => updateGoalPriority(idx, e.target.value as Priority)}
-                      className="border border-border rounded-sm px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-surface"
+                      className="border border-border-strong rounded-sm px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark bg-surface"
                     >
                       <option value="high">High</option>
                       <option value="medium">Medium</option>
@@ -670,7 +670,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={addGoal}
-                  className="self-start text-sm text-primary-dark font-medium mt-1"
+                  className="self-start text-sm text-primary-dark hover:underline font-medium mt-1"
                 >
                   + Add goal
                 </button>
@@ -685,7 +685,7 @@ export default function ProfilePage() {
                 onBlur={() => patchMutation.mutate({ injury_notes: injuryNotes || null })}
                 placeholder="e.g. bad left knee, lower back issues…"
                 rows={3}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-dark"
               />
               <p className="text-xs text-text-muted-strong mt-1">
                 Saved automatically when you leave this field.
@@ -700,7 +700,7 @@ export default function ProfilePage() {
                 onBlur={() => patchMutation.mutate({ coach_notes: coachNotes || null })}
                 placeholder="e.g. I train at 6am before work, I prefer compound movements…"
                 rows={3}
-                className="w-full border border-border rounded-sm px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-primary-dark"
               />
               <p className="text-xs text-text-muted-strong mt-1">
                 Saved automatically when you leave this field.
@@ -716,7 +716,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={dismissKeyResetNotice}
-                      className="text-warning-text shrink-0 leading-none"
+                      className="text-warning-text hover:underline shrink-0 leading-none"
                       aria-label="Dismiss"
                     >
                       ✕

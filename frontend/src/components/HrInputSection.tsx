@@ -62,7 +62,7 @@ export function HrInputSection({
               placeholder="e.g. 148"
               value={avgHrBpm}
               onChange={(e) => onAvgHrBpmChange(e.target.value)}
-              className="w-full border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             />
           </div>
 

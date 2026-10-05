@@ -51,7 +51,7 @@ export default function LoginPage() {
               id="username"
               type="text"
               autoComplete="username"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('username', { required: 'Username is required' })}
             />
             {errors.username && (
@@ -67,7 +67,7 @@ export default function LoginPage() {
               id="password"
               type="password"
               autoComplete="current-password"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('password', { required: 'Password is required' })}
             />
             {errors.password && (

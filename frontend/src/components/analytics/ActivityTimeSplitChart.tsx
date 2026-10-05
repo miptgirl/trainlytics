@@ -50,8 +50,8 @@ export function ActivityTimeSplitChart() {
               onClick={() => setPeriod(p.value)}
               className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-sm font-medium transition-colors ${
                 period === p.value
-                  ? 'bg-primary-dark text-white'
-                  : 'bg-bg text-text-muted-strong hover:bg-border'
+                  ? 'bg-primary-dark text-white border border-primary-dark'
+                  : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
               }`}
             >
               {p.label}
@@ -63,8 +63,8 @@ export function ActivityTimeSplitChart() {
             onClick={() => setChartType('bar')}
             className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-sm font-medium transition-colors ${
               chartType === 'bar'
-                ? 'bg-primary-tint text-primary-dark'
-                : 'bg-bg text-text-muted-strong hover:bg-border'
+                ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             Bar
@@ -73,8 +73,8 @@ export function ActivityTimeSplitChart() {
             onClick={() => setChartType('pie')}
             className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-sm font-medium transition-colors ${
               chartType === 'pie'
-                ? 'bg-primary-tint text-primary-dark'
-                : 'bg-bg text-text-muted-strong hover:bg-border'
+                ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             Pie

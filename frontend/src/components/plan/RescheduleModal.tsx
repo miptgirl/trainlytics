@@ -97,7 +97,7 @@ export function RescheduleModal({ session, weekStart, onClose }: RescheduleModal
                   onClick={() => setSelectedDate(day)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                     isPast
-                      ? 'text-text-muted cursor-not-allowed'
+                      ? 'text-text-muted-strong cursor-not-allowed'
                       : isSelected
                         ? 'bg-primary-dark text-white font-medium'
                         : isCurrent

@@ -131,14 +131,14 @@ export default function ExercisesPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setEditingId(ex.id)}
-                    className="text-sm text-text-muted-strong"
+                    className="text-sm text-text-muted-strong hover:text-text"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(ex.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-error-text disabled:opacity-50"
+                    className="text-sm text-error-text hover:underline disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -180,7 +180,7 @@ function ExerciseForm({
         <input
           type="text"
           placeholder="Exercise name"
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
@@ -192,7 +192,7 @@ function ExerciseForm({
         <textarea
           placeholder="Notes (optional)"
           rows={2}
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
           {...register('notes')}
         />
       </div>
@@ -212,7 +212,7 @@ function ExerciseForm({
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm text-text-muted-strong px-3 py-1.5"
+          className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5"
         >
           Cancel
         </button>
@@ -327,7 +327,7 @@ function ReplacementsSection({
             <button
               type="button"
               onClick={() => setReverseCandidate(null)}
-              className="text-xs text-primary-dark px-2 py-1"
+              className="text-xs text-primary-dark hover:underline px-2 py-1"
             >
               Skip
             </button>
@@ -338,7 +338,7 @@ function ReplacementsSection({
       <button
         type="button"
         onClick={() => setPickerOpen(true)}
-        className="text-xs text-primary-dark font-medium"
+        className="text-xs text-primary-dark hover:underline font-medium"
       >
         + Add replacement
       </button>
@@ -428,7 +428,7 @@ function ReplacementPicker({
           <button
             type="button"
             onClick={onClose}
-            className="text-text-muted text-xl leading-none"
+            className="text-text-muted hover:text-text text-xl leading-none"
             aria-label="Close"
           >
             ✕
@@ -442,7 +442,7 @@ function ReplacementPicker({
             placeholder="Search exercises…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           />
         </div>
 

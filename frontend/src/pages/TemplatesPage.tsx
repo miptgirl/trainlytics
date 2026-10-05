@@ -167,13 +167,13 @@ function TemplateList({
                     <button
                       onClick={() => deleteMutation.mutate(t.id)}
                       disabled={deleteMutation.isPending}
-                      className="text-sm text-error-text font-medium disabled:opacity-50 min-h-11 px-2"
+                      className="text-sm text-error-text hover:underline font-medium disabled:opacity-50 min-h-11 px-2"
                     >
                       {deleteMutation.isPending ? 'Deleting…' : 'Yes, delete'}
                     </button>
                     <button
                       onClick={() => setDeleteConfirmId(null)}
-                      className="text-sm text-text-muted-strong min-h-11 px-2"
+                      className="text-sm text-text-muted-strong hover:text-text min-h-11 px-2"
                     >
                       Cancel
                     </button>
@@ -193,13 +193,13 @@ function TemplateList({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => navigate(`/log?templateId=${t.id}`)}
-                      className="text-sm text-primary-dark font-medium min-h-11 px-3"
+                      className="text-sm text-primary-dark hover:underline font-medium min-h-11 px-3"
                     >
                       Use
                     </button>
                     <button
                       onClick={() => onEdit(t.id)}
-                      className="text-sm text-text-muted-strong min-h-11 px-3"
+                      className="text-sm text-text-muted-strong hover:text-text min-h-11 px-3"
                     >
                       Edit
                     </button>
@@ -344,7 +344,7 @@ function TemplateForm({
             <input
               type="text"
               placeholder="e.g. Push Day"
-              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               autoFocus
               {...register('name', { required: 'Name is required' })}
             />
@@ -356,14 +356,14 @@ function TemplateForm({
               <textarea
                 rows={2}
                 placeholder="Optional notes…"
-                className={`w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${templateNotes ? 'pr-8' : ''}`}
+                className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${templateNotes ? 'pr-8' : ''}`}
                 {...register('notes')}
               />
               {templateNotes && (
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong"
+                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
                   aria-label="Clear notes"
                 >
                   <EraserIcon />
@@ -414,7 +414,7 @@ function TemplateForm({
           <button
             type="button"
             onClick={() => appendExercise(emptyEntry())}
-            className="mt-3 text-sm text-primary-dark font-medium"
+            className="mt-3 text-sm text-primary-dark hover:underline font-medium"
           >
             + Add Exercise
           </button>

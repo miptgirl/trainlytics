@@ -125,14 +125,14 @@ function ActivityTypesSection() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingId(t.id)}
-                    className="text-sm text-text-muted-strong"
+                    className="text-sm text-text-muted-strong hover:text-text"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(t.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-error-text disabled:opacity-50"
+                    className="text-sm text-error-text hover:underline disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -170,7 +170,7 @@ function CardioTypeForm({
         <input
           type="text"
           placeholder="Activity type name"
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
@@ -186,7 +186,7 @@ function CardioTypeForm({
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong px-3 py-1.5">
+        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5">
           Cancel
         </button>
       </div>
@@ -279,14 +279,14 @@ function ExerciseTypesSection() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingId(t.id)}
-                    className="text-sm text-text-muted-strong"
+                    className="text-sm text-text-muted-strong hover:text-text"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(t.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-error-text disabled:opacity-50"
+                    className="text-sm text-error-text hover:underline disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -324,7 +324,7 @@ function ExerciseTypeForm({
         <input
           type="text"
           placeholder="Exercise type name"
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
@@ -340,7 +340,7 @@ function ExerciseTypeForm({
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong px-3 py-1.5">
+        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5">
           Cancel
         </button>
       </div>
@@ -483,14 +483,14 @@ function ExercisesSection() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => setEditingId(ex.id)}
-                    className="text-sm text-text-muted-strong"
+                    className="text-sm text-text-muted-strong hover:text-text"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(ex.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-error-text disabled:opacity-50"
+                    className="text-sm text-error-text hover:underline disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -561,7 +561,7 @@ function ReplacementPicker({
       <div className="relative bg-surface pb-[env(safe-area-inset-bottom)] sm:pb-0 rounded-t-[20px] sm:rounded-xl w-full sm:max-w-md shadow-md flex flex-col max-h-[80vh]">
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
           <h2 className="font-semibold text-text">Add replacement</h2>
-          <button type="button" onClick={onClose} className="text-text-muted text-xl leading-none" aria-label="Close">✕</button>
+          <button type="button" onClick={onClose} className="text-text-muted hover:text-text text-xl leading-none" aria-label="Close">✕</button>
         </div>
         <div className="px-4 py-2 border-b border-border">
           <input
@@ -570,7 +570,7 @@ function ReplacementPicker({
             placeholder="Search exercises…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           />
         </div>
         <div className="overflow-y-auto flex-1">
@@ -691,13 +691,13 @@ function ReplacementsSection({
             >
               {addReverseMutation.isPending ? 'Adding…' : 'Yes, add reverse'}
             </button>
-            <button type="button" onClick={() => setReverseCandidate(null)} className="text-xs text-primary-dark px-2 py-1">
+            <button type="button" onClick={() => setReverseCandidate(null)} className="text-xs text-primary-dark hover:underline px-2 py-1">
               Skip
             </button>
           </div>
         </div>
       )}
-      <button type="button" onClick={() => setPickerOpen(true)} className="text-xs text-primary-dark font-medium">
+      <button type="button" onClick={() => setPickerOpen(true)} className="text-xs text-primary-dark hover:underline font-medium">
         + Add replacement
       </button>
       {pickerOpen && (
@@ -761,7 +761,7 @@ function ExerciseForm({
         <input
           type="text"
           placeholder="Exercise name"
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
@@ -773,7 +773,7 @@ function ExerciseForm({
         <textarea
           placeholder="Notes (optional)"
           rows={2}
-          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+          className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
           {...register('notes')}
         />
       </div>
@@ -791,7 +791,7 @@ function ExerciseForm({
                   className={`text-xs font-medium px-2.5 py-1 rounded-sm border transition-colors ${
                     selected
                       ? 'bg-primary-dark text-white border-primary-dark'
-                      : 'bg-surface text-text-muted-strong border-border hover:border-primary'
+                      : 'bg-surface text-text-muted-strong border-border-strong hover:bg-bg'
                   }`}
                 >
                   {t.name}
@@ -827,7 +827,7 @@ function ExerciseForm({
             {isPending ? 'Saving…' : 'Save & add replacement'}
           </button>
         )}
-        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong px-3 py-1.5">
+        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5">
           Cancel
         </button>
       </div>

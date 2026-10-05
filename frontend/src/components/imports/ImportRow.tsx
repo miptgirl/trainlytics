@@ -169,20 +169,20 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="Title"
-                className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
+                className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full"
               />
               <div className="flex gap-2 flex-wrap">
                 <input
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                 />
                 {isCardio && (
                   <select
                     value={editActivityType}
                     onChange={(e) => setEditActivityType(e.target.value)}
-                    className="border border-border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-surface flex-1 min-w-32"
+                    className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark bg-surface flex-1 min-w-32"
                   >
                     <option value="">— activity type —</option>
                     {cardioTypes.map((t) => (
@@ -205,7 +205,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="text-sm text-text-muted-strong px-3 py-1.5 transition-colors"
+                  className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5 transition-colors"
                 >
                   Cancel
                 </button>
@@ -263,7 +263,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-xs text-text-muted-strong transition-colors"
+              className="text-xs text-text-muted-strong hover:text-text transition-colors"
             >
               Edit
             </button>
@@ -271,7 +271,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-xs text-text-muted-strong transition-colors"
+            className="text-xs text-text-muted-strong hover:text-text transition-colors"
           >
             {expanded ? 'Hide details' : 'Details'}
           </button>
@@ -285,14 +285,14 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                 type="button"
                 disabled={discardMutation.isPending}
                 onClick={() => discardMutation.mutate()}
-                className="text-xs font-medium text-error-text transition-colors"
+                className="text-xs font-medium text-error-text hover:underline transition-colors"
               >
                 Yes, discard
               </button>
               <button
                 type="button"
                 onClick={() => setDiscardConfirm(false)}
-                className="text-xs text-text-muted-strong transition-colors"
+                className="text-xs text-text-muted-strong hover:text-text transition-colors"
               >
                 Cancel
               </button>

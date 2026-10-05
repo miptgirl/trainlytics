@@ -92,8 +92,8 @@ export function HrZoneTrendsChart() {
             onClick={() => setMode(m)}
             className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-sm font-medium transition-colors ${
               mode === m
-                ? 'bg-primary-dark text-white'
-                : 'bg-bg text-text-muted-strong hover:bg-border'
+                ? 'bg-primary-dark text-white border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             {m === 'minutes' ? 'Minutes' : '%'}

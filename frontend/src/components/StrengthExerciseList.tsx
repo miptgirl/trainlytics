@@ -86,7 +86,7 @@ export function StrengthExerciseList({
       <button
         type="button"
         onClick={() => appendExercise(emptyEntry())}
-        className="mt-3 text-sm text-primary-dark font-medium"
+        className="mt-3 text-sm text-primary-dark hover:underline font-medium"
       >
         + Add Exercise
       </button>

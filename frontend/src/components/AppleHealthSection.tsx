@@ -187,7 +187,7 @@ export function AppleHealthSection({
                   aria-checked={enabled}
                   onClick={() => toggleMetric(key, enabled)}
                   className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${
-                    enabled ? 'bg-primary-dark' : 'bg-border'
+                    enabled ? 'bg-primary-dark' : 'bg-border-strong'
                   }`}
                 >
                   <span
