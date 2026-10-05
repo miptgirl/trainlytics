@@ -5,10 +5,6 @@ import { type PlannedSessionOut, type WeekPlanOut } from '../lib/planApi'
 import { EraserIcon } from '../components/EraserIcon'
 import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
-import {
-  type ExerciseEntryFormValues,
-} from '../components/ExerciseEntryBlock'
-import { emptyEntry } from '../components/exerciseEntryDefaults'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
@@ -20,6 +16,8 @@ import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions
 import { AdaptSessionModal } from '../components/AdaptSessionModal'
 import { AdaptCardioModal } from '../components/plan/AdaptCardioModal'
 import { HrInputSection } from '../components/HrInputSection'
+import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
+import type { TemplateSummary } from '../lib/strengthSession'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -66,163 +64,11 @@ interface CardioFormValues {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Strength form types & helpers
+// Strength form types & helpers (logic lives in useStrengthSessionForm)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface Exercise {
-  id: number
-  name: string
-  notes?: string | null
-  types?: { id: number; name: string }[]
-}
+export type { TemplateSet, TemplateExercise, TemplateSnapshot } from '../lib/strengthSession'
 
-interface TemplateSummary {
-  id: number
-  name: string
-}
-
-export interface TemplateSet {
-  set_number: number
-  reps: number | null
-  weight_kg: number | null
-  notes: string | null
-}
-
-export interface TemplateExercise {
-  exercise_id: number
-  exercise_name: string
-  order: number
-  sets: TemplateSet[]
-}
-
-export interface TemplateSnapshot {
-  id: number
-  name: string
-  exercises: TemplateExercise[]
-}
-
-interface StrengthFormValues {
-  title: string
-  duration_seconds: number | null
-  calories: string
-  date: string
-  notes: string
-  wellbeing: number | null
-  rpe: number | null
-  exercises: ExerciseEntryFormValues[]
-}
-
-interface DiffState {
-  formData: StrengthFormValues
-  changes: string[]
-}
-
-const emptyStrengthDefaults = (): StrengthFormValues => ({
-  title: 'Strength session',
-  duration_seconds: null,
-  calories: '',
-  date: localDateTimeNow(),
-  notes: '',
-  wellbeing: null,
-  rpe: null,
-  exercises: [emptyEntry()],
-})
-
-function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
-  return {
-    title: t.name,
-    duration_seconds: null,
-    calories: '',
-    date: localDateTimeNow(),
-    wellbeing: null,
-    rpe: null,
-    notes: '',
-    exercises: t.exercises.map((entry) => ({
-      exercise_id: String(entry.exercise_id),
-      sets: entry.sets.map((s) => ({
-        reps: s.reps != null ? String(s.reps) : '',
-        weight: s.weight_kg != null ? String(s.weight_kg) : '',
-        notes: s.notes ?? '',
-        done: false,
-      })),
-    })),
-  }
-}
-
-function computeDiff(
-  snapshot: TemplateSnapshot,
-  formData: StrengthFormValues,
-  exerciseMap: Map<number, string>,
-): string[] {
-  const changes: string[] = []
-  const tmpl = snapshot.exercises
-  const form = formData.exercises
-  const len = Math.max(tmpl.length, form.length)
-
-  for (let i = 0; i < len; i++) {
-    const te = tmpl[i]
-    const fe = form[i]
-
-    if (!te && fe) {
-      const name = exerciseMap.get(parseInt(fe.exercise_id, 10)) ?? 'Unknown exercise'
-      changes.push(`Added ${name}`)
-      continue
-    }
-    if (te && !fe) {
-      changes.push(`Removed ${te.exercise_name}`)
-      continue
-    }
-
-    const feId = parseInt(fe!.exercise_id, 10)
-    if (feId !== te!.exercise_id) {
-      const newName = exerciseMap.get(feId) ?? 'Unknown exercise'
-      changes.push(`Replaced ${te!.exercise_name} with ${newName}`)
-      continue
-    }
-
-    const name = te!.exercise_name
-    const tSets = te!.sets
-    const fSets = fe!.sets
-
-    if (fSets.length !== tSets.length) {
-      const diff = fSets.length - tSets.length
-      if (diff > 0) {
-        changes.push(`Added ${diff} set${diff > 1 ? 's' : ''} to ${name}`)
-      } else {
-        changes.push(`Removed ${-diff} set${-diff > 1 ? 's' : ''} from ${name}`)
-      }
-    }
-
-    const minSets = Math.min(tSets.length, fSets.length)
-    for (let j = 0; j < minSets; j++) {
-      const ts = tSets[j]
-      const fs = fSets[j]
-      const fReps = fs.reps ? parseInt(fs.reps, 10) : null
-      const fWeight = fs.weight ? parseFloat(fs.weight) : null
-      const fNotes = fs.notes || null
-      if (fReps !== ts.reps) changes.push(`Changed reps on ${name} set ${j + 1}`)
-      if (fWeight !== ts.weight_kg) changes.push(`Changed weight on ${name} set ${j + 1}`)
-      if (fNotes !== ts.notes) changes.push(`Changed notes on ${name} set ${j + 1}`)
-    }
-  }
-
-  return changes
-}
-
-function toTemplatePayload(data: StrengthFormValues) {
-  return {
-    exercises: data.exercises.map((entry, i) => ({
-      exercise_id: parseInt(entry.exercise_id, 10),
-      order: i + 1,
-      sets: entry.sets.map((s, si) => ({
-        set_number: si + 1,
-        reps: s.reps ? parseInt(s.reps, 10) : null,
-        weight_kg: s.weight ? parseFloat(s.weight) : null,
-        notes: s.notes || null,
-      })),
-    })),
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cardio Form
@@ -818,19 +664,31 @@ function CardioForm({
 // Strength Form
 // ─────────────────────────────────────────────────────────────────────────────
 
-function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: number; initialDate?: string }) {
+function StrengthForm() {
   const navigate = useNavigate()
-  const qc = useQueryClient()
-
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null)
-  const [templateSnapshot, setTemplateSnapshot] = useState<TemplateSnapshot | null>(null)
-  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
-  const [diffState, setDiffState] = useState<DiffState | null>(null)
-  const [titleTouched, setTitleTouched] = useState(false)
-  const [showDraftBanner, setShowDraftBanner] = useState(false)
-  const [pendingDraft, setPendingDraft] = useState<object | null>(null)
+  const {
+    form: { register, handleSubmit, control, setValue, formState: { errors } },
+    values: watchedFormValues,
+    exerciseLibrary: exercises,
+    selectedTemplateId,
+    templateSnapshot,
+    isLoadingTemplate,
+    selectTemplate,
+    setTitleTouched,
+    pendingDraft,
+    restoreDraft: handleRestore,
+    discardDraft: handleDiscard,
+    requestSave: handleFormSubmit,
+    saveMutation: createMutation,
+    templateMutation: patchTemplateMutation,
+    diffState,
+    confirmTemplateUpdate: handleYesUpdateTemplate,
+    keepTemplate: handleNoKeepTemplate,
+    cancelDiff,
+    adaptSnapshot: buildSessionSnapshot,
+  } = useStrengthSessionForm()
+  const showDraftBanner = pendingDraft !== null
   const [showAdaptModal, setShowAdaptModal] = useState(false)
-  const hasMounted = useRef(false)
 
   const { data: profile } = useQuery<{ ai_key_configured: boolean }>({
     queryKey: ['profile'],
@@ -838,179 +696,13 @@ function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: 
   })
   const hasApiKey = !!profile?.ai_key_configured
 
-  const { data: exercises = [] } = useQuery({
-    queryKey: ['exercises'],
-    queryFn: () => api.get<Exercise[]>('/exercises'),
-  })
-
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', 'strength'],
     queryFn: () => api.get<TemplateSummary[]>('/templates/strength'),
   })
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    reset,
-    getValues,
-    setValue,
-    formState: { errors, isDirty },
-  } = useForm<StrengthFormValues>({
-    defaultValues: { ...emptyStrengthDefaults(), date: initialDate ?? localDateTimeNow() },
-  })
-
-  const watchedFormValues = useWatch({ control })
-
-  useEffect(() => {
-    if (initialTemplateId) applyTemplate(initialTemplateId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialTemplateId])
-
-  useEffect(() => {
-    const draft = loadDraft('strength')
-    if (draft) {
-      setPendingDraft(draft)
-      setShowDraftBanner(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!hasMounted.current) {
-      hasMounted.current = true
-      return
-    }
-    if (!isDirty) return
-    saveDraft('strength', { ...watchedFormValues, templateId: selectedTemplateId })
-  }, [watchedFormValues, selectedTemplateId, isDirty])
-
-  function handleDiscard() {
-    clearDraft('strength')
-    setShowDraftBanner(false)
-    setPendingDraft(null)
-  }
-
-  async function handleRestore() {
-    if (!pendingDraft) return
-    const { templateId: draftTemplateId, ...formValues } = pendingDraft as StrengthFormValues & { templateId?: number | null }
-    if (draftTemplateId) {
-      setIsLoadingTemplate(true)
-      try {
-        const snapshot = await api.get<TemplateSnapshot>(`/templates/strength/${draftTemplateId}`)
-        setSelectedTemplateId(draftTemplateId)
-        setTemplateSnapshot(snapshot)
-      } catch {
-        // Template may have been deleted; restore form values without template link
-      } finally {
-        setIsLoadingTemplate(false)
-      }
-    }
-    setTitleTouched(true)
-    reset(formValues as StrengthFormValues)
-    setShowDraftBanner(false)
-    setPendingDraft(null)
-  }
-
-  async function applyTemplate(id: number) {
-    setIsLoadingTemplate(true)
-    try {
-      const detail = await api.get<TemplateSnapshot>(`/templates/strength/${id}`)
-      setSelectedTemplateId(id)
-      setTemplateSnapshot(detail)
-      const currentDate = getValues('date')
-      const newValues = templateToFormValues(detail)
-      newValues.date = currentDate
-      if (titleTouched) {
-        newValues.title = getValues('title')
-      }
-      reset(newValues)
-    } finally {
-      setIsLoadingTemplate(false)
-    }
-  }
-
   function handleTemplateSelect(value: string) {
-    if (!value) {
-      setSelectedTemplateId(null)
-      setTemplateSnapshot(null)
-      const currentDate = getValues('date')
-      const defaults = emptyStrengthDefaults()
-      defaults.date = currentDate
-      if (titleTouched) {
-        defaults.title = getValues('title')
-      }
-      reset(defaults)
-    } else {
-      applyTemplate(parseInt(value, 10))
-    }
-  }
-
-  const createMutation = useMutation({
-    mutationFn: (data: StrengthFormValues) =>
-      api.post<{ id: number }>('/sessions/strength', {
-        title: data.title || null,
-        duration_seconds: data.duration_seconds ?? null,
-        calories: data.calories ? parseInt(data.calories, 10) : null,
-        date: datetimeLocalToUTC(data.date),
-        notes: data.notes || null,
-        wellbeing: data.wellbeing ?? null,
-        rpe: data.rpe ?? null,
-        exercises: data.exercises.map((entry, i) => ({
-          exercise_id: parseInt(entry.exercise_id, 10),
-          order: i + 1,
-          sets: entry.sets.map((s, si) => ({
-            set_number: si + 1,
-            reps: s.reps ? parseInt(s.reps, 10) : null,
-            weight: s.weight ? parseFloat(s.weight) : null,
-            notes: s.notes || null,
-          })),
-        })),
-      }),
-    onSuccess: (session) => {
-      clearDraft('strength')
-      qc.invalidateQueries({ queryKey: ['sessions'] })
-      navigate(`/sessions/${session.id}`)
-    },
-  })
-
-  const patchTemplateMutation = useMutation({
-    mutationFn: (data: StrengthFormValues) =>
-      api.patch(`/templates/strength/${templateSnapshot!.id}`, toTemplatePayload(data)),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['templates', 'strength'] })
-    },
-  })
-
-  function handleFormSubmit(data: StrengthFormValues) {
-    if (!templateSnapshot) {
-      createMutation.mutate(data)
-      return
-    }
-    const exerciseMap = new Map(exercises.map((e) => [e.id, e.name]))
-    const changes = computeDiff(templateSnapshot, data, exerciseMap)
-    if (changes.length === 0) {
-      createMutation.mutate(data)
-      return
-    }
-    setDiffState({ formData: data, changes })
-  }
-
-  async function handleYesUpdateTemplate() {
-    if (!diffState) return
-    try {
-      await patchTemplateMutation.mutateAsync(diffState.formData)
-      setDiffState(null)
-      createMutation.mutate(diffState.formData)
-    } catch {
-      // patchTemplateMutation.isError shows the error in the modal
-    }
-  }
-
-  function handleNoKeepTemplate() {
-    if (!diffState) return
-    const data = diffState.formData
-    setDiffState(null)
-    createMutation.mutate(data)
+    void selectTemplate(value ? parseInt(value, 10) : null)
   }
 
   return (
@@ -1219,7 +911,7 @@ function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: 
           changes={diffState.changes}
           onYes={handleYesUpdateTemplate}
           onNo={handleNoKeepTemplate}
-          onCancel={() => setDiffState(null)}
+          onCancel={cancelDiff}
           isPending={patchTemplateMutation.isPending || createMutation.isPending}
           isError={patchTemplateMutation.isError}
         />
@@ -1235,24 +927,6 @@ function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: 
       )}
     </>
   )
-
-  function buildSessionSnapshot() {
-    const exerciseMap = new Map(exercises.map((e) => [e.id, e.name]))
-    const currentValues = watchedFormValues as StrengthFormValues
-    return {
-      template_name: templateSnapshot?.name,
-      exercises: (currentValues.exercises ?? [])
-        .filter((e) => e.exercise_id)
-        .map((e) => ({
-          exercise_id: parseInt(e.exercise_id, 10),
-          exercise_name: exerciseMap.get(parseInt(e.exercise_id, 10)) ?? 'Unknown',
-          sets: (e.sets ?? []).map((s) => ({
-            reps: s.reps ? parseInt(s.reps, 10) : null,
-            weight_kg: s.weight ? parseFloat(s.weight) : null,
-          })),
-        })),
-    }
-  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1340,7 +1014,6 @@ export default function LogWorkoutPage() {
   const typeParam = searchParams.get('type')
   const plannedSessionIdParam = searchParams.get('plannedSessionId')
   const weekStartParam = searchParams.get('weekStart')
-  const dateParam = searchParams.get('date')
 
   const [workoutType, setWorkoutType] = useState<WorkoutType | null>(
     typeParam === 'cardio'
@@ -1392,10 +1065,7 @@ export default function LogWorkoutPage() {
         />
       )}
       {workoutType === 'strength' && (
-        <StrengthForm
-          initialTemplateId={templateIdParam ? parseInt(templateIdParam, 10) : undefined}
-          initialDate={dateParam ?? undefined}
-        />
+        <StrengthForm />
       )}
     </Layout>
   )
