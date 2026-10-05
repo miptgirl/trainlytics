@@ -375,6 +375,7 @@ export function ExerciseEntryBlock({
   onAutoExpand,
 }: {
   exIndex: number
+  /* eslint-disable @typescript-eslint/no-explicit-any -- shared by forms with different value types */
   register: any
   control: any
   setValue?: (name: string, value: any) => void
@@ -382,6 +383,7 @@ export function ExerciseEntryBlock({
   canRemove: boolean
   onRemove: () => void
   errors: any
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   showDone?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
