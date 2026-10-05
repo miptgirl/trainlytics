@@ -28,8 +28,8 @@ A group is complete when its checklist passes on a 390px viewport (and 1280px wh
 - [x] Switching Full form ↔ Workout mode mid-session keeps every set, note and done flag
 - [x] Reloading `/workout` mid-session restores the same exercise, sets and remaining rest time
 - [x] A failed save (backend stopped) keeps the draft and shows an error with retry
-- [ ] The saved session matches what was entered (verify on the session detail page)
-- [ ] Every control in workout mode is ≥ 44px; the numbers accept typed input
+- [x] The saved session matches what was entered (verify on the session detail page)
+- [x] Every control in workout mode is ≥ 44px; the numbers accept typed input
 - [ ] Manual: a full workout on an iPhone, with the phone locked mid-workout
 
 ## Group 3 — Today + mobile navigation
