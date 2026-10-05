@@ -434,6 +434,8 @@ export interface StrengthFormParams {
   date?: string
   plannedSessionId?: number
   weekStart?: string
+  /** `resume=1`: restore the stored draft without asking (view switch, reload). */
+  resume?: boolean
 }
 
 export function parseStrengthFormParams(params: URLSearchParams): StrengthFormParams {
@@ -446,5 +448,25 @@ export function parseStrengthFormParams(params: URLSearchParams): StrengthFormPa
     date: params.get('date') ?? undefined,
     plannedSessionId: int('plannedSessionId'),
     weekStart: params.get('weekStart') ?? undefined,
+    resume: params.get('resume') === '1',
   }
+}
+
+/**
+ * URL of the strength form (`/log`) or workout mode (`/workout`) for the same
+ * session. `resume` makes the target restore the stored draft without asking.
+ */
+export function strengthViewUrl(
+  view: 'log' | 'workout',
+  params: StrengthFormParams,
+  { resume = false }: { resume?: boolean } = {},
+): string {
+  const q = new URLSearchParams()
+  if (view === 'log') q.set('type', 'strength')
+  if (params.templateId) q.set('templateId', String(params.templateId))
+  if (params.date) q.set('date', params.date)
+  if (params.plannedSessionId) q.set('plannedSessionId', String(params.plannedSessionId))
+  if (params.weekStart) q.set('weekStart', params.weekStart)
+  if (resume) q.set('resume', '1')
+  return `/${view}?${q.toString()}`
 }

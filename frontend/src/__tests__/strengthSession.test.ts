@@ -7,6 +7,7 @@ import {
   insertSet,
   parseStrengthDraft,
   parseStrengthFormParams,
+  strengthViewUrl,
   removeExercise,
   replaceExercise,
   serializeStrengthDraft,
@@ -222,18 +223,29 @@ describe('strength draft schema', () => {
   })
 })
 
-describe('parseStrengthFormParams', () => {
+describe('parseStrengthFormParams / strengthViewUrl', () => {
   it('reads the strength form query params', () => {
     expect(
       parseStrengthFormParams(
-        new URLSearchParams('type=strength&templateId=3&date=2026-09-01T10:00&plannedSessionId=12&weekStart=2026-08-31'),
+        new URLSearchParams('type=strength&templateId=3&date=2026-09-01T10:00&plannedSessionId=12&weekStart=2026-08-31&resume=1'),
       ),
-    ).toEqual({ templateId: 3, date: '2026-09-01T10:00', plannedSessionId: 12, weekStart: '2026-08-31' })
+    ).toEqual({ templateId: 3, date: '2026-09-01T10:00', plannedSessionId: 12, weekStart: '2026-08-31', resume: true })
     expect(parseStrengthFormParams(new URLSearchParams(''))).toEqual({
       templateId: undefined,
       date: undefined,
       plannedSessionId: undefined,
       weekStart: undefined,
+      resume: false,
     })
+  })
+
+  it('builds the URL of the other view with the same params', () => {
+    const params = parseStrengthFormParams(new URLSearchParams('type=strength&templateId=3&date=2026-09-01T10:00'))
+    expect(strengthViewUrl('workout', params, { resume: true })).toBe(
+      '/workout?templateId=3&date=2026-09-01T10%3A00&resume=1',
+    )
+    expect(strengthViewUrl('log', { ...params, resume: true })).toBe(
+      '/log?type=strength&templateId=3&date=2026-09-01T10%3A00',
+    )
   })
 })

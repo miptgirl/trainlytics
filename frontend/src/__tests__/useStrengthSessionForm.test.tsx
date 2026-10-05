@@ -300,6 +300,46 @@ describe('useStrengthSessionForm: draft', () => {
     expect(result.current.values.exercises[0].sets[0].done).toBe(true)
   })
 
+  it('resume=1 restores the stored draft without asking and skips the URL template', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 2,
+        title: 'Resumed',
+        duration_seconds: null,
+        calories: '',
+        date: '2026-09-01T10:00',
+        notes: '',
+        wellbeing: null,
+        rpe: null,
+        exercises: [{ exercise_id: '2', sets: [set('8', '60', 'easy', true), set('8', '60')] }],
+        templateId: null,
+        workout: { currentExerciseIndex: 0, restEndsAt: 1_790_000_090_000, startedAt: null },
+      }),
+    )
+    const { result } = setup('/workout?templateId=3&resume=1')
+    expect(result.current.pendingDraft).toBeNull()
+    await waitFor(() => expect(result.current.isRestoring).toBe(false))
+    await act(() => sleep(30))
+    expect(result.current.values.title).toBe('Resumed')
+    expect(result.current.values.exercises[0].sets[0]).toEqual(set('8', '60', 'easy', true))
+    expect(result.current.workout.restEndsAt).toBe(1_790_000_090_000)
+    expect(mockGet).not.toHaveBeenCalledWith('/templates/strength/3')
+  })
+
+  it('resume=1 without a stored draft falls back to the URL template', async () => {
+    const { result } = setup('/workout?templateId=3&resume=1')
+    expect(result.current.isRestoring).toBe(false)
+    await waitFor(() => expect(result.current.templateSnapshot?.name).toBe('Leg day'))
+  })
+
+  it('persistDraft writes the current state even when nothing changed', async () => {
+    const { result } = await setupWithTemplate()
+    expect(storedDraft()).toBeNull()
+    act(() => result.current.persistDraft())
+    expect(storedDraft()).toMatchObject({ version: STRENGTH_DRAFT_VERSION, title: 'Leg day', templateId: 3 })
+  })
+
   it('discardDraft clears the stored draft and drops a pending write', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: 'Stale', exercises: [] }))
     const { result } = setup('/log?type=strength', { autosaveMs: 40 })

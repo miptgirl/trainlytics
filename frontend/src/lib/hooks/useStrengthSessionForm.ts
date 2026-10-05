@@ -83,12 +83,19 @@ export interface StrengthSessionForm {
   setTitleTouched: (touched: boolean) => void
 
   // Draft
-  /** Draft found at mount and not yet restored or discarded (drives the banner). */
+  /**
+   * Draft found at mount and not yet restored or discarded (drives the banner).
+   * With `resume=1` in the URL the draft is restored automatically instead.
+   */
   pendingDraft: StrengthDraft | null
+  /** True while a draft restore (including its template fetch) is in progress. */
+  isRestoring: boolean
   restoreDraft: () => Promise<void>
   discardDraft: () => void
   /** Write any pending draft change now. */
   flushDraft: () => void
+  /** Write the current state as the draft now, even if nothing changed (view switch). */
+  persistDraft: () => void
 
   // Workout-mode position (persisted in the draft, ignored by the payload)
   workout: WorkoutModeState
@@ -184,9 +191,11 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const [diffState, setDiffState] = useState<DiffState | null>(null)
   const [titleTouched, setTitleTouched] = useState(false)
-  const [pendingDraft, setPendingDraft] = useState<StrengthDraft | null>(() =>
-    parseStrengthDraft(loadDraft('strength')),
-  )
+  const [initialDraft] = useState<StrengthDraft | null>(() => parseStrengthDraft(loadDraft('strength')))
+  // `resume=1` (view switch, reload of workout mode) restores without asking
+  const [resumeDraft] = useState(() => params.resume === true && initialDraft !== null)
+  const [pendingDraft, setPendingDraft] = useState<StrengthDraft | null>(resumeDraft ? null : initialDraft)
+  const [isRestoring, setIsRestoring] = useState(resumeDraft)
   const [workout, setWorkout] = useState<WorkoutModeState>(initialWorkoutModeState)
   const hasMounted = useRef(false)
   // True once this session owns the stored draft: every later change is written,
@@ -207,9 +216,16 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   const values = useWatch({ control }) as StrengthFormValues
 
   useEffect(() => {
+    // A resumed draft already carries its template and values
+    if (resumeDraft) return
     if (params.templateId) applyTemplate(params.templateId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.templateId])
+
+  useEffect(() => {
+    if (resumeDraft) void applyDraft(initialDraft)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!hasMounted.current) {
@@ -268,7 +284,12 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
 
   async function restoreDraft() {
     if (!pendingDraft) return
-    const { values: draftValues, templateId: draftTemplateId, workout: draftWorkout } = pendingDraft
+    await applyDraft(pendingDraft)
+  }
+
+  async function applyDraft(draft: StrengthDraft) {
+    const { values: draftValues, templateId: draftTemplateId, workout: draftWorkout } = draft
+    setIsRestoring(true)
     if (draftTemplateId) {
       setIsLoadingTemplate(true)
       try {
@@ -286,6 +307,13 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     reset(draftValues)
     setWorkout(draftWorkout)
     setPendingDraft(null)
+    setIsRestoring(false)
+  }
+
+  function persistDraft() {
+    cancelDraft()
+    draftActive.current = true
+    saveDraft('strength', serializeStrengthDraft({ values: getValues(), templateId: selectedTemplateId, workout }))
   }
 
   function updateWorkout(patch: Partial<WorkoutModeState>) {
@@ -427,9 +455,11 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     titleTouched,
     setTitleTouched,
     pendingDraft,
+    isRestoring,
     restoreDraft,
     discardDraft,
     flushDraft,
+    persistDraft,
     workout,
     updateWorkout,
     setField,
