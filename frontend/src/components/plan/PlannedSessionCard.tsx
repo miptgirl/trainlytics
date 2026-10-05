@@ -4,6 +4,7 @@ import { type PlannedSessionOut, useDeletePlannedSession } from '../../lib/planA
 import { SkipNoteModal } from './SkipNoteModal'
 import { RescheduleModal } from './RescheduleModal'
 import { SessionComparisonPanel } from './SessionComparisonPanel'
+import { prefersWorkoutMode } from '../../lib/workoutMode'
 
 interface PlannedSessionCardProps {
   session: PlannedSessionOut
@@ -89,7 +90,9 @@ export function PlannedSessionCard({
   function handleStart() {
     if (session.session_type === 'strength' && session.template_id) {
       const dateSuffix = session.status === 'skipped' ? `&date=${session.planned_date}T10:00` : ''
-      navigate(`/log?type=strength&templateId=${session.template_id}${dateSuffix}`)
+      // Workout mode on phones; the full form at 768px and up (checked at tap time)
+      const path = prefersWorkoutMode() ? '/workout' : '/log'
+      navigate(`${path}?type=strength&templateId=${session.template_id}${dateSuffix}`)
     } else if (session.session_type === 'cardio') {
       navigate(`/log?type=cardio&plannedSessionId=${session.id}&weekStart=${weekStart}`)
     }
