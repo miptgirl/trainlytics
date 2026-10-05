@@ -24,6 +24,7 @@ import StepsPage from './pages/StepsPage'
 import ProfilePage from './pages/ProfilePage'
 import StatsPage from './pages/StatsPage'
 import PlanPage from './pages/PlanPage'
+import TodayPage from './pages/TodayPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -37,8 +38,8 @@ function SessionDetailRouter() {
   return <CardioSessionDetailPage />
 }
 
-function Dashboard() {
-  return <Navigate to="/stats" replace />
+export function Dashboard() {
+  return <Navigate to="/today" replace />
 }
 
 /** Scroll to the top on forward navigation; Back/Forward (POP) keep the browser's own restore. */
@@ -68,6 +69,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/today"
+          element={
+            <ProtectedRoute>
+              <TodayPage />
             </ProtectedRoute>
           }
         />

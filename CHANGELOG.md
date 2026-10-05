@@ -4,6 +4,25 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Today screen and mobile navigation (Phase 17, part 3)
+
+### Added
+
+- **Today screen** (`/today`) — today's date, a card per session planned today (Start, Move to tomorrow, Skip), a Resume card when a strength or cardio draft exists, Quick log tiles (Cardio, Strength, Steps) and a This week card (done of planned, next session). Uses existing endpoints only
+- **Mobile shell below 768px** — slim header with a profile button that opens a bottom sheet (Templates, Steps, Profile, Settings, Sign out), and a Today / Plan / Stats tab bar (Stats is also active on `/sessions/:id`). The tab bar is hidden on `/log` and `/workout`
+- **Safe areas** — `viewport-fit=cover`, tab bar padded by `env(safe-area-inset-bottom)`, content padded above the bar, Plan toast sits above it
+- `getStartUrl` helper (`lib/planStart.ts`) shared by the Plan cards and Today
+
+### Changed
+
+- `/` and the post-login landing go to `/today` (was `/stats`); the desktop top nav gains **Today** as its first link
+
+### Tests
+
+- Today page (sessions, Start link, empty state, Resume card, skip modal, move to tomorrow, menu), `/` redirect, tab bar active state and visibility, menu sheet, `getStartUrl`
+
+---
+
 ## 2026-10-05 — Workout mode (Phase 17, part 2)
 
 ### Added
