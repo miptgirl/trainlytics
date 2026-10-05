@@ -16,7 +16,14 @@ import { api } from '../lib/api'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
 import { useWakeLock } from '../lib/hooks/useWakeLock'
-import { describeDraft, emptyStrengthDefaults, setSetDone, strengthViewUrl, type TemplateSummary, type WorkoutModeState } from '../lib/strengthSession'
+import {
+  describeDraft,
+  emptyStrengthDefaults,
+  setSetDone,
+  strengthViewUrl,
+  type TemplateSummary,
+  type WorkoutModeState,
+} from '../lib/strengthSession'
 import {
   REST_LENGTHS,
   allExercisesDone,
@@ -334,10 +341,13 @@ export default function WorkoutModePage() {
               exercises
             </p>
           </div>
-          <button type="button" onClick={() => setSheet('options')}
+          <button
+            type="button"
+            onClick={() => setSheet('options')}
             disabled={s.isLoadingTemplate}
             aria-label="Workout options"
-            className={`${iconBtn} text-xl disabled:opacity-50`}>
+            className={`${iconBtn} text-xl disabled:opacity-50`}
+          >
             ⋯
           </button>
           <button
