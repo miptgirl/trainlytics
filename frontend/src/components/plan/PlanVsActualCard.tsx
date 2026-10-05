@@ -30,8 +30,8 @@ function MetricRow({ label, planned, actual, unit, digits }: RowProps) {
   return (
     <div className="flex items-center text-sm">
       <div className="flex-1 min-w-0 text-slate-600 pr-1">{label}</div>
-      <div className="w-14 sm:w-16 text-right tabular-nums text-slate-400 shrink-0">{planStr}</div>
-      <div className="w-14 sm:w-16 text-right tabular-nums font-medium text-slate-800 ml-2 shrink-0">
+      <div className="w-16 text-right tabular-nums text-slate-400 shrink-0 whitespace-nowrap">{planStr}</div>
+      <div className="w-16 text-right tabular-nums font-medium text-slate-800 ml-2 shrink-0 whitespace-nowrap">
         {actStr}
       </div>
       <div className={`w-[4.5rem] sm:w-20 text-right tabular-nums ml-2 shrink-0 whitespace-nowrap ${deltaClass}`}>
@@ -69,8 +69,8 @@ export function PlanVsActualCard({ weekStart }: Props) {
 
       <div className="flex text-xs text-slate-400 mb-2">
         <div className="flex-1" />
-        <div className="w-14 sm:w-16 text-right shrink-0">Plan</div>
-        <div className="w-14 sm:w-16 text-right ml-2 shrink-0">Actual</div>
+        <div className="w-16 text-right shrink-0">Plan</div>
+        <div className="w-16 text-right ml-2 shrink-0">Actual</div>
         <div className="w-[4.5rem] sm:w-20 text-right ml-2 shrink-0">Δ</div>
       </div>
 
