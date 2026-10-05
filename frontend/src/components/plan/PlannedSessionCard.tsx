@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { type PlannedSessionOut, useDeletePlannedSession } from '../../lib/planApi'
+import { getStartUrl } from '../../lib/planStart'
 import { SkipNoteModal } from './SkipNoteModal'
 import { RescheduleModal } from './RescheduleModal'
 import { SessionComparisonPanel } from './SessionComparisonPanel'
@@ -88,14 +89,8 @@ export function PlannedSessionCard({
       : null
 
   function handleStart() {
-    if (session.session_type === 'strength' && session.template_id) {
-      const dateSuffix = session.status === 'skipped' ? `&date=${session.planned_date}T10:00` : ''
-      // Workout mode on phones; the full form at 768px and up (checked at tap time)
-      const path = prefersWorkoutMode() ? '/workout' : '/log'
-      navigate(`${path}?type=strength&templateId=${session.template_id}${dateSuffix}`)
-    } else if (session.session_type === 'cardio') {
-      navigate(`/log?type=cardio&plannedSessionId=${session.id}&weekStart=${weekStart}`)
-    }
+    // Workout mode on phones, the full form from 768px up (checked at tap time)
+    navigate(getStartUrl(session, weekStart, { view: prefersWorkoutMode() ? 'workout' : 'form' }))
   }
 
   function handleDelete() {

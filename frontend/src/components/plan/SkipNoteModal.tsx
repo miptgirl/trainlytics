@@ -5,9 +5,11 @@ interface SkipNoteModalProps {
   session: PlannedSessionOut
   weekStart: string
   onClose: () => void
+  /** Today screen: skipping needs a reason, because the note is what marks a session skipped. */
+  requireNote?: boolean
 }
 
-export function SkipNoteModal({ session, weekStart, onClose }: SkipNoteModalProps) {
+export function SkipNoteModal({ session, weekStart, onClose, requireNote = false }: SkipNoteModalProps) {
   const [note, setNote] = useState(session.skip_note ?? '')
   const mutation = useUpdateSkipNote()
 
@@ -32,7 +34,7 @@ export function SkipNoteModal({ session, weekStart, onClose }: SkipNoteModalProp
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl">
+      <div className="bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-800">Skip note</h2>
           <button
@@ -63,7 +65,7 @@ export function SkipNoteModal({ session, weekStart, onClose }: SkipNoteModalProp
           <button
             type="button"
             onClick={handleSave}
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || (requireNote && !note.trim())}
             className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
           >
             {mutation.isPending ? 'Saving…' : 'Save'}

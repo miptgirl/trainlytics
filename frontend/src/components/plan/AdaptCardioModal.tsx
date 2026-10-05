@@ -39,7 +39,7 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-0 sm:px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+      <div className="bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-semibold text-slate-800">Adapt this session</h2>
