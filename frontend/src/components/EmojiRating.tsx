@@ -15,7 +15,7 @@ interface EmojiRatingProps {
 export function EmojiRating({ label, options, value, onChange }: EmojiRatingProps) {
   return (
     <div>
-      <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
+      <p className="text-sm font-medium text-text mb-2">{label}</p>
       <div className="flex gap-1 justify-between">
         {options.map((opt, i) => {
           const grade = i + 1
@@ -27,14 +27,14 @@ export function EmojiRating({ label, options, value, onChange }: EmojiRatingProp
               onClick={() => onChange(selected ? null : grade)}
               className={`flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-lg border transition-colors ${
                 selected
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-transparent hover:bg-gray-50'
+                  ? 'border-primary bg-primary-tint'
+                  : 'border-transparent hover:bg-bg'
               }`}
             >
               <span className={`text-2xl leading-none ${selected ? '' : 'opacity-40'}`}>
                 {opt.emoji}
               </span>
-              <span className={`text-[10px] leading-tight text-center ${selected ? 'text-blue-700 font-medium' : 'text-gray-400'}`}>
+              <span className={`text-[10px] leading-tight text-center ${selected ? 'text-primary-dark font-medium' : 'text-text-muted-strong'}`}>
                 {opt.label}
               </span>
             </button>
@@ -56,16 +56,16 @@ export function EmojiRatingDisplay({ wellbeing, rpe }: EmojiDisplayProps) {
     <div className="flex gap-4">
       {wellbeing != null && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-500">Feeling</span>
+          <span className="text-xs text-text-muted-strong">Feeling</span>
           <span className="text-lg leading-none">{WELLBEING_OPTIONS[wellbeing - 1].emoji}</span>
-          <span className="text-xs text-gray-700">{WELLBEING_OPTIONS[wellbeing - 1].label}</span>
+          <span className="text-xs text-text">{WELLBEING_OPTIONS[wellbeing - 1].label}</span>
         </div>
       )}
       {rpe != null && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-500">Effort</span>
+          <span className="text-xs text-text-muted-strong">Effort</span>
           <span className="text-lg leading-none">{RPE_OPTIONS[rpe - 1].emoji}</span>
-          <span className="text-xs text-gray-700">{RPE_OPTIONS[rpe - 1].label}</span>
+          <span className="text-xs text-text">{RPE_OPTIONS[rpe - 1].label}</span>
         </div>
       )}
     </div>

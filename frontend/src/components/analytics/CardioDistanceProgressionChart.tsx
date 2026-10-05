@@ -11,17 +11,7 @@ import {
 } from 'recharts'
 import { useCardioDistanceProgression } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
-
-const COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
-]
+import { activityColors, axisColor, gridColor } from '../../lib/chartPalette'
 
 function formatMonthLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -33,18 +23,19 @@ export function CardioDistanceProgressionChart() {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
 
   if (isLoading) {
-    return <div className="h-52 bg-slate-50 rounded-lg animate-pulse" />
+    return <div className="h-52 bg-bg rounded-lg animate-pulse" />
   }
 
   if (!data || data.length === 0) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">
+      <p className="text-text-muted-strong text-sm text-center py-8">
         No distance data recorded yet.
       </p>
     )
   }
 
   const activityTypes = [...new Set(data.map((p) => p.activity_type))]
+  const colors = activityColors(activityTypes)
   const monthSet = [...new Set(data.map((p) => p.month_start))].sort()
 
   const pivoted = monthSet.map((month) => {
@@ -69,11 +60,11 @@ export function CardioDistanceProgressionChart() {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={pivoted} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-        <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+        <XAxis dataKey="month" tick={{ fontSize: 11, fill: axisColor() }} />
         <YAxis
           tickFormatter={formatCompact}
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
+          tick={{ fontSize: 12, fill: axisColor() }}
           width={40}
         />
         <Tooltip formatter={(v: number) => [`${v.toFixed(1)} km`]} />
@@ -83,7 +74,7 @@ export function CardioDistanceProgressionChart() {
             key={type}
             type="monotone"
             dataKey={type}
-            stroke={COLORS[i % COLORS.length]}
+            stroke={colors[i]}
             strokeWidth={2}
             dot={false}
             hide={hidden.has(type)}

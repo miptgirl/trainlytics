@@ -1,12 +1,8 @@
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import { zoneColor } from '../lib/chartPalette'
 
-const ZONE_COLORS: Record<string, string> = {
-  Z1: '#60a5fa',
-  Z2: '#34d399',
-  Z3: '#fbbf24',
-  Z4: '#fb923c',
-  Z5: '#f87171',
-}
+/** Z1..Z5 key to its chart-zone colour */
+const zoneFill = (key: string) => zoneColor(Number(key.slice(1)) as 1 | 2 | 3 | 4 | 5)
 
 const ZONE_META = [
   { key: 'Z1', range: '< 132 bpm' },
@@ -36,10 +32,10 @@ function ZoneTooltip({ active, payload }: { active?: boolean; payload?: TooltipP
   if (!active || !payload?.length) return null
   const d = payload[0].payload
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-3 text-sm">
-      <p className="font-semibold text-slate-800 mb-1">{d.name} — {d.range}</p>
-      <p className="text-slate-600">{formatHms(d.value)}</p>
-      <p className="text-slate-500">{d.pct.toFixed(1)}% of zone time</p>
+    <div className="bg-surface border border-border rounded-lg shadow-sm p-3 text-sm">
+      <p className="font-semibold text-text mb-1">{d.name} — {d.range}</p>
+      <p className="text-text-muted-strong">{formatHms(d.value)}</p>
+      <p className="text-text-muted-strong">{d.pct.toFixed(1)}% of zone time</p>
     </div>
   )
 }
@@ -69,12 +65,12 @@ export function HrZoneDonut({ avgHrBpm, zones }: HrZoneDonutProps) {
   }))
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 mt-6">
+    <div className="bg-surface rounded-xl border border-border p-4 mt-6">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-medium text-gray-900">HR Zone Distribution</h2>
+        <h2 className="font-medium text-text">HR Zone Distribution</h2>
         {avgHrBpm != null && (
-          <span className="text-sm text-gray-500">
-            Avg HR: <span className="font-semibold text-gray-900">{avgHrBpm} bpm</span>
+          <span className="text-sm text-text-muted-strong">
+            Avg HR: <span className="font-semibold text-text">{avgHrBpm} bpm</span>
           </span>
         )}
       </div>
@@ -94,7 +90,7 @@ export function HrZoneDonut({ avgHrBpm, zones }: HrZoneDonutProps) {
                 paddingAngle={2}
               >
                 {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={ZONE_COLORS[entry.name]} />
+                  <Cell key={entry.name} fill={zoneFill(entry.name)} />
                 ))}
               </Pie>
               <Tooltip content={<ZoneTooltip />} />
@@ -103,19 +99,19 @@ export function HrZoneDonut({ avgHrBpm, zones }: HrZoneDonutProps) {
 
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mt-1">
             {ZONE_META.map(({ key, range }) => (
-              <div key={key} className="flex items-center gap-1.5 text-xs text-slate-600">
+              <div key={key} className="flex items-center gap-1.5 text-xs text-text-muted-strong">
                 <span
                   className="inline-block w-3 h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: ZONE_COLORS[key] }}
+                  style={{ backgroundColor: zoneFill(key) }}
                 />
                 <span className="font-medium">{key}</span>
-                <span className="text-slate-400">{range}</span>
+                <span className="text-text-muted-strong">{range}</span>
               </div>
             ))}
           </div>
         </>
       ) : (
-        <p className="text-sm text-slate-400 text-center py-4">No zone data recorded.</p>
+        <p className="text-sm text-text-muted-strong text-center py-4">No zone data recorded.</p>
       )}
     </div>
   )

@@ -22,7 +22,7 @@ export function FinishSheet({
   onClose: () => void
 }) {
   const field =
-    'mt-1 w-full min-h-11 rounded-lg border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark'
+    'mt-1 w-full min-h-11 rounded-sm border border-border-strong bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark'
   return (
     <BottomSheet
       title="Finish workout"

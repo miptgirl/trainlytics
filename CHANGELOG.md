@@ -4,6 +4,25 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Sage palette and Stats glance (Phase 17, part 4)
+
+### Added
+
+- **Stats glance** — at the top of the Analytics tab below 768px: this week (sessions done of planned, training time, cardio km), the latest personal record, 12 weeks of training time as small bars, and average feeling and effort over the last 7 days. It uses existing analytics endpoints only. The records endpoint has no date, so the PR date comes from each exercise's progression series (the first day its max weight reached the record weight). It looks at the first 30 exercises and skips bodyweight records, so "latest" is approximate for more than 30 exercises until the records endpoint returns dates; it renders as soon as one progression resolves and caches them for 5 minutes. The cards only mount (and fetch) below 768px. "Cardio" is the distance of all cardio sessions this week (planned or not, walks and rides included), and the 12-week average excludes the current partial week
+- Type/status badge convention (`components/SessionBadges.tsx`): type badges are outline pills with an activity-colour dot, status badges are filled (planned neutral, done success, skipped warning), so type and status never look alike. Cardio is the `chart-running` family and strength the `chart-strength` family everywhere (History cards, This Week tiles)
+- `border-strong` token (`#8A857B`, 3.61:1 on surface, 3.37:1 on bg) for input, checkbox, switch and unselected-chip boundaries; focus rings use `primary-dark`
+- `lib/chartPalette.ts` — chart colours read from the design-system CSS variables at runtime, with the spec hex as fallback (recharts writes SVG attributes, where `var()` is unreliable). Activity types map to their `chart-*` colour by name; tags and pace series use the categorical order; HR zones use `chart-zone-1…5`
+
+### Changed
+
+- **Sage palette** — the semantic tokens in `index.css` now hold the "Minimal & Clean" values, with accent, success, warning, error, chart, HR zone and shadow tokens added. The old blue `--color-primary-50…900` scale is gone
+- Every hard-coded Tailwind palette class and chart hex colour in `frontend/src` is replaced by a semantic token or `chartPalette`, following the spec's recipes and contrast rules (white text only on `primary-dark` and charcoal `text` fills, plus the Strava brand button; `text-muted-strong` for small muted text, accent never as text). Exceptions: the Strava and Apple Health brand colours and the SVG logo files
+- Radii normalised to Tailwind's defaults: status and type badges are pills (`rounded-full`), chips, toggles and inputs `rounded-sm`, buttons `rounded-lg`, cards and modals `rounded-xl`, bottom sheets 20px. The spec's `--radius-*` tokens are not adopted because they would override those defaults app-wide
+- Logos recoloured to the sage palette; `theme-color` and the manifest already matched
+- Week summaries share one helper (`summarizeWeek`) across the Plan card, Today and Stats glance, and one `getMondayOf` helper in `dateUtils` (Plan, Today, History and Log use it)
+
+---
+
 ## 2026-10-05 — Today screen and mobile navigation (Phase 17, part 3)
 
 ### Added

@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Layout, MenuSheet, ProfileButton } from '../components/Layout'
 import { SkipNoteModal } from '../components/plan/SkipNoteModal'
 import { api } from '../lib/api'
-import { toLocalDateStr, formatShortDate } from '../lib/dateUtils'
+import { TypeBadge, StatusBadge } from '../components/SessionBadges'
+import { toLocalDateStr, formatShortDate, getMondayOf } from '../lib/dateUtils'
 import { loadDraft } from '../lib/draftUtils'
 import { draftStartedAt, formatDraftAge } from '../lib/draftAge'
 import { summarizeWeek } from '../lib/planStats'
@@ -17,13 +18,6 @@ import {
   useUpdateSkipNote,
   type PlannedSessionOut,
 } from '../lib/planApi'
-
-function getMonday(d: Date): string {
-  const day = d.getDay()
-  const monday = new Date(d)
-  monday.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-  return toLocalDateStr(monday)
-}
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -96,7 +90,6 @@ function useNow(): Date {
   return now
 }
 
-const typeBadgeClass = 'bg-primary-tint text-primary-dark'
 const tileClass =
   'flex flex-col items-center justify-center gap-1 min-h-20 rounded-xl border border-border bg-surface text-sm font-medium text-text hover:bg-primary-tint transition-colors'
 
@@ -149,11 +142,9 @@ function TodaySessionCard({
   return (
     <div className="bg-surface rounded-xl border border-border shadow-sm p-4">
       <div className="flex items-center gap-2 mb-1">
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeBadgeClass}`}>
-          {session.session_type === 'strength' ? 'Strength' : 'Cardio'}
-        </span>
-        {done && <span className="text-xs font-medium text-success-text">✓ Done</span>}
-        {skipped && <span className="text-xs font-medium text-warning-text">Skipped</span>}
+        <TypeBadge type={session.session_type} />
+        {done && <StatusBadge status="done" />}
+        {skipped && <StatusBadge status="skipped" />}
       </div>
       <h2 className="text-base font-semibold text-text">{sessionTitle(session, typeName)}</h2>
       {summary && <p className="text-sm text-text-muted-strong mt-0.5">{summary}</p>}
@@ -232,10 +223,10 @@ export default function TodayPage() {
   const now = useNow()
   const view = useWorkoutView()
   const today = toLocalDateStr(now)
-  const weekStart = getMonday(now)
+  const weekStart = getMondayOf(now)
   const tomorrow = addDays(today, 1)
   // Tomorrow belongs to the next plan on Sundays; the reschedule API only moves within a week
-  const canMoveToTomorrow = getMonday(new Date(tomorrow + 'T00:00:00')) === weekStart
+  const canMoveToTomorrow = getMondayOf(new Date(tomorrow + 'T00:00:00')) === weekStart
 
   const { data, isLoading, isError } = useWeekPlan(weekStart)
   const { data: cardioTypes = [] } = useQuery({
@@ -358,9 +349,9 @@ export default function TodayPage() {
                 <span className="text-2xl font-semibold">{week.done}</span>
                 <span className="text-text-muted-strong"> of {sessions.length} sessions done</span>
               </p>
-              <div className="h-2 bg-bg rounded-full overflow-hidden mt-2">
+              <div className="h-2 bg-primary-tint rounded-full overflow-hidden mt-2">
                 <div
-                  className="h-full bg-success rounded-full"
+                  className="h-full bg-primary rounded-full"
                   style={{ width: `${Math.round((week.done / sessions.length) * 100)}%` }}
                 />
               </div>

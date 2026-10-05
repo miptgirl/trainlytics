@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import { usePlanAdherence } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
+import { axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 function formatWeekLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -20,7 +21,7 @@ export function PlanAdherenceChart() {
   const { data, isLoading } = usePlanAdherence(12)
 
   if (isLoading) {
-    return <div className="h-52 bg-slate-50 rounded-lg animate-pulse" />
+    return <div className="h-52 bg-bg rounded-lg animate-pulse" />
   }
 
   // Weeks without a plan come back as null/zero rows; all of those means nothing to chart
@@ -32,7 +33,7 @@ export function PlanAdherenceChart() {
     )
   if (!data || isEmpty) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">
+      <p className="text-text-muted-strong text-sm text-center py-8">
         No plan adherence data yet. Start planning sessions to track adherence.
       </p>
     )
@@ -51,43 +52,43 @@ export function PlanAdherenceChart() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-medium text-slate-500 mb-2">Completion % (Done ÷ Done+Skipped)</p>
+        <p className="text-xs font-medium text-text-muted-strong mb-2">Completion % (Done ÷ Done+Skipped)</p>
         <ResponsiveContainer width="100%" height={160}>
           <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+            <XAxis dataKey="week" tick={{ fontSize: 10, fill: axisColor() }} />
             <YAxis
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tick={{ fontSize: 10, fill: axisColor() }}
               domain={[0, 100]}
               width={36}
               unit="%"
             />
             <Tooltip formatter={(v: number) => `${v}%`} />
-            <Bar dataKey="completion" name="Completion" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-            <ReferenceLine y={100} stroke="#10b981" strokeDasharray="4 4" />
+            <Bar dataKey="completion" name="Completion" fill={chartColor('primary')} radius={[2, 2, 0, 0]} />
+            <ReferenceLine y={100} stroke={chartColor('primary-dark')} strokeDasharray="4 4" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-500 mb-2">
+        <p className="text-xs font-medium text-text-muted-strong mb-2">
           Strength volume delta (actual − planned, kg·reps)
         </p>
         <ResponsiveContainer width="100%" height={140}>
           <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+            <XAxis dataKey="week" tick={{ fontSize: 10, fill: axisColor() }} />
             <YAxis
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tick={{ fontSize: 10, fill: axisColor() }}
               width={40}
               tickFormatter={formatCompact}
             />
             <Tooltip formatter={(v: number) => `${v > 0 ? '+' : ''}${Math.round(v)} kg·reps`} />
-            <ReferenceLine y={0} stroke="#94a3b8" />
+            <ReferenceLine y={0} stroke={axisColor()} />
             <Bar
               dataKey="volumeDelta"
               name="Volume delta"
-              fill="#8b5cf6"
+              fill={chartColor('chart-strength')}
               radius={[2, 2, 0, 0]}
             />
           </ComposedChart>
@@ -95,24 +96,24 @@ export function PlanAdherenceChart() {
       </div>
 
       <div>
-        <p className="text-xs font-medium text-slate-500 mb-2">
+        <p className="text-xs font-medium text-text-muted-strong mb-2">
           Cardio distance delta (actual − planned, km)
         </p>
         <ResponsiveContainer width="100%" height={140}>
           <ComposedChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+            <XAxis dataKey="week" tick={{ fontSize: 10, fill: axisColor() }} />
             <YAxis
-              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tick={{ fontSize: 10, fill: axisColor() }}
               width={40}
               tickFormatter={formatCompact}
             />
             <Tooltip formatter={(v: number) => `${v > 0 ? '+' : ''}${v} km`} />
-            <ReferenceLine y={0} stroke="#94a3b8" />
+            <ReferenceLine y={0} stroke={axisColor()} />
             <Bar
               dataKey="distanceDelta"
               name="Distance delta"
-              fill="#10b981"
+              fill={chartColor('chart-running')}
               radius={[2, 2, 0, 0]}
             />
           </ComposedChart>

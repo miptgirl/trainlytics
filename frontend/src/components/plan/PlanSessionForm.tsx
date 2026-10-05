@@ -214,15 +214,15 @@ export function PlanSessionForm({
     : 'Add Session'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40">
-      <div className="bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-text/40">
+      <div className="bg-surface pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full max-w-lg rounded-t-[20px] sm:rounded-xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">{modalTitle}</h2>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <h2 className="text-base font-semibold text-text">{modalTitle}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+            className="p-1.5 rounded-lg text-text-muted-strong hover:text-text hover:bg-bg"
             aria-label="Close"
           >
             <svg
@@ -248,7 +248,7 @@ export function PlanSessionForm({
           <div className="flex-1 overflow-y-auto p-5 space-y-5">
             {/* Session type toggle */}
             <div>
-              <span className="block text-sm font-medium text-gray-700 mb-2">Session Type</span>
+              <span className="block text-sm font-medium text-text mb-2">Session Type</span>
               <div className="flex gap-2">
                 {(['strength', 'cardio'] as const).map((type) => (
                   <button
@@ -256,10 +256,10 @@ export function PlanSessionForm({
                     type="button"
                     disabled={isEditMode}
                     onClick={() => !isEditMode && setValue('session_type', type)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    className={`px-4 py-1.5 rounded-sm text-sm font-medium transition-colors ${
                       sessionType === type
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-primary-dark text-white border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     } ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
                     {type === 'strength' ? 'Strength' : 'Cardio'}
@@ -270,7 +270,7 @@ export function PlanSessionForm({
 
             {/* Date selector (days of week) */}
             <div>
-              <span className="block text-sm font-medium text-gray-700 mb-2">Date</span>
+              <span className="block text-sm font-medium text-text mb-2">Date</span>
               <div className="flex gap-1.5 flex-wrap">
                 {days.map((day) => (
                   <button
@@ -279,8 +279,8 @@ export function PlanSessionForm({
                     onClick={() => setValue('planned_date', day)}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                       plannedDate === day
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        ? 'bg-primary-dark text-white border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     }`}
                   >
                     {formatDayShort(day)}
@@ -293,15 +293,15 @@ export function PlanSessionForm({
             {sessionType === 'strength' && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Template <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-text mb-1">
+                    Template <span className="text-error-text">*</span>
                   </label>
                   <select
                     {...register('template_id', {
                       validate: (val, formValues) =>
                         formValues.session_type !== 'strength' || !!val || 'Template is required',
                     })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                   >
                     <option value="">— select template —</option>
                     {templates.map((t) => (
@@ -311,26 +311,26 @@ export function PlanSessionForm({
                     ))}
                   </select>
                   {errors.template_id && (
-                    <p className="mt-1 text-xs text-red-600">{errors.template_id.message}</p>
+                    <p className="mt-1 text-xs text-error-text">{errors.template_id.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-text mb-1">
                     Title
                   </label>
                   <input
                     type="text"
                     placeholder="Auto-filled from template…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register('title', { onChange: () => setTitleTouched(true) })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <label className="block text-sm font-medium text-text mb-1">Notes</label>
                   <textarea
                     rows={2}
                     placeholder="Optional notes…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                     {...register('notes')}
                   />
                 </div>
@@ -342,15 +342,15 @@ export function PlanSessionForm({
               <div className="space-y-4">
                 {/* Session-level activity type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Activity Type <span className="text-red-500">*</span>
+                  <label className="block text-sm font-medium text-text mb-1">
+                    Activity Type <span className="text-error-text">*</span>
                   </label>
                   <select
                     {...register('activity_type_id', {
                       validate: (val, formValues) =>
                         formValues.session_type !== 'cardio' || !!val || 'Activity type is required',
                     })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                   >
                     <option value="">— select —</option>
                     {cardioTypes.map((t) => (
@@ -360,21 +360,21 @@ export function PlanSessionForm({
                     ))}
                   </select>
                   {errors.activity_type_id && (
-                    <p className="mt-1 text-xs text-red-600">{errors.activity_type_id.message}</p>
+                    <p className="mt-1 text-xs text-error-text">{errors.activity_type_id.message}</p>
                   )}
                 </div>
 
                 {/* Segments */}
                 <div>
-                  <span className="block text-sm font-medium text-gray-700 mb-2">Segments</span>
+                  <span className="block text-sm font-medium text-text mb-2">Segments</span>
                   <div className="space-y-3">
                     {fields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="border border-gray-200 rounded-xl p-4 space-y-3"
+                        className="border border-border rounded-xl p-4 space-y-3"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">
+                          <span className="text-sm font-medium text-text">
                             Segment {index + 1}
                           </span>
                           {fields.length > 1 && (
@@ -382,7 +382,7 @@ export function PlanSessionForm({
                               type="button"
                               onClick={() => remove(index)}
                               aria-label="Remove segment"
-                              className="p-1 text-gray-400 hover:text-red-500 rounded"
+                              className="p-1 text-text-muted-strong hover:text-error-text rounded"
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -400,19 +400,19 @@ export function PlanSessionForm({
                           )}
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-500 mb-1">
+                          <label className="block text-xs text-text-muted-strong mb-1">
                             Label (optional)
                           </label>
                           <input
                             type="text"
                             placeholder="e.g. Easy jog, Tempo interval…"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                             {...register(`segments.${index}.title`)}
                           />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="block text-xs text-gray-500 mb-1">Duration</label>
+                            <label className="block text-xs text-text-muted-strong mb-1">Duration</label>
                             <Controller
                               control={control}
                               name={`segments.${index}.duration_secs`}
@@ -427,7 +427,7 @@ export function PlanSessionForm({
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-1">
+                            <label className="block text-xs text-text-muted-strong mb-1">
                               Distance (km)
                             </label>
                             <input
@@ -435,12 +435,12 @@ export function PlanSessionForm({
                               min="0"
                               step="any"
                               placeholder="e.g. 5.0"
-                              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                               {...register(`segments.${index}.distance_km`)}
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-gray-500 mb-1">Pace (/km)</label>
+                            <label className="block text-xs text-text-muted-strong mb-1">Pace (/km)</label>
                             <Controller
                               control={control}
                               name={`segments.${index}.pace_secs_per_km`}
@@ -456,13 +456,13 @@ export function PlanSessionForm({
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-500 mb-1">
+                          <label className="block text-xs text-text-muted-strong mb-1">
                             Notes (optional)
                           </label>
                           <textarea
                             rows={2}
                             placeholder="Optional notes for this segment…"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                            className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                             {...register(`segments.${index}.notes`)}
                           />
                         </div>
@@ -472,17 +472,17 @@ export function PlanSessionForm({
                   <button
                     type="button"
                     onClick={() => append(emptySegment())}
-                    className="mt-3 w-full text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-xl py-2"
+                    className="mt-3 w-full text-sm text-primary-dark hover:underline font-medium border border-dashed border-primary-light rounded-xl py-2"
                   >
                     + Add Segment
                   </button>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <label className="block text-sm font-medium text-text mb-1">Notes</label>
                   <textarea
                     rows={2}
                     placeholder="Optional session notes…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
                     {...register('notes')}
                   />
                 </div>
@@ -490,23 +490,23 @@ export function PlanSessionForm({
             )}
 
             {mutationError && (
-              <p className="text-sm text-red-600">{(mutationError as Error).message}</p>
+              <p className="text-sm text-error-text">{(mutationError as Error).message}</p>
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 border-t border-gray-200 shrink-0 flex gap-3">
+          <div className="px-5 py-4 border-t border-border shrink-0 flex gap-3">
             <button
               type="submit"
               disabled={isPending}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm"
+              className="flex-1 bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm"
             >
               {isPending ? 'Saving…' : isEditMode ? 'Save Changes' : 'Add to Plan'}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+              className="px-4 py-2 text-sm text-text-muted-strong hover:text-text"
             >
               Cancel
             </button>

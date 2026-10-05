@@ -7,7 +7,7 @@ import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
-import { datetimeLocalToUTC, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
+import { datetimeLocalToUTC, getMondayOfCurrentWeek, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -28,7 +28,7 @@ type WorkoutType = 'cardio' | 'strength'
 
 /** Save/Cancel row: pinned to the bottom of the screen below md, plain at the end of the form above. */
 const PINNED_ACTIONS =
-  'max-md:sticky max-md:bottom-0 max-md:z-10 max-md:-mx-4 max-md:-mb-6 max-md:px-4 max-md:pt-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-slate-200'
+  'max-md:sticky max-md:bottom-0 max-md:z-10 max-md:-mx-4 max-md:-mb-6 max-md:px-4 max-md:pt-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:bg-surface max-md:border-t max-md:border-border'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cardio form types & helpers
@@ -115,14 +115,7 @@ function CardioForm({
       : null
 
   // Compute today's week start (Monday) for activity-type-based matching
-  const todayWeekStart = (() => {
-    const today = new Date()
-    const day = today.getDay()
-    const diff = day === 0 ? -6 : 1 - day
-    const monday = new Date(today)
-    monday.setDate(today.getDate() + diff)
-    return toLocalDateStr(monday)
-  })()
+  const todayWeekStart = getMondayOfCurrentWeek()
   const todayStr = toLocalDateStr(new Date())
 
   const { data: todayWeekPlan } = useQuery<WeekPlanOut>({
@@ -332,20 +325,20 @@ function CardioForm({
   return (
     <>
       {bannerMode === 'draft' && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
-          <span className="text-sm text-amber-800">You have an unsaved Cardio draft.</span>
+        <div className="mb-4 bg-warning/10 border border-warning/40 rounded-xl p-4 flex items-center justify-between gap-3">
+          <span className="text-sm text-warning-text">You have an unsaved Cardio draft.</span>
           <div className="flex gap-2 shrink-0">
             <button
               type="button"
               onClick={handleRestore}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Restore
             </button>
             <button
               type="button"
               onClick={handleDiscard}
-              className="text-sm font-medium text-gray-500 hover:text-gray-700"
+              className="text-sm font-medium text-text-muted-strong hover:text-text"
             >
               Discard
             </button>
@@ -353,31 +346,31 @@ function CardioForm({
         </div>
       )}
       {bannerMode === 'three-way' && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm text-amber-800 font-medium">
+        <div className="mb-4 bg-warning/10 border border-warning/40 rounded-xl p-4 space-y-2">
+          <p className="text-sm text-warning-text font-medium">
             You have a saved draft and a planned session. Which would you like to use?
           </p>
           <div className="flex gap-2 flex-wrap">
             <button
               type="button"
               onClick={handleRestore}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Restore saved draft
             </button>
-            <span className="text-amber-400">·</span>
+            <span className="text-warning-text">·</span>
             <button
               type="button"
               onClick={handleUsePlannedSession}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-primary-dark hover:underline"
             >
               Use planned session
             </button>
-            <span className="text-amber-400">·</span>
+            <span className="text-warning-text">·</span>
             <button
               type="button"
               onClick={handleStartFresh}
-              className="text-sm font-medium text-gray-500 hover:text-gray-700"
+              className="text-sm font-medium text-text-muted-strong hover:text-text"
             >
               Start fresh
             </button>
@@ -386,13 +379,13 @@ function CardioForm({
       )}
       <form onSubmit={handleSubmit((data) => createMutation.mutate(data))} className="space-y-6">
       {/* Basic fields */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label className="block text-sm font-medium text-text mb-1">Title</label>
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title', {
               onChange: () => setTitleTouched(true),
             })}
@@ -400,9 +393,9 @@ function CardioForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+          <label className="block text-sm font-medium text-text mb-1">Activity Type</label>
           <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('activity_type_id')}
           >
             <option value="">— select type —</option>
@@ -413,17 +406,17 @@ function CardioForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+          <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
-          {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+          {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (optional override)</label>
+          <label className="block text-sm font-medium text-text mb-1">Total Duration (optional override)</label>
           <Controller
             control={control}
             name="total_duration_seconds"
@@ -433,19 +426,19 @@ function CardioForm({
                 onChange={field.onChange}
                 format="duration"
                 placeholder="h:mm:ss"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               />
             )}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+          <label className="block text-sm font-medium text-text mb-1">Calories (kcal, optional)</label>
           <input
             type="number"
             min="0"
             placeholder="e.g. 450"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>
@@ -475,19 +468,19 @@ function CardioForm({
           )}
         />
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-text mb-1">Notes</label>
           <div className="relative">
             <textarea
               rows={2}
               placeholder="Optional notes…"
-              className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+              className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
               {...register('notes')}
             />
             {watchedFormValues.notes && (
               <button
                 type="button"
                 onClick={() => setValue('notes', '')}
-                className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
                 aria-label="Clear notes"
               >
                 <EraserIcon />
@@ -499,18 +492,18 @@ function CardioForm({
 
       {/* Adapt this session (shown when a matching planned cardio session is resolved) */}
       {resolvedPlannedSessionId !== null && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-surface rounded-xl border border-border p-4">
           {hasApiKey ? (
             <button
               type="button"
               onClick={() => setShowAdaptCardioModal(true)}
-              className="w-full text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1.5"
+              className="w-full text-sm font-medium text-primary-dark hover:underline flex items-center gap-1.5"
             >
               <span>✨</span> Adapt this session
             </button>
           ) : (
-            <p className="text-sm text-slate-500">
-              <a href="/profile" className="text-blue-600 hover:underline font-medium">
+            <p className="text-sm text-text-muted-strong">
+              <a href="/profile" className="text-primary-dark hover:underline font-medium">
                 Add an API key in Profile
               </a>{' '}
               to adapt this session with AI suggestions.
@@ -521,19 +514,19 @@ function CardioForm({
 
       {/* Segments */}
       <div>
-        <h2 className="font-medium text-gray-900 mb-3">Segments</h2>
+        <h2 className="font-medium text-text mb-3">Segments</h2>
 
         <div className="space-y-3">
           {fields.map((field, index) => (
-            <div key={field.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div key={field.id} className="bg-surface rounded-xl border border-border p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">Segment {index + 1}</span>
+                <span className="text-sm font-medium text-text">Segment {index + 1}</span>
                 {fields.length > 1 && (
                   <button
                     type="button"
                     onClick={() => remove(index)}
                     aria-label="Remove segment"
-                    className="p-1 text-gray-400 hover:text-red-500 rounded"
+                    className="p-1 text-text-muted-strong hover:text-error-text rounded"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -543,16 +536,16 @@ function CardioForm({
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-2 gap-2 sm:gap-3">
                 <div className="col-span-3 sm:col-span-2">
-                  <label className="block text-xs text-gray-500 mb-1">Segment Title</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Segment Title</label>
                   <input
                     type="text"
                     placeholder="Optional title…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.title`)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Duration *</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Duration *</label>
                   <Controller
                     control={control}
                     name={`segments.${index}.duration_seconds`}
@@ -567,22 +560,22 @@ function CardioForm({
                     )}
                   />
                   {errors.segments?.[index]?.duration_seconds && (
-                    <p className="mt-0.5 text-xs text-red-600">{errors.segments[index]?.duration_seconds?.message}</p>
+                    <p className="mt-0.5 text-xs text-error-text">{errors.segments[index]?.duration_seconds?.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Distance (km)</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Distance (km)</label>
                   <input
                     type="number"
                     min="0"
                     step="any"
                     placeholder="e.g. 5.0"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.distance_km`)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pace (/km)</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Pace (/km)</label>
                   <Controller
                     control={control}
                     name={`segments.${index}.pace_seconds_per_km`}
@@ -604,7 +597,7 @@ function CardioForm({
         <button
           type="button"
           onClick={() => append({ title: '', duration_seconds: null, distance_km: '', pace_seconds_per_km: null })}
-          className="mt-3 w-full text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-xl py-2"
+          className="mt-3 w-full text-sm text-primary-dark hover:underline font-medium border border-dashed border-primary-light rounded-xl py-2"
         >
           + Add Segment
         </button>
@@ -629,20 +622,20 @@ function CardioForm({
       <div className={PINNED_ACTIONS}>
         {/* Inside the pinned bar so a failed save is visible from anywhere in the form */}
         {createMutation.error && (
-          <p role="alert" className="text-sm text-red-600 mb-2">{createMutation.error.message}</p>
+          <p role="alert" className="text-sm text-error-text mb-2">{createMutation.error.message}</p>
         )}
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-6 py-2 max-md:min-h-11 rounded-lg text-sm"
+            className="bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white font-medium px-6 py-2 max-md:min-h-11 rounded-lg text-sm"
           >
             {createMutation.isPending ? 'Saving…' : 'Save Session'}
           </button>
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 max-md:min-h-11"
+            className="text-sm text-text-muted-strong hover:text-text px-4 py-2 max-md:min-h-11"
           >
             Cancel
           </button>
@@ -723,17 +716,17 @@ function StrengthForm() {
   return (
     <>
       {showDraftBanner && (
-        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
+        <div className="mb-4 bg-warning/10 border border-warning/40 rounded-xl p-4 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <span className="text-sm text-amber-800">You have an unsaved Strength draft.</span>
-            <p className="text-xs text-amber-800">{describeDraft(pendingDraft)} · Restore or discard it to save.</p>
+            <span className="text-sm text-warning-text">You have an unsaved Strength draft.</span>
+            <p className="text-xs text-warning-text">{describeDraft(pendingDraft)} · Restore or discard it to save.</p>
           </div>
           <div className="flex gap-2 shrink-0">
             <button
               type="button"
               onClick={handleRestore}
               disabled={isLoadingTemplate}
-              className="text-sm font-medium text-blue-600 hover:text-blue-800 disabled:opacity-50"
+              className="text-sm font-medium text-primary-dark hover:underline disabled:opacity-50"
             >
               {isLoadingTemplate ? 'Restoring…' : 'Restore'}
             </button>
@@ -741,7 +734,7 @@ function StrengthForm() {
               type="button"
               onClick={handleDiscard}
               disabled={isLoadingTemplate}
-              className="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              className="text-sm font-medium text-text-muted-strong hover:text-text disabled:opacity-50"
             >
               Discard
             </button>
@@ -764,15 +757,15 @@ function StrengthForm() {
         className={`space-y-6 ${showDraftBanner ? 'opacity-50' : ''}`}
       >
         {/* Template selector */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="bg-surface rounded-xl border border-border p-4">
+          <label className="block text-sm font-medium text-text mb-1">
             Start from template
           </label>
           <select
             value={selectedTemplateId ?? ''}
             onChange={(e) => handleTemplateSelect(e.target.value)}
             disabled={isLoadingTemplate}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark disabled:opacity-50"
           >
             <option value="">— no template —</option>
             {templates.map((t) => (
@@ -788,28 +781,28 @@ function StrengthForm() {
             </p>
           )}
           {isLoadingTemplate && (
-            <p className="mt-1 text-xs text-gray-400">Loading template…</p>
+            <p className="mt-1 text-xs text-text-muted-strong">Loading template…</p>
           )}
           {templateSnapshot && !isLoadingTemplate && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-text-muted-strong">
               Pre-filled from <span className="font-medium">{templateSnapshot.name}</span> — all fields are editable.
             </p>
           )}
         </div>
 
         {/* Adapt this session */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-surface rounded-xl border border-border p-4">
           {hasApiKey ? (
             <button
               type="button"
               onClick={() => setShowAdaptModal(true)}
-              className="w-full text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1.5"
+              className="w-full text-sm font-medium text-primary-dark hover:underline flex items-center gap-1.5"
             >
               <span>✨</span> Adapt this session
             </button>
           ) : (
-            <p className="text-sm text-slate-500">
-              <a href="/profile" className="text-blue-600 hover:underline font-medium">
+            <p className="text-sm text-text-muted-strong">
+              <a href="/profile" className="text-primary-dark hover:underline font-medium">
                 Add an API key in Profile
               </a>{' '}
               to adapt this session with AI suggestions.
@@ -818,24 +811,24 @@ function StrengthForm() {
         </div>
 
         {/* Basic fields */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <label className="block text-sm font-medium text-text mb-1">Title</label>
             <input
               type="text"
               placeholder="Optional session title…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('title', { onChange: () => setTitleTouched(true) })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+            <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
             <input
               type="datetime-local"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('date', { required: 'Date is required' })}
             />
-            {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+            {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
           </div>
           <Controller
             control={control}
@@ -862,19 +855,19 @@ function StrengthForm() {
             )}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-text mb-1">Notes</label>
             <div className="relative">
               <textarea
                 rows={2}
                 placeholder="Optional notes…"
-                className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
+                className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${watchedFormValues.notes ? 'pr-8' : ''}`}
                 {...register('notes')}
               />
               {watchedFormValues.notes && (
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
                   aria-label="Clear notes"
                 >
                   <EraserIcon />
@@ -883,7 +876,7 @@ function StrengthForm() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+            <label className="block text-sm font-medium text-text mb-1">Duration</label>
             <Controller
               control={control}
               name="duration_seconds"
@@ -893,18 +886,18 @@ function StrengthForm() {
                   onChange={field.onChange}
                   format="duration"
                   placeholder="h:mm:ss (optional)"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                 />
               )}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+            <label className="block text-sm font-medium text-text mb-1">Calories (kcal, optional)</label>
             <input
               type="number"
               min="0"
               placeholder="e.g. 500"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('calories')}
             />
           </div>
@@ -923,20 +916,20 @@ function StrengthForm() {
         <div className={PINNED_ACTIONS}>
           {/* Inside the pinned bar so a failed save is visible from anywhere in the form */}
           {createMutation.isError && (
-            <p role="alert" className="text-sm text-red-600 mb-2">Failed to save session. Please try again.</p>
+            <p role="alert" className="text-sm text-error-text mb-2">Failed to save session. Please try again.</p>
           )}
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={isSaving || showDraftBanner}
-              className="flex-1 bg-blue-600 text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 bg-primary-dark text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:brightness-95 disabled:opacity-50"
             >
               {isSaving ? 'Saving…' : 'Save Session'}
             </button>
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="px-4 py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium border border-border text-text hover:bg-bg"
             >
               Cancel
             </button>
@@ -991,7 +984,7 @@ export default function LogWorkoutPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Log Workout</h1>
+        <h1 className="text-2xl font-bold text-text">Log Workout</h1>
       </div>
 
       {/* Type selector */}
@@ -999,10 +992,10 @@ export default function LogWorkoutPage() {
         <button
           type="button"
           onClick={() => setWorkoutType('cardio')}
-          className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
+          className={`rounded-xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
             workoutType === 'cardio'
-              ? 'border-blue-600 bg-blue-50 text-blue-700'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+              ? 'border-primary-dark bg-primary-tint text-primary-dark'
+              : 'border-border-strong bg-surface text-text hover:bg-primary-tint/50'
           }`}
         >
           <span className="text-3xl">🏃</span>
@@ -1011,10 +1004,10 @@ export default function LogWorkoutPage() {
         <button
           type="button"
           onClick={() => setWorkoutType('strength')}
-          className={`rounded-2xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
+          className={`rounded-xl border-2 p-6 flex flex-col items-center gap-2 transition-all ${
             workoutType === 'strength'
-              ? 'border-blue-600 bg-blue-50 text-blue-700'
-              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50/50'
+              ? 'border-primary-dark bg-primary-tint text-primary-dark'
+              : 'border-border-strong bg-surface text-text hover:bg-primary-tint/50'
           }`}
         >
           <span className="text-3xl">🏋️</span>

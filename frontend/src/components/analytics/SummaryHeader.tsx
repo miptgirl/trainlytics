@@ -1,16 +1,11 @@
 import { useAnalyticsSummary } from '../../lib/analyticsApi'
-
-function formatMinutes(total: number): string {
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
+import { formatMinutes } from '../../lib/timeFormat'
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="text-2xl font-bold text-slate-900">{value}</span>
-      <span className="text-xs text-slate-500 uppercase tracking-wide">{label}</span>
+      <span className="text-2xl font-bold text-text">{value}</span>
+      <span className="text-xs text-text-muted-strong uppercase tracking-wide">{label}</span>
     </div>
   )
 }
@@ -18,8 +13,8 @@ function StatBlock({ label, value }: { label: string; value: string }) {
 function StatSkeleton() {
   return (
     <div className="flex flex-col items-center gap-2 animate-pulse">
-      <div className="h-8 w-20 bg-slate-200 rounded" />
-      <div className="h-3 w-16 bg-slate-100 rounded" />
+      <div className="h-8 w-20 bg-border rounded" />
+      <div className="h-3 w-16 bg-bg rounded" />
     </div>
   )
 }

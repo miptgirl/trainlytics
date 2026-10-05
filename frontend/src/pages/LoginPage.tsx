@@ -35,48 +35,48 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4">
+      <div className="w-full max-w-sm bg-surface rounded-xl shadow-md p-8">
         <div className="flex justify-center mb-6">
           <img src={logo} alt="Trainlytics" className="h-12 w-auto" />
         </div>
-        <p className="text-sm text-slate-500 text-center mb-6">Sign in to continue</p>
+        <p className="text-sm text-text-muted-strong text-center mb-6">Sign in to continue</p>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="username" className="block text-sm font-medium text-text mb-1">
               Username
             </label>
             <input
               id="username"
               type="text"
               autoComplete="username"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('username', { required: 'Username is required' })}
             />
             {errors.username && (
-              <p className="mt-1 text-xs text-red-600">{errors.username.message}</p>
+              <p className="mt-1 text-xs text-error-text">{errors.username.message}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-text mb-1">
               Password
             </label>
             <input
               id="password"
               type="password"
               autoComplete="current-password"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
               {...register('password', { required: 'Password is required' })}
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+              <p className="mt-1 text-xs text-error-text">{errors.password.message}</p>
             )}
           </div>
 
           {apiError && (
-            <p role="alert" className="text-xs text-red-600">
+            <p role="alert" className="text-xs text-error-text">
               {apiError}
             </p>
           )}
@@ -84,7 +84,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+            className="w-full bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>

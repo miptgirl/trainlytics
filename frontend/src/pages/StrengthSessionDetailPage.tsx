@@ -96,24 +96,24 @@ function EditForm({
 
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label className="block text-sm font-medium text-text mb-1">Title</label>
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+          <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
-          {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+          {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
         </div>
         <Controller
           control={control}
@@ -140,31 +140,31 @@ function EditForm({
           )}
         />
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-text mb-1">Notes</label>
           <textarea
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
             {...register('notes')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (mins)</label>
+          <label className="block text-sm font-medium text-text mb-1">Duration (mins)</label>
           <input
             type="number"
             min="0"
             step="any"
             placeholder="Optional, e.g. 60"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('duration_minutes')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+          <label className="block text-sm font-medium text-text mb-1">Calories (kcal, optional)</label>
           <input
             type="number"
             min="0"
             placeholder="e.g. 500"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>
@@ -184,14 +184,14 @@ function EditForm({
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="flex-1 bg-primary-dark text-white py-2.5 rounded-xl text-sm font-medium hover:brightness-95 disabled:opacity-50"
         >
           {isPending ? 'Saving…' : 'Save Changes'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+          className="px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-bg"
         >
           Cancel
         </button>
@@ -262,7 +262,7 @@ export default function StrengthSessionDetailPage() {
   if (isLoading) {
     return (
       <Layout>
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       </Layout>
     )
   }
@@ -270,7 +270,7 @@ export default function StrengthSessionDetailPage() {
   if (isError || !session) {
     return (
       <Layout>
-        <p className="text-red-600 text-sm">Session not found.</p>
+        <p className="text-error-text text-sm">Session not found.</p>
       </Layout>
     )
   }
@@ -293,8 +293,8 @@ export default function StrengthSessionDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Strength Session</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-text">Strength Session</h1>
+          <p className="text-sm text-text-muted-strong mt-0.5">
             {formatSessionDateTime(session.date)}
             {' · '}{totalSets} set{totalSets !== 1 ? 's' : ''}
           </p>
@@ -304,13 +304,13 @@ export default function StrengthSessionDetailPage() {
             <button
               onClick={handleCopy}
               disabled={copyStatus !== 'idle'}
-              className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm font-medium border border-border rounded-lg hover:bg-bg disabled:opacity-50"
             >
               {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
             </button>
             <button
               onClick={() => setEditing(true)}
-              className="px-3 py-1.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="px-3 py-1.5 text-sm font-medium border border-border rounded-lg hover:bg-bg"
             >
               Edit
             </button>
@@ -319,7 +319,7 @@ export default function StrengthSessionDetailPage() {
                 if (window.confirm('Delete this session?')) deleteMutation.mutate()
               }}
               disabled={deleteMutation.isPending}
-              className="px-3 py-1.5 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50"
+              className="px-3 py-1.5 text-sm font-medium text-error-text border border-error/40 rounded-lg hover:bg-error/10 disabled:opacity-50"
             >
               Delete
             </button>
@@ -338,47 +338,47 @@ export default function StrengthSessionDetailPage() {
       ) : (
         <div className="space-y-4">
           {(session.title || session.duration_seconds != null || session.calories != null) && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-1">
+            <div className="bg-surface rounded-xl border border-border p-4 space-y-1">
               {session.title && (
-                <p className="text-base font-semibold text-gray-900">{session.title}</p>
+                <p className="text-base font-semibold text-text">{session.title}</p>
               )}
               {session.duration_seconds != null && (
-                <p className="text-sm text-gray-500">Duration: {Math.round(session.duration_seconds / 60)} mins</p>
+                <p className="text-sm text-text-muted-strong">Duration: {Math.round(session.duration_seconds / 60)} mins</p>
               )}
               {session.calories != null && (
-                <p className="text-sm text-gray-500">Calories: {session.calories} kcal</p>
+                <p className="text-sm text-text-muted-strong">Calories: {session.calories} kcal</p>
               )}
             </div>
           )}
           {(session.wellbeing != null || session.rpe != null) && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-surface rounded-xl border border-border p-4">
               <EmojiRatingDisplay wellbeing={session.wellbeing} rpe={session.rpe} />
             </div>
           )}
           {session.notes && (
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
-              <p className="text-sm text-gray-700">{session.notes}</p>
+            <div className="bg-surface rounded-xl border border-border p-4">
+              <p className="text-sm text-text">{session.notes}</p>
             </div>
           )}
 
           {session.exercises.map((entry) => (
-            <div key={entry.id} className="bg-white rounded-xl border border-gray-200 p-4">
-              <h3 className="font-medium text-gray-900 mb-3">{entry.exercise_name}</h3>
+            <div key={entry.id} className="bg-surface rounded-xl border border-border p-4">
+              <h3 className="font-medium text-text mb-3">{entry.exercise_name}</h3>
 
               <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 mb-2 px-1">
-                <span className="text-xs text-gray-400">#</span>
-                <span className="text-xs font-medium text-gray-500">Reps</span>
-                <span className="text-xs font-medium text-gray-500">Weight</span>
-                <span className="text-xs font-medium text-gray-500">Notes</span>
+                <span className="text-xs text-text-muted-strong">#</span>
+                <span className="text-xs font-medium text-text-muted-strong">Reps</span>
+                <span className="text-xs font-medium text-text-muted-strong">Weight</span>
+                <span className="text-xs font-medium text-text-muted-strong">Notes</span>
               </div>
 
               <div className="space-y-1">
                 {entry.sets.map((s) => (
-                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-gray-100">
-                    <span className="text-xs text-gray-400 text-center">{s.set_number}</span>
-                    <span className="text-sm text-gray-900">{s.reps ?? '—'}</span>
-                    <span className="text-sm text-gray-900">{s.weight != null ? `${s.weight} kg` : '—'}</span>
-                    <span className="text-sm text-gray-500 overflow-hidden truncate">{s.notes ?? ''}</span>
+                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-border">
+                    <span className="text-xs text-text-muted-strong text-center">{s.set_number}</span>
+                    <span className="text-sm text-text">{s.reps ?? '—'}</span>
+                    <span className="text-sm text-text">{s.weight != null ? `${s.weight} kg` : '—'}</span>
+                    <span className="text-sm text-text-muted-strong overflow-hidden truncate">{s.notes ?? ''}</span>
                   </div>
                 ))}
               </div>

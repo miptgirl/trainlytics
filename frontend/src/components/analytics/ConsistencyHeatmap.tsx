@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useAnalyticsHeatmap } from '../../lib/analyticsApi'
 import type { HeatmapDay } from '../../lib/analyticsApi'
+import { useChartPalette } from '../../lib/chartPalette'
 
-const STRENGTH_COLOR = '#3b82f6'
-const CARDIO_COLOR = '#10b981'
-const REST_COLOR = '#e2e8f0'
 const CELL = 12
 const GAP = 3
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -14,13 +12,27 @@ function localDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function cellBg(types: ('strength' | 'cardio')[]): string {
+interface HeatColors {
+  strength: string
+  cardio: string
+  rest: string
+  both: string
+}
+
+function heatColors(p: ReturnType<typeof useChartPalette>): HeatColors {
+  return {
+    ...p.heat,
+    both: `linear-gradient(135deg, ${p.heat.strength} 50%, ${p.heat.cardio} 50%)`,
+  }
+}
+
+function cellBg(types: ('strength' | 'cardio')[], c: HeatColors): string {
   const hasS = types.includes('strength')
   const hasC = types.includes('cardio')
-  if (hasS && hasC) return `linear-gradient(135deg, ${STRENGTH_COLOR} 50%, ${CARDIO_COLOR} 50%)`
-  if (hasS) return STRENGTH_COLOR
-  if (hasC) return CARDIO_COLOR
-  return REST_COLOR
+  if (hasS && hasC) return c.both
+  if (hasS) return c.strength
+  if (hasC) return c.cardio
+  return c.rest
 }
 
 function computeStreaks(data: HeatmapDay[]) {
@@ -94,6 +106,9 @@ interface TooltipState {
 }
 
 export function ConsistencyHeatmap() {
+  const palette = useChartPalette()
+  const colors = heatColors(palette)
+  const axis = palette.axis
   const { data, isLoading } = useAnalyticsHeatmap()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -134,7 +149,7 @@ export function ConsistencyHeatmap() {
     }
   }, [tooltip])
 
-  if (isLoading) return <div className="h-40 bg-slate-50 rounded-lg animate-pulse" />
+  if (isLoading) return <div className="h-40 bg-bg rounded-lg animate-pulse" />
   if (!data) return null
 
   const weeks = buildGrid(data)
@@ -183,7 +198,7 @@ export function ConsistencyHeatmap() {
             return (
               <div
                 key={wi}
-                style={{ width: CELL + GAP, minWidth: CELL + GAP, fontSize: 10, color: '#94a3b8' }}
+                style={{ width: CELL + GAP, minWidth: CELL + GAP, fontSize: 10, color: axis }}
               >
                 {label?.label ?? ''}
               </div>
@@ -198,7 +213,7 @@ export function ConsistencyHeatmap() {
             {DAY_LABELS.map((label, i) => (
               <div
                 key={i}
-                style={{ height: CELL, fontSize: 9, color: '#94a3b8', lineHeight: `${CELL}px` }}
+                style={{ height: CELL, fontSize: 9, color: axis, lineHeight: `${CELL}px` }}
               >
                 {label}
               </div>
@@ -228,7 +243,7 @@ export function ConsistencyHeatmap() {
                         width: CELL,
                         height: CELL,
                         borderRadius: 2,
-                        background: cellBg(day.types),
+                        background: cellBg(day.types, colors),
                         cursor: 'default',
                         flexShrink: 0,
                         padding: 0,
@@ -252,7 +267,7 @@ export function ConsistencyHeatmap() {
       {tooltip && (
         <div
           ref={tooltipRef}
-          className="fixed z-50 bg-slate-800 text-white text-xs rounded px-2 py-1 pointer-events-none whitespace-nowrap"
+          className="fixed z-50 bg-text text-surface text-xs rounded px-2 py-1 pointer-events-none whitespace-nowrap"
           style={{
             left: tooltip.left,
             top: tooltip.top,
@@ -267,10 +282,10 @@ export function ConsistencyHeatmap() {
             })}
           </div>
           {tooltip.types.length === 0 ? (
-            <div className="text-slate-400">Rest day</div>
+            <div className="text-primary-light">Rest day</div>
           ) : (
             tooltip.types.map(t => (
-              <div key={t} style={{ color: t === 'strength' ? '#93c5fd' : '#6ee7b7' }}>
+              <div key={t} style={{ color: t === 'strength' ? colors.strength : colors.cardio }}>
                 {t === 'strength' ? 'Strength' : 'Cardio'}
               </div>
             ))
@@ -279,17 +294,17 @@ export function ConsistencyHeatmap() {
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+      <div className="flex flex-wrap gap-4 text-xs text-text-muted-strong">
         <div className="flex items-center gap-1.5">
-          <div style={{ width: 12, height: 12, borderRadius: 2, background: REST_COLOR, flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, borderRadius: 2, background: colors.rest, flexShrink: 0 }} />
           Rest
         </div>
         <div className="flex items-center gap-1.5">
-          <div style={{ width: 12, height: 12, borderRadius: 2, background: STRENGTH_COLOR, flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, borderRadius: 2, background: colors.strength, flexShrink: 0 }} />
           Strength
         </div>
         <div className="flex items-center gap-1.5">
-          <div style={{ width: 12, height: 12, borderRadius: 2, background: CARDIO_COLOR, flexShrink: 0 }} />
+          <div style={{ width: 12, height: 12, borderRadius: 2, background: colors.cardio, flexShrink: 0 }} />
           Cardio
         </div>
         <div className="flex items-center gap-1.5">
@@ -298,7 +313,7 @@ export function ConsistencyHeatmap() {
               width: 12,
               height: 12,
               borderRadius: 2,
-              background: `linear-gradient(135deg, ${STRENGTH_COLOR} 50%, ${CARDIO_COLOR} 50%)`,
+              background: colors.both,
               flexShrink: 0,
             }}
           />
@@ -307,14 +322,14 @@ export function ConsistencyHeatmap() {
       </div>
 
       {/* Streaks */}
-      <div className="flex gap-6 pt-3 border-t border-slate-100">
+      <div className="flex gap-6 pt-3 border-t border-border">
         <div>
-          <div className="text-2xl font-bold text-slate-800">{currentStreak}</div>
-          <div className="text-xs text-slate-500">Current streak</div>
+          <div className="text-2xl font-bold text-text">{currentStreak}</div>
+          <div className="text-xs text-text-muted-strong">Current streak</div>
         </div>
         <div>
-          <div className="text-2xl font-bold text-slate-800">{longestStreak}</div>
-          <div className="text-xs text-slate-500">Longest streak</div>
+          <div className="text-2xl font-bold text-text">{longestStreak}</div>
+          <div className="text-xs text-text-muted-strong">Longest streak</div>
         </div>
       </div>
     </div>
