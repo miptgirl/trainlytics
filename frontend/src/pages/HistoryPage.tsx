@@ -18,7 +18,7 @@ import { WeeklyInsightsCard } from '../components/WeeklyInsightsCard'
 import { api } from '../lib/api'
 import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
 import { usePaceTrends } from '../lib/hooks/usePaceTrends'
-import { formatSessionDateTime, toLocalDateStr } from '../lib/dateUtils'
+import { formatSessionDateTime, getMondayOfCurrentWeek } from '../lib/dateUtils'
 import { formatCompact } from '../lib/chartUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
@@ -74,14 +74,6 @@ interface TrainingTrendPoint {
   strength_calories: number
 }
 
-function getMonday(d: Date): string {
-  const date = new Date(d)
-  const day = date.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  date.setDate(date.getDate() + diff)
-  return toLocalDateStr(date)
-}
-
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
@@ -110,7 +102,7 @@ function formatWeekLabel(isoDate: string): string {
 // ── Weekly Summary Card ────────────────────────────────────────────────────────
 
 function WeeklySummaryCard() {
-  const weekStart = getMonday(new Date())
+  const weekStart = getMondayOfCurrentWeek()
   const { data, isLoading } = useQuery<WeeklySummaryOut>({
     queryKey: ['weekly-summary', weekStart],
     queryFn: () => api.get<WeeklySummaryOut>(`/sessions/weekly-summary?week_start=${weekStart}`),

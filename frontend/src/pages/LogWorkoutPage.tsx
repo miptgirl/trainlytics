@@ -7,7 +7,7 @@ import { useFieldArray, useForm, useWatch, Controller } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
-import { datetimeLocalToUTC, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
+import { datetimeLocalToUTC, getMondayOfCurrentWeek, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
 import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -115,14 +115,7 @@ function CardioForm({
       : null
 
   // Compute today's week start (Monday) for activity-type-based matching
-  const todayWeekStart = (() => {
-    const today = new Date()
-    const day = today.getDay()
-    const diff = day === 0 ? -6 : 1 - day
-    const monday = new Date(today)
-    monday.setDate(today.getDate() + diff)
-    return toLocalDateStr(monday)
-  })()
+  const todayWeekStart = getMondayOfCurrentWeek()
   const todayStr = toLocalDateStr(new Date())
 
   const { data: todayWeekPlan } = useQuery<WeekPlanOut>({

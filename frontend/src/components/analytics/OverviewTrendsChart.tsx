@@ -87,13 +87,13 @@ export function OverviewTrendsChart() {
       <MiniChart
         data={chartData}
         dataKey="sessions"
-        color={chartColor('chart-strength')}
+        color={chartColor('primary')}
         label="Sessions per week"
       />
       <MiniChart
         data={chartData}
         dataKey="minutes"
-        color={chartColor('chart-running')}
+        color={chartColor('primary-dark')}
         label="Training time per week (min)"
         unit=" min"
         tickFormatter={(v) => String(Math.round(v))}
@@ -101,7 +101,7 @@ export function OverviewTrendsChart() {
       <MiniChart
         data={chartData}
         dataKey="volume"
-        color={chartColor('chart-swimming')}
+        color={chartColor('primary-light')}
         label="Volume per week (kg)"
         tickFormatter={formatCompact}
         unit=" kg"

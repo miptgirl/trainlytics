@@ -103,7 +103,7 @@ export function TrainingLoadChart() {
             type="monotone"
             dataKey="4-week"
             name="4-week rolling"
-            stroke={chartColor('chart-strength')}
+            stroke={chartColor('primary-dark')}
             strokeWidth={2}
             dot={false}
             connectNulls={false}
@@ -112,7 +112,7 @@ export function TrainingLoadChart() {
             type="monotone"
             dataKey="8-week"
             name="8-week rolling"
-            stroke={chartColor('warning')}
+            stroke={chartColor('primary')}
             strokeWidth={2}
             dot={false}
             strokeDasharray="5 3"

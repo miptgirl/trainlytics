@@ -307,7 +307,7 @@ export default function WorkoutModePage() {
 
       <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-[calc(9.5rem+env(safe-area-inset-bottom))] space-y-4">
         {guardError && (
-          <p role="alert" className="rounded-xl bg-accent-light text-accent-text text-sm px-3 py-2">
+          <p role="alert" className="rounded-xl bg-error/10 text-error-text text-sm px-3 py-2">
             {guardError}
           </p>
         )}

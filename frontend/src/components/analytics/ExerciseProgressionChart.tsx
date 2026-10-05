@@ -159,7 +159,7 @@ export function ExerciseProgressionChart() {
                   yAxisId="volume"
                   type="monotone"
                   dataKey="Volume (kg)"
-                  stroke={chartColor('chart-swimming')}
+                  stroke={chartColor('accent')}
                   strokeWidth={2}
                   dot={false}
                 />

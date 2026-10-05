@@ -64,8 +64,8 @@ export function PlanAdherenceChart() {
               unit="%"
             />
             <Tooltip formatter={(v: number) => `${v}%`} />
-            <Bar dataKey="completion" name="Completion" fill={chartColor('chart-strength')} radius={[2, 2, 0, 0]} />
-            <ReferenceLine y={100} stroke={chartColor('success')} strokeDasharray="4 4" />
+            <Bar dataKey="completion" name="Completion" fill={chartColor('primary')} radius={[2, 2, 0, 0]} />
+            <ReferenceLine y={100} stroke={chartColor('primary-dark')} strokeDasharray="4 4" />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -88,7 +88,7 @@ export function PlanAdherenceChart() {
             <Bar
               dataKey="volumeDelta"
               name="Volume delta"
-              fill={chartColor('chart-swimming')}
+              fill={chartColor('chart-strength')}
               radius={[2, 2, 0, 0]}
             />
           </ComposedChart>
