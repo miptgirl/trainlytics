@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Layout, MenuSheet, ProfileButton } from '../components/Layout'
 import { SkipNoteModal } from '../components/plan/SkipNoteModal'
 import { api } from '../lib/api'
-import { toLocalDateStr, formatShortDate } from '../lib/dateUtils'
+import { toLocalDateStr, formatShortDate, getMondayOf } from '../lib/dateUtils'
 import { loadDraft } from '../lib/draftUtils'
 import { draftStartedAt, formatDraftAge } from '../lib/draftAge'
 import { summarizeWeek } from '../lib/planStats'
@@ -17,13 +17,6 @@ import {
   useUpdateSkipNote,
   type PlannedSessionOut,
 } from '../lib/planApi'
-
-function getMonday(d: Date): string {
-  const day = d.getDay()
-  const monday = new Date(d)
-  monday.setDate(d.getDate() + (day === 0 ? -6 : 1 - day))
-  return toLocalDateStr(monday)
-}
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T00:00:00')
@@ -232,10 +225,10 @@ export default function TodayPage() {
   const now = useNow()
   const view = useWorkoutView()
   const today = toLocalDateStr(now)
-  const weekStart = getMonday(now)
+  const weekStart = getMondayOf(now)
   const tomorrow = addDays(today, 1)
   // Tomorrow belongs to the next plan on Sundays; the reschedule API only moves within a week
-  const canMoveToTomorrow = getMonday(new Date(tomorrow + 'T00:00:00')) === weekStart
+  const canMoveToTomorrow = getMondayOf(new Date(tomorrow + 'T00:00:00')) === weekStart
 
   const { data, isLoading, isError } = useWeekPlan(weekStart)
   const { data: cardioTypes = [] } = useQuery({

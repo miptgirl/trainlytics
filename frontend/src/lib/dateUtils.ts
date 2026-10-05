@@ -71,3 +71,17 @@ export function formatSessionDateTime(isoString: string): string {
   })
   return `${date} · ${time}`
 }
+
+/** Returns the Monday of the local week containing `d` as "YYYY-MM-DD". */
+export function getMondayOf(d: Date): string {
+  const day = d.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? -6 : 1 - day
+  const monday = new Date(d)
+  monday.setDate(d.getDate() + diff)
+  return toLocalDateStr(monday)
+}
+
+/** Returns the Monday of the current local week as "YYYY-MM-DD". */
+export function getMondayOfCurrentWeek(): string {
+  return getMondayOf(new Date())
+}

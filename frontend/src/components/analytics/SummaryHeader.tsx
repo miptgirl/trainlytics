@@ -1,10 +1,5 @@
 import { useAnalyticsSummary } from '../../lib/analyticsApi'
-
-function formatMinutes(total: number): string {
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return h > 0 ? `${h}h ${m}m` : `${m}m`
-}
+import { formatMinutes } from '../../lib/timeFormat'
 
 function StatBlock({ label, value }: { label: string; value: string }) {
   return (

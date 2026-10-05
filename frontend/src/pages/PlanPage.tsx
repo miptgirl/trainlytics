@@ -5,16 +5,7 @@ import { PlanSessionForm } from '../components/plan/PlanSessionForm'
 import { WeeklyOverviewCard } from '../components/plan/WeeklyOverviewCard'
 import { useWeekPlan, useCopyFromLastWeek, type PlannedSessionOut } from '../lib/planApi'
 import { PlanVsActualCard } from '../components/plan/PlanVsActualCard'
-import { toLocalDateStr } from '../lib/dateUtils'
-
-function getMondayOfCurrentWeek(): string {
-  const today = new Date()
-  const day = today.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(today)
-  monday.setDate(today.getDate() + diff)
-  return toLocalDateStr(monday)
-}
+import { toLocalDateStr, getMondayOfCurrentWeek } from '../lib/dateUtils'
 
 function shiftWeek(weekStart: string, direction: -1 | 1): string {
   const date = new Date(weekStart + 'T00:00:00')

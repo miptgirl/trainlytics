@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Layout } from '../components/Layout'
+import { StatsGlance } from '../components/analytics/StatsGlance'
 import { SummaryHeader } from '../components/analytics/SummaryHeader'
 import { ConsistencyHeatmap } from '../components/analytics/ConsistencyHeatmap'
 import { OverviewTrendsChart } from '../components/analytics/OverviewTrendsChart'
@@ -117,6 +118,8 @@ export function AnalyticsPageContent() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+
+      <StatsGlance />
 
       <SectionCard title="All-time Summary" debugUrl="/analytics/summary">
         <SummaryHeader />
