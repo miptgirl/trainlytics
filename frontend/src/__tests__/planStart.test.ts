@@ -41,6 +41,15 @@ describe('getStartUrl', () => {
     )
   })
 
+  it('targets workout mode when asked, keeping template and date', () => {
+    expect(getStartUrl(make({ template_id: 3 }), '2026-10-05', { view: 'workout' })).toBe(
+      '/workout?type=strength&templateId=3',
+    )
+    expect(getStartUrl(make({ template_id: 3, status: 'skipped' }), '2026-10-05', { view: 'workout' })).toBe(
+      '/workout?type=strength&templateId=3&date=2026-10-05T10:00',
+    )
+  })
+
   it('links a cardio session to its plan', () => {
     expect(getStartUrl(make({ session_type: 'cardio' }), '2026-09-28')).toBe(
       '/log?type=cardio&plannedSessionId=7&weekStart=2026-09-28',

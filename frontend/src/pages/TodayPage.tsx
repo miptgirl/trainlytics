@@ -9,6 +9,8 @@ import { loadDraft } from '../lib/draftUtils'
 import { draftStartedAt, formatDraftAge } from '../lib/draftAge'
 import { summarizeWeek } from '../lib/planStats'
 import { getStartUrl } from '../lib/planStart'
+import { prefersWorkoutMode } from '../lib/workoutMode'
+import { describeDraft, parseStrengthDraft, strengthViewUrl } from '../lib/strengthSession'
 import {
   useWeekPlan,
   useUpdatePlannedSession,
@@ -51,6 +53,19 @@ function sessionSummary(s: PlannedSessionOut): string | null {
     .join(' · ')
 }
 
+/** Workout mode is the phone default; tracks the 768px breakpoint so links stay right after a resize. */
+function useWorkoutView(): 'workout' | 'form' {
+  const [workout, setWorkout] = useState(prefersWorkoutMode)
+  useEffect(() => {
+    const mq = window.matchMedia?.('(max-width: 767px)')
+    if (!mq) return
+    const onChange = () => setWorkout(prefersWorkoutMode())
+    mq.addEventListener?.('change', onChange)
+    return () => mq.removeEventListener?.('change', onChange)
+  }, [])
+  return workout ? 'workout' : 'form'
+}
+
 /** Current date, refreshed when the app returns to the foreground and at midnight. */
 function useNow(): Date {
   const [now, setNow] = useState(() => new Date())
@@ -91,12 +106,14 @@ function TodaySessionCard({
   typeName,
   canMoveToTomorrow,
   tomorrow,
+  view,
 }: {
   session: PlannedSessionOut
   weekStart: string
   typeName: string | null
   canMoveToTomorrow: boolean
   tomorrow: string
+  view: 'workout' | 'form'
 }) {
   const [skipOpen, setSkipOpen] = useState(false)
   const move = useUpdatePlannedSession()
@@ -167,7 +184,7 @@ function TodaySessionCard({
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
-            to={getStartUrl(session, weekStart)}
+            to={getStartUrl(session, weekStart, { view })}
             className="inline-flex items-center justify-center min-h-11 px-5 rounded-xl bg-primary-dark text-white text-sm font-semibold"
           >
             Start
@@ -213,6 +230,7 @@ export default function TodayPage() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
   const now = useNow()
+  const view = useWorkoutView()
   const today = toLocalDateStr(now)
   const weekStart = getMonday(now)
   const tomorrow = addDays(today, 1)
@@ -235,11 +253,24 @@ export default function TodayPage() {
     .filter((s) => s.status === 'planned' && s.planned_date > today)
     .sort((a, b) => a.planned_date.localeCompare(b.planned_date) || a.display_order - b.display_order)[0]
 
-  const drafts = (['strength', 'cardio'] as const).flatMap((type) => {
-    const draft = loadDraft(type)
-    if (draft === null) return []
-    const startedAt = draftStartedAt(draft)
-    return [{ type, age: startedAt ? formatDraftAge(startedAt, now) : null }]
+  type ResumeCard = { type: 'strength' | 'cardio'; href: string; detail: string | null; age: string | null }
+  const drafts = (['strength', 'cardio'] as const).flatMap((type): ResumeCard[] => {
+    const raw = loadDraft(type)
+    if (raw === null) return []
+    if (type === 'strength') {
+      const draft = parseStrengthDraft(raw)
+      if (!draft) return []
+      // Workout mode on phones, the full form from 768px; either restores the draft without asking
+      const href = strengthViewUrl(
+        view === 'workout' ? 'workout' : 'log',
+        { templateId: draft.templateId ?? undefined },
+        { resume: true },
+      )
+      const started = draft.workout.startedAt != null ? new Date(draft.workout.startedAt) : draftStartedAt(raw)
+      return [{ type, href, detail: describeDraft(draft), age: started ? formatDraftAge(started, now) : null }]
+    }
+    const started = draftStartedAt(raw)
+    return [{ type, href: '/log?type=cardio', detail: null, age: started ? formatDraftAge(started, now) : null }]
   })
 
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
@@ -252,10 +283,10 @@ export default function TodayPage() {
           <ProfileButton onClick={() => setMenuOpen(true)} expanded={menuOpen} className="md:hidden -mr-2" />
         </div>
 
-        {drafts.map(({ type, age }) => (
+        {drafts.map(({ type, href, detail, age }) => (
           <Link
             key={type}
-            to={`/log?type=${type}`}
+            to={href}
             className="flex items-center justify-between gap-3 min-h-14 px-4 py-3 rounded-xl border border-primary-light bg-primary-tint"
           >
             <span>
@@ -263,7 +294,7 @@ export default function TodayPage() {
                 Resume {type} workout
               </span>
               <span className="block text-xs text-text-muted-strong">
-                {age ?? 'You have an unsaved draft'}
+                {[detail, age].filter(Boolean).join(' · ') || 'You have an unsaved draft'}
               </span>
             </span>
             <span aria-hidden className="text-primary-dark">→</span>
@@ -287,6 +318,7 @@ export default function TodayPage() {
               typeName={s.activity_type_id != null ? (typeMap.get(s.activity_type_id) ?? null) : null}
               canMoveToTomorrow={canMoveToTomorrow}
               tomorrow={tomorrow}
+              view={view}
             />
           ))
         )}
@@ -297,7 +329,12 @@ export default function TodayPage() {
           </h2>
           <div className="grid grid-cols-3 gap-3">
             <Link to="/log?type=cardio" className={tileClass}>Cardio</Link>
-            <Link to="/log?type=strength" className={tileClass}>Strength</Link>
+            <Link
+              to={view === 'workout' ? '/workout?type=strength' : '/log?type=strength'}
+              className={tileClass}
+            >
+              Strength
+            </Link>
             <Link to="/steps" className={tileClass}>Steps</Link>
           </div>
         </section>

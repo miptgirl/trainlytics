@@ -48,6 +48,15 @@ function mockPlan(sessions: unknown[]) {
   })
 }
 
+function setPhone(phone: boolean) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches: phone && query.includes('max-width: 767px'),
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  })) as unknown as typeof window.matchMedia
+}
+
 function renderToday() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -67,6 +76,7 @@ describe('TodayPage', () => {
     vi.setSystemTime(new Date(2026, 9, 7, 9, 0))
     localStorage.clear()
     mockGet.mockReset()
+    setPhone(false)
   })
   afterEach(() => vi.useRealTimers())
 
@@ -98,12 +108,57 @@ describe('TodayPage', () => {
     ).toHaveAttribute('href', '/log?type=strength')
   })
 
-  it('shows a Resume card when a strength draft exists', async () => {
-    localStorage.setItem('trainlytics_draft_strength', JSON.stringify({ exercises: [] }))
+  it('resumes a strength draft in workout mode on phones', async () => {
+    setPhone(true)
+    localStorage.setItem(
+      'trainlytics_draft_strength',
+      JSON.stringify({
+        version: 2,
+        title: 'Upper body A',
+        date: '2026-10-07T08:00',
+        templateId: 4,
+        exercises: [{ exercise_id: '1', sets: [{ reps: '5', weight: '50', notes: '', done: true }, { reps: '5', weight: '50', notes: '', done: false }] }],
+        workout: { startedAt: new Date(2026, 9, 7, 8, 30).getTime() },
+      }),
+    )
     mockPlan([])
     renderToday()
     const link = await screen.findByRole('link', { name: /resume strength workout/i })
-    expect(link).toHaveAttribute('href', '/log?type=strength')
+    expect(link).toHaveAttribute('href', '/workout?type=strength&templateId=4&resume=1')
+    expect(link).toHaveTextContent('Upper body A')
+    expect(link).toHaveTextContent('1 of 2 sets done')
+    expect(link).toHaveTextContent('Started 30 min ago')
+  })
+
+  it('resumes a strength draft in the full form from 768px', async () => {
+    localStorage.setItem('trainlytics_draft_strength', JSON.stringify({ version: 2, templateId: 4, exercises: [] }))
+    mockPlan([])
+    renderToday()
+    expect(await screen.findByRole('link', { name: /resume strength workout/i })).toHaveAttribute(
+      'href',
+      '/log?type=strength&templateId=4&resume=1',
+    )
+  })
+
+  it('opens workout mode from Start and Quick log on phones, the form on desktop', async () => {
+    setPhone(true)
+    mockPlan([session({})])
+    const { unmount } = renderToday()
+    await screen.findByText('Upper body')
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute(
+      'href',
+      '/workout?type=strength&templateId=4',
+    )
+    expect(screen.getByRole('link', { name: 'Strength' })).toHaveAttribute('href', '/workout?type=strength')
+    unmount()
+    setPhone(false)
+    renderToday()
+    await screen.findByText('Upper body')
+    expect(screen.getByRole('link', { name: 'Start' })).toHaveAttribute(
+      'href',
+      '/log?type=strength&templateId=4',
+    )
+    expect(screen.getByRole('link', { name: 'Strength' })).toHaveAttribute('href', '/log?type=strength')
   })
 
   it('shows no Resume card without a draft', async () => {
