@@ -21,13 +21,13 @@ A group is complete when its checklist passes on a 390px viewport (and 1280px wh
 
 ## Group 2 — Workout mode
 
-- [ ] Hook test: the same input gives an identical `POST` body from the full form and from workout mode
-- [ ] Hook test: the draft round-trips (done flags, notes, current exercise, timer end time) and is cleared only after a 2xx save
-- [ ] Logic tests cover: complete set → rest timer starts; finishing an exercise moves to the next unfinished one; delete + undo restores the set at the same position; editing a done set then Cancel restores its values; Add set copies the last set; adding an exercise appends 3 sets and selects it
-- [ ] Plan card Start on a strength session opens `/workout` at 390px and `/log` at 1280px
-- [ ] Switching Full form ↔ Workout mode mid-session keeps every set, note and done flag
-- [ ] Reloading `/workout` mid-session restores the same exercise, sets and remaining rest time
-- [ ] A failed save (backend stopped) keeps the draft and shows an error with retry
+- [x] Hook test: the same input gives an identical `POST` body from the full form and from workout mode
+- [x] Hook test: the draft round-trips (done flags, notes, current exercise, timer end time) and is cleared only after a 2xx save
+- [x] Logic tests cover: complete set → rest timer starts; finishing an exercise moves to the next unfinished one; delete + undo restores the set at the same position; editing a done set then Cancel restores its values; Add set copies the last set; adding an exercise appends 3 sets and selects it
+- [x] Plan card Start on a strength session opens `/workout` at 390px and `/log` at 1280px
+- [x] Switching Full form ↔ Workout mode mid-session keeps every set, note and done flag
+- [x] Reloading `/workout` mid-session restores the same exercise, sets and remaining rest time
+- [x] A failed save (backend stopped) keeps the draft and shows an error with retry
 - [ ] The saved session matches what was entered (verify on the session detail page)
 - [ ] Every control in workout mode is ≥ 44px; the numbers accept typed input
 - [ ] Manual: a full workout on an iPhone, with the phone locked mid-workout

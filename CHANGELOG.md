@@ -4,6 +4,28 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Workout mode (Phase 17, part 2)
+
+### Added
+
+- **Workout mode** (`/workout`) — a full-screen strength logger, one set at a time: header with close (keeps the draft), progress ("N of M sets · K of L exercises") and Finish; the current exercise with "Last time: 4 × 8 @ 57.5 kg" from last-session defaults; done sets as compact rows (tap to edit, Cancel restores), the current set as a large editor with −/+ steppers (reps 1, kg 2.5) whose numbers are also typed inputs, an optional note and "Complete set"; delete on every set except the last with a 5-second Undo; "+ Add set" copies the last set
+- **Rest timer** — starts when a set is completed; Reset, +30s and Skip; stores its end time in the draft so it survives reloads and backgrounding; length 60/90/120/180 s (default 90) in the options sheet, remembered on the device; vibrates at zero where supported
+- **Choose exercise sheet** — To do (current highlighted, progress ring, "d of t sets · last …") and Done; "+ Add exercise" searches the exercise library and appends it with 3 sets (reps from last session when known); completing an exercise's last set moves to the next unfinished one, and "All exercises done" offers Finish
+- **Finish sheet** — duration prefilled from the time since workout mode opened, how you feel / how hard, note, calories; saves through the same path as the full form, including the "Update template?" prompt; a failed save keeps the sheet and draft with a Retry button; Finish is blocked while an entry has no exercise
+- **Entry points** — a strength plan card's Start opens workout mode below 768px and the full form from 768px (checked at tap time); the strength form has a "Workout mode" button and workout mode's options have "Full form"; switching writes the draft and resumes it on the other side without the Restore prompt
+- **Screen Wake Lock** while workout mode is open, where supported
+
+### Changed
+
+- **`useStrengthSessionForm` hook** now drives the strength form: state, URL params, template prefill, draft autosave/restore, payload, save and template diff live in one place shared with workout mode, so both send the same `POST` body
+- **Strength draft** autosaves within 300 ms of every change (flushed when the page is hidden or closed) and is cleared only after a successful save; it now records the current exercise, rest timer end and start time (older drafts still restore); `resume=1` in the URL restores it without asking
+- **`DiffModal`** moved to its own component for both views
+
+### Tests
+
+- Characterization of the full form's `POST` body before the refactor; hook payload parity, draft round-trip (v1 and v2), draft cleared only on 2xx, set/exercise actions
+- Workout mode: same `POST` body as the full form, complete set → rest timer and auto-advance, delete + undo position, edit done set + Cancel, Add set copy, Add exercise, reload restores exercise/sets/rest, Restore/Discard prompt, failed save + retry, Full form ↔ workout mode switch, sheet Escape/focus, Finish guard; rest timer countdown and vibration (fake timers), Wake Lock; plan card Start routing by viewport
+
 ## 2026-10-05 — Mobile fundamentals (Phase 17, part 1)
 
 ### Fixed
