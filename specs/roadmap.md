@@ -401,6 +401,19 @@ A user can tap "Review week" after a hard week, see AI-proposed adjustments to n
 
 ---
 
+## Phase 17 — Mobile Redesign *(in progress)*
+
+**Goal:** Make Trainlytics phone-first for logging a strength workout at the gym ("Today-first" concept in the sage Minimal & Clean palette). Frontend only; four stacked PRs. See `specs/2026-10-05-phase-17-mobile-redesign/`.
+
+### Deliverables
+
+- [x] **Group 1 — Mobile fundamentals and semantic colour tokens** — no zoom on focus, scroll reset on navigation, 44px tap targets, two-line strength set rows, pinned Save, compact cardio segments and History cards, chart label/tick fixes, semantic tokens with interim blue values
+- [ ] **Group 2 — Workout mode (strength)** — shared form hook, full-screen set-by-set logger with rest timer and choose-exercise sheet
+- [ ] **Group 3 — Today screen and mobile navigation** — `/today`, bottom tab bar, mobile header and menu sheet, safe areas
+- [ ] **Group 4 — Sage palette and Stats glance** — switch tokens to the design system, remove hard-coded colours, mobile stats summary
+
+---
+
 ## Developer Tooling
 
 Cross-cutting work that supports development rather than end users.

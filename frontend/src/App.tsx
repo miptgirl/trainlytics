@@ -1,5 +1,14 @@
-import { useCallback } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef } from 'react'
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  useParams,
+} from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { AuthProvider } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -31,12 +40,26 @@ function Dashboard() {
   return <Navigate to="/stats" replace />
 }
 
+/** Scroll to the top on forward navigation; Back/Forward (POP) keep the browser's own restore. */
+export function ScrollToTop() {
+  const { pathname } = useLocation()
+  const navigationType = useNavigationType()
+  // Read through a ref so a same-path navigation-type change doesn't re-trigger the scroll
+  const navigationTypeRef = useRef(navigationType)
+  navigationTypeRef.current = navigationType
+  useEffect(() => {
+    if (navigationTypeRef.current !== 'POP') window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 function AppRoutes() {
   const navigate = useNavigate()
   const handleAuthRequired = useCallback(() => navigate('/login', { replace: true }), [navigate])
 
   return (
     <AuthProvider onAuthRequired={handleAuthRequired}>
+      <ScrollToTop />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route

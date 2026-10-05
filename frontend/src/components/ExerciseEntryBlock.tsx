@@ -375,6 +375,7 @@ export function ExerciseEntryBlock({
   onAutoExpand,
 }: {
   exIndex: number
+  /* eslint-disable @typescript-eslint/no-explicit-any -- shared by forms with different value types */
   register: any
   control: any
   setValue?: (name: string, value: any) => void
@@ -382,6 +383,7 @@ export function ExerciseEntryBlock({
   canRemove: boolean
   onRemove: () => void
   errors: any
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   showDone?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
@@ -501,20 +503,25 @@ export function ExerciseEntryBlock({
     prevAllDoneRef.current = allDone
   }, [allDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Below sm each set takes two lines: `# Reps Weight Done` then `Note … Delete`
+  // (Done/Delete sit in the 44px last column; without Done, Weight spans it).
+  // DOM order is the mobile reading/tab order (reps, weight, done, note, delete);
+  // from sm up `order-*` puts Note back before Done for the single-row layout.
+  // The action columns are 44px until md so they stay tappable.
   const gridCols = showDone
-    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
-    : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
+    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+    : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
     <div className="bg-white rounded-xl border border-gray-200">
       {/* Header — always visible */}
-      <div className={`flex items-center justify-between px-4 py-3 rounded-t-xl ${allDone ? 'bg-green-50' : ''}`}>
+      <div className={`flex items-center justify-between px-4 py-3 max-md:py-1 rounded-t-xl ${allDone ? 'bg-green-50' : ''}`}>
         <div className="flex items-center gap-2 min-w-0">
           {onToggleCollapse && (
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="text-gray-400 hover:text-gray-600 shrink-0"
+              className="flex items-center justify-center max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-gray-600 shrink-0"
               aria-label={isCollapsed ? 'Expand exercise' : 'Collapse exercise'}
             >
               <span
@@ -538,7 +545,7 @@ export function ExerciseEntryBlock({
             <button
               type="button"
               onClick={() => setSwapOpen(true)}
-              className="p-1 text-gray-400 hover:text-blue-500 rounded"
+              className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-blue-500 rounded"
               aria-label="Swap exercise"
               title="Swap exercise"
             >
@@ -546,7 +553,7 @@ export function ExerciseEntryBlock({
             </button>
           )}
           {canRemove && (
-            <button type="button" onClick={onRemove} aria-label="Remove exercise" className="p-1 text-gray-400 hover:text-red-500 rounded">
+            <button type="button" onClick={onRemove} aria-label="Remove exercise" className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-red-500 rounded">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
@@ -594,7 +601,7 @@ export function ExerciseEntryBlock({
               <button
                 type="button"
                 onClick={() => appendSet(emptySet())}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="max-sm:hidden text-xs text-blue-600 hover:text-blue-800 font-medium"
               >
                 + Add Set
               </button>
@@ -603,10 +610,10 @@ export function ExerciseEntryBlock({
             <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
               <span className="text-xs text-gray-400">#</span>
               <span className="text-xs text-gray-500">Reps</span>
-              <span className="text-xs text-gray-500">Weight (kg)</span>
-              <span className="text-xs text-gray-500">Notes</span>
+              <span className={`text-xs text-gray-500 ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
+              <span className="max-sm:hidden text-xs text-gray-500">Notes</span>
               {showDone && <span className="text-xs text-gray-500 text-center">Done</span>}
-              <span />
+              <span className="max-sm:hidden" />
             </div>
 
             <div className="space-y-2">
@@ -615,24 +622,43 @@ export function ExerciseEntryBlock({
                 return (
                   <div
                     key={setField.id}
-                    className={`grid ${gridCols} gap-1.5 items-center ${isDone ? 'bg-green-50 rounded-lg px-1' : ''}`}
+                    className={`grid ${gridCols} gap-1.5 items-center max-sm:gap-y-2 max-sm:py-1.5 ${isDone ? 'bg-green-50 rounded-lg px-1' : ''}`}
                   >
                     <span className={`text-xs text-center ${isDone ? 'text-green-600' : 'text-gray-400'}`}>{setIndex + 1}</span>
                     <input
                       type="number"
                       min="0"
                       placeholder="reps"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 line-through bg-white' : 'border-gray-300'}`}
+                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
                       placeholder="kg"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 line-through bg-white' : 'border-gray-300'}`}
+                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
-                    <div className="relative">
+                    {showDone && (
+                      <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 sm:order-2">
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
+                        />
+                        <span
+                          className={`text-lg leading-none select-none transition-colors max-sm:flex max-sm:size-11 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:border max-sm:font-bold max-sm:peer-focus-visible:ring-2 max-sm:peer-focus-visible:ring-primary ${
+                            isDone
+                              ? 'text-green-500 max-sm:border-primary-dark max-sm:bg-primary-dark max-sm:text-white'
+                              : 'text-gray-300 hover:text-gray-400 max-sm:border-border max-sm:bg-surface max-sm:text-text-muted'
+                          }`}
+                          aria-label={isDone ? 'Mark undone' : 'Mark done'}
+                        >
+                          ✓
+                        </span>
+                      </label>
+                    )}
+                    <div className="relative max-sm:col-span-3 sm:order-1">
                       <input
                         type="text"
                         placeholder="note"
@@ -650,37 +676,31 @@ export function ExerciseEntryBlock({
                         </button>
                       )}
                     </div>
-                    {showDone && (
-                      <label className="flex items-center justify-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
-                        />
-                        <span
-                          className={`text-lg leading-none select-none transition-colors ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
-                          aria-label={isDone ? 'Mark undone' : 'Mark done'}
-                        >
-                          ✓
-                        </span>
-                      </label>
-                    )}
                     {setFields.length > 1 ? (
                       <button
                         type="button"
                         onClick={() => removeSet(setIndex)}
-                        className="text-gray-400 hover:text-red-500 text-sm leading-none"
+                        className="flex items-center justify-center max-md:min-h-11 text-gray-400 hover:text-red-500 text-sm leading-none sm:order-3"
                         aria-label="Remove set"
                       >
                         ✕
                       </button>
                     ) : (
-                      <span />
+                      <span className="max-sm:hidden sm:order-3" />
                     )}
                   </div>
                 )
               })}
             </div>
+
+            {/* Below sm the add button sits under the last set instead of in the heading */}
+            <button
+              type="button"
+              onClick={() => appendSet(emptySet())}
+              className="sm:hidden mt-3 w-full min-h-11 text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-lg"
+            >
+              + Add set
+            </button>
           </div>
         </div>
       )}

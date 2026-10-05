@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useOverviewTrends } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 function formatWeekLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -38,9 +39,9 @@ function MiniChart({
           <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
           <YAxis
             tick={{ fontSize: 10, fill: '#94a3b8' }}
-            width={44}
-            tickFormatter={tickFormatter}
-            unit={unit}
+            width={40}
+            tickFormatter={formatCompact}
+            allowDecimals={false}
           />
           <Tooltip formatter={(v: number) => (tickFormatter ? tickFormatter(v) : v) + (unit ?? '')} />
           <Bar dataKey={dataKey} fill={color} radius={[2, 2, 0, 0]} />
@@ -63,9 +64,13 @@ export function OverviewTrendsChart() {
     )
   }
 
-  if (!data || data.length === 0) {
+  // The API zero-fills empty weeks, so "no data" means every week is all zeros
+  const isEmpty =
+    !data ||
+    data.every((p) => p.session_count === 0 && p.total_minutes === 0 && p.total_volume === 0)
+  if (!data || isEmpty) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">No training data yet.</p>
+      <p className="text-slate-400 text-sm text-center py-8">No data yet</p>
     )
   }
 
@@ -83,13 +88,12 @@ export function OverviewTrendsChart() {
         dataKey="sessions"
         color="#3b82f6"
         label="Sessions per week"
-        tickFormatter={(v) => String(v)}
       />
       <MiniChart
         data={chartData}
         dataKey="minutes"
         color="#10b981"
-        label="Training time per week"
+        label="Training time per week (min)"
         unit=" min"
         tickFormatter={(v) => String(Math.round(v))}
       />
@@ -97,8 +101,8 @@ export function OverviewTrendsChart() {
         data={chartData}
         dataKey="volume"
         color="#8b5cf6"
-        label="Volume per week"
-        tickFormatter={(v) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
+        label="Volume per week (kg)"
+        tickFormatter={formatCompact}
         unit=" kg"
       />
     </div>

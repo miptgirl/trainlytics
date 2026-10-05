@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useAnalyticsHeatmap } from '../../lib/analyticsApi'
 import type { HeatmapDay } from '../../lib/analyticsApi'
 
@@ -97,12 +97,42 @@ export function ConsistencyHeatmap() {
   const { data, isLoading } = useAnalyticsHeatmap()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  // When the tooltip was last opened by hover/focus, so the click that follows it
+  // (touch emulation, or a mouse click on a hovered cell) doesn't immediately close it
+  const lastOpenRef = useRef({ date: '', at: 0 })
+
+  // Keep the tooltip inside the viewport (cells near the right edge would clip it)
+  useLayoutEffect(() => {
+    const el = tooltipRef.current
+    if (!tooltip || !el) return
+    const half = el.offsetWidth / 2
+    const min = half + 8
+    const max = window.innerWidth - half - 8
+    el.style.left = `${Math.min(Math.max(tooltip.left, min), Math.max(min, max))}px`
+  }, [tooltip])
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth
     }
   }, [data])
+
+  // Touch: a tap shows the tooltip (iOS only emulates hover on elements with a click
+  // handler); a tap anywhere else, or scrolling, dismisses it.
+  useEffect(() => {
+    if (!tooltip) return
+    const dismiss = (e: Event) => {
+      if (e.type === 'pointerdown' && (e.target as HTMLElement).closest?.('[data-heatmap-cell]')) return
+      setTooltip(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    window.addEventListener('scroll', dismiss, true)
+    return () => {
+      document.removeEventListener('pointerdown', dismiss)
+      window.removeEventListener('scroll', dismiss, true)
+    }
+  }, [tooltip])
 
   if (isLoading) return <div className="h-40 bg-slate-50 rounded-lg animate-pulse" />
   if (!data) return null
@@ -122,14 +152,25 @@ export function ConsistencyHeatmap() {
     }
   })
 
-  function handleMouseEnter(e: React.MouseEvent, day: WeekDay) {
-    const rect = (e.target as HTMLElement).getBoundingClientRect()
+  function showTooltip(e: React.SyntheticEvent, day: WeekDay) {
+    lastOpenRef.current = { date: day.date, at: Date.now() }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     setTooltip({
       date: day.date,
       types: day.types,
       left: rect.left + rect.width / 2,
       top: rect.top,
     })
+  }
+
+  function handleCellClick(e: React.MouseEvent, day: WeekDay) {
+    const { date, at } = lastOpenRef.current
+    // A second tap on the open cell closes it
+    if (tooltip?.date === day.date && !(date === day.date && Date.now() - at < 250)) {
+      setTooltip(null)
+      return
+    }
+    showTooltip(e, day)
   }
 
   return (
@@ -174,8 +215,15 @@ export function ConsistencyHeatmap() {
                     return <div key={di} style={{ width: CELL, height: CELL }} />
                   }
                   return (
-                    <div
+                    <button
                       key={di}
+                      type="button"
+                      data-heatmap-cell
+                      aria-label={`${new Date(day.date + 'T00:00:00').toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}: ${day.types.length === 0 ? 'rest day' : day.types.join(' and ')}`}
                       style={{
                         width: CELL,
                         height: CELL,
@@ -183,9 +231,14 @@ export function ConsistencyHeatmap() {
                         background: cellBg(day.types),
                         cursor: 'default',
                         flexShrink: 0,
+                        padding: 0,
+                        border: 0,
                       }}
-                      onMouseEnter={(e) => handleMouseEnter(e, day)}
+                      onMouseEnter={(e) => showTooltip(e, day)}
                       onMouseLeave={() => setTooltip(null)}
+                      onFocus={(e) => showTooltip(e, day)}
+                      onBlur={() => setTooltip(null)}
+                      onClick={(e) => handleCellClick(e, day)}
                     />
                   )
                 })}
@@ -198,7 +251,8 @@ export function ConsistencyHeatmap() {
       {/* Tooltip (fixed to viewport so it works inside overflow-x: auto) */}
       {tooltip && (
         <div
-          className="fixed z-50 bg-slate-800 text-white text-xs rounded px-2 py-1 pointer-events-none"
+          ref={tooltipRef}
+          className="fixed z-50 bg-slate-800 text-white text-xs rounded px-2 py-1 pointer-events-none whitespace-nowrap"
           style={{
             left: tooltip.left,
             top: tooltip.top,

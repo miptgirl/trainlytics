@@ -115,7 +115,7 @@ export function PlannedSessionCard({
                   : 'Strength Session')}
             </p>
             {segmentSummary && (
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{segmentSummary}</p>
+              <p className="text-xs text-slate-500 mt-0.5 max-md:line-clamp-2 md:truncate">{segmentSummary}</p>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -142,11 +142,11 @@ export function PlannedSessionCard({
         )}
 
         {/* Actions */}
-        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+        <div className="mt-2.5 flex items-center gap-2 max-md:gap-1 flex-wrap">
           {session.status === 'done' && session.matched_session_id != null && (
             <Link
               to={`/sessions/${session.matched_session_id}`}
-              className="text-xs text-blue-600 font-medium hover:underline"
+              className="text-xs text-blue-600 font-medium hover:underline max-md:inline-flex max-md:items-center max-md:min-h-11"
             >
               View session →
             </Link>
@@ -154,7 +154,7 @@ export function PlannedSessionCard({
           {session.status === 'done' && (
             <button
               onClick={() => setComparisonOpen(v => !v)}
-              className="text-xs text-slate-500 hover:text-slate-700 font-medium"
+              className="text-xs text-slate-500 hover:text-slate-700 font-medium max-md:min-h-11"
             >
               {comparisonOpen ? '▾' : '▸'} Compare planned vs. actual
             </button>
@@ -166,7 +166,7 @@ export function PlannedSessionCard({
               {(session.status === 'planned' || session.status === 'skipped') && (
                 <button
                   onClick={handleStart}
-                  className="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="flex items-center gap-1 text-xs bg-blue-600 text-white px-3 py-1.5 max-md:min-h-11 max-md:px-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -188,7 +188,7 @@ export function PlannedSessionCard({
               {session.status === 'skipped' && (
                 <button
                   onClick={() => setShowSkipNoteModal(true)}
-                  className="text-xs text-slate-600 hover:text-slate-800 font-medium underline underline-offset-2"
+                  className="text-xs text-slate-600 hover:text-slate-800 font-medium underline underline-offset-2 max-md:min-h-11 max-md:px-2"
                 >
                   {session.skip_note ? 'Edit note' : 'Add note'}
                 </button>
@@ -197,7 +197,7 @@ export function PlannedSessionCard({
               {/* Reschedule */}
               <button
                 onClick={() => setShowRescheduleModal(true)}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-md hover:bg-slate-100 transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -217,7 +217,7 @@ export function PlannedSessionCard({
               {/* Edit / Swap */}
               <button
                 onClick={onEdit}
-                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 px-2 py-1 max-md:min-h-11 max-md:px-2 rounded-md hover:bg-slate-100 transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -238,13 +238,13 @@ export function PlannedSessionCard({
                     <button
                       onClick={handleDelete}
                       disabled={deleteMutation.isPending}
-                      className="text-red-600 font-medium hover:text-red-700 disabled:opacity-50"
+                      className="text-red-600 font-medium hover:text-red-700 disabled:opacity-50 max-md:min-h-11 max-md:min-w-11"
                     >
                       Yes
                     </button>
                     <button
                       onClick={() => setConfirmDelete(false)}
-                      className="text-slate-500 hover:text-slate-700"
+                      className="text-slate-500 hover:text-slate-700 max-md:min-h-11 max-md:min-w-11"
                     >
                       No
                     </button>
@@ -252,7 +252,7 @@ export function PlannedSessionCard({
                 ) : (
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="flex items-center text-slate-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors"
+                    className="flex items-center justify-center text-slate-400 hover:text-red-500 p-1 max-md:min-h-11 max-md:min-w-11 rounded-md hover:bg-red-50 transition-colors"
                     aria-label="Delete session"
                   >
                     <svg

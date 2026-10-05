@@ -209,7 +209,7 @@ export function HealthMetricsSection() {
                   <button
                     key={opt.days}
                     onClick={() => setDays(opt.days)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                    className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 rounded text-xs font-medium transition-colors ${
                       days === opt.days
                         ? 'bg-slate-800 text-white'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'

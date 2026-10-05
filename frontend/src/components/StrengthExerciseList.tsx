@@ -17,10 +17,12 @@ export function StrengthExerciseList({
   showDone = false,
   prefillFromLastSession = true,
 }: {
+  /* eslint-disable @typescript-eslint/no-explicit-any -- shared by forms with different value types */
   control: any
   register: any
   setValue?: (name: any, value: any) => void
   errors: any
+  /* eslint-enable @typescript-eslint/no-explicit-any */
   exercises: ExerciseOption[]
   showDone?: boolean
   prefillFromLastSession?: boolean

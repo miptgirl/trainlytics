@@ -67,9 +67,9 @@ describe('StepsPage', () => {
 
   it('renders the list of step entries with date and formatted step count', () => {
     renderPage()
-    expect(screen.getByText('2026-05-10')).toBeInTheDocument()
+    expect(screen.getByText('Sun, 10 May')).toBeInTheDocument()
     expect(screen.getByText('9,500 steps')).toBeInTheDocument()
-    expect(screen.getByText('2026-05-09')).toBeInTheDocument()
+    expect(screen.getByText('Sat, 9 May')).toBeInTheDocument()
     expect(screen.getByText('8,000 steps')).toBeInTheDocument()
   })
 

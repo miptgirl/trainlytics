@@ -13,6 +13,7 @@ import {
   Legend,
 } from 'recharts'
 import { useCardioTimeSplit } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 const COLORS = [
   '#3b82f6',
@@ -57,7 +58,7 @@ export function ActivityTimeSplitChart() {
             <button
               key={p.value}
               onClick={() => setPeriod(p.value)}
-              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+              className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
                 period === p.value
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -70,7 +71,7 @@ export function ActivityTimeSplitChart() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => setChartType('bar')}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+            className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
               chartType === 'bar'
                 ? 'bg-slate-700 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -80,7 +81,7 @@ export function ActivityTimeSplitChart() {
           </button>
           <button
             onClick={() => setChartType('pie')}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+            className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
               chartType === 'pie'
                 ? 'bg-slate-700 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -97,8 +98,9 @@ export function ActivityTimeSplitChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="activity_type" tick={{ fontSize: 12, fill: '#94a3b8' }} />
             <YAxis
-              tickFormatter={(v) => `${v}m`}
+              tickFormatter={formatCompact}
               tick={{ fontSize: 12, fill: '#94a3b8' }}
+              width={40}
             />
             <Tooltip formatter={(v: number) => [`${v} min`, 'Total minutes']} />
             <Bar dataKey="total_minutes" radius={[4, 4, 0, 0]}>

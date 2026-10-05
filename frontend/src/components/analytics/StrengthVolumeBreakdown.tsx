@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useStrengthVolumeByTag } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 const TAG_COLORS = [
   '#3b82f6',
@@ -75,9 +76,8 @@ export function StrengthVolumeBreakdown() {
         <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
         <YAxis
           tick={{ fontSize: 11, fill: '#94a3b8' }}
-          tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-          unit=" kg"
-          width={55}
+          tickFormatter={formatCompact}
+          width={40}
         />
         <Tooltip formatter={(value: number) => `${Math.round(value)} kg`} />
         <Legend />
