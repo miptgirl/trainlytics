@@ -240,8 +240,9 @@ export default function WorkoutModePage() {
     const { startedAt, autoDurationSeconds } = s.workout
     const duration = s.values.duration_seconds
     if (startedAt !== null && (duration == null || duration === autoDurationSeconds)) {
-      const elapsed = Math.floor((Date.now() - startedAt) / 60_000) * 60
-      if (elapsed > 0 && elapsed !== duration) {
+      // Nearest whole minute, at least one, so a short workout never leaves the field empty
+      const elapsed = Math.max(60, Math.round((Date.now() - startedAt) / 60_000) * 60)
+      if (elapsed !== duration) {
         s.setField('duration_seconds', elapsed)
         s.updateWorkout({ autoDurationSeconds: elapsed })
       }

@@ -1,7 +1,7 @@
 /**
  * Regression tests for the workout-mode review (blockers B1–B3 and should-fixes).
  */
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -597,5 +597,60 @@ describe('Second review', () => {
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(finish().className).toMatch(/bg-primary-dark/)
+  })
+})
+
+describe('Duration prefill on a fresh workout', () => {
+  function clock() {
+    const t0 = Date.now()
+    let now = t0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    return { t0, at: (ms: number) => (now = t0 + ms) }
+  }
+
+  it('fresh start → two sets → 3 minutes → Finish shows 3:00', async () => {
+    const user = userEvent.setup()
+    const c = clock()
+    renderAt(['/plan', '/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(location()).toMatch(/resume=1/)
+    c.at(60_000)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    c.at(120_000)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    c.at(180_000)
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.getByLabelText('Duration')).toHaveValue('3:00')
+  })
+
+  it('a workout shorter than a minute still gets a duration (1:00), not an empty field', async () => {
+    const user = userEvent.setup()
+    const c = clock()
+    renderAt(['/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    c.at(20_000)
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.getByLabelText('Duration')).toHaveValue('1:00')
+  })
+
+  it('reload after a fresh start keeps the start time once a set is completed', async () => {
+    const user = userEvent.setup()
+    const c = clock()
+    renderAt(['/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    c.at(60_000)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(c.t0))
+    cleanup()
+
+    c.at(4 * 60_000)
+    renderAt(['/workout?type=strength&templateId=3&resume=1'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[1].done).toBe(true))
+    expect(storedDraft()?.workout?.startedAt).toBe(c.t0)
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.getByLabelText('Duration')).toHaveValue('4:00')
   })
 })

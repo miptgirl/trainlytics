@@ -114,7 +114,11 @@ describe('Workout mode: payload parity with the full form', () => {
 
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     const sheet = screen.getByRole('dialog', { name: 'Finish workout' })
-    await user.type(within(sheet).getByLabelText('Duration'), '45:00')
+    // Prefilled from the elapsed time (at least 1:00); type over it
+    const duration = within(sheet).getByLabelText('Duration')
+    expect(duration).toHaveValue('1:00')
+    await user.clear(duration)
+    await user.type(duration, '45:00')
     await user.click(within(sheet).getByRole('button', { name: /Good/ }))
     await user.click(within(sheet).getByRole('button', { name: /Moderate/ }))
     await user.type(within(sheet).getByLabelText('Calories (kcal, optional)'), '320')
