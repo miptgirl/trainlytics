@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useReadinessTrends } from '../../lib/analyticsApi'
+import { axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 function formatWeekLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -19,12 +20,12 @@ export function ReadinessTrendsChart() {
   const { data, isLoading } = useReadinessTrends()
 
   if (isLoading) {
-    return <div className="h-52 bg-slate-50 rounded-lg animate-pulse" />
+    return <div className="h-52 bg-bg rounded-lg animate-pulse" />
   }
 
   if (!data || data.length === 0) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">
+      <p className="text-text-muted-strong text-sm text-center py-8">
         No readiness data recorded yet.
       </p>
     )
@@ -39,16 +40,16 @@ export function ReadinessTrendsChart() {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
         <XAxis
           dataKey="week"
-          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          tick={{ fontSize: 11, fill: axisColor() }}
           interval="preserveStartEnd"
         />
         <YAxis
           domain={[1, 5]}
           ticks={[1, 2, 3, 4, 5]}
-          tick={{ fontSize: 12, fill: '#94a3b8' }}
+          tick={{ fontSize: 12, fill: axisColor() }}
         />
         <Tooltip formatter={(v: number) => v.toFixed(1)} />
         <Legend />
@@ -56,7 +57,7 @@ export function ReadinessTrendsChart() {
           type="monotone"
           dataKey="wellbeing"
           name="Avg Wellbeing"
-          stroke="#10b981"
+          stroke={chartColor('success')}
           strokeWidth={2}
           dot={false}
           connectNulls={false}
@@ -65,7 +66,7 @@ export function ReadinessTrendsChart() {
           type="monotone"
           dataKey="rpe"
           name="Avg RPE"
-          stroke="#f97316"
+          stroke={chartColor('warning')}
           strokeWidth={2}
           dot={false}
           strokeDasharray="5 3"

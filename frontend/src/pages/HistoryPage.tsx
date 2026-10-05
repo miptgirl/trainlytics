@@ -27,6 +27,7 @@ import {
   type StrengthSession,
   type CardioSession,
 } from '../lib/exportUtils'
+import { axisColor, categoricalColor, chartColor, gridColor } from '../lib/chartPalette'
 
 interface SessionSummary {
   id: number
@@ -72,11 +73,6 @@ interface TrainingTrendPoint {
   strength_calories: number
 }
 
-const PACE_COLORS = [
-  '#10b981', '#3b82f6', '#f59e0b', '#ef4444',
-  '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16',
-]
-
 function getMonday(d: Date): string {
   const date = new Date(d)
   const day = date.getDay()
@@ -120,23 +116,23 @@ function WeeklySummaryCard() {
   })
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-5">
-      <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
+    <div className="bg-surface border border-border rounded-xl shadow-sm p-5 mb-5">
+      <h2 className="text-sm font-semibold text-text-muted-strong uppercase tracking-wide mb-4">
         This Week
       </h2>
       {isLoading ? (
-        <p className="text-slate-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       ) : data ? (
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-emerald-50 rounded-xl p-4">
-            <p className="text-xs font-medium text-emerald-600 mb-2">🏃 Cardio</p>
-            <p className="text-2xl font-bold text-emerald-700">{data.cardio.minutes}<span className="text-sm font-normal ml-1">min</span></p>
-            <p className="text-sm text-emerald-600 mt-1">{data.cardio.calories} kcal</p>
+          <div className="bg-success/10 rounded-xl p-4">
+            <p className="text-xs font-medium text-success-text mb-2">🏃 Cardio</p>
+            <p className="text-2xl font-bold text-success-text">{data.cardio.minutes}<span className="text-sm font-normal ml-1">min</span></p>
+            <p className="text-sm text-success-text mt-1">{data.cardio.calories} kcal</p>
           </div>
-          <div className="bg-blue-50 rounded-xl p-4">
-            <p className="text-xs font-medium text-blue-600 mb-2">🏋️ Strength</p>
-            <p className="text-2xl font-bold text-blue-700">{data.strength.minutes}<span className="text-sm font-normal ml-1">min</span></p>
-            <p className="text-sm text-blue-600 mt-1">{data.strength.calories} kcal</p>
+          <div className="bg-primary-tint rounded-xl p-4">
+            <p className="text-xs font-medium text-primary-dark mb-2">🏋️ Strength</p>
+            <p className="text-2xl font-bold text-primary-dark">{data.strength.minutes}<span className="text-sm font-normal ml-1">min</span></p>
+            <p className="text-sm text-primary-dark mt-1">{data.strength.calories} kcal</p>
           </div>
         </div>
       ) : null}
@@ -198,28 +194,28 @@ function TrainingTrendsChart() {
   }))
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+    <div className="bg-surface border border-border rounded-xl shadow-sm p-5 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+        <h2 className="text-sm font-semibold text-text-muted-strong uppercase tracking-wide">
           12-Week Trends (incl. this week)
         </h2>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+        <div className="flex gap-1 bg-bg rounded-lg p-1">
           <button
             onClick={() => setView('minutes')}
-            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
               view === 'minutes'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-surface text-primary-dark shadow-sm'
+                : 'text-text-muted-strong'
             }`}
           >
             Minutes
           </button>
           <button
             onClick={() => setView('calories')}
-            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
               view === 'calories'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-surface text-primary-dark shadow-sm'
+                : 'text-text-muted-strong'
             }`}
           >
             Calories
@@ -227,38 +223,38 @@ function TrainingTrendsChart() {
         </div>
       </div>
       {isLoading ? (
-        <p className="text-slate-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       ) : chartData && chartData.length === 0 ? (
-        <p className="text-slate-400 text-sm text-center py-8">No data yet</p>
+        <p className="text-text-muted-strong text-sm text-center py-8">No data yet</p>
       ) : chartData ? (
         <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={chartData} margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="colorCardio" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                <stop offset="5%" stopColor={chartColor('chart-running')} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={chartColor('chart-running')} stopOpacity={0.05} />
               </linearGradient>
               <linearGradient id="colorStrength" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.05} />
+                <stop offset="5%" stopColor={chartColor('chart-strength')} stopOpacity={0.4} />
+                <stop offset="95%" stopColor={chartColor('chart-strength')} stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={formatCompact} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: axisColor() }} />
+            <YAxis tick={{ fontSize: 11, fill: axisColor() }} tickFormatter={formatCompact} allowDecimals={false} />
             {/* Right-side axis for steps (only shown if any weekly step data exists) */}
             {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={formatCompact} allowDecimals={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: axisColor() }} tickFormatter={formatCompact} allowDecimals={false} />
             )}
             <Tooltip
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${gridColor()}` }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Area type="monotone" dataKey="Cardio" stackId="1" stroke="#10b981" strokeWidth={2} fill="url(#colorCardio)" />
-            <Area type="monotone" dataKey="Strength" stackId="1" stroke="#3b82f6" strokeWidth={2} fill="url(#colorStrength)" />
+            <Area type="monotone" dataKey="Cardio" stackId="1" stroke={chartColor('chart-running')} strokeWidth={2} fill="url(#colorCardio)" />
+            <Area type="monotone" dataKey="Strength" stackId="1" stroke={chartColor('chart-strength')} strokeWidth={2} fill="url(#colorStrength)" />
             {/* Steps line on the secondary axis — dashed and neutral colour; gaps are preserved via nulls */}
             {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
-              <Line type="monotone" dataKey="Steps" yAxisId="right" stroke="#94a3b8" strokeWidth={2} dot={false} strokeDasharray="4 4" connectNulls={false} />
+              <Line type="monotone" dataKey="Steps" yAxisId="right" stroke={axisColor()} strokeWidth={2} dot={false} strokeDasharray="4 4" connectNulls={false} />
             )}
           </ComposedChart>
         </ResponsiveContainer>
@@ -321,10 +317,10 @@ function PaceTrendsChart() {
   }
 
   const cardBody = () => {
-    if (isLoading) return <p className="text-slate-400 text-sm">Loading…</p>
+    if (isLoading) return <p className="text-text-muted-strong text-sm">Loading…</p>
     if (!data || data.length === 0)
       return (
-        <p className="text-slate-400 text-sm">
+        <p className="text-text-muted-strong text-sm">
           No cardio sessions with distance and duration logged yet.
         </p>
       )
@@ -336,10 +332,10 @@ function PaceTrendsChart() {
               <button
                 key={type}
                 onClick={() => toggleType(type)}
-                className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-full font-medium border transition-colors ${
+                className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-sm font-medium border transition-colors ${
                   !hiddenTypes.has(type)
-                    ? 'bg-slate-800 text-white border-slate-800'
-                    : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
+                    ? 'bg-primary-tint text-primary-dark border-primary-dark'
+                    : 'bg-surface text-text-muted-strong border-border hover:border-text-muted'
                 }`}
               >
                 {type}
@@ -349,10 +345,10 @@ function PaceTrendsChart() {
         )}
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: axisColor() }} />
             <YAxis
-              tick={{ fontSize: 11, fill: '#94a3b8' }}
+              tick={{ fontSize: 11, fill: axisColor() }}
               tickFormatter={(v: number) => {
                 const m = Math.floor(v / 60)
                 const s = Math.round(v % 60)
@@ -365,7 +361,7 @@ function PaceTrendsChart() {
                 if (typeof value !== 'number') return [String(value ?? '-'), label] as [string, string]
                 return [secPerKmToMinPerKm(value), label] as [string, string]
               }}
-              contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${gridColor()}` }}
             />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             {lineKeys.map(({ key }, i) => (
@@ -373,7 +369,7 @@ function PaceTrendsChart() {
                 key={key}
                 type="monotone"
                 dataKey={key}
-                stroke={PACE_COLORS[i % PACE_COLORS.length]}
+                stroke={categoricalColor(i)}
                 strokeWidth={2}
                 dot={false}
                 connectNulls={false}
@@ -386,7 +382,7 @@ function PaceTrendsChart() {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 mb-6">
+    <div className="bg-surface border border-border rounded-xl shadow-sm p-5 mb-6">
       {cardBody()}
     </div>
   )
@@ -410,11 +406,11 @@ function CardioStats({ s }: { s: SessionSummary }) {
     <span className="flex items-center gap-2 flex-wrap">
       {parts.length > 0 && <span>{parts.join(' · ')}</span>}
       {s.avg_hr_bpm != null && (
-        <span className="flex items-center gap-1 text-rose-500">
+        <span className="flex items-center gap-1 text-accent">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
             <path d="M9.653 16.915l-.005-.003-.019-.01a20.759 20.759 0 01-1.162-.682 22.045 22.045 0 01-2.582-2.09C4.03 12.348 2.5 10.005 2.5 7.5a4.5 4.5 0 018.25-2.519A4.5 4.5 0 0119.5 7.5c0 2.505-1.531 4.848-3.385 6.63a22.049 22.049 0 01-2.582 2.09 20.537 20.537 0 01-1.162.682l-.019.01-.005.003h-.002a.75.75 0 01-.69 0h-.002z" />
           </svg>
-          <span className="text-slate-600">{s.avg_hr_bpm} bpm</span>
+          <span className="text-text-muted-strong">{s.avg_hr_bpm} bpm</span>
         </span>
       )}
     </span>
@@ -458,7 +454,7 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
     <button
       onClick={handleClick}
       disabled={status === 'loading'}
-      className="shrink-0 px-2.5 py-1.5 max-md:min-h-11 max-md:min-w-11 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 text-slate-500 transition-colors"
+      className="shrink-0 px-2.5 py-1.5 max-md:min-h-11 max-md:min-w-11 text-xs font-medium border border-border rounded-lg hover:bg-bg disabled:opacity-50 text-text-muted-strong transition-colors"
       aria-label="Copy session summary"
     >
       {status === 'loading' ? '…' : status === 'copied' ? 'Copied!' : status === 'error' ? 'Failed' : 'Copy'}
@@ -471,26 +467,26 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
 function HistoryCard({ s }: { s: SessionSummary }) {
   const [notesOpen, setNotesOpen] = useState(false)
   return (
-    <li className="bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all overflow-hidden">
+    <li className="bg-surface border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all overflow-hidden">
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 sm:gap-3">
           <span
             className={`shrink-0 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
               s.type === 'cardio'
-                ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-blue-100 text-blue-700'
+                ? 'bg-success/10 text-success-text'
+                : 'bg-primary-tint text-primary-dark'
             }`}
           >
             {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
           </span>
-          <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0 text-sm text-slate-500 truncate">
+          <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0 text-sm text-text-muted-strong truncate">
             {formatSessionDateTime(s.date)}
           </Link>
           <div className="shrink-0 flex items-center gap-0 sm:gap-1">
             {s.notes && (
               <button
                 onClick={e => { e.preventDefault(); setNotesOpen(o => !o) }}
-                className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 max-md:-mr-1 text-slate-400 hover:text-slate-600 transition-colors"
+                className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 max-md:-mr-1 text-text-muted hover:text-text-muted-strong transition-colors"
                 title="Toggle notes"
                 aria-label={notesOpen ? 'Hide notes' : 'Show notes'}
                 aria-expanded={notesOpen}
@@ -506,16 +502,16 @@ function HistoryCard({ s }: { s: SessionSummary }) {
         </div>
         <Link to={`/sessions/${s.id}`} className="block mt-2">
           {s.title && (
-            <p className="font-medium text-slate-900">{s.title}</p>
+            <p className="font-medium text-text">{s.title}</p>
           )}
-          <div className="text-sm text-slate-600 mt-1">
+          <div className="text-sm text-text-muted-strong mt-1">
             {s.type === 'cardio' ? <CardioStats s={s} /> : <StrengthStats s={s} />}
           </div>
         </Link>
       </div>
       {s.notes && notesOpen && (
-        <div className="border-t border-slate-100 px-4 py-2">
-          <p className="text-sm text-slate-600">{s.notes}</p>
+        <div className="border-t border-border px-4 py-2">
+          <p className="text-sm text-text-muted-strong">{s.notes}</p>
         </div>
       )}
     </li>
@@ -558,29 +554,29 @@ export function HistoryPageContent() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-slate-900 mb-5">Workout History</h1>
+      <h1 className="text-2xl font-bold text-text mb-5">Workout History</h1>
 
       <WeeklySummaryCard />
 
       <WeeklyInsightsCard hasApiKey={hasApiKey} />
 
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-4 w-fit">
+      <div className="flex gap-1 bg-bg rounded-lg p-1 mb-4 w-fit">
         <button
           onClick={() => setChartTab('trends')}
-          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
             chartTab === 'trends'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'bg-surface text-primary-dark shadow-sm'
+              : 'text-text-muted-strong'
           }`}
         >
           Trends
         </button>
         <button
           onClick={() => setChartTab('pace')}
-          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-lg font-medium transition-colors ${
             chartTab === 'pace'
-              ? 'bg-white text-blue-600 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700'
+              ? 'bg-surface text-primary-dark shadow-sm'
+              : 'text-text-muted-strong'
           }`}
         >
           Pace
@@ -596,7 +592,7 @@ export function HistoryPageContent() {
             setType(e.target.value as 'all' | 'cardio' | 'strength')
             handleFilterChange()
           }}
-          className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-slate-800 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="border border-border rounded-sm px-3 py-1.5 text-sm text-text bg-surface shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">All types</option>
           <option value="cardio">Cardio</option>
@@ -604,7 +600,7 @@ export function HistoryPageContent() {
         </select>
 
         <div className="flex items-center gap-1.5">
-          <label className="text-sm text-slate-600">From</label>
+          <label className="text-sm text-text-muted-strong">From</label>
           <input
             type="date"
             value={dateFrom}
@@ -612,12 +608,12 @@ export function HistoryPageContent() {
               setDateFrom(e.target.value)
               handleFilterChange()
             }}
-            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-border rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
         <div className="flex items-center gap-1.5">
-          <label className="text-sm text-slate-600">To</label>
+          <label className="text-sm text-text-muted-strong">To</label>
           <input
             type="date"
             value={dateTo}
@@ -625,7 +621,7 @@ export function HistoryPageContent() {
               setDateTo(e.target.value)
               handleFilterChange()
             }}
-            className="border border-slate-300 rounded-lg px-2 py-1.5 text-sm text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-border rounded-sm px-2 py-1.5 text-sm text-text shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -637,7 +633,7 @@ export function HistoryPageContent() {
               setDateTo('')
               setPage(1)
             }}
-            className="text-sm text-slate-500 hover:text-blue-600 underline transition-colors"
+            className="text-sm text-text-muted-strong hover:text-primary-dark underline transition-colors"
           >
             Clear filters
           </button>
@@ -646,9 +642,9 @@ export function HistoryPageContent() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-slate-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       ) : !data || data.items.length === 0 ? (
-        <p className="text-slate-400 text-sm">No sessions found.</p>
+        <p className="text-text-muted-strong text-sm">No sessions found.</p>
       ) : (
         <>
           <ul className="space-y-2">
@@ -659,11 +655,11 @@ export function HistoryPageContent() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6 text-sm text-slate-600">
+            <div className="flex items-center justify-between mt-6 text-sm text-text-muted-strong">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 max-md:min-h-11 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                className="px-3 py-1.5 max-md:min-h-11 border border-border rounded-lg disabled:opacity-40 hover:bg-bg transition-colors"
               >
                 Previous
               </button>
@@ -673,7 +669,7 @@ export function HistoryPageContent() {
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 max-md:min-h-11 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                className="px-3 py-1.5 max-md:min-h-11 border border-border rounded-lg disabled:opacity-40 hover:bg-bg transition-colors"
               >
                 Next
               </button>

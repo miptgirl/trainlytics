@@ -9,6 +9,7 @@ import {
 } from 'recharts'
 import { useOverviewTrends } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
+import { axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 function formatWeekLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -32,13 +33,13 @@ function MiniChart({
 }) {
   return (
     <div>
-      <p className="text-xs font-medium text-slate-500 mb-2">{label}</p>
+      <p className="text-xs font-medium text-text-muted-strong mb-2">{label}</p>
       <ResponsiveContainer width="100%" height={160}>
         <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+          <XAxis dataKey="week" tick={{ fontSize: 10, fill: axisColor() }} />
           <YAxis
-            tick={{ fontSize: 10, fill: '#94a3b8' }}
+            tick={{ fontSize: 10, fill: axisColor() }}
             width={40}
             tickFormatter={formatCompact}
             allowDecimals={false}
@@ -58,7 +59,7 @@ export function OverviewTrendsChart() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-48 bg-slate-50 rounded-lg animate-pulse" />
+          <div key={i} className="h-48 bg-bg rounded-lg animate-pulse" />
         ))}
       </div>
     )
@@ -70,7 +71,7 @@ export function OverviewTrendsChart() {
     data.every((p) => p.session_count === 0 && p.total_minutes === 0 && p.total_volume === 0)
   if (!data || isEmpty) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">No data yet</p>
+      <p className="text-text-muted-strong text-sm text-center py-8">No data yet</p>
     )
   }
 
@@ -86,13 +87,13 @@ export function OverviewTrendsChart() {
       <MiniChart
         data={chartData}
         dataKey="sessions"
-        color="#3b82f6"
+        color={chartColor('chart-strength')}
         label="Sessions per week"
       />
       <MiniChart
         data={chartData}
         dataKey="minutes"
-        color="#10b981"
+        color={chartColor('chart-running')}
         label="Training time per week (min)"
         unit=" min"
         tickFormatter={(v) => String(Math.round(v))}
@@ -100,7 +101,7 @@ export function OverviewTrendsChart() {
       <MiniChart
         data={chartData}
         dataKey="volume"
-        color="#8b5cf6"
+        color={chartColor('chart-swimming')}
         label="Volume per week (kg)"
         tickFormatter={formatCompact}
         unit=" kg"

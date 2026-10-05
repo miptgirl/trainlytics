@@ -143,7 +143,7 @@ function LatestPrCard() {
   if (!pr) return null
 
   return (
-    <section className="bg-accent-light rounded-xl border border-border p-4" data-testid="glance-pr">
+    <section className="bg-accent-light/50 rounded-xl border border-accent-light p-4" data-testid="glance-pr">
       <h3 className="text-xs font-semibold uppercase tracking-wide text-accent-text mb-2">
         Latest personal record
       </h3>
