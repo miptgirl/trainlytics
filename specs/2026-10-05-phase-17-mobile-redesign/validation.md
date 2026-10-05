@@ -46,7 +46,7 @@ A group is complete when its checklist passes on a 390px viewport (and 1280px wh
 
 - [x] `index.css` holds the design-system `@theme` block (colour, chart and shadow tokens; the radius tokens are deliberately left out, see `design-system.md`); the old blue scale is gone
 - [x] No hard-coded Tailwind palette classes or chart hex colours remain in `src/` outside `index.css` (grep check; exceptions: Strava and Apple Health brand colours, the SVG logo files)
-- [ ] Text contrast follows the design-system accessibility table (white on `primary-dark` only for small text; `text-muted-strong` for small muted text)
+- [x] Text contrast follows the design-system accessibility table (white on `primary-dark` only for small text; `text-muted-strong` for small muted text); control boundaries use `border-strong` (3.4:1+), focus rings `primary-dark` _(rules enforced by grep and checked on the 390px and 1280px screenshots, not a per-element automated audit)_
 - [x] Charts use `chart-*` tokens; activity colours match the spec
 - [x] Stats glance shows at the top of Analytics below 768px with this week, latest PR, 12-week bars and readiness; hidden at 1280px
 - [x] Before/after screenshots for every main screen at 390px and Stats/Plan at 1280px
