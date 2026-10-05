@@ -4,6 +4,83 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Sage palette and Stats glance (Phase 17, part 4)
+
+### Added
+
+- **Stats glance** — at the top of the Analytics tab below 768px: this week (sessions done of planned, training time, cardio km), the latest personal record, 12 weeks of training time as small bars, and average feeling and effort over the last 7 days. It uses existing analytics endpoints only. The records endpoint has no date, so the PR date comes from each exercise's progression series (the first day its max weight reached the record weight). It looks at the first 30 exercises and skips bodyweight records, so "latest" is approximate for more than 30 exercises until the records endpoint returns dates; it renders as soon as one progression resolves and caches them for 5 minutes. The cards only mount (and fetch) below 768px. "Cardio" is the distance of all cardio sessions this week (planned or not, walks and rides included), and the 12-week average excludes the current partial week
+- Type/status badge convention (`components/SessionBadges.tsx`): type badges are outline pills with an activity-colour dot, status badges are filled (planned neutral, done success, skipped warning), so type and status never look alike. Cardio is the `chart-running` family and strength the `chart-strength` family everywhere (History cards, This Week tiles)
+- `border-strong` token (`#8A857B`, 3.61:1 on surface, 3.37:1 on bg) for input, checkbox, switch and unselected-chip boundaries; focus rings use `primary-dark`
+- `lib/chartPalette.ts` — chart colours read from the design-system CSS variables at runtime, with the spec hex as fallback (recharts writes SVG attributes, where `var()` is unreliable). Activity types map to their `chart-*` colour by name; tags and pace series use the categorical order; HR zones use `chart-zone-1…5`
+
+### Changed
+
+- **Sage palette** — the semantic tokens in `index.css` now hold the "Minimal & Clean" values, with accent, success, warning, error, chart, HR zone and shadow tokens added. The old blue `--color-primary-50…900` scale is gone
+- Every hard-coded Tailwind palette class and chart hex colour in `frontend/src` is replaced by a semantic token or `chartPalette`, following the spec's recipes and contrast rules (white text only on `primary-dark` and charcoal `text` fills, plus the Strava brand button; `text-muted-strong` for small muted text, accent never as text). Exceptions: the Strava and Apple Health brand colours and the SVG logo files
+- Radii normalised to Tailwind's defaults: status and type badges are pills (`rounded-full`), chips, toggles and inputs `rounded-sm`, buttons `rounded-lg`, cards and modals `rounded-xl`, bottom sheets 20px. The spec's `--radius-*` tokens are not adopted because they would override those defaults app-wide
+- Logos recoloured to the sage palette; `theme-color` and the manifest already matched
+- Week summaries share one helper (`summarizeWeek`) across the Plan card, Today and Stats glance, and one `getMondayOf` helper in `dateUtils` (Plan, Today, History and Log use it)
+
+---
+
+## 2026-10-05 — Today screen and mobile navigation (Phase 17, part 3)
+
+### Added
+
+- **Today screen** (`/today`) — today's date, a card per session planned today (Start, Move to tomorrow, Skip), a Resume card when a strength or cardio draft exists, Quick log tiles (Cardio, Strength, Steps) and a This week card (done of planned, next session). Uses existing endpoints only
+- **Mobile shell below 768px** — slim header with a profile button that opens a bottom sheet (Templates, Steps, Profile, Settings, Sign out), and a Today / Plan / Stats tab bar (Stats is also active on `/sessions/:id`). The tab bar is hidden on `/log` and `/workout`
+- **Safe areas** — `viewport-fit=cover`, tab bar padded by `env(safe-area-inset-bottom)`, content padded above the bar, Plan toast sits above it
+- `getStartUrl` helper (`lib/planStart.ts`) shared by the Plan cards and Today; it builds strength URLs with `strengthViewUrl` and takes the view (`workout` or `form`) from the caller
+- **Workout mode integration** — Today's strength Start, the Strength Quick log tile (blank workout) and the Resume card open workout mode below 768px and the full form from 768px; a strength Resume card restores the draft without asking (`resume=1`) and shows its title, sets done and age
+
+### Behaviour notes
+
+- **Skip on Today** — the backend only stores a skip note, and a session dated today keeps status `planned`. On Today a session with a non-empty skip note is shown as Skipped (badge, note, no Start / Move to tomorrow) with **Undo skip**, which clears the note (`PATCH …/skip-note` with `null`). Skipping from Today requires a note. The Plan page and its week counts still go by the backend status, so a session skipped today looks planned there until the day passes
+- **Move to tomorrow** is hidden on Sundays: the reschedule API only moves a session within its own week
+- **Strength Start without a template** opens a blank strength form (`/log?type=strength`) instead of doing nothing; a skipped session keeps its planned date (`&date=`) with or without a template
+- **This week** uses the same counts as the Plan overview (`summarizeWeek`), has error and empty states, and the page recomputes today when the app returns to the foreground or at midnight
+- **Resume** shows one card per draft (strength and cardio) with the draft's age when it stored a start or session date
+
+### Changed
+
+- Menu sheet is a real modal: focus moves in and returns to the trigger, Tab is trapped, body scroll is locked, and it closes on navigation
+- Bottom-sheet modals (skip note, reschedule, adapt, plan form, exercise swap, Settings and Exercises dialogs) add `env(safe-area-inset-bottom)` padding below `sm`
+- `/` and the post-login landing go to `/today` (was `/stats`); the desktop top nav gains **Today** as its first link
+
+### Tests
+
+- Today page (sessions, Start link, empty state, Resume card, skip modal, move to tomorrow, menu), `/` redirect, tab bar active state and visibility, menu sheet, `getStartUrl`
+
+---
+
+## 2026-10-05 — Workout mode (Phase 17, part 2)
+
+### Added
+
+- **Workout mode** (`/workout`) — a full-screen strength logger, one set at a time: header with close (keeps the draft), progress ("N of M sets · K of L exercises") and Finish (outlined until every set is done, so "Complete set" stays the one primary action); the current exercise with "Last time: 4 × 8 @ 57.5 kg" from last-session defaults; done sets as compact rows (tap to edit, Cancel restores), the current set as a large editor with separate reps and kg rows (−/+ 52px steppers, step 1 and 2.5, wide 32px typed inputs), an optional note and "Complete set"; delete on every set except the last with a 5-second Undo; "+ Add set" copies the last set
+- **Rest timer** — starts when a set is completed (not after the final set); Reset, +30s and Skip; stores its end time in the draft so it survives reloads and backgrounding; length 60/90/120/180 s (default 90) in the options sheet, remembered on the device; vibrates at zero where supported
+- **Choose exercise sheet** — To do (current highlighted, progress ring, "d of t sets · last …") and Done; "+ Add exercise" searches the exercise library and appends it with 3 sets prefilled from last session; "Choose an exercise" fills an entry that has none; the options sheet can remove the current exercise (asks first when it has completed sets; Undo follows); completing an exercise's last set moves to the next unfinished one, and "All exercises done" offers Finish
+- **Finish sheet** — duration refreshed from the start time on each open unless typed (nearest minute, at least 1:00), how you feel / how hard, note, calories; saves through the same path as the full form, including the "Update template?" prompt (asked once; a retry neither asks again nor patches the template twice); a failed save keeps the sheet and draft with Retry and says "connection" only for network errors (server message for 4xx); Finish is blocked while an entry has no exercise
+- **Entry points** — a strength plan card's Start opens workout mode below 768px and the full form from 768px (checked at tap time); the strength form has a "Workout mode" button and workout mode's options have "Full form"; switching writes the draft, replaces the history entry and resumes on the other side without the Restore prompt
+- **Screen Wake Lock** while workout mode is open, where supported; bottom sheets trap focus, close on Escape (only the topmost modal reacts) and lock page scroll
+
+### Changed
+
+- **`useStrengthSessionForm` hook** now drives the strength form: state, URL params, template prefill, draft autosave/restore, payload, save and template diff live in one place shared with workout mode, so both send the same `POST` body
+- **Strength draft** autosaves within 300 ms of every change (flushed when the page is hidden or closed) and is cleared only after a successful save; it records the current exercise, rest timer end and start time (older drafts still restore); `resume=1` in the URL restores it without asking, starting from the draft on the first render (the workout's start time is kept across reloads and view switches); opening workout mode alone doesn't create one
+- **Restore/Discard prompt** names the waiting draft (title, date, sets done); until the user picks, the full form is inert, nothing is autosaved, Save is disabled and the URL template isn't loaded (Discard loads it); Restore no longer waits for the template request
+- **Template loading** times out after 10 s and shows an error with Retry (a deleted template says so) instead of an endless "Loading…"
+- **Saving** is guarded against double submits (including while the template is fetched for the diff prompt, which shows "Saving…" and keeps the form read-only) and replaces the history entry, so Back can't reopen the form; the "Update template?" answer holds for a retry with the same changes and is asked again when they differ; last-session defaults refresh after a save
+- **`DiffModal`** moved to its own component for both views and is now an accessible modal (focus, Escape, 44px buttons, semantic tokens)
+
+### Tests
+
+- Characterization of the full form's `POST` body before the refactor; hook payload parity, draft round-trip (v1 and v2), draft cleared only on 2xx, set/exercise actions
+- Workout mode: same `POST` body as the full form, complete set → rest timer and auto-advance, delete + undo position, edit done set + Cancel, Add set copy, Add exercise, reload restores exercise/sets/rest, Restore/Discard prompt, failed save + retry, Full form ↔ workout mode switch, sheet Escape/focus, Finish guard; rest timer countdown and vibration (fake timers), Wake Lock; plan card Start routing by viewport
+- Review regressions: pending draft never overwritten, Back after a view switch or save, late template response, undo while editing a done set, stepper layout and weight input, placeholder fill and exercise removal, draft creation, duration refresh, retry without a second diff/PATCH, 4xx message, modal dialog, rest after the final set, double-tap Add exercise, stale-timer and wake-lock races
+
+---
+
 ## 2026-10-05 — Mobile fundamentals (Phase 17, part 1)
 
 ### Fixed

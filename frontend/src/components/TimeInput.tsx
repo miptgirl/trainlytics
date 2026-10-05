@@ -90,8 +90,8 @@ export function TimeInput({
   }
 
   const baseClass =
-    'w-full border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-  const borderClass = error ? 'border-red-400' : 'border-gray-300'
+    'w-full border rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark'
+  const borderClass = error ? 'border-error' : 'border-border-strong'
 
   return (
     <div>
@@ -107,7 +107,7 @@ export function TimeInput({
         onBlur={handleBlur}
         className={className ?? `${baseClass} ${borderClass}`}
       />
-      {error && <p className="mt-0.5 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-0.5 text-xs text-error-text">{error}</p>}
     </div>
   )
 }

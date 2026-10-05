@@ -36,17 +36,17 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 px-0 sm:px-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-text/40 px-0 sm:px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+      <div className="bg-surface pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full sm:max-w-lg rounded-t-[20px] sm:rounded-xl shadow-md flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
-          <h2 className="text-base font-semibold text-slate-800">Adapt this session</h2>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+          <h2 className="text-base font-semibold text-text">Adapt this session</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+            className="text-text-muted hover:text-text-muted-strong text-xl leading-none"
             aria-label="Close"
           >
             ✕
@@ -56,15 +56,15 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {!hasApiKey ? (
-            <p className="text-sm text-slate-500">
-              <Link to="/profile" className="text-blue-600 hover:underline font-medium">
+            <p className="text-sm text-text-muted-strong">
+              <Link to="/profile" className="text-primary-dark hover:underline font-medium">
                 Add an API key in Profile
               </Link>{' '}
               to enable AI session adaptation.
             </p>
           ) : (
             <>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-text-muted-strong">
                 Describe what's going on — an ache, low energy, or a change in conditions — and
                 get specific suggestions for adapting today's planned cardio session.
               </p>
@@ -75,17 +75,17 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
                 value={complaint}
                 onChange={(e) => setComplaint(e.target.value)}
                 disabled={status === 'loading'}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:opacity-50"
+                className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none disabled:opacity-50"
               />
 
               {status === 'error' && errorMsg && (
-                <p className="text-sm text-red-600">{errorMsg}</p>
+                <p className="text-sm text-error-text">{errorMsg}</p>
               )}
 
               {status === 'loading' && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                <div className="flex items-center gap-2 text-sm text-text-muted-strong py-1">
                   <svg
-                    className="animate-spin h-4 w-4 text-blue-500"
+                    className="animate-spin h-4 w-4 text-primary-dark"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -109,7 +109,7 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
               )}
 
               {status === 'success' && response && (
-                <div className="prose prose-sm prose-slate max-w-none bg-slate-50 rounded-lg p-3 leading-relaxed">
+                <div className="prose prose-sm prose-slate max-w-none bg-bg rounded-lg p-3 leading-relaxed">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{response}</ReactMarkdown>
                 </div>
               )}
@@ -119,13 +119,13 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
 
         {/* Footer */}
         {hasApiKey && (
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 shrink-0 flex gap-3">
+          <div className="px-4 pb-4 pt-2 border-t border-border shrink-0 flex gap-3">
             {status !== 'success' ? (
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={!complaint.trim() || status === 'loading'}
-                className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 bg-primary-dark text-white py-2.5 rounded-xl text-sm font-medium hover:brightness-95 disabled:opacity-50"
               >
                 {status === 'loading' ? 'Getting suggestions…' : status === 'error' ? 'Retry' : 'Get suggestions'}
               </button>
@@ -133,7 +133,7 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
               <button
                 type="button"
                 onClick={() => { setStatus('idle'); setResponse(null); setComplaint('') }}
-                className="flex-1 bg-slate-100 text-slate-700 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-200"
+                className="flex-1 bg-bg text-text py-2.5 rounded-xl text-sm font-medium hover:bg-border"
               >
                 Ask another question
               </button>
@@ -141,18 +141,18 @@ export function AdaptCardioModal({ hasApiKey, plannedSessionId, onClose }: Adapt
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-bg"
             >
               Close
             </button>
           </div>
         )}
         {!hasApiKey && (
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 shrink-0">
+          <div className="px-4 pb-4 pt-2 border-t border-border shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="w-full px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-bg"
             >
               Close
             </button>

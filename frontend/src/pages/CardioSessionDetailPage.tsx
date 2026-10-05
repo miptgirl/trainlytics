@@ -137,20 +137,20 @@ function EditForm({
 
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label className="block text-sm font-medium text-text mb-1">Title</label>
           <input
             type="text"
             placeholder="Optional session title…"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('title')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
+          <label className="block text-sm font-medium text-text mb-1">Activity Type</label>
           <select
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('activity_type_id')}
           >
             <option value="">— select type —</option>
@@ -160,38 +160,38 @@ function EditForm({
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date & Time</label>
+          <label className="block text-sm font-medium text-text mb-1">Date & Time</label>
           <input
             type="datetime-local"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('date', { required: 'Date is required' })}
           />
-          {errors.date && <p className="mt-1 text-xs text-red-600">{errors.date.message}</p>}
+          {errors.date && <p className="mt-1 text-xs text-error-text">{errors.date.message}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Duration (mins override)</label>
+          <label className="block text-sm font-medium text-text mb-1">Total Duration (mins override)</label>
           <input
             type="number"
             min="0"
             step="any"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('total_duration_mins')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Calories (kcal, optional)</label>
+          <label className="block text-sm font-medium text-text mb-1">Calories (kcal, optional)</label>
           <input
             type="number"
             min="0"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
             {...register('calories')}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-text mb-1">Notes</label>
           <textarea
             rows={2}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none"
             {...register('notes')}
           />
         </div>
@@ -199,51 +199,51 @@ function EditForm({
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-medium text-gray-900">Segments</h2>
+          <h2 className="font-medium text-text">Segments</h2>
           <button
             type="button"
             onClick={() => append({ title: '', duration_mins: '', distance_km: '', pace_min_per_km: '' })}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm text-primary-dark hover:underline font-medium"
           >
             + Add Segment
           </button>
         </div>
         <div className="space-y-3">
           {fields.map((field, index) => (
-            <div key={field.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <div key={field.id} className="bg-surface rounded-xl border border-border p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">Segment {index + 1}</span>
+                <span className="text-sm font-medium text-text">Segment {index + 1}</span>
                 {fields.length > 1 && (
-                  <button type="button" onClick={() => remove(index)} className="text-xs text-red-500 hover:text-red-700">
+                  <button type="button" onClick={() => remove(index)} className="text-xs text-error-text hover:underline">
                     Remove
                   </button>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs text-gray-500 mb-1">Segment Title</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Segment Title</label>
                   <input type="text" placeholder="Optional title…"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.title`)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Duration (mins) *</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Duration (mins) *</label>
                   <input
                     type="number" min="0" step="any"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.duration_mins`, { required: 'Required' })}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Distance (km)</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Distance (km)</label>
                   <input type="number" min="0" step="any"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.distance_km`)} />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Pace (min/km)</label>
+                  <label className="block text-xs text-text-muted-strong mb-1">Pace (min/km)</label>
                   <input type="number" min="0" step="any"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                     {...register(`segments.${index}.pace_min_per_km`)} />
                 </div>
               </div>
@@ -266,11 +266,11 @@ function EditForm({
         <button
           type="submit"
           disabled={isPending}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg text-sm"
+          className="bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg text-sm"
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
-        <button type="button" onClick={onCancel} className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2">
+        <button type="button" onClick={onCancel} className="text-sm text-text-muted-strong hover:text-text px-4 py-2">
           Cancel
         </button>
       </div>
@@ -348,11 +348,11 @@ export default function CardioSessionDetailPage() {
   })
 
   if (sessionLoading) {
-    return <Layout><p className="text-gray-400 text-sm">Loading…</p></Layout>
+    return <Layout><p className="text-text-muted-strong text-sm">Loading…</p></Layout>
   }
 
   if (!session) {
-    return <Layout><p className="text-gray-500 text-sm">Session not found.</p></Layout>
+    return <Layout><p className="text-text-muted-strong text-sm">Session not found.</p></Layout>
   }
 
   const typeName = cardioTypes.find((t) => t.id === session.activity_type_id)?.name ?? '—'
@@ -374,7 +374,7 @@ export default function CardioSessionDetailPage() {
     return (
       <Layout>
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Edit Session</h1>
+          <h1 className="text-2xl font-bold text-text">Edit Session</h1>
         </div>
         <EditForm
           session={session}
@@ -384,7 +384,7 @@ export default function CardioSessionDetailPage() {
           isPending={updateMutation.isPending}
         />
         {updateMutation.error && (
-          <p className="mt-4 text-sm text-red-600">{updateMutation.error.message}</p>
+          <p className="mt-4 text-sm text-error-text">{updateMutation.error.message}</p>
         )}
       </Layout>
     )
@@ -393,18 +393,18 @@ export default function CardioSessionDetailPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Cardio Session</h1>
+        <h1 className="text-2xl font-bold text-text">Cardio Session</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={handleCopy}
             disabled={copyStatus !== 'idle'}
-            className="text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50"
+            className="text-sm text-text-muted-strong hover:text-text disabled:opacity-50"
           >
             {copyStatus === 'copied' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy'}
           </button>
           <button
             onClick={() => setEditing(true)}
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-text-muted-strong hover:text-text"
           >
             Edit
           </button>
@@ -413,7 +413,7 @@ export default function CardioSessionDetailPage() {
               if (confirm('Delete this session?')) deleteMutation.mutate()
             }}
             disabled={deleteMutation.isPending}
-            className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+            className="text-sm text-error-text hover:underline disabled:opacity-50"
           >
             Delete
           </button>
@@ -421,64 +421,64 @@ export default function CardioSessionDetailPage() {
       </div>
 
       {/* Summary */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-2 mb-6">
+      <div className="bg-surface rounded-xl border border-border p-4 space-y-2 mb-6">
         {session.title && (
-          <div className="pb-2 border-b border-gray-100">
-            <p className="text-base font-semibold text-gray-900">{session.title}</p>
+          <div className="pb-2 border-b border-border">
+            <p className="text-base font-semibold text-text">{session.title}</p>
           </div>
         )}
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Date</span>
-          <span className="font-medium text-gray-900">{formatSessionDateTime(session.date)}</span>
+          <span className="text-text-muted-strong">Date</span>
+          <span className="font-medium text-text">{formatSessionDateTime(session.date)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Activity</span>
-          <span className="font-medium text-gray-900">{typeName}</span>
+          <span className="text-text-muted-strong">Activity</span>
+          <span className="font-medium text-text">{typeName}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Total Duration</span>
-          <span className="font-medium text-gray-900">{formatDuration(totalDur)}</span>
+          <span className="text-text-muted-strong">Total Duration</span>
+          <span className="font-medium text-text">{formatDuration(totalDur)}</span>
         </div>
         {session.calories != null && (
           <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Calories</span>
-            <span className="font-medium text-gray-900">{session.calories} kcal</span>
+            <span className="text-text-muted-strong">Calories</span>
+            <span className="font-medium text-text">{session.calories} kcal</span>
           </div>
         )}
         {session.notes && (
-          <div className="pt-2 border-t border-gray-100">
-            <p className="text-sm text-gray-600">{session.notes}</p>
+          <div className="pt-2 border-t border-border">
+            <p className="text-sm text-text-muted-strong">{session.notes}</p>
           </div>
         )}
         {(session.wellbeing != null || session.rpe != null) && (
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 border-t border-border">
             <EmojiRatingDisplay wellbeing={session.wellbeing} rpe={session.rpe} />
           </div>
         )}
       </div>
 
       {/* Segments */}
-      <h2 className="font-medium text-gray-900 mb-3">
+      <h2 className="font-medium text-text mb-3">
         Segments ({session.segments.length})
       </h2>
       <div className="space-y-3">
         {session.segments.map((seg, i) => (
-          <div key={seg.id} className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          <div key={seg.id} className="bg-surface rounded-xl border border-border p-4">
+            <p className="text-xs font-medium text-text-muted-strong uppercase tracking-wide mb-2">
               {seg.title ? seg.title : `Segment ${i + 1}`}
             </p>
             <div className="grid grid-cols-2 gap-y-1 text-sm">
-              <span className="text-gray-500">Duration</span>
+              <span className="text-text-muted-strong">Duration</span>
               <span className="font-medium">{formatDuration(seg.duration_seconds)}</span>
               {seg.distance_meters != null && (
                 <>
-                  <span className="text-gray-500">Distance</span>
+                  <span className="text-text-muted-strong">Distance</span>
                   <span className="font-medium">{metresToKm(seg.distance_meters).toFixed(2)} km</span>
                 </>
               )}
               {seg.pace_seconds_per_km != null && (
                 <>
-                  <span className="text-gray-500">Pace</span>
+                  <span className="text-text-muted-strong">Pace</span>
                   <span className="font-medium">{secPerKmToMinPerKm(seg.pace_seconds_per_km)}</span>
                 </>
               )}

@@ -157,7 +157,7 @@ export function AppleHealthSection({
   }
 
   return (
-    <div className="flex flex-col gap-4 pt-4 border-t border-slate-100">
+    <div className="flex flex-col gap-4 pt-4 border-t border-border">
       {/* Header */}
       <div className="flex items-center gap-3">
         {/* Apple Health heart icon */}
@@ -167,12 +167,12 @@ export function AppleHealthSection({
             fill="#FF3B5C"
           />
         </svg>
-        <span className="text-sm font-semibold text-slate-700">Apple Health</span>
+        <span className="text-sm font-semibold text-text">Apple Health</span>
       </div>
 
       {/* Metric preferences */}
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-medium text-slate-600">Tracked metrics</p>
+        <p className="text-sm font-medium text-text-muted-strong">Tracked metrics</p>
         <div className="grid grid-cols-2 gap-2">
           {METRIC_LABELS.map(({ key, label }) => {
             const enabled = prefs[key]
@@ -187,21 +187,21 @@ export function AppleHealthSection({
                   aria-checked={enabled}
                   onClick={() => toggleMetric(key, enabled)}
                   className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${
-                    enabled ? 'bg-blue-600' : 'bg-slate-200'
+                    enabled ? 'bg-primary-dark' : 'bg-border-strong'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-surface rounded-full shadow-xs transition-transform ${
                       enabled ? 'translate-x-4' : 'translate-x-0'
                     }`}
                   />
                 </button>
-                <span className="text-sm text-slate-700">{label}</span>
+                <span className="text-sm text-text">{label}</span>
               </label>
             )
           })}
         </div>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-text-muted-strong mt-1">
           Only enabled metrics will be imported and shown in Analytics
         </p>
       </div>
@@ -209,7 +209,7 @@ export function AppleHealthSection({
       {/* Upload zone */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-slate-600">Import data</p>
+          <p className="text-sm font-medium text-text-muted-strong">Import data</p>
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <button
               type="button"
@@ -217,16 +217,16 @@ export function AppleHealthSection({
               aria-checked={includeWorkouts}
               onClick={() => setIncludeWorkouts((v) => !v)}
               className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${
-                includeWorkouts ? 'bg-blue-600' : 'bg-slate-200'
+                includeWorkouts ? 'bg-primary-dark' : 'bg-border'
               }`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                className={`absolute top-0.5 left-0.5 w-4 h-4 bg-surface rounded-full shadow-xs transition-transform ${
                   includeWorkouts ? 'translate-x-4' : 'translate-x-0'
                 }`}
               />
             </button>
-            <span className="text-sm text-slate-600">Include workouts</span>
+            <span className="text-sm text-text-muted-strong">Include workouts</span>
           </label>
         </div>
 
@@ -239,17 +239,17 @@ export function AppleHealthSection({
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-xl px-4 py-6 text-center cursor-pointer transition-colors ${
                 isDragOver
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  ? 'border-primary bg-primary-tint'
+                  : 'border-border hover:border-primary-light hover:bg-bg'
               }`}
             >
-              <p className="text-sm font-medium text-slate-600 mb-1">
+              <p className="text-sm font-medium text-text-muted-strong mb-1">
                 Drop Apple Health export zip here
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-text-muted-strong">
                 iPhone → Health app → avatar → Export All Health Data
               </p>
-              <p className="text-xs text-blue-600 mt-3 font-medium">or click to select file</p>
+              <p className="text-xs text-primary-dark mt-3 font-medium">or click to select file</p>
             </div>
             <input
               ref={fileInputRef}
@@ -259,13 +259,13 @@ export function AppleHealthSection({
               onChange={handleFileChange}
             />
             {uploadState.phase === 'error' && (
-              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 flex flex-col gap-1">
+              <div className="bg-error/10 border border-error/40 rounded-lg px-3 py-2.5 flex flex-col gap-1">
                 {uploadState.messages.map((msg, i) => (
-                  <p key={i} className="text-sm text-red-700">{msg}</p>
+                  <p key={i} className="text-sm text-error-text">{msg}</p>
                 ))}
                 <button
                   type="button"
-                  className="text-xs text-red-500 underline self-start mt-0.5"
+                  className="text-xs text-error-text underline self-start mt-0.5"
                   onClick={() => setUploadState({ phase: 'idle' })}
                 >
                   Try again
@@ -275,20 +275,20 @@ export function AppleHealthSection({
           </>
         ) : uploadState.phase === 'uploading' ? (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between text-sm text-slate-600">
+            <div className="flex items-center justify-between text-sm text-text-muted-strong">
               <span>Uploading…</span>
               <span className="font-medium">{uploadState.progress}%</span>
             </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div className="w-full bg-primary-tint rounded-full h-2 overflow-hidden">
               <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                className="bg-primary h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadState.progress}%` }}
               />
             </div>
           </div>
         ) : uploadState.phase === 'parsing' ? (
-          <div className="flex items-center gap-3 text-sm text-slate-600 py-2">
-            <svg className="animate-spin w-4 h-4 text-blue-600 shrink-0" viewBox="0 0 24 24" fill="none">
+          <div className="flex items-center gap-3 text-sm text-text-muted-strong py-2">
+            <svg className="animate-spin w-4 h-4 text-primary-dark shrink-0" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
             </svg>
@@ -296,23 +296,23 @@ export function AppleHealthSection({
           </div>
         ) : (
           /* done */
-          <div className="bg-green-50 border border-green-200 rounded-lg px-3 py-3 flex flex-col gap-1.5">
-            <p className="text-sm text-green-800 font-medium">Import complete</p>
-            <p className="text-sm text-green-700">
+          <div className="bg-success/10 border border-success/40 rounded-lg px-3 py-3 flex flex-col gap-1.5">
+            <p className="text-sm text-success-text font-medium">Import complete</p>
+            <p className="text-sm text-success-text">
               {uploadState.workouts} workout{uploadState.workouts !== 1 ? 's' : ''} staged for review
               {' · '}
               {uploadState.metrics} health metric day{uploadState.metrics !== 1 ? 's' : ''} imported
             </p>
             <button
               type="button"
-              className="text-sm text-green-700 underline self-start font-medium"
+              className="text-sm text-success-text underline self-start font-medium"
               onClick={onNavigateToImports}
             >
               View imports
             </button>
             <button
               type="button"
-              className="text-xs text-green-600 underline self-start mt-0.5"
+              className="text-xs text-success-text underline self-start mt-0.5"
               onClick={() => setUploadState({ phase: 'idle' })}
             >
               Upload another file

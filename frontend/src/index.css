@@ -4,46 +4,53 @@
 @theme {
   /* Typography */
   --font-sans: 'Montserrat', system-ui, sans-serif;
-
-  /* Blue accent palette */
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-
-  /* Neutral greys */
-  --color-surface-card: #ffffff;
 }
 
-/* static: always emitted as CSS variables, so inline styles and charts can use var(--color-*) */
+/* static: always emitted as CSS variables, so inline styles and charts can read var(--color-*) */
 @theme static {
-  /* Semantic tokens (names from specs/design-system.md). Interim blue/slate
-     values; Phase 17 group 4 switches them to the sage palette. */
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-primary-light: #bfdbfe;
-  --color-primary-tint: #eff6ff;
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text: #1e293b;
-  --color-text-muted: #64748b;
-  --color-text-muted-strong: #475569;
-  --color-accent: #f43f5e;
-  --color-accent-light: #ffe4e6;
-  --color-accent-text: #be123c;
-  --color-success: #16a34a;
-  --color-success-text: #15803d;
-  --color-warning: #f59e0b;
-  --color-warning-text: #b45309;
-  --color-error: #ef4444;
-  --color-error-text: #b91c1c;
+  /* "Minimal & Clean" design system, see specs/design-system.md.
+     Radius tokens are intentionally not defined: they would restyle every rounded-* class. */
+  --color-primary: #7E9B76;
+  --color-primary-dark: #4F6B52;
+  --color-primary-light: #B8C9B2;
+  --color-primary-tint: #E6EFE3;
+
+  --color-bg: #F7F5EF;
+  --color-surface: #FFFDF8;
+  --color-border: #E8E4DA;
+  --color-border-strong: #8A857B; /* control boundaries, 3.4:1+ on surface and bg (WCAG 1.4.11) */
+  --color-text: #2F342F;
+  --color-text-muted: #737A70;
+  --color-text-muted-strong: #656B63;
+
+  --color-accent: #C98F8F;
+  --color-accent-light: #E8CACA;
+  --color-accent-text: #876060;
+
+  --color-success: #6F9E78;
+  --color-success-text: #4F7156;
+  --color-warning: #D1A15D;
+  --color-warning-text: #82643A;
+  --color-error: #C86F62;
+  --color-error-text: #9B564C;
+
+  --color-chart-strength: #7E9B76;
+  --color-chart-yoga: #C98F8F;
+  --color-chart-running: #D1A15D;
+  --color-chart-cycling: #8297A5;
+  --color-chart-walking: #A58A76;
+  --color-chart-swimming: #9B8DB6;
+
+  /* HR zones, sequential cool to hot */
+  --color-chart-zone-1: #8297A5;
+  --color-chart-zone-2: #7E9B76;
+  --color-chart-zone-3: #D1A15D;
+  --color-chart-zone-4: #C98F8F;
+  --color-chart-zone-5: #C86F62;
+
+  --shadow-xs: 0 1px 2px rgba(47, 52, 47, 0.06);
+  --shadow-sm: 0 4px 12px rgba(47, 52, 47, 0.08);
+  --shadow-md: 0 12px 24px rgba(47, 52, 47, 0.12);
 }
 
 /* Global base */

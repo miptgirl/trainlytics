@@ -16,6 +16,7 @@ import { Layout } from './components/Layout'
 import LoginPage from './pages/LoginPage'
 import SettingsPage from './pages/SettingsPage'
 import LogWorkoutPage from './pages/LogWorkoutPage'
+import WorkoutModePage from './pages/WorkoutModePage'
 import CardioSessionDetailPage from './pages/CardioSessionDetailPage'
 import StrengthSessionDetailPage from './pages/StrengthSessionDetailPage'
 import TemplatesPage from './pages/TemplatesPage'
@@ -23,6 +24,7 @@ import StepsPage from './pages/StepsPage'
 import ProfilePage from './pages/ProfilePage'
 import StatsPage from './pages/StatsPage'
 import PlanPage from './pages/PlanPage'
+import TodayPage from './pages/TodayPage'
 import { api } from './lib/api'
 
 function SessionDetailRouter() {
@@ -31,13 +33,13 @@ function SessionDetailRouter() {
     queryKey: ['sessions', id, 'type'],
     queryFn: () => api.get<{ type: string }>(`/sessions/${id}`),
   })
-  if (isLoading) return <Layout><p className="text-gray-500 text-sm">Loading…</p></Layout>
+  if (isLoading) return <Layout><p className="text-text-muted-strong text-sm">Loading…</p></Layout>
   if (data?.type === 'strength') return <StrengthSessionDetailPage />
   return <CardioSessionDetailPage />
 }
 
-function Dashboard() {
-  return <Navigate to="/stats" replace />
+export function Dashboard() {
+  return <Navigate to="/today" replace />
 }
 
 /** Scroll to the top on forward navigation; Back/Forward (POP) keep the browser's own restore. */
@@ -71,6 +73,14 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/today"
+          element={
+            <ProtectedRoute>
+              <TodayPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/settings"
           element={
             <ProtectedRoute>
@@ -83,6 +93,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <LogWorkoutPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workout"
+          element={
+            <ProtectedRoute>
+              <WorkoutModePage />
             </ProtectedRoute>
           }
         />

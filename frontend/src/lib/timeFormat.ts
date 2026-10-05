@@ -44,3 +44,10 @@ export function parseTimeString(s: string): number | null {
 
   return null
 }
+
+/** Format whole minutes as "1h 5m" (≥ 60) or "45m". */
+export function formatMinutes(total: number): string {
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}

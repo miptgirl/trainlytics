@@ -20,22 +20,22 @@ function PRCard({
 function ExerciseRow({ rec }: { rec: PersonalRecord }) {
   return (
     <div className="py-2.5">
-      <p className="text-sm font-medium text-slate-800 mb-1.5">{rec.exercise_name}</p>
+      <p className="text-sm font-medium text-text mb-1.5">{rec.exercise_name}</p>
       <div className="grid grid-cols-3 gap-2">
         <PRCard
           value={`${rec.heaviest_weight} kg`}
           label="Heaviest"
-          colorClass="bg-blue-50 text-blue-700"
+          colorClass="bg-primary-tint text-primary-dark"
         />
         <PRCard
           value={String(rec.best_reps_at_heaviest)}
           label="Reps at max"
-          colorClass="bg-emerald-50 text-emerald-700"
+          colorClass="bg-success/10 text-success-text"
         />
         <PRCard
           value={`${Math.round(rec.best_single_set_volume)} kg`}
           label="Best vol"
-          colorClass="bg-amber-50 text-amber-700"
+          colorClass="bg-warning/10 text-warning-text"
         />
       </div>
     </div>
@@ -49,7 +49,7 @@ export function PersonalRecordsPanel() {
     return (
       <div className="space-y-3 animate-pulse">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="h-24 bg-slate-100 rounded-lg" />
+          <div key={i} className="h-24 bg-bg rounded-lg" />
         ))}
       </div>
     )
@@ -57,7 +57,7 @@ export function PersonalRecordsPanel() {
 
   if (!groups || groups.length === 0) {
     return (
-      <p className="text-slate-400 text-sm text-center py-4">
+      <p className="text-text-muted-strong text-sm text-center py-4">
         No strength sessions logged yet.
       </p>
     )
@@ -73,10 +73,10 @@ export function PersonalRecordsPanel() {
     <div className="space-y-6">
       {sorted.map((group) => (
         <div key={group.tag}>
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <h3 className="text-xs font-semibold text-text-muted-strong uppercase tracking-wide mb-1">
             {group.tag === 'untagged' ? 'Untagged' : group.tag}
           </h3>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-border">
             {group.records.map((rec) => (
               <ExerciseRow key={rec.exercise_id} rec={rec} />
             ))}

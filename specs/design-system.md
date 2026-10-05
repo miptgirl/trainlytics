@@ -2,7 +2,7 @@
 
 The target visual language for Trainlytics: fresh, calm and airy, with sage green as the hero colour. Use it for every redesign and new screen. The source artwork is [`design/colour-palette.webp`](design/colour-palette.webp).
 
-> **Status:** the PWA icons already use this palette. The app UI still uses the older blue tokens in `frontend/src/index.css` (`--color-primary-*`, `--color-surface*`). Migrating the UI means replacing those tokens with the block in [Tailwind tokens](#tailwind-tokens).
+> **Status:** the app UI and the PWA icons use this palette. The tokens live in `frontend/src/index.css`; chart colours are read from them at runtime by `frontend/src/lib/chartPalette.ts`.
 
 ## Colours
 
@@ -21,9 +21,10 @@ The target visual language for Trainlytics: fresh, calm and airy, with sage gree
 |---|---|---|---|
 | `bg` | Warm Ivory | `#F7F5EF` | App background |
 | `surface` | Surface | `#FFFDF8` | Cards, sheets, modals, nav bar |
-| `border` | Light Border | `#E8E4DA` | Dividers, input borders |
+| `border` | Light Border | `#E8E4DA` | Dividers, card outlines, decorative borders |
+| `border-strong` | Control Border | `#8A857B` | Boundaries of controls: input, select, textarea, checkbox and radio borders, switch off-tracks, unselected chip borders. 3.61:1 on `surface`, 3.37:1 on `bg`, 3.11:1 on `primary-tint` (WCAG 1.4.11 asks for 3:1). An accessibility addition to the original palette |
 | `text` | Charcoal | `#2F342F` | Headings, body text, default icons |
-| `text-muted` | Muted Gray | `#737A70` | Captions and hints at 18px+ or bold 14px+ (see [Accessibility](#accessibility)) |
+| `text-muted` | Muted Gray | `#737A70` | Icons, decoration and captions at 18px+ (see [Accessibility](#accessibility)); use `text-muted-strong` for anything smaller |
 
 ### Accent
 
@@ -78,8 +79,10 @@ One colour per activity type, used consistently in charts, chips and calendar en
 - **Primary button:** `primary-dark` fill with white text. Use `primary` fill only for large or bold labels (see Accessibility).
 - **Secondary button:** `primary-tint` fill, `primary-dark` text and 1px `primary-dark` border.
 - **Destructive button:** `accent-light` fill, `error-text` text and a trash icon.
-- **Chips:** `primary-tint` for selected, `border` for unselected, `text` for labels.
-- **Input:** `surface` fill, `border` outline, 4px radius, `text-muted` placeholder (or `text-muted-strong` below 18px).
+- **Error alert / message:** `error` at 10% fill with `error-text` text (4.85:1). Don't use `accent-light` with `accent-text` or `error-text` for alerts: it's a button fill, and `accent-text` on it falls below 4.5:1 for small text.
+- **Chips:** `primary-tint` for selected, `surface` with a `border-strong` outline for unselected, `text` for labels.
+- **Badges:** type badges (strength, cardio) are outline pills with a dot in the activity colour; status badges (planned, done, skipped) are filled pills: planned neutral, done `success` tint, skipped `warning` tint. Type and status never share a fill.
+- **Input:** `surface` fill, `border-strong` outline, 4px radius, `text-muted` placeholder (or `text-muted-strong` below 18px).
 - **Progress bar:** `primary` fill on a `primary-tint` track.
 - **Bottom navigation:** `surface` background; the active item uses `primary-dark`, inactive items use `text-muted-strong`.
 - **List row with activity icon:** `surface` card with SM shadow, an icon in a `primary-tint` circle, a `text` title and `text-muted-strong` metadata.
@@ -98,6 +101,8 @@ The contrast figures printed in the palette artwork are wrong. These are the rea
 | `primary-dark` | `primary-tint` `#E6EFE3` | 5.01:1 | AA |
 | `accent` `#C98F8F` | `bg` | 2.47:1 | Fails. Decoration only, never text |
 | `error` `#C86F62` | `bg` | 3.26:1 | Large text only |
+| `border-strong` `#8A857B` | `surface` / `bg` | 3.61:1 / 3.37:1 | Control boundaries (non-text, 3:1) |
+| `primary` `#7E9B76` | `surface` | 3.2:1 or less | Not for focus rings; use `primary-dark` (5.8:1) |
 
 Rules:
 
@@ -115,7 +120,7 @@ Rules:
 
 ## Tailwind tokens
 
-Tailwind v4 `@theme` block for `frontend/src/index.css`. It isn't applied yet. Paste it in when migrating the UI and delete the old blue `--color-primary-*` scale.
+Tailwind v4 `@theme` block for `frontend/src/index.css`. `index.css` applies it (as `@theme static`, plus the `--color-chart-zone-1…5` HR zone tokens), minus the radius tokens.
 
 ```css
 @theme {
@@ -127,6 +132,7 @@ Tailwind v4 `@theme` block for `frontend/src/index.css`. It isn't applied yet. P
   --color-bg: #F7F5EF;
   --color-surface: #FFFDF8;
   --color-border: #E8E4DA;
+  --color-border-strong: #8A857B;
   --color-text: #2F342F;
   --color-text-muted: #737A70;
   --color-text-muted-strong: #656B63;
@@ -159,6 +165,8 @@ Tailwind v4 `@theme` block for `frontend/src/index.css`. It isn't applied yet. P
   --radius-xl: 20px;
 }
 ```
+
+The app does not adopt the `--radius-*` tokens above: they would override Tailwind's `rounded-sm/md/lg/xl` scale and silently restyle every existing `rounded-*` class (for example `rounded-lg` from 8px to 12px). It uses Tailwind's defaults, which already match the shapes: `rounded-sm` (4px) for inputs and chips, `rounded-lg` (8px) for buttons, `rounded-xl` (12px) for cards and modals, and `rounded-[20px]` for bottom sheets and hero elements.
 
 ## App icon
 
