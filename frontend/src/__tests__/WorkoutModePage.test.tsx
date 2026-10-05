@@ -397,3 +397,86 @@ describe('Switching between the full form and workout mode', () => {
     expect(screen.getAllByPlaceholderText('reps')[1]).toHaveValue(7)
   })
 })
+
+describe('Workout mode: starting from a template', () => {
+  const picker = () => screen.queryByRole('region', { name: 'Start from a template' })
+
+  it('lists templates on a blank session; picking one pre-fills it and hides the card', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength')
+    const card = await screen.findByRole('region', { name: 'Start from a template' })
+    expect(within(card).getByRole('button', { name: 'Leg day' })).toBeInTheDocument()
+
+    await user.click(within(card).getByRole('button', { name: 'Full body' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
+    expect(picker()).not.toBeInTheDocument()
+  })
+
+  it('the chosen template carries to the full form and into the update-template prompt', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength')
+    await user.click(await screen.findByRole('button', { name: 'Leg day' }))
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    await user.click(screen.getByRole('button', { name: 'Full form' }))
+    await screen.findByText(/Pre-filled from/)
+    expect((screen.getByRole('option', { name: 'Leg day' }) as HTMLOptionElement).selected).toBe(true)
+    await user.click(screen.getByRole('button', { name: 'Workout mode' }))
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    const reps = screen.getByLabelText('Reps for set 1')
+    await user.clear(reps)
+    await user.type(reps, '6')
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    await user.click(screen.getByRole('button', { name: 'Save workout' }))
+    expect(await screen.findByText('Update template "Leg day"?')).toBeInTheDocument()
+  })
+
+  it('is hidden when opened with a templateId', async () => {
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(picker()).not.toBeInTheDocument()
+  })
+
+  it('is hidden once an entry has been changed', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength')
+    await screen.findByRole('region', { name: 'Start from a template' })
+
+    await user.click(screen.getByRole('button', { name: 'Choose an exercise' }))
+    const add = screen.getByRole('dialog', { name: 'Add exercise' })
+    await user.click(within(add).getByRole('button', { name: 'Pull-up' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Pull-up'))
+    expect(picker()).not.toBeInTheDocument()
+  })
+
+  it('on a template error, "Continue without template" returns to an empty session', async () => {
+    const user = userEvent.setup()
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') throw new Error('offline')
+      return base(path)
+    })
+    renderAt('/workout?type=strength')
+    await user.click(await screen.findByRole('button', { name: 'Leg day' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't load the template")
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Continue without template' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('is hidden when there are no templates', async () => {
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => (path === '/templates/strength' ? ([] as never) : base(path)))
+    renderAt('/workout?type=strength')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    expect(picker()).not.toBeInTheDocument()
+  })
+})

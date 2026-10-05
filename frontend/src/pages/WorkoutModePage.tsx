@@ -5,17 +5,18 @@
  */
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DiffModal } from '../components/DiffModal'
 import { BottomSheet } from '../components/workout/BottomSheet'
 import { ChooseExerciseSheet } from '../components/workout/ChooseExerciseSheet'
 import { FinishSheet } from '../components/workout/FinishSheet'
 import { RestTimer } from '../components/workout/RestTimer'
 import { WorkoutSetList } from '../components/workout/WorkoutSetList'
+import { api } from '../lib/api'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
 import { useWakeLock } from '../lib/hooks/useWakeLock'
-import { describeDraft, setSetDone, strengthViewUrl, type WorkoutModeState } from '../lib/strengthSession'
+import { describeDraft, setSetDone, strengthViewUrl, type TemplateSummary, type WorkoutModeState } from '../lib/strengthSession'
 import {
   REST_LENGTHS,
   allExercisesDone,
@@ -102,6 +103,18 @@ export default function WorkoutModePage() {
   const nextIndex = nextUnfinishedIndex(exercises, exIndex)
   const allDone = allExercisesDone(exercises)
   const decided = s.pendingDraft === null
+  const { data: templates = [] } = useQuery({
+    queryKey: ['templates', 'strength'],
+    queryFn: () => api.get<TemplateSummary[]>('/templates/strength'),
+  })
+  // Applying a template resets the form, so it is only offered before anything is logged
+  const canPickTemplate =
+    decided &&
+    s.selectedTemplateId === null &&
+    !s.isLoadingTemplate &&
+    !s.templateError &&
+    templates.length > 0 &&
+    exercises.every(isBlankEntry)
   const nameOf = (id: string) => names.get(id) ?? (id ? '…' : 'No exercise chosen')
 
   // Once the draft question is settled: stamp the start time and make a reload
@@ -184,6 +197,12 @@ export default function WorkoutModePage() {
     undoAction.undo()
     setListVersion((v) => v + 1)
     setUndoAction(null)
+  }
+
+  async function startFromTemplate(id: number) {
+    await s.selectTemplate(id)
+    s.updateWorkout({ currentExerciseIndex: 0 })
+    setListVersion((v) => v + 1)
   }
 
   function selectExercise(index: number) {
@@ -344,6 +363,13 @@ export default function WorkoutModePage() {
             >
               Retry
             </button>
+            <button
+              type="button"
+              onClick={() => void s.selectTemplate(null)}
+              className="w-full min-h-12 rounded-xl border border-border bg-surface font-medium"
+            >
+              Continue without template
+            </button>
           </div>
         ) : !decided || s.isLoadingTemplate ? (
           <p className="text-sm text-text-muted-strong">Loading…</p>
@@ -360,6 +386,27 @@ export default function WorkoutModePage() {
                   Finish workout
                 </button>
               </div>
+            )}
+
+            {canPickTemplate && (
+              <section aria-labelledby="start-from-template" className="rounded-xl border border-border bg-surface p-4 space-y-3">
+                {/* h3: keeps the current exercise the page's only h2 */}
+                <h3 id="start-from-template" className="text-base font-semibold">
+                  Start from a template
+                </h3>
+                <div className="space-y-2">
+                  {templates.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => void startFromTemplate(t.id)}
+                      className="w-full min-h-12 rounded-xl border border-border bg-surface px-3 text-left text-base font-medium"
+                    >
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
 
             {entry ? (
