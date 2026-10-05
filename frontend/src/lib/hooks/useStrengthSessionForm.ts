@@ -100,8 +100,14 @@ export interface StrengthSessionForm {
   /** Set when loading a template failed or timed out; `retryTemplate` tries again. */
   templateError: string | null
   retryTemplate: () => void
-  /** Prefill from a template, or clear back to defaults with `null`. Keeps date and a touched title. */
-  selectTemplate: (id: number | null) => Promise<void>
+  /**
+   * Prefill from a template, or clear back to defaults with `null`. Keeps date
+   * and a touched title. Resolves true when applied (always for `null`), false
+   * when the load failed or a newer request superseded it. A successful pick
+   * also makes this session own the draft, so it is stored even though the
+   * form is clean after the reset.
+   */
+  selectTemplate: (id: number | null) => Promise<boolean>
   titleTouched: boolean
   setTitleTouched: (touched: boolean) => void
 
@@ -212,6 +218,15 @@ function useDraftWriter(delayMs: number) {
   return { schedule, flush, cancel }
 }
 
+/**
+ * A restored title counts as the user's own unless it is empty or the default.
+ * The draft stores only the template id, not its name, so a title equal to the
+ * template's name is treated as custom (a later pick keeps it).
+ */
+function isCustomTitle(title: string | null | undefined): boolean {
+  return !!title && title !== emptyStrengthDefaults().title
+}
+
 export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = {}): StrengthSessionForm {
   const { onSaved, autosaveMs = STRENGTH_AUTOSAVE_MS } = options
   const navigate = useNavigate()
@@ -231,7 +246,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
   const [templateError, setTemplateError] = useState<string | null>(null)
   const [diffState, setDiffState] = useState<DiffState | null>(null)
-  const [titleTouched, setTitleTouched] = useState(resumeDraft)
+  const [titleTouched, setTitleTouched] = useState(() => resumed !== null && isCustomTitle(resumed.values.title))
   const [pendingDraft, setPendingDraft] = useState<StrengthDraft | null>(resumeDraft ? null : initialDraft)
   const [isRestoring, setIsRestoring] = useState(false)
   const [workout, setWorkout] = useState<WorkoutModeState>(() => resumed?.workout ?? initialWorkoutModeState())
@@ -292,14 +307,15 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
 
   // ── Template ──────────────────────────────────────────────────────────────
 
-  async function applyTemplate(id: number) {
+  /** True when the template was applied; false when it failed or a newer request superseded it. */
+  async function applyTemplate(id: number): Promise<boolean> {
     const generation = ++templateGeneration.current
     lastTemplateRequest.current = id
     setIsLoadingTemplate(true)
     setTemplateError(null)
     try {
       const detail = await withTimeout(api.get<TemplateSnapshot>(`/templates/strength/${id}`), TEMPLATE_FETCH_TIMEOUT_MS)
-      if (generation !== templateGeneration.current) return
+      if (generation !== templateGeneration.current) return false
       keptChanges.current = null
       setSelectedTemplateId(id)
       setTemplateSnapshot(detail)
@@ -310,6 +326,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
         newValues.title = getValues('title')
       }
       reset(newValues)
+      return true
     } catch (err) {
       if (generation === templateGeneration.current) {
         const status = (err as { status?: unknown } | null)?.status
@@ -319,6 +336,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
             : "Couldn't load the template. Check your connection and try again.",
         )
       }
+      return false
     } finally {
       if (generation === templateGeneration.current) setIsLoadingTemplate(false)
     }
@@ -328,7 +346,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     if (lastTemplateRequest.current !== null) void applyTemplate(lastTemplateRequest.current)
   }
 
-  async function selectTemplate(id: number | null) {
+  async function selectTemplate(id: number | null): Promise<boolean> {
     if (id === null) {
       templateGeneration.current++
       setIsLoadingTemplate(false)
@@ -343,9 +361,13 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
         defaults.title = getValues('title')
       }
       reset(defaults)
-    } else {
-      await applyTemplate(id)
+      return true
     }
+    const applied = await applyTemplate(id)
+    // reset() leaves the form clean, so claim the draft explicitly; the autosave
+    // effect then writes it on the next render with the fresh values and template id
+    if (applied) draftActive.current = true
+    return applied
   }
 
   // ── Draft ─────────────────────────────────────────────────────────────────
@@ -375,7 +397,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     setIsLoadingTemplate(false)
     setTemplateError(null)
     keptChanges.current = null
-    setTitleTouched(true)
+    setTitleTouched(isCustomTitle(draftValues.title))
     draftActive.current = true
     reset(draftValues)
     setWorkout(draftWorkout)

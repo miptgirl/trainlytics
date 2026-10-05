@@ -693,3 +693,108 @@ describe('useStrengthSessionForm: second review', () => {
     await waitFor(() => expect(result.current.templateError).toBe('This template no longer exists.'))
   })
 })
+
+describe('useStrengthSessionForm: user-picked templates', () => {
+  const blankDraft = (title: string) => ({
+    version: 2,
+    title,
+    duration_seconds: null,
+    calories: '',
+    date: '2026-09-01T10:00',
+    notes: '',
+    wellbeing: null,
+    rpe: null,
+    exercises: [{ exercise_id: '', sets: [set('', '')] }],
+    templateId: null,
+    workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: null },
+  })
+
+  it('selectTemplate resolves true on success and writes the draft with the template', async () => {
+    const { result } = setup('/workout?type=strength')
+    let ok: boolean | undefined
+    await act(async () => {
+      ok = await result.current.selectTemplate(3)
+    })
+    expect(ok).toBe(true)
+    await waitFor(() => expect(storedDraft()?.templateId).toBe(3))
+    expect(storedDraft().exercises[0].exercise_id).toBe('1')
+  })
+
+  it('selectTemplate resolves false when the load fails, and writes no draft', async () => {
+    mockGet.mockImplementation(async () => {
+      throw new Error('offline')
+    })
+    const { result } = setup('/workout?type=strength')
+    let ok: boolean | undefined
+    await act(async () => {
+      ok = await result.current.selectTemplate(3)
+    })
+    expect(ok).toBe(false)
+    await act(() => sleep(60))
+    expect(storedDraft()).toBeNull()
+  })
+
+  it('selectTemplate resolves false when a newer pick superseded it; null resolves true', async () => {
+    let release: (v: unknown) => void = () => {}
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') return new Promise((r) => (release = r)) as never
+      if (path === '/templates/strength/4') return { ...legDay, id: 4, name: 'Other' } as never
+      return [] as never
+    })
+    const { result } = setup('/workout?type=strength')
+    let first: Promise<boolean> | undefined
+    act(() => {
+      first = result.current.selectTemplate(3)
+    })
+    let second: boolean | undefined
+    await act(async () => {
+      second = await result.current.selectTemplate(4)
+    })
+    await act(async () => {
+      release(legDay)
+    })
+    expect(second).toBe(true)
+    expect(await first).toBe(false)
+    expect(result.current.selectedTemplateId).toBe(4)
+    let cleared: boolean | undefined
+    await act(async () => {
+      cleared = await result.current.selectTemplate(null)
+    })
+    expect(cleared).toBe(true)
+  })
+
+  it('the URL template on mount still does not create a draft', async () => {
+    await setupWithTemplate()
+    await act(() => sleep(60))
+    expect(storedDraft()).toBeNull()
+  })
+
+  it('after resuming a draft with the default title, a pick sets the template name as title', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blankDraft('Strength session')))
+    const { result } = setup('/workout?type=strength&resume=1')
+    expect(result.current.titleTouched).toBe(false)
+    await act(async () => {
+      await result.current.selectTemplate(3)
+    })
+    expect(result.current.values.title).toBe('Leg day')
+  })
+
+  it('after resuming a draft with a custom title, a pick keeps that title', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blankDraft('My own title')))
+    const { result } = setup('/workout?type=strength&resume=1')
+    expect(result.current.titleTouched).toBe(true)
+    await act(async () => {
+      await result.current.selectTemplate(3)
+    })
+    expect(result.current.values.title).toBe('My own title')
+  })
+
+  it('restoreDraft applies the same title rule', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blankDraft('Strength session')))
+    const { result } = setup('/workout?type=strength')
+    await act(async () => {
+      await result.current.restoreDraft()
+    })
+    expect(result.current.titleTouched).toBe(false)
+  })
+})

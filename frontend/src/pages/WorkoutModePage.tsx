@@ -34,7 +34,7 @@ import {
   sessionProgress,
 } from '../lib/workoutMode'
 
-type Sheet = 'exercises' | 'add-exercise' | 'finish' | 'options' | null
+type Sheet = 'exercises' | 'add-exercise' | 'finish' | 'options' | 'templates' | null
 
 /** Undo toast: what was removed and how to put it back. */
 interface UndoAction {
@@ -107,14 +107,20 @@ export default function WorkoutModePage() {
     queryKey: ['templates', 'strength'],
     queryFn: () => api.get<TemplateSummary[]>('/templates/strength'),
   })
-  // Applying a template resets the form, so it is only offered before anything is logged
+  // Applying a template resets the form, so it is only offered before anything
+  // is logged. Latched: once the session has been touched (or a template picked)
+  // the entry is gone for this mount, even if the user later clears a field.
+  const [templateOffered, setTemplateOffered] = useState(true)
+  const pristine = s.selectedTemplateId === null && exercises.every(isBlankEntry)
+  if (templateOffered && decided && !pristine) setTemplateOffered(false)
   const canPickTemplate =
+    templateOffered &&
     decided &&
     s.selectedTemplateId === null &&
     !s.isLoadingTemplate &&
     !s.templateError &&
     templates.length > 0 &&
-    exercises.every(isBlankEntry)
+    pristine
   const nameOf = (id: string) => names.get(id) ?? (id ? '…' : 'No exercise chosen')
 
   // Once the draft question is settled: stamp the start time and make a reload
@@ -200,9 +206,26 @@ export default function WorkoutModePage() {
   }
 
   async function startFromTemplate(id: number) {
-    await s.selectTemplate(id)
+    setSheet(null)
+    const ok = await s.selectTemplate(id)
+    if (!ok) return
     s.updateWorkout({ currentExerciseIndex: 0 })
     setListVersion((v) => v + 1)
+  }
+
+  function continueWithoutTemplate() {
+    void s.selectTemplate(null)
+    // Drop a URL template too, or a reload would load it (and fail) again
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('templateId')
+        return next
+      },
+      { replace: true },
+    )
+    // A 404 means the cached list still has the deleted template
+    void qc.invalidateQueries({ queryKey: ['templates', 'strength'] })
   }
 
   function selectExercise(index: number) {
@@ -307,13 +330,16 @@ export default function WorkoutModePage() {
               exercises
             </p>
           </div>
-          <button type="button" onClick={() => setSheet('options')} aria-label="Workout options" className={`${iconBtn} text-xl`}>
+          <button type="button" onClick={() => setSheet('options')}
+            disabled={s.isLoadingTemplate}
+            aria-label="Workout options"
+            className={`${iconBtn} text-xl disabled:opacity-50`}>
             ⋯
           </button>
           <button
             type="button"
             onClick={openFinish}
-            disabled={!decided}
+            disabled={!decided || s.isLoadingTemplate}
             // Filled only once everything is done; until then "Complete set" is the primary action
             className={`min-h-11 px-4 rounded-lg text-sm font-semibold disabled:opacity-50 ${
               allDone ? 'bg-primary-dark text-white' : 'border border-border bg-surface text-primary-dark'
@@ -365,7 +391,7 @@ export default function WorkoutModePage() {
             </button>
             <button
               type="button"
-              onClick={() => void s.selectTemplate(null)}
+              onClick={continueWithoutTemplate}
               className="w-full min-h-12 rounded-xl border border-border bg-surface font-medium"
             >
               Continue without template
@@ -389,24 +415,13 @@ export default function WorkoutModePage() {
             )}
 
             {canPickTemplate && (
-              <section aria-labelledby="start-from-template" className="rounded-xl border border-border bg-surface p-4 space-y-3">
-                {/* h3: keeps the current exercise the page's only h2 */}
-                <h3 id="start-from-template" className="text-base font-semibold">
-                  Start from a template
-                </h3>
-                <div className="space-y-2">
-                  {templates.map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => void startFromTemplate(t.id)}
-                      className="w-full min-h-12 rounded-xl border border-border bg-surface px-3 text-left text-base font-medium"
-                    >
-                      {t.name}
-                    </button>
-                  ))}
-                </div>
-              </section>
+              <button
+                type="button"
+                onClick={() => setSheet('templates')}
+                className="w-full min-h-12 rounded-xl border border-border bg-surface font-medium text-primary-dark"
+              >
+                Start from template
+              </button>
             )}
 
             {entry ? (
@@ -467,7 +482,7 @@ export default function WorkoutModePage() {
         </div>
       )}
 
-      {decided && (
+      {decided && !s.isLoadingTemplate && (
         <div className="fixed inset-x-0 bottom-0 z-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]">
           <div className="max-w-xl mx-auto px-3 pt-2 pb-2 space-y-2">
             <RestTimer
@@ -525,6 +540,23 @@ export default function WorkoutModePage() {
             setSheet(null)
           }}
         />
+      )}
+
+      {sheet === 'templates' && (
+        <BottomSheet title="Start from template" onClose={() => setSheet(null)}>
+          <div className="p-4 space-y-2">
+            {templates.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => void startFromTemplate(t.id)}
+                className="w-full min-h-12 py-2 px-3 rounded-xl border border-border bg-surface text-left text-base font-medium break-words"
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
       )}
 
       {sheet === 'options' && (
