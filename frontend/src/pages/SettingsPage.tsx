@@ -558,7 +558,7 @@ function ReplacementPicker({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl flex flex-col max-h-[80vh]">
+      <div className="relative bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl flex flex-col max-h-[80vh]">
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900">Add replacement</h2>
           <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Close">✕</button>

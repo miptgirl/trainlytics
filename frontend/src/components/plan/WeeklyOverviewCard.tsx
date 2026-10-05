@@ -1,4 +1,5 @@
 import { type PlannedSessionOut } from '../../lib/planApi'
+import { summarizeWeek } from '../../lib/planStats'
 
 interface WeeklyOverviewCardProps {
   sessions: PlannedSessionOut[]
@@ -21,12 +22,7 @@ export function WeeklyOverviewCard({ sessions, isLoading }: WeeklyOverviewCardPr
     )
   }
 
-  const planned = sessions.filter((s) => s.status === 'planned').length
-  const done = sessions.filter((s) => s.status === 'done').length
-  const skipped = sessions.filter((s) => s.status === 'skipped').length
-  const completionDenominator = done + skipped
-  const completionPct =
-    completionDenominator > 0 ? Math.round((done / completionDenominator) * 100) : null
+  const { planned, done, skipped, completionPct } = summarizeWeek(sessions)
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

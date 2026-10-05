@@ -409,7 +409,7 @@ A user can tap "Review week" after a hard week, see AI-proposed adjustments to n
 
 - [x] **Group 1 — Mobile fundamentals and semantic colour tokens** — no zoom on focus, scroll reset on navigation, 44px tap targets, two-line strength set rows, pinned Save, compact cardio segments and History cards, chart label/tick fixes, semantic tokens with interim blue values
 - [ ] **Group 2 — Workout mode (strength)** — shared form hook, full-screen set-by-set logger with rest timer and choose-exercise sheet
-- [ ] **Group 3 — Today screen and mobile navigation** — `/today`, bottom tab bar, mobile header and menu sheet, safe areas
+- [x] **Group 3 — Today screen and mobile navigation** — `/today`, bottom tab bar, mobile header and menu sheet, safe areas _(all checks pass in Chromium at 390/1280px; home-indicator clearance on a real iPhone is still to confirm)_
 - [ ] **Group 4 — Sage palette and Stats glance** — switch tokens to the design system, remove hard-coded colours, mobile stats summary
 
 ---

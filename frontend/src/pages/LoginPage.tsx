@@ -22,13 +22,13 @@ export default function LoginPage() {
 
   if (isLoading) return null
 
-  if (token) return <Navigate to="/" replace />
+  if (token) return <Navigate to="/today" replace />
 
   async function onSubmit(values: FormValues) {
     setApiError(null)
     try {
       await login(values.username, values.password)
-      navigate('/', { replace: true })
+      navigate('/today', { replace: true })
     } catch (e) {
       setApiError(e instanceof Error ? e.message : 'Login failed')
     }
