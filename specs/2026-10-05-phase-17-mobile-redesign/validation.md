@@ -7,17 +7,17 @@ A group is complete when its checklist passes on a 390px viewport (and 1280px wh
 ## Group 1 — Mobile fundamentals + semantic tokens
 
 - [x] Focusing any input, select or textarea at 390px doesn't zoom the page (computed font-size ≥ 16px); at 1280px fields keep their previous size
-- [ ] Opening the Log form from a scrolled Plan page lands at the top; browser Back restores the previous position
-- [ ] Every control listed in requirements 1.3 measures ≥ 44×44px at 390px
+- [x] Opening the Log form from a scrolled Plan page lands at the top; browser Back restores the previous position
+- [x] Every control listed in requirements 1.3 measures ≥ 44×44px at 390px
 - [x] At 390px each strength set spans two lines with Delete on the second line, away from Done; done sets are tinted, not struck through; "+ Add set" sits below the last set; at ≥ 640px the single-row layout is unchanged
-- [ ] Save/Cancel stay visible while scrolling both Log forms at 390px; at 1280px they sit at the end of the form as before
+- [x] Save/Cancel stay visible while scrolling both Log forms at 390px; at 1280px they sit at the end of the form as before
 - [x] Cardio segment duration, distance and pace share one row at 390px
 - [x] History cards: badge, date and Copy on one line; title and summary use the full width
 - [x] Templates and Steps actions are 44px buttons with Delete on the far right; Steps dates read "Sun, 4 Oct"
-- [ ] Overview, Strength and Training Load y-axis labels don't wrap or clip at 390px; Sessions per week shows whole-number ticks; tapping a heatmap day shows its tooltip; `</>` hidden below 640px; empty charts say "No data yet"
+- [x] Overview, Strength and Training Load y-axis labels don't wrap or clip at 390px; Sessions per week shows whole-number ticks; tapping a heatmap day shows its tooltip; `</>` hidden below 640px; empty charts say "No data yet"
 - [x] The Plan week title fits on one line; Plan vs. Actual labels aren't cut off
 - [x] `index.css` defines the semantic tokens with the interim values; the page background is unchanged
-- [ ] No visual change at 1280px other than the items above
+- [x] No visual change at 1280px other than the items above
 
 ## Group 2 — Workout mode
 

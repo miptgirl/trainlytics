@@ -10,19 +10,23 @@ All notable changes to Trainlytics are documented here.
 
 - **No zoom on focus** — inputs, selects and textareas use 16px text below 640px so iOS Safari no longer zooms in
 - **Scroll to top on navigation** — pushing or replacing a route scrolls to the top (Back/Forward keep their restored position); the Log form no longer opens mid-page
-- **Tap targets** — plan card actions, "Add session", week arrows, set Done/delete, exercise header icons, Templates/Steps/History row actions and chart toggles are at least 44px below `md`
-- **Charts** — y-axis labels use compact numbers (`14k`) and no longer wrap or clip, count axes use whole numbers, heatmap days show their tooltip on tap, `</>` SQL buttons are hidden below `sm`, an empty trends chart says "No data yet"
+- **Tap targets** — plan card actions, "Add session", week arrows, set Done/delete, exercise header icons, Templates/Steps/History row actions (incl. Copy and the notes chevron) and chart toggles/chips are at least 44px below `md`
+- **Charts** — y-axis labels use compact numbers (`14k`) and no longer wrap or clip, count axes use whole numbers, heatmap days are keyboard-reachable buttons that show their tooltip on tap (clamped to the screen, second tap closes), `</>` SQL buttons are hidden below `sm`, Overview, Plan Adherence and the History trends chart show an empty state when every week is zero/null (the API zero-fills weeks), Training Load labels its unit
 
 ### Changed
 
-- **Strength set rows** take two lines below `sm` (`# · Reps · Weight · Done`, then `Note · Delete`); done sets are tinted instead of struck through; "+ Add set" is a full-width button under the last set
-- **Save/Cancel pinned** to the bottom of both Log forms below `md`
+- **Strength set rows** take two lines below `sm` (`# · Reps · Weight · Done`, then `Note · Delete`); done sets are tinted instead of struck through (the Done control is an outlined 44px button, filled when done); DOM/tab order follows the visual order; "+ Add set" is a full-width button under the last set
+- **Save/Cancel pinned** to the bottom of both Log forms below `md`; a failed save shows its error inside the bar, and `scroll-padding-bottom` keeps focused fields clear of it
 - **Compact cardio segments** — duration, distance and pace share one row; **History cards** put badge, date and Copy on one line; **Plan** week title reads "Sep 28 – Oct 4" on phones and segment summaries wrap to two lines; **Steps** dates read "Sun, 4 Oct" and Templates/Steps Delete is an icon button at the far right
-- **Semantic colour tokens** (`--color-primary`, `--color-bg`, `--color-surface`, `--color-text`, …) added to `@theme` with the current blue/slate values; `--color-surface` is now white and the page background lives in `--color-bg`
+- **Semantic colour tokens** (`--color-primary`, `--color-bg`, `--color-surface`, `--color-text`, …) added to `@theme` with the current blue/slate values; emitted with `@theme static` so `var(--color-*)` is always available; `--color-surface` is now white and the page background lives in `--color-bg`
 
 ### Tests
 
-- Scroll reset (push, replace, POP), set-row structure and add-set placement, Steps date format, compact tick formatting
+- Scroll reset (push, replace, POP, query-only change), set rows (Done toggle and tint, delete removes the right set, tab order), failed-save error inside the pinned bar, empty chart states, Steps date format, compact tick formatting
+
+### Tooling
+
+- `eslint-disable` scoped to the shared RHF `any` props so `pnpm lint` exits 0
 
 ---
 

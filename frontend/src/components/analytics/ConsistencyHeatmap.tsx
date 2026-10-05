@@ -166,7 +166,7 @@ export function ConsistencyHeatmap() {
   function handleCellClick(e: React.MouseEvent, day: WeekDay) {
     const { date, at } = lastOpenRef.current
     // A second tap on the open cell closes it
-    if (tooltip?.date === day.date && !(date === day.date && Date.now() - at < 500)) {
+    if (tooltip?.date === day.date && !(date === day.date && Date.now() - at < 250)) {
       setTooltip(null)
       return
     }
