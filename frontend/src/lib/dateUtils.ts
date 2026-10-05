@@ -13,8 +13,9 @@ export function toLocalDateStr(d: Date): string {
  */
 export function formatShortDate(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
-  const weekday = d.toLocaleDateString('en-GB', { weekday: 'short' })
-  const month = d.toLocaleDateString('en-GB', { month: 'short' })
+  // Fixed names: en-GB renders September as "Sept"
+  const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()]
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]
   return `${weekday}, ${d.getDate()} ${month}`
 }
 

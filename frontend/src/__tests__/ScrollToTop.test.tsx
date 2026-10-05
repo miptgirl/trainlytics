@@ -10,6 +10,7 @@ function Page({ name }: { name: string }) {
     <div>
       <h1>{name}</h1>
       <Link to="/b">go b</Link>
+      <Link to="/a?tab=history">same path, new query</Link>
       <button onClick={() => navigate('/c', { replace: true })}>replace c</button>
       <button onClick={() => navigate(-1)}>back</button>
     </div>
@@ -53,6 +54,12 @@ describe('ScrollToTop', () => {
     renderApp()
     await userEvent.click(screen.getByText('replace c'))
     expect(scrollTo).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('does not scroll when only the query string changes', async () => {
+    renderApp()
+    await userEvent.click(screen.getByText('same path, new query'))
+    expect(scrollTo).not.toHaveBeenCalled()
   })
 
   it('leaves scroll alone on back (POP)', async () => {

@@ -12,7 +12,7 @@ export default function StatsPage() {
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-6 w-fit">
         <button
           onClick={() => setSearchParams({})}
-          className={`text-sm px-4 py-1.5 max-md:min-h-11 rounded-md font-medium transition-colors ${
+          className={`text-sm px-4 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-md font-medium transition-colors ${
             activeTab === 'analytics'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -22,7 +22,7 @@ export default function StatsPage() {
         </button>
         <button
           onClick={() => setSearchParams({ tab: 'history' })}
-          className={`text-sm px-4 py-1.5 max-md:min-h-11 rounded-md font-medium transition-colors ${
+          className={`text-sm px-4 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-md font-medium transition-colors ${
             activeTab === 'history'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'

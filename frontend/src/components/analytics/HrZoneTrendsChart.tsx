@@ -89,7 +89,7 @@ export function HrZoneTrendsChart() {
           <button
             key={m}
             onClick={() => setMode(m)}
-            className={`px-3 py-1 max-md:min-h-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
+            className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
               mode === m
                 ? 'bg-blue-600 text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'

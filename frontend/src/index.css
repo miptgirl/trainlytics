@@ -19,7 +19,10 @@
 
   /* Neutral greys */
   --color-surface-card: #ffffff;
+}
 
+/* static: always emitted as CSS variables, so inline styles and charts can use var(--color-*) */
+@theme static {
   /* Semantic tokens (names from specs/design-system.md). Interim blue/slate
      values; Phase 17 group 4 switches them to the sage palette. */
   --color-primary: #3b82f6;
@@ -49,6 +52,13 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Keep focused fields clear of the pinned Save bar on the Log forms */
+@media (max-width: 767px) {
+  html {
+    scroll-padding-bottom: 6rem;
+  }
 }
 
 /* iOS Safari zooms into any focused field under 16px and stays zoomed.

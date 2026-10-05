@@ -29,7 +29,7 @@ type WorkoutType = 'cardio' | 'strength'
 
 /** Save/Cancel row: pinned to the bottom of the screen below md, plain at the end of the form above. */
 const PINNED_ACTIONS =
-  'flex gap-3 max-md:sticky max-md:bottom-0 max-md:z-10 max-md:-mx-4 max-md:-mb-6 max-md:px-4 max-md:pt-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-slate-200'
+  'max-md:sticky max-md:bottom-0 max-md:z-10 max-md:-mx-4 max-md:-mb-6 max-md:px-4 max-md:pt-3 max-md:pb-[calc(0.75rem+env(safe-area-inset-bottom))] max-md:bg-white max-md:border-t max-md:border-slate-200'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cardio form types & helpers
@@ -779,25 +779,27 @@ function CardioForm({
         }}
       />
 
-      {createMutation.error && (
-        <p className="text-sm text-red-600">{createMutation.error.message}</p>
-      )}
-
       <div className={PINNED_ACTIONS}>
-        <button
-          type="submit"
-          disabled={createMutation.isPending}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-6 py-2 max-md:min-h-11 rounded-lg text-sm"
-        >
-          {createMutation.isPending ? 'Saving…' : 'Save Session'}
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 max-md:min-h-11"
-        >
-          Cancel
-        </button>
+        {/* Inside the pinned bar so a failed save is visible from anywhere in the form */}
+        {createMutation.error && (
+          <p role="alert" className="text-sm text-red-600 mb-2">{createMutation.error.message}</p>
+        )}
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={createMutation.isPending}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-6 py-2 max-md:min-h-11 rounded-lg text-sm"
+          >
+            {createMutation.isPending ? 'Saving…' : 'Save Session'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 max-md:min-h-11"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
 
@@ -1186,25 +1188,27 @@ function StrengthForm({ initialTemplateId, initialDate }: { initialTemplateId?: 
           showDone={templateSnapshot !== null}
         />
 
-        {createMutation.isError && (
-          <p className="text-sm text-red-600">Failed to save session. Please try again.</p>
-        )}
-
         <div className={PINNED_ACTIONS}>
-          <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="flex-1 bg-blue-600 text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            {createMutation.isPending ? 'Saving…' : 'Save Session'}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="px-4 py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
+          {/* Inside the pinned bar so a failed save is visible from anywhere in the form */}
+          {createMutation.isError && (
+            <p role="alert" className="text-sm text-red-600 mb-2">Failed to save session. Please try again.</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="submit"
+              disabled={createMutation.isPending}
+              className="flex-1 bg-blue-600 text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            >
+              {createMutation.isPending ? 'Saving…' : 'Save Session'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="px-4 py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       </form>
 

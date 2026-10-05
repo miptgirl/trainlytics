@@ -69,7 +69,7 @@ export function ExerciseProgressionChart() {
         {selectedId !== null && (
           <button
             onClick={() => setShowVolume((v) => !v)}
-            className={`text-xs px-3 py-1.5 max-md:min-h-11 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-md font-medium transition-colors ${
               showVolume
                 ? 'bg-blue-100 text-blue-700'
                 : 'bg-slate-100 text-slate-500 hover:text-slate-700'

@@ -64,7 +64,11 @@ export function OverviewTrendsChart() {
     )
   }
 
-  if (!data || data.length === 0) {
+  // The API zero-fills empty weeks, so "no data" means every week is all zeros
+  const isEmpty =
+    !data ||
+    data.every((p) => p.session_count === 0 && p.total_minutes === 0 && p.total_volume === 0)
+  if (!data || isEmpty) {
     return (
       <p className="text-slate-400 text-sm text-center py-8">No data yet</p>
     )

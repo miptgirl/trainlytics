@@ -77,7 +77,7 @@ export default function StepsPage() {
                     <button
                       onClick={() => handleDelete(e)}
                       disabled={deleteStep.isPending}
-                      aria-label="Delete"
+                      aria-label={`Delete steps for ${formatShortDate(e.date)}`}
                       title="Delete"
                       className="flex items-center justify-center min-h-11 min-w-11 text-red-500 hover:text-red-700 disabled:opacity-40"
                     >

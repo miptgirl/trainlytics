@@ -504,8 +504,10 @@ export function ExerciseEntryBlock({
   }, [allDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Below sm each set takes two lines: `# Reps Weight Done` then `Note … Delete`
-  // (Done/Delete sit in the 44px last column). From sm up it is a single row;
-  // the action columns are 44px until md so they stay tappable.
+  // (Done/Delete sit in the 44px last column; without Done, Weight spans it).
+  // DOM order is the mobile reading/tab order (reps, weight, done, note, delete);
+  // from sm up `order-*` puts Note back before Done for the single-row layout.
+  // The action columns are 44px until md so they stay tappable.
   const gridCols = showDone
     ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
     : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
@@ -608,7 +610,7 @@ export function ExerciseEntryBlock({
             <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
               <span className="text-xs text-gray-400">#</span>
               <span className="text-xs text-gray-500">Reps</span>
-              <span className="text-xs text-gray-500">Weight (kg)</span>
+              <span className={`text-xs text-gray-500 ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
               <span className="max-sm:hidden text-xs text-gray-500">Notes</span>
               {showDone && <span className="text-xs text-gray-500 text-center">Done</span>}
               <span className="max-sm:hidden" />
@@ -634,10 +636,29 @@ export function ExerciseEntryBlock({
                       type="text"
                       inputMode="decimal"
                       placeholder="kg"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
+                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
-                    <div className="relative max-sm:col-span-3 max-sm:col-start-1 max-sm:row-start-2">
+                    {showDone && (
+                      <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 sm:order-2">
+                        <input
+                          type="checkbox"
+                          className="peer sr-only"
+                          {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
+                        />
+                        <span
+                          className={`text-lg leading-none select-none transition-colors max-sm:flex max-sm:size-11 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:border max-sm:font-bold max-sm:peer-focus-visible:ring-2 max-sm:peer-focus-visible:ring-primary ${
+                            isDone
+                              ? 'text-green-500 max-sm:border-primary-dark max-sm:bg-primary-dark max-sm:text-white'
+                              : 'text-gray-300 hover:text-gray-400 max-sm:border-border max-sm:bg-surface max-sm:text-text-muted'
+                          }`}
+                          aria-label={isDone ? 'Mark undone' : 'Mark done'}
+                        >
+                          ✓
+                        </span>
+                      </label>
+                    )}
+                    <div className="relative max-sm:col-span-3 sm:order-1">
                       <input
                         type="text"
                         placeholder="note"
@@ -655,32 +676,17 @@ export function ExerciseEntryBlock({
                         </button>
                       )}
                     </div>
-                    {showDone && (
-                      <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 max-sm:col-start-4 max-sm:row-start-1">
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          {...register(`exercises.${exIndex}.sets.${setIndex}.done`)}
-                        />
-                        <span
-                          className={`text-lg leading-none select-none transition-colors ${isDone ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
-                          aria-label={isDone ? 'Mark undone' : 'Mark done'}
-                        >
-                          ✓
-                        </span>
-                      </label>
-                    )}
                     {setFields.length > 1 ? (
                       <button
                         type="button"
                         onClick={() => removeSet(setIndex)}
-                        className="flex items-center justify-center max-md:min-h-11 text-gray-400 hover:text-red-500 text-sm leading-none max-sm:col-start-4 max-sm:row-start-2"
+                        className="flex items-center justify-center max-md:min-h-11 text-gray-400 hover:text-red-500 text-sm leading-none sm:order-3"
                         aria-label="Remove set"
                       >
                         ✕
                       </button>
                     ) : (
-                      <span className="max-sm:hidden" />
+                      <span className="max-sm:hidden sm:order-3" />
                     )}
                   </div>
                 )

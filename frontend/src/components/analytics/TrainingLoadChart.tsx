@@ -62,7 +62,7 @@ export function TrainingLoadChart() {
       <div className="flex items-center gap-1 mb-4">
         <button
           onClick={() => setMetric('minutes')}
-          className={`px-3 py-1 max-md:min-h-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
+          className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
             metric === 'minutes'
               ? 'bg-blue-600 text-white'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -72,7 +72,7 @@ export function TrainingLoadChart() {
         </button>
         <button
           onClick={() => setMetric('distance')}
-          className={`px-3 py-1 max-md:min-h-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
+          className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium transition-colors ${
             metric === 'distance'
               ? 'bg-blue-600 text-white'
               : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -80,6 +80,7 @@ export function TrainingLoadChart() {
         >
           Distance
         </button>
+        <span className="ml-auto text-xs text-slate-400">Rolling total ({unit})</span>
       </div>
 
       <ResponsiveContainer width="100%" height={240}>

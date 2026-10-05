@@ -23,7 +23,14 @@ export function PlanAdherenceChart() {
     return <div className="h-52 bg-slate-50 rounded-lg animate-pulse" />
   }
 
-  if (!data || data.length === 0) {
+  // Weeks without a plan come back as null/zero rows; all of those means nothing to chart
+  const isEmpty =
+    !data ||
+    data.every(
+      (p) =>
+        p.completion_pct == null && !p.strength_volume_delta && !p.cardio_distance_delta,
+    )
+  if (!data || isEmpty) {
     return (
       <p className="text-slate-400 text-sm text-center py-8">
         No plan adherence data yet. Start planning sessions to track adherence.

@@ -206,7 +206,7 @@ function TrainingTrendsChart() {
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
           <button
             onClick={() => setView('minutes')}
-            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
               view === 'minutes'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -216,7 +216,7 @@ function TrainingTrendsChart() {
           </button>
           <button
             onClick={() => setView('calories')}
-            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
               view === 'calories'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -336,7 +336,7 @@ function PaceTrendsChart() {
               <button
                 key={type}
                 onClick={() => toggleType(type)}
-                className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-full font-medium border transition-colors ${
+                className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-full font-medium border transition-colors ${
                   !hiddenTypes.has(type)
                     ? 'bg-slate-800 text-white border-slate-800'
                     : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
@@ -458,7 +458,7 @@ function CopyRowButton({ session }: { session: SessionSummary }) {
     <button
       onClick={handleClick}
       disabled={status === 'loading'}
-      className="shrink-0 px-2.5 py-1.5 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 text-slate-500 transition-colors"
+      className="shrink-0 px-2.5 py-1.5 max-md:min-h-11 max-md:min-w-11 text-xs font-medium border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-50 text-slate-500 transition-colors"
       aria-label="Copy session summary"
     >
       {status === 'loading' ? '…' : status === 'copied' ? 'Copied!' : status === 'error' ? 'Failed' : 'Copy'}
@@ -492,6 +492,8 @@ function HistoryCard({ s }: { s: SessionSummary }) {
                 onClick={e => { e.preventDefault(); setNotesOpen(o => !o) }}
                 className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 max-md:-mr-1 text-slate-400 hover:text-slate-600 transition-colors"
                 title="Toggle notes"
+                aria-label={notesOpen ? 'Hide notes' : 'Show notes'}
+                aria-expanded={notesOpen}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                   className={`w-4 h-4 transition-transform ${notesOpen ? 'rotate-180' : ''}`}>
@@ -565,7 +567,7 @@ export function HistoryPageContent() {
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-4 w-fit">
         <button
           onClick={() => setChartTab('trends')}
-          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
             chartTab === 'trends'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -575,7 +577,7 @@ export function HistoryPageContent() {
         </button>
         <button
           onClick={() => setChartTab('pace')}
-          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 rounded-md font-medium transition-colors ${
             chartTab === 'pace'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
