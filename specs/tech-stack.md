@@ -12,7 +12,7 @@ Trainlytics is built as a single-user personal app with a React frontend and a P
 | Language | TypeScript |
 | Routing | React Router v6 |
 | State management | React Query (server state) + React built-in state for UI |
-| Styling | Tailwind CSS |
+| Styling | Tailwind CSS; colours, shadows and radii in [design-system.md](design-system.md) |
 | Charts | Recharts |
 | Forms | React Hook Form |
 
