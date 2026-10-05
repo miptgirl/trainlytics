@@ -73,7 +73,7 @@ function Stepper({
           onFocus={(e) => e.currentTarget.select()}
           placeholder="0"
           aria-label={`${label} for set ${setNumber}`}
-          className="w-28 min-w-0 h-[52px] px-1 text-center text-[2rem] leading-none font-bold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border focus:outline-none focus:border-primary-dark"
+          className="w-28 min-w-0 h-[52px] px-1 text-center text-[2rem]! leading-none font-bold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border focus:outline-none focus:border-primary-dark"
         />
         <button
           type="button"

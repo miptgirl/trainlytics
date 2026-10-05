@@ -110,7 +110,7 @@ export function ChooseExerciseSheet({
 
   if (adding) {
     return (
-      <BottomSheet title="Add exercise" onClose={onClose}>
+      <BottomSheet key="add" title="Add exercise" onClose={onClose}>
         <div className="p-4 space-y-3">
           <label className="block">
             <span className="text-sm font-medium text-text-muted-strong">Search exercises</span>
@@ -154,6 +154,7 @@ export function ChooseExerciseSheet({
 
   return (
     <BottomSheet
+      key="list"
       title="Choose exercise"
       onClose={onClose}
       footer={

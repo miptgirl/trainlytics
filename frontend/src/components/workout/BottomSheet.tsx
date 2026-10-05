@@ -38,12 +38,20 @@ export function BottomSheet({
     }
   }, [])
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      onClose()
-      return
+  // Escape on the document, so it works even if focus fell out of the sheet
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCloseRef.current()
     }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
+
+  function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key !== 'Tab' || !panelRef.current) return
     const items = Array.from(panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
     if (items.length === 0) return

@@ -445,6 +445,34 @@ describe('Finish and save (6, 7, 10, 11, nit)', () => {
   })
 })
 
+describe('Sheets (browser re-check)', () => {
+  it('switching Choose → Add exercise focuses the search, and Escape still closes it', async () => {
+    const user = userEvent.setup()
+    renderAt(['/workout?type=strength&templateId=4'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    const opener = screen.getByRole('button', { name: 'Choose exercise' })
+    await user.click(opener)
+    await user.click(screen.getByRole('button', { name: '+ Add exercise' }))
+    expect(screen.getByLabelText('Search exercises')).toHaveFocus()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(opener).toHaveFocus()
+  })
+
+  it('Escape in the template prompt does not also close the Finish sheet', async () => {
+    const user = userEvent.setup()
+    renderAt(['/workout?type=strength&templateId=3'])
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Increase reps by 1' }))
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    await user.click(screen.getByRole('button', { name: 'Save workout' }))
+    await screen.findByRole('dialog', { name: /Update template/ })
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: /Update template/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Finish workout' })).toBeInTheDocument()
+  })
+})
+
 describe('Add exercise (9)', () => {
   it('a double tap adds once; reps and weight come from last session', async () => {
     const user = userEvent.setup()
