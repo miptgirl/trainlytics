@@ -120,7 +120,7 @@ export function ChooseExerciseSheet({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="e.g. Squat"
-              className="mt-1 w-full min-h-11 rounded-lg border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
+              className="mt-1 w-full min-h-11 rounded-sm border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
             />
           </label>
           {!startInAddMode && (

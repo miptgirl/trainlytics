@@ -66,7 +66,7 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
   const total = data?.total_pending ?? 0
 
   if (isLoading) {
-    return <p className="text-sm text-slate-400 py-4">Loading…</p>
+    return <p className="text-sm text-text-muted-strong py-4">Loading…</p>
   }
 
   return (
@@ -74,25 +74,25 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
       {/* Bulk action bar */}
       {total > 0 && (
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-text-muted-strong">
             {total} pending import{total !== 1 ? 's' : ''}
           </p>
           <div className="flex items-center gap-2">
             {discardAllConfirm ? (
               <>
-                <span className="text-sm text-slate-500">Discard all {total} imports?</span>
+                <span className="text-sm text-text-muted-strong">Discard all {total} imports?</span>
                 <button
                   type="button"
                   disabled={discardAllMutation.isPending}
                   onClick={() => discardAllMutation.mutate()}
-                  className="text-sm font-medium text-red-600 hover:text-red-700 disabled:opacity-40 transition-colors"
+                  className="text-sm font-medium text-error-text disabled:opacity-40 transition-colors"
                 >
                   {discardAllMutation.isPending ? 'Discarding…' : 'Yes, discard all'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDiscardAllConfirm(false)}
-                  className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                  className="text-sm text-text-muted-strong transition-colors"
                 >
                   Cancel
                 </button>
@@ -104,7 +104,7 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
                   setDiscardAllResult(null)
                   setDiscardAllConfirm(true)
                 }}
-                className="text-sm text-slate-400 hover:text-red-500 transition-colors"
+                className="text-sm text-text-muted-strong hover:text-error-text transition-colors"
               >
                 Discard All
               </button>
@@ -116,7 +116,7 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
                 setAcceptAllResult(null)
                 acceptAllMutation.mutate()
               }}
-              className="text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg transition-colors"
+              className="text-sm font-medium bg-primary-dark hover:brightness-95 disabled:opacity-40 text-white px-4 py-2 rounded-lg transition-colors"
             >
               {acceptAllMutation.isPending ? 'Accepting…' : `Accept All (${total})`}
             </button>
@@ -126,14 +126,14 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
 
       {/* Result banners */}
       {acceptAllResult && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800">
+        <div className="bg-success/10 border border-success/40 rounded-lg px-4 py-3 text-sm text-success-text">
           {acceptAllResult.accepted} accepted
           {acceptAllResult.conflicts > 0 &&
             ` · ${acceptAllResult.conflicts} conflict${acceptAllResult.conflicts !== 1 ? 's' : ''} to review`}
         </div>
       )}
       {discardAllResult !== null && (
-        <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-sm text-slate-600">
+        <div className="bg-bg border border-border rounded-lg px-4 py-3 text-sm text-text-muted-strong">
           {discardAllResult} import{discardAllResult !== 1 ? 's' : ''} discarded
         </div>
       )}
@@ -147,11 +147,11 @@ export function ImportsTab({ onNavigateToConnections }: ImportsTabProps) {
         </div>
       ) : (
         <div className="text-center py-12 flex flex-col items-center gap-3">
-          <p className="text-sm text-slate-500">No pending imports</p>
+          <p className="text-sm text-text-muted-strong">No pending imports</p>
           <button
             type="button"
             onClick={onNavigateToConnections}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+            className="text-sm text-primary-dark font-medium transition-colors"
           >
             Go to Connections to sync Strava or upload Apple Health data
           </button>

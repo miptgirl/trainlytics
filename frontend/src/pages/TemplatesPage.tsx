@@ -132,7 +132,7 @@ function TemplateList({
   if (isLoading) {
     return (
       <Layout>
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       </Layout>
     )
   }
@@ -140,40 +140,40 @@ function TemplateList({
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-slate-900">Templates</h1>
+        <h1 className="text-2xl font-bold text-text">Templates</h1>
         <button
           onClick={onNew}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
+          className="bg-primary-dark hover:brightness-95 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
         >
           + New Template
         </button>
       </div>
 
       {templates.length === 0 ? (
-        <p className="text-gray-400 text-sm">No templates yet. Create your first one.</p>
+        <p className="text-text-muted-strong text-sm">No templates yet. Create your first one.</p>
       ) : (
         <ul className="space-y-2">
           {templates.map((t) => (
             <li
               key={t.id}
-              className="bg-white rounded-xl border border-gray-200 px-4 py-3"
+              className="bg-surface rounded-xl border border-border px-4 py-3"
             >
               {deleteConfirmId === t.id ? (
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-text">
                     Delete <span className="font-medium">{t.name}</span>?
                   </p>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
                       onClick={() => deleteMutation.mutate(t.id)}
                       disabled={deleteMutation.isPending}
-                      className="text-sm text-red-600 hover:text-red-800 font-medium disabled:opacity-50 min-h-11 px-2"
+                      className="text-sm text-error-text font-medium disabled:opacity-50 min-h-11 px-2"
                     >
                       {deleteMutation.isPending ? 'Deleting…' : 'Yes, delete'}
                     </button>
                     <button
                       onClick={() => setDeleteConfirmId(null)}
-                      className="text-sm text-gray-500 hover:text-gray-900 min-h-11 px-2"
+                      className="text-sm text-text-muted-strong min-h-11 px-2"
                     >
                       Cancel
                     </button>
@@ -182,24 +182,24 @@ function TemplateList({
               ) : (
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{t.name}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="font-medium text-text truncate">{t.name}</p>
+                    <p className="text-sm text-text-muted-strong mt-0.5">
                       {t.exercise_count} {t.exercise_count === 1 ? 'exercise' : 'exercises'}
                     </p>
                     {t.notes && (
-                      <p className="text-sm text-gray-400 mt-0.5 line-clamp-1">{t.notes}</p>
+                      <p className="text-sm text-text-muted-strong mt-0.5 line-clamp-1">{t.notes}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => navigate(`/log?templateId=${t.id}`)}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium min-h-11 px-3"
+                      className="text-sm text-primary-dark font-medium min-h-11 px-3"
                     >
                       Use
                     </button>
                     <button
                       onClick={() => onEdit(t.id)}
-                      className="text-sm text-gray-500 hover:text-gray-900 min-h-11 px-3"
+                      className="text-sm text-text-muted-strong min-h-11 px-3"
                     >
                       Edit
                     </button>
@@ -207,7 +207,7 @@ function TemplateList({
                       onClick={() => setDeleteConfirmId(t.id)}
                       aria-label={`Delete template ${t.name}`}
                       title="Delete"
-                      className="flex items-center justify-center min-h-11 min-w-11 text-red-500 hover:text-red-700"
+                      className="flex items-center justify-center min-h-11 min-w-11 text-error hover:text-error-text"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -256,7 +256,7 @@ function TemplateFormPage({
   if (editId !== undefined && loadingExisting) {
     return (
       <Layout>
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       </Layout>
     )
   }
@@ -334,36 +334,36 @@ function TemplateForm({
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+        <h1 className="text-2xl font-bold text-text">{title}</h1>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+        <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-text mb-1">Name *</label>
             <input
               type="text"
               placeholder="e.g. Push Day"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               autoFocus
               {...register('name', { required: 'Name is required' })}
             />
-            {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+            {errors.name && <p className="mt-1 text-xs text-error-text">{errors.name.message}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-text mb-1">Notes</label>
             <div className="relative">
               <textarea
                 rows={2}
                 placeholder="Optional notes…"
-                className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none ${templateNotes ? 'pr-8' : ''}`}
+                className={`w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${templateNotes ? 'pr-8' : ''}`}
                 {...register('notes')}
               />
               {templateNotes && (
                 <button
                   type="button"
                   onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-gray-400 hover:text-gray-600"
+                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong"
                   aria-label="Clear notes"
                 >
                   <EraserIcon />
@@ -375,7 +375,7 @@ function TemplateForm({
 
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-medium text-gray-900">Exercises</h2>
+            <h2 className="font-medium text-text">Exercises</h2>
           </div>
           <div className="space-y-4">
             {exerciseFields.map((exField, exIndex) => (
@@ -414,28 +414,28 @@ function TemplateForm({
           <button
             type="button"
             onClick={() => appendExercise(emptyEntry())}
-            className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="mt-3 text-sm text-primary-dark font-medium"
           >
             + Add Exercise
           </button>
         </div>
 
         {mutation.isError && (
-          <p className="text-sm text-red-600">Failed to save template. Please try again.</p>
+          <p className="text-sm text-error-text">Failed to save template. Please try again.</p>
         )}
 
         <div className="flex gap-3">
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="flex-1 bg-primary-dark text-white py-2.5 rounded-xl text-sm font-medium hover:brightness-95 disabled:opacity-50"
           >
             {mutation.isPending ? 'Saving…' : 'Save Template'}
           </button>
           <button
             type="button"
             onClick={onDone}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-300 text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-text hover:bg-bg"
           >
             Cancel
           </button>

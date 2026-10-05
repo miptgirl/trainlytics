@@ -33,7 +33,7 @@ function SessionDetailRouter() {
     queryKey: ['sessions', id, 'type'],
     queryFn: () => api.get<{ type: string }>(`/sessions/${id}`),
   })
-  if (isLoading) return <Layout><p className="text-gray-500 text-sm">Loading…</p></Layout>
+  if (isLoading) return <Layout><p className="text-text-muted-strong text-sm">Loading…</p></Layout>
   if (data?.type === 'strength') return <StrengthSessionDetailPage />
   return <CardioSessionDetailPage />
 }

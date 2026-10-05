@@ -152,7 +152,7 @@ function SetEditor({
             onChange={(e) => onChange({ notes: e.target.value })}
             autoFocus={noteOpen}
             placeholder="e.g. RPE 8, slow negatives"
-            className="mt-1 w-full min-h-11 rounded-lg border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
+            className="mt-1 w-full min-h-11 rounded-sm border border-border bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
           />
         </label>
       ) : (
@@ -217,7 +217,7 @@ export function WorkoutSetList({
   }
 
   return (
-    <section aria-label="Sets" className="rounded-2xl border border-border bg-surface p-3 space-y-2">
+    <section aria-label="Sets" className="rounded-xl border border-border bg-surface p-3 space-y-2">
       {sets.length === 0 && <p className="text-sm text-text-muted px-1 py-2">No sets yet.</p>}
       {sets.map((set, i) => {
         const n = i + 1

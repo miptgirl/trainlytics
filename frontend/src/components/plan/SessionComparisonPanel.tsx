@@ -23,10 +23,10 @@ function fmtVol(setCount: number, vol: number): string {
 }
 
 function diffText(planned: number | null, actual: number | null): { text: string; cls: string } {
-  if (planned == null || actual == null || planned === 0) return { text: '—', cls: 'text-slate-400' }
+  if (planned == null || actual == null || planned === 0) return { text: '—', cls: 'text-text-muted-strong' }
   const pct = ((actual - planned) / planned) * 100
   const sign = pct > 0 ? '+' : ''
-  const cls = pct > 1 ? 'text-emerald-600' : pct < -1 ? 'text-red-500' : 'text-slate-500'
+  const cls = pct > 1 ? 'text-success-text' : pct < -1 ? 'text-error-text' : 'text-text-muted-strong'
   return { text: `${sign}${pct.toFixed(0)}%`, cls }
 }
 
@@ -55,8 +55,8 @@ function StrengthCols() {
 export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props) {
   const { data, isLoading, isError } = useSessionComparison(plannedSessionId)
 
-  if (isLoading) return <p className="text-slate-400 text-xs">Loading…</p>
-  if (isError || !data) return <p className="text-slate-400 text-xs italic">Planned data not available.</p>
+  if (isLoading) return <p className="text-text-muted-strong text-xs">Loading…</p>
+  if (isError || !data) return <p className="text-text-muted-strong text-xs italic">Planned data not available.</p>
 
   // ── Cardio ────────────────────────────────────────────────────────────────
   if (sessionType === 'cardio' && data.cardio) {
@@ -70,22 +70,22 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
           <col style={{ width: 44 }} />
         </colgroup>
         <thead>
-          <tr className="text-slate-500">
+          <tr className="text-text-muted-strong">
             <th className="text-left font-medium pb-1" />
             <th className="text-right font-medium pb-1">Planned</th>
             <th className="text-right font-medium pb-1">Actual</th>
             <th className="text-right font-medium pb-1">Diff</th>
           </tr>
         </thead>
-        <tbody className="text-slate-700">
+        <tbody className="text-text">
           <tr>
-            <td className="py-0.5 text-slate-500">Distance</td>
+            <td className="py-0.5 text-text-muted-strong">Distance</td>
             <td className="text-right py-0.5 tabular-nums">{fmt(c.planned_distance_km, 'km')}</td>
             <td className="text-right py-0.5 tabular-nums">{fmt(c.actual_distance_km, 'km')}</td>
             <DiffCell planned={c.planned_distance_km} actual={c.actual_distance_km} className="py-0.5" />
           </tr>
           <tr>
-            <td className="py-0.5 text-slate-500">Duration</td>
+            <td className="py-0.5 text-text-muted-strong">Duration</td>
             <td className="text-right py-0.5 tabular-nums">{fmt(c.planned_duration_min, 'min')}</td>
             <td className="text-right py-0.5 tabular-nums">{fmt(c.actual_duration_min, 'min')}</td>
             <DiffCell planned={c.planned_duration_min} actual={c.actual_duration_min} className="py-0.5" />
@@ -116,32 +116,32 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
 
           return (
             <div key={ei}>
-              <p className="text-xs font-semibold text-slate-700 mb-1">
+              <p className="text-xs font-semibold text-text mb-1">
                 {ex.exercise_name}
-                {ex.source === 'planned_only' && <span className="text-slate-400 font-normal ml-1">(not logged)</span>}
-                {ex.source === 'actual_only'  && <span className="text-slate-400 font-normal ml-1">(added)</span>}
+                {ex.source === 'planned_only' && <span className="text-text-muted-strong font-normal ml-1">(not logged)</span>}
+                {ex.source === 'actual_only'  && <span className="text-text-muted-strong font-normal ml-1">(added)</span>}
               </p>
               <table className="text-xs w-full table-fixed">
                 <StrengthCols />
                 <thead>
-                  <tr className="text-slate-400">
+                  <tr className="text-text-muted-strong">
                     <th className="text-left font-normal pb-0.5">Set</th>
                     <th className="text-right font-normal pb-0.5">Planned</th>
                     <th className="text-right font-normal pb-0.5">Actual</th>
                     <th className="text-right font-normal pb-0.5">Diff</th>
                   </tr>
                 </thead>
-                <tbody className="text-slate-700">
+                <tbody className="text-text">
                   {ex.sets.map((row, si) => (
                     <tr key={si}>
-                      <td className="py-0.5 text-slate-400">{si + 1}</td>
+                      <td className="py-0.5 text-text-muted-strong">{si + 1}</td>
                       <td className="text-right py-0.5 tabular-nums">{fmtSet(row.planned_reps, row.planned_weight_kg)}</td>
                       <td className="text-right py-0.5 tabular-nums">{fmtSet(row.actual_reps, row.actual_weight_kg)}</td>
-                      <td className="text-right py-0.5 text-slate-300">—</td>
+                      <td className="text-right py-0.5 text-text-muted">—</td>
                     </tr>
                   ))}
-                  <tr className="border-t border-slate-100 text-slate-500">
-                    <td className="pt-1 text-slate-400 italic text-[11px]">Vol.</td>
+                  <tr className="border-t border-border text-text-muted-strong">
+                    <td className="pt-1 text-text-muted-strong italic text-[11px]">Vol.</td>
                     <td className="text-right pt-1 tabular-nums">{fmtVol(plannedSets, ex.planned_volume)}</td>
                     <td className="text-right pt-1 tabular-nums">{fmtVol(actualSets,  ex.actual_volume)}</td>
                     <DiffCell planned={ex.planned_volume} actual={ex.actual_volume} className="pt-1 font-medium" />
@@ -152,17 +152,17 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
           )
         })}
 
-        <div className="border-t border-slate-200 pt-2">
+        <div className="border-t border-border pt-2">
           <table className="text-xs w-full table-fixed">
             <StrengthCols />
             <tbody>
-              <tr className="font-semibold text-slate-700">
+              <tr className="font-semibold text-text">
                 <td>Total volume</td>
                 <td className="text-right tabular-nums">{fmtVol(totalPlannedSets, s.planned_total_volume)}</td>
                 <td className="text-right tabular-nums">{fmtVol(totalActualSets,  s.actual_total_volume)}</td>
                 <DiffCell planned={s.planned_total_volume} actual={s.actual_total_volume} />
               </tr>
-              <tr className="text-slate-500">
+              <tr className="text-text-muted-strong">
                 <td className="pt-0.5">Total exercises</td>
                 <td className="text-right pt-0.5 tabular-nums">
                   {s.exercises.filter(e => e.source !== 'actual_only').length}
@@ -179,5 +179,5 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
     )
   }
 
-  return <p className="text-slate-400 text-xs italic">Planned data not available.</p>
+  return <p className="text-text-muted-strong text-xs italic">Planned data not available.</p>
 }

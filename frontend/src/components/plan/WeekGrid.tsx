@@ -57,14 +57,14 @@ export function WeekGrid({ weekStart, sessions, onAddSession, onEditSession }: W
           <div key={day}>
             <div
               className={`flex items-center gap-2 mb-2 text-sm font-semibold ${
-                isToday ? 'text-blue-600' : isPast ? 'text-slate-400' : 'text-slate-700'
+                isToday ? 'text-primary-dark' : isPast ? 'text-text-muted-strong' : 'text-text'
               }`}
             >
-              {isToday && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />}
+              {isToday && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
               {formatDayHeader(day)}
             </div>
 
-            <div className="space-y-2 pl-4 border-l-2 border-slate-100">
+            <div className="space-y-2 pl-4 border-l-2 border-border">
               {daySessions.map((session) => (
                 <PlannedSessionCard
                   key={session.id}
@@ -79,8 +79,8 @@ export function WeekGrid({ weekStart, sessions, onAddSession, onEditSession }: W
                 onClick={() => onAddSession(day)}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 max-md:min-h-11 rounded-lg border transition-colors ${
                   isPast
-                    ? 'text-slate-400 border-slate-200 hover:bg-slate-50'
-                    : 'text-blue-600 border-blue-200 hover:bg-blue-50'
+                    ? 'text-text-muted-strong border-border hover:bg-bg'
+                    : 'text-primary-dark border-primary-light hover:bg-primary-tint'
                 }`}
               >
                 <svg

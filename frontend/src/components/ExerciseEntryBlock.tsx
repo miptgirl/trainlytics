@@ -168,13 +168,13 @@ function ExercisePickerDropdown({
     <button
       type="button"
       onClick={startCreate}
-      className="w-full text-left px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 font-medium border-t border-gray-100"
+      className="w-full text-left px-4 py-2.5 text-sm text-primary-dark hover:bg-primary-tint font-medium border-t border-border"
     >
       + New exercise
     </button>
   )
 
-  const borderClass = hasError ? 'border-red-400' : 'border-gray-300'
+  const borderClass = hasError ? 'border-error' : 'border-border'
   const currentGroupItems = activeGroup ? groups.find((g) => g.label === activeGroup)?.items ?? [] : []
 
   return (
@@ -183,13 +183,13 @@ function ExercisePickerDropdown({
       <button
         type="button"
         onClick={openDropdown}
-        className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-left`}
+        className={`w-full flex items-center justify-between border ${borderClass} rounded-lg px-3 py-2 text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary text-left`}
       >
-        <span className={selected ? 'text-gray-900' : 'text-gray-400'}>
+        <span className={selected ? 'text-text' : 'text-text-muted-strong'}>
           {selected ? selected.name : '— select exercise —'}
         </span>
         <svg
-          className={`h-4 w-4 text-gray-400 shrink-0 ml-2 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 text-text-muted shrink-0 ml-2 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -199,12 +199,12 @@ function ExercisePickerDropdown({
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+        <div className="absolute z-20 mt-1 w-full bg-surface border border-border rounded-xl shadow-md overflow-hidden">
 
           {/* ── Create form ── */}
           {creating && (
             <div className="p-3 space-y-2">
-              <label className="block text-xs text-gray-500" htmlFor="new-exercise-name">
+              <label className="block text-xs text-text-muted-strong" htmlFor="new-exercise-name">
                 New exercise name
               </label>
               <input
@@ -220,22 +220,22 @@ function ExercisePickerDropdown({
                   }
                 }}
                 placeholder="Exercise name"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              {createError && <p className="text-xs text-red-600">{createError}</p>}
+              {createError && <p className="text-xs text-error-text">{createError}</p>}
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => void submitCreate()}
                   disabled={!newName.trim() || createPending}
-                  className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  className="px-3 py-1.5 text-sm font-medium bg-primary-dark text-white rounded-lg hover:brightness-95 disabled:opacity-50"
                 >
                   {createPending ? 'Creating…' : 'Create'}
                 </button>
                 <button
                   type="button"
                   onClick={cancelCreate}
-                  className="px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm font-medium border border-border text-text rounded-lg hover:bg-bg"
                 >
                   Cancel
                 </button>
@@ -247,17 +247,17 @@ function ExercisePickerDropdown({
           {!creating && activeGroup === null && (
             <ul className="py-1">
               {groups.length === 0 && (
-                <li className="px-4 py-3 text-sm text-gray-400">No exercises yet.</li>
+                <li className="px-4 py-3 text-sm text-text-muted-strong">No exercises yet.</li>
               )}
               {groups.map((group) => (
                 <li key={group.label}>
                   <button
                     type="button"
                     onClick={() => setActiveGroup(group.label)}
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-text hover:bg-primary-tint hover:text-primary-dark transition-colors"
                   >
                     <span className="font-medium">{group.label}</span>
-                    <span className="flex items-center gap-1.5 text-gray-400 text-xs">
+                    <span className="flex items-center gap-1.5 text-text-muted-strong text-xs">
                       <span>{group.items.length} {group.items.length === 1 ? 'exercise' : 'exercises'}</span>
                       <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
@@ -274,19 +274,19 @@ function ExercisePickerDropdown({
           {!creating && activeGroup !== null && (
             <div>
               {/* Back header */}
-              <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-1 px-3 py-2 border-b border-border bg-bg">
                 <button
                   type="button"
                   onClick={() => setActiveGroup(null)}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                  className="flex items-center gap-1 text-xs text-primary-dark font-medium"
                 >
                   <svg className="h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                   </svg>
                   All categories
                 </button>
-                <span className="text-xs text-gray-400 mx-1">·</span>
-                <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{activeGroup}</span>
+                <span className="text-xs text-text-muted-strong mx-1">·</span>
+                <span className="text-xs font-semibold text-text-muted-strong uppercase tracking-wider">{activeGroup}</span>
               </div>
               {/* Exercise list */}
               <ul className="py-1 max-h-56 overflow-y-auto">
@@ -295,7 +295,7 @@ function ExercisePickerDropdown({
                     <button
                       type="button"
                       onClick={() => select(String(ex.id))}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 hover:text-blue-700 transition-colors ${String(ex.id) === value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800'}`}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary-tint hover:text-primary-dark transition-colors ${String(ex.id) === value ? 'bg-primary-tint text-primary-dark font-medium' : 'text-text'}`}
                     >
                       {ex.name}
                     </button>
@@ -332,11 +332,11 @@ function SwapModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm shadow-xl flex flex-col max-h-[60vh]">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-800 text-sm">Swap exercise</h3>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 rounded text-lg leading-none">
+      <div className="absolute inset-0 bg-text/40" onClick={onClose} />
+      <div className="relative bg-surface pb-[env(safe-area-inset-bottom)] sm:pb-0 rounded-t-[20px] sm:rounded-xl w-full sm:max-w-sm shadow-md flex flex-col max-h-[60vh]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <h3 className="font-semibold text-text text-sm">Swap exercise</h3>
+          <button type="button" onClick={onClose} className="text-text-muted hover:text-text-muted-strong p-1 rounded text-lg leading-none">
             ✕
           </button>
         </div>
@@ -346,7 +346,7 @@ function SwapModal({
               <button
                 type="button"
                 onClick={() => onSelect(rep)}
-                className="w-full text-left px-4 py-3 text-sm text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                className="w-full text-left px-4 py-3 text-sm text-text hover:bg-primary-tint hover:text-primary-dark transition-colors"
               >
                 {rep.name}
               </button>
@@ -513,15 +513,15 @@ export function ExerciseEntryBlock({
     : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200">
+    <div className="bg-surface rounded-xl border border-border">
       {/* Header — always visible */}
-      <div className={`flex items-center justify-between px-4 py-3 max-md:py-1 rounded-t-xl ${allDone ? 'bg-green-50' : ''}`}>
+      <div className={`flex items-center justify-between px-4 py-3 max-md:py-1 rounded-t-xl ${allDone ? 'bg-success/10' : ''}`}>
         <div className="flex items-center gap-2 min-w-0">
           {onToggleCollapse && (
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="flex items-center justify-center max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-gray-600 shrink-0"
+              className="flex items-center justify-center max-md:min-h-11 max-md:min-w-11 text-text-muted hover:text-text-muted-strong shrink-0"
               aria-label={isCollapsed ? 'Expand exercise' : 'Collapse exercise'}
             >
               <span
@@ -531,11 +531,11 @@ export function ExerciseEntryBlock({
               </span>
             </button>
           )}
-          <span className={`text-sm font-medium truncate ${allDone ? 'text-green-700' : 'text-gray-700'}`}>
+          <span className={`text-sm font-medium truncate ${allDone ? 'text-success-text' : 'text-text'}`}>
             Exercise {exIndex + 1}{selectedExercise ? ` — ${selectedExercise.name}` : ''}
           </span>
           {isCollapsed && (
-            <span className="text-xs text-gray-400 shrink-0">
+            <span className="text-xs text-text-muted-strong shrink-0">
               {setFields.length} {setFields.length === 1 ? 'set' : 'sets'}
             </span>
           )}
@@ -545,7 +545,7 @@ export function ExerciseEntryBlock({
             <button
               type="button"
               onClick={() => setSwapOpen(true)}
-              className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-blue-500 rounded"
+              className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-text-muted hover:text-primary-dark rounded"
               aria-label="Swap exercise"
               title="Swap exercise"
             >
@@ -553,7 +553,7 @@ export function ExerciseEntryBlock({
             </button>
           )}
           {canRemove && (
-            <button type="button" onClick={onRemove} aria-label="Remove exercise" className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-gray-400 hover:text-red-500 rounded">
+            <button type="button" onClick={onRemove} aria-label="Remove exercise" className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 text-text-muted hover:text-error rounded">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
@@ -574,7 +574,7 @@ export function ExerciseEntryBlock({
       {!isCollapsed && (
         <div className="px-4 pb-4">
           <div className="mb-4">
-            <label className="block text-xs text-gray-500 mb-1">Exercise *</label>
+            <label className="block text-xs text-text-muted-strong mb-1">Exercise *</label>
             <ExercisePickerDropdown
               exercises={exercises}
               value={exerciseField.value}
@@ -582,13 +582,13 @@ export function ExerciseEntryBlock({
               hasError={!!errors.exercises?.[exIndex]?.exercise_id}
             />
             {errors.exercises?.[exIndex]?.exercise_id && (
-              <p className="mt-1 text-xs text-red-600">{errors.exercises[exIndex].exercise_id.message}</p>
+              <p className="mt-1 text-xs text-error-text">{errors.exercises[exIndex].exercise_id.message}</p>
             )}
             {selectedExercise?.notes && (
-              <p className="mt-1.5 text-xs text-slate-500 italic">📝 {selectedExercise.notes}</p>
+              <p className="mt-1.5 text-xs text-text-muted-strong italic">📝 {selectedExercise.notes}</p>
             )}
             {filledFromSession && (
-              <p className="mt-1 text-xs text-emerald-600 flex items-center gap-1">
+              <p className="mt-1 text-xs text-success-text flex items-center gap-1">
                 <span>✓</span>
                 <span>Filled from last session</span>
               </p>
@@ -597,22 +597,22 @@ export function ExerciseEntryBlock({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">Sets</span>
+              <span className="text-xs font-medium text-text-muted-strong uppercase tracking-wide">Sets</span>
               <button
                 type="button"
                 onClick={() => appendSet(emptySet())}
-                className="max-sm:hidden text-xs text-blue-600 hover:text-blue-800 font-medium"
+                className="max-sm:hidden text-xs text-primary-dark font-medium"
               >
                 + Add Set
               </button>
             </div>
 
             <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
-              <span className="text-xs text-gray-400">#</span>
-              <span className="text-xs text-gray-500">Reps</span>
-              <span className={`text-xs text-gray-500 ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
-              <span className="max-sm:hidden text-xs text-gray-500">Notes</span>
-              {showDone && <span className="text-xs text-gray-500 text-center">Done</span>}
+              <span className="text-xs text-text-muted-strong">#</span>
+              <span className="text-xs text-text-muted-strong">Reps</span>
+              <span className={`text-xs text-text-muted-strong ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
+              <span className="max-sm:hidden text-xs text-text-muted-strong">Notes</span>
+              {showDone && <span className="text-xs text-text-muted-strong text-center">Done</span>}
               <span className="max-sm:hidden" />
             </div>
 
@@ -622,21 +622,21 @@ export function ExerciseEntryBlock({
                 return (
                   <div
                     key={setField.id}
-                    className={`grid ${gridCols} gap-1.5 items-center max-sm:gap-y-2 max-sm:py-1.5 ${isDone ? 'bg-green-50 rounded-lg px-1' : ''}`}
+                    className={`grid ${gridCols} gap-1.5 items-center max-sm:gap-y-2 max-sm:py-1.5 ${isDone ? 'bg-success/10 rounded-lg px-1' : ''}`}
                   >
-                    <span className={`text-xs text-center ${isDone ? 'text-green-600' : 'text-gray-400'}`}>{setIndex + 1}</span>
+                    <span className={`text-xs text-center ${isDone ? 'text-success-text' : 'text-text-muted-strong'}`}>{setIndex + 1}</span>
                     <input
                       type="number"
                       min="0"
                       placeholder="reps"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
+                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
                     />
                     <input
                       type="text"
                       inputMode="decimal"
                       placeholder="kg"
-                      className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-green-200 text-green-700 sm:line-through bg-white' : 'border-gray-300'}`}
+                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
                     {showDone && (
@@ -649,8 +649,8 @@ export function ExerciseEntryBlock({
                         <span
                           className={`text-lg leading-none select-none transition-colors max-sm:flex max-sm:size-11 max-sm:items-center max-sm:justify-center max-sm:rounded-lg max-sm:border max-sm:font-bold max-sm:peer-focus-visible:ring-2 max-sm:peer-focus-visible:ring-primary ${
                             isDone
-                              ? 'text-green-500 max-sm:border-primary-dark max-sm:bg-primary-dark max-sm:text-white'
-                              : 'text-gray-300 hover:text-gray-400 max-sm:border-border max-sm:bg-surface max-sm:text-text-muted'
+                              ? 'text-success-text max-sm:border-primary-dark max-sm:bg-primary-dark max-sm:text-white'
+                              : 'text-text-muted hover:text-text-muted-strong max-sm:border-border max-sm:bg-surface max-sm:text-text-muted'
                           }`}
                           aria-label={isDone ? 'Mark undone' : 'Mark done'}
                         >
@@ -662,14 +662,14 @@ export function ExerciseEntryBlock({
                       <input
                         type="text"
                         placeholder="note"
-                        className={`border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-green-200 text-green-700 bg-white' : 'border-gray-300'}`}
+                        className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border'}`}
                         {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
                       />
                       {setValue && setValues[setIndex]?.notes && (
                         <button
                           type="button"
                           onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600"
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong"
                           aria-label="Clear notes"
                         >
                           <EraserIcon />
@@ -680,7 +680,7 @@ export function ExerciseEntryBlock({
                       <button
                         type="button"
                         onClick={() => removeSet(setIndex)}
-                        className="flex items-center justify-center max-md:min-h-11 text-gray-400 hover:text-red-500 text-sm leading-none sm:order-3"
+                        className="flex items-center justify-center max-md:min-h-11 text-text-muted-strong hover:text-error-text text-sm leading-none sm:order-3"
                         aria-label="Remove set"
                       >
                         ✕
@@ -697,7 +697,7 @@ export function ExerciseEntryBlock({
             <button
               type="button"
               onClick={() => appendSet(emptySet())}
-              className="sm:hidden mt-3 w-full min-h-11 text-sm text-blue-600 hover:text-blue-800 font-medium border border-dashed border-blue-300 rounded-lg"
+              className="sm:hidden mt-3 w-full min-h-11 text-sm text-primary-dark font-medium border border-dashed border-primary-light rounded-lg"
             >
               + Add set
             </button>

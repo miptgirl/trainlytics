@@ -90,7 +90,7 @@ export function StravaSection({
           />
           <path d="M33.6 32L28 21.6 22.4 32H28l5.6 11.2L39.2 32h5.6z" fill="#FC4C02" opacity="0.6" />
         </svg>
-        <span className="text-sm font-semibold text-slate-700">Strava</span>
+        <span className="text-sm font-semibold text-text">Strava</span>
       </div>
 
       {!connected ? (
@@ -110,20 +110,20 @@ export function StravaSection({
               <img
                 src={athleteAvatarUrl}
                 alt={athleteName ?? 'Strava athlete'}
-                className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                className="w-9 h-9 rounded-full object-cover border border-border"
               />
             )}
             <div className="flex flex-col">
-              <span className="text-sm font-medium text-slate-800">
+              <span className="text-sm font-medium text-text">
                 {athleteName ?? 'Connected'}
               </span>
-              <span className="text-xs text-green-600 font-medium">Connected ✓</span>
+              <span className="text-xs text-success-text font-medium">Connected ✓</span>
             </div>
           </div>
 
           {/* Sync start date */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-600">Sync start date</label>
+            <label className="text-sm font-medium text-text-muted-strong">Sync start date</label>
             <input
               type="date"
               value={localSyncStart}
@@ -131,13 +131,13 @@ export function StravaSection({
               onBlur={() => {
                 if (localSyncStart) syncStartMutation.mutate(localSyncStart)
               }}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-border rounded-sm px-3 py-2 text-sm w-44 focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
 
           {/* Last synced */}
-          <div className="text-sm text-slate-500">
-            Last synced: <span className="text-slate-700">{formatDateTime(lastSyncedAt)}</span>
+          <div className="text-sm text-text-muted-strong">
+            Last synced: <span className="text-text">{formatDateTime(lastSyncedAt)}</span>
           </div>
 
           {/* Sync now */}
@@ -149,7 +149,7 @@ export function StravaSection({
                 syncMutation.mutate()
               }}
               disabled={syncMutation.isPending}
-              className="self-start bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+              className="self-start bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
             >
               {syncMutation.isPending && (
                 <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -160,11 +160,11 @@ export function StravaSection({
               {syncMutation.isPending ? 'Syncing…' : 'Sync now'}
             </button>
             {syncResult && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-success-text">
                 {syncResult}{' '}
                 <button
                   type="button"
-                  className="underline hover:text-green-700"
+                  className="underline hover:text-success-text"
                   onClick={onNavigateToImports}
                 >
                   View imports
@@ -177,19 +177,19 @@ export function StravaSection({
           <div>
             {disconnectConfirm ? (
               <div className="flex items-center gap-3 text-sm">
-                <span className="text-slate-600">Disconnect Strava?</span>
+                <span className="text-text-muted-strong">Disconnect Strava?</span>
                 <button
                   type="button"
                   onClick={() => disconnectMutation.mutate()}
                   disabled={disconnectMutation.isPending}
-                  className="text-red-600 hover:text-red-700 font-medium"
+                  className="text-error-text font-medium"
                 >
                   {disconnectMutation.isPending ? 'Disconnecting…' : 'Yes, disconnect'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDisconnectConfirm(false)}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-text-muted-strong"
                 >
                   Cancel
                 </button>
@@ -198,7 +198,7 @@ export function StravaSection({
               <button
                 type="button"
                 onClick={() => setDisconnectConfirm(true)}
-                className="text-sm text-slate-400 hover:text-red-500 transition-colors underline"
+                className="text-sm text-text-muted-strong hover:text-error-text transition-colors underline"
               >
                 Disconnect
               </button>

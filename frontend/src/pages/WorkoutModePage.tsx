@@ -313,7 +313,7 @@ export default function WorkoutModePage() {
         )}
 
         {s.pendingDraft !== null ? (
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">You have an unsaved Strength draft.</p>
             <p className="text-sm font-medium text-text">{describeDraft(s.pendingDraft)}</p>
             <p className="text-sm text-text-muted-strong">Continue it, or discard it and start this workout fresh.</p>
@@ -335,7 +335,7 @@ export default function WorkoutModePage() {
             </div>
           </div>
         ) : s.templateError ? (
-          <div role="alert" className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div role="alert" className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">{s.templateError}</p>
             <button
               type="button"
@@ -350,7 +350,7 @@ export default function WorkoutModePage() {
         ) : (
           <>
             {allDone && (
-              <div className="rounded-2xl bg-primary-tint p-4 space-y-3">
+              <div className="rounded-[20px] bg-primary-tint p-4 space-y-3">
                 <p className="text-base font-semibold text-primary-dark">All exercises done</p>
                 <button
                   type="button"
@@ -411,7 +411,7 @@ export default function WorkoutModePage() {
 
       {undoAction && (
         <div className="fixed inset-x-0 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
-          <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-lg">
+          <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-md">
             <span className="text-sm">{undoAction.label}</span>
             <button type="button" onClick={runUndo} className="min-h-11 px-3 text-sm font-semibold text-primary-light">
               Undo

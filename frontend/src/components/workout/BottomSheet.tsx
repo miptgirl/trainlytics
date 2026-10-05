@@ -73,7 +73,7 @@ export function BottomSheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative w-full max-w-xl max-h-[85dvh] flex flex-col bg-surface text-text rounded-t-2xl shadow-xl focus:outline-none"
+        className="relative w-full max-w-xl max-h-[85dvh] flex flex-col bg-surface text-text rounded-t-[20px] shadow-md focus:outline-none"
       >
         <div className="flex items-center justify-between gap-2 pl-4 pr-1 pt-1 border-b border-border">
           <h2 id={titleId} className="text-base font-semibold">

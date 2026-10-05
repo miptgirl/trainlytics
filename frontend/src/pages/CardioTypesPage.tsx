@@ -52,7 +52,7 @@ export default function CardioTypesPage() {
   if (isLoading) {
     return (
       <Layout>
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-text-muted-strong text-sm">Loading…</p>
       </Layout>
     )
   }
@@ -60,11 +60,11 @@ export default function CardioTypesPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-slate-900">Activity Types</h1>
+        <h1 className="text-2xl font-bold text-text">Activity Types</h1>
         {editingId !== 'new' && (
           <button
             onClick={() => setEditingId('new')}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
+            className="bg-primary-dark hover:brightness-95 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
           >
             + Add
           </button>
@@ -80,14 +80,14 @@ export default function CardioTypesPage() {
       )}
 
       {types.length === 0 && editingId !== 'new' ? (
-        <p className="text-gray-400 text-sm">
+        <p className="text-text-muted-strong text-sm">
           No activity types yet. Add types like "Run", "Cycling", "Swim".
         </p>
       ) : (
         <ul className="space-y-2">
           {types.map((t) =>
             editingId === t.id ? (
-              <li key={t.id} className="bg-white rounded-xl border border-gray-200 p-4">
+              <li key={t.id} className="bg-surface rounded-xl border border-border p-4">
                 <TypeForm
                   defaultValues={{ name: t.name }}
                   onSubmit={({ name }) => updateMutation.mutate({ id: t.id, name })}
@@ -98,20 +98,20 @@ export default function CardioTypesPage() {
             ) : (
               <li
                 key={t.id}
-                className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center justify-between"
+                className="bg-surface rounded-xl border border-border px-4 py-3 flex items-center justify-between"
               >
-                <span className="font-medium text-gray-900">{t.name}</span>
+                <span className="font-medium text-text">{t.name}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingId(t.id)}
-                    className="text-sm text-gray-500 hover:text-gray-900"
+                    className="text-sm text-text-muted-strong"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(t.id)}
                     disabled={deleteMutation.isPending}
-                    className="text-sm text-red-500 hover:text-red-700 disabled:opacity-50"
+                    className="text-sm text-error-text disabled:opacity-50"
                   >
                     Delete
                   </button>
@@ -143,32 +143,32 @@ function TypeForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="bg-white rounded-xl border border-blue-200 p-4 space-y-3"
+      className="bg-surface rounded-xl border border-primary-light p-4 space-y-3"
     >
       <div>
         <input
           type="text"
           placeholder="Activity type name"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           autoFocus
           {...register('name', { required: 'Name is required' })}
         />
         {errors.name && (
-          <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>
+          <p className="mt-1 text-xs text-error-text">{errors.name.message}</p>
         )}
       </div>
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg"
+          className="bg-primary-dark hover:brightness-95 disabled:opacity-50 text-white text-sm font-medium px-4 py-1.5 rounded-lg"
         >
           {isPending ? 'Saving…' : 'Save'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm text-gray-600 hover:text-gray-900 px-3 py-1.5"
+          className="text-sm text-text-muted-strong px-3 py-1.5"
         >
           Cancel
         </button>

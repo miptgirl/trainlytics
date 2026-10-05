@@ -37,7 +37,7 @@ export function StrengthExerciseList({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-medium text-gray-900">Exercises</h2>
+        <h2 className="font-medium text-text">Exercises</h2>
       </div>
       <div className="space-y-4">
         {exerciseFields.map((exField, exIndex) => (
@@ -86,7 +86,7 @@ export function StrengthExerciseList({
       <button
         type="button"
         onClick={() => appendExercise(emptyEntry())}
-        className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+        className="mt-3 text-sm text-primary-dark font-medium"
       >
         + Add Exercise
       </button>

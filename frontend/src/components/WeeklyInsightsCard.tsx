@@ -28,13 +28,13 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-4 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <h2 className="text-sm font-semibold text-slate-800">AI Insights</h2>
+    <div className="bg-surface rounded-xl border border-border shadow-sm mb-4 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+        <h2 className="text-sm font-semibold text-text">AI Insights</h2>
         {hasApiKey && status === 'idle' && (
           <button
             onClick={handleAnalyse}
-            className="text-xs font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            className="text-xs font-medium bg-primary-dark text-white px-3 py-1.5 rounded-lg hover:brightness-95 transition-colors"
           >
             Analyse this week
           </button>
@@ -42,7 +42,7 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         {hasApiKey && status === 'success' && (
           <button
             onClick={() => { setStatus('idle'); setAnalysis(null) }}
-            className="text-xs text-slate-500 hover:text-slate-700"
+            className="text-xs text-text-muted-strong"
           >
             Clear
           </button>
@@ -50,7 +50,7 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         {hasApiKey && status === 'error' && (
           <button
             onClick={handleAnalyse}
-            className="text-xs font-medium bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            className="text-xs font-medium bg-primary-dark text-white px-3 py-1.5 rounded-lg hover:brightness-95 transition-colors"
           >
             Retry
           </button>
@@ -59,8 +59,8 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
 
       <div className="px-4 py-3">
         {!hasApiKey && (
-          <p className="text-sm text-slate-500">
-            <Link to="/profile" className="text-blue-600 hover:underline font-medium">
+          <p className="text-sm text-text-muted-strong">
+            <Link to="/profile" className="text-primary-dark hover:underline font-medium">
               Add an API key in Profile
             </Link>{' '}
             to enable AI analysis of your training.
@@ -68,15 +68,15 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         )}
 
         {hasApiKey && status === 'idle' && (
-          <p className="text-sm text-slate-400 italic">
+          <p className="text-sm text-text-muted-strong italic">
             Press "Analyse this week" to get AI feedback on your recent training.
           </p>
         )}
 
         {status === 'loading' && (
-          <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+          <div className="flex items-center gap-2 text-sm text-text-muted-strong py-1">
             <svg
-              className="animate-spin h-4 w-4 text-blue-500"
+              className="animate-spin h-4 w-4 text-primary-dark"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -106,7 +106,7 @@ export function WeeklyInsightsCard({ hasApiKey }: WeeklyInsightsCardProps) {
         )}
 
         {status === 'error' && errorMsg && (
-          <p className="text-sm text-red-600">
+          <p className="text-sm text-error-text">
             {errorMsg}
           </p>
         )}

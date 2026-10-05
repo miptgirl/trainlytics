@@ -351,9 +351,9 @@ export default function TodayPage() {
                 <span className="text-2xl font-semibold">{week.done}</span>
                 <span className="text-text-muted-strong"> of {sessions.length} sessions done</span>
               </p>
-              <div className="h-2 bg-bg rounded-full overflow-hidden mt-2">
+              <div className="h-2 bg-primary-tint rounded-full overflow-hidden mt-2">
                 <div
-                  className="h-full bg-success rounded-full"
+                  className="h-full bg-primary rounded-full"
                   style={{ width: `${Math.round((week.done / sessions.length) * 100)}%` }}
                 />
               </div>
