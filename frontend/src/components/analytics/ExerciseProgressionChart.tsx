@@ -14,6 +14,7 @@ import type { DotItemDotProps } from 'recharts'
 import { api } from '../../lib/api'
 import { useStrengthProgression } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
+import { axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 interface Exercise {
   id: number
@@ -56,7 +57,7 @@ export function ExerciseProgressionChart() {
             setSelectedId(e.target.value ? Number(e.target.value) : null)
             setShowVolume(false)
           }}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-sm border border-border-strong rounded-sm px-3 py-1.5 text-text bg-surface focus:outline-none focus:ring-2 focus:ring-primary-dark"
         >
           <option value="">Select exercise…</option>
           {exercises.map((ex) => (
@@ -69,10 +70,10 @@ export function ExerciseProgressionChart() {
         {selectedId !== null && (
           <button
             onClick={() => setShowVolume((v) => !v)}
-            className={`text-xs px-3 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1.5 max-md:min-h-11 max-md:min-w-11 rounded-sm font-medium transition-colors ${
               showVolume
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-slate-100 text-slate-500 hover:text-slate-700'
+                ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             {showVolume ? 'Hide Volume' : 'Show Volume'}
@@ -81,32 +82,32 @@ export function ExerciseProgressionChart() {
       </div>
 
       {selectedId === null ? (
-        <p className="text-slate-400 text-sm text-center py-8">
+        <p className="text-text-muted-strong text-sm text-center py-8">
           Select an exercise to see progression.
         </p>
       ) : isLoading ? (
         <div className="h-52 flex items-center justify-center">
-          <p className="text-slate-400 text-sm">Loading…</p>
+          <p className="text-text-muted-strong text-sm">Loading…</p>
         </div>
       ) : !chartData || chartData.length === 0 ? (
-        <p className="text-slate-400 text-sm text-center py-8">
+        <p className="text-text-muted-strong text-sm text-center py-8">
           No data logged for this exercise yet.
         </p>
       ) : (
         <>
           {maxWeight !== null && (
-            <p className="text-xs text-slate-500 mb-3">
-              <span className="inline-block w-3 h-3 rounded-full bg-amber-400 mr-1 align-middle" />
+            <p className="text-xs text-text-muted-strong mb-3">
+              <span className="inline-block w-3 h-3 rounded-full bg-warning mr-1 align-middle" />
               Gold dot marks all-time PR ({maxWeight} kg)
             </p>
           )}
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: axisColor() }} />
               <YAxis
                 yAxisId="weight"
-                tick={{ fontSize: 11, fill: '#94a3b8' }}
+                tick={{ fontSize: 11, fill: axisColor() }}
                 tickFormatter={formatCompact}
                 width={40}
               />
@@ -114,7 +115,7 @@ export function ExerciseProgressionChart() {
                 <YAxis
                   yAxisId="volume"
                   orientation="right"
-                  tick={{ fontSize: 11, fill: '#94a3b8' }}
+                  tick={{ fontSize: 11, fill: axisColor() }}
                   tickFormatter={formatCompact}
                   width={40}
                 />
@@ -125,7 +126,7 @@ export function ExerciseProgressionChart() {
                 yAxisId="weight"
                 type="monotone"
                 dataKey="Max Weight (kg)"
-                stroke="#3b82f6"
+                stroke={chartColor('chart-strength')}
                 strokeWidth={2}
                 dot={(props: DotItemDotProps) => {
                   const { cx, cy, payload } = props
@@ -136,8 +137,8 @@ export function ExerciseProgressionChart() {
                         cx={cx}
                         cy={cy}
                         r={6}
-                        fill="#f59e0b"
-                        stroke="white"
+                        fill={chartColor('warning')}
+                        stroke={chartColor('surface')}
                         strokeWidth={2}
                       />
                     )
@@ -148,7 +149,7 @@ export function ExerciseProgressionChart() {
                       cx={cx}
                       cy={cy}
                       r={3}
-                      fill="#3b82f6"
+                      fill={chartColor('chart-strength')}
                     />
                   )
                 }}
@@ -158,7 +159,7 @@ export function ExerciseProgressionChart() {
                   yAxisId="volume"
                   type="monotone"
                   dataKey="Volume (kg)"
-                  stroke="#10b981"
+                  stroke={chartColor('accent')}
                   strokeWidth={2}
                   dot={false}
                 />

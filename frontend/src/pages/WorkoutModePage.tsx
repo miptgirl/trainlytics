@@ -307,13 +307,13 @@ export default function WorkoutModePage() {
 
       <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-[calc(9.5rem+env(safe-area-inset-bottom))] space-y-4">
         {guardError && (
-          <p role="alert" className="rounded-xl bg-accent-light text-accent-text text-sm px-3 py-2">
+          <p role="alert" className="rounded-xl bg-error/10 text-error-text text-sm px-3 py-2">
             {guardError}
           </p>
         )}
 
         {s.pendingDraft !== null ? (
-          <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">You have an unsaved Strength draft.</p>
             <p className="text-sm font-medium text-text">{describeDraft(s.pendingDraft)}</p>
             <p className="text-sm text-text-muted-strong">Continue it, or discard it and start this workout fresh.</p>
@@ -335,7 +335,7 @@ export default function WorkoutModePage() {
             </div>
           </div>
         ) : s.templateError ? (
-          <div role="alert" className="rounded-2xl border border-border bg-surface p-4 space-y-3">
+          <div role="alert" className="rounded-xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">{s.templateError}</p>
             <button
               type="button"
@@ -346,11 +346,11 @@ export default function WorkoutModePage() {
             </button>
           </div>
         ) : !decided || s.isLoadingTemplate ? (
-          <p className="text-sm text-text-muted">Loading…</p>
+          <p className="text-sm text-text-muted-strong">Loading…</p>
         ) : (
           <>
             {allDone && (
-              <div className="rounded-2xl bg-primary-tint p-4 space-y-3">
+              <div className="rounded-[20px] bg-primary-tint p-4 space-y-3">
                 <p className="text-base font-semibold text-primary-dark">All exercises done</p>
                 <button
                   type="button"
@@ -411,7 +411,7 @@ export default function WorkoutModePage() {
 
       {undoAction && (
         <div className="fixed inset-x-0 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
-          <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-lg">
+          <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-md">
             <span className="text-sm">{undoAction.label}</span>
             <button type="button" onClick={runUndo} className="min-h-11 px-3 text-sm font-semibold text-primary-light">
               Undo
@@ -455,7 +455,7 @@ export default function WorkoutModePage() {
                   Finish ›
                 </button>
               ) : (
-                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted`}>Last exercise</span>
+                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted-strong`}>Last exercise</span>
               )}
             </div>
           </div>
@@ -509,7 +509,7 @@ export default function WorkoutModePage() {
                     className={`min-h-11 rounded-lg border text-sm font-medium ${
                       restLength === sec
                         ? 'border-primary-dark bg-primary-tint text-primary-dark'
-                        : 'border-border bg-surface text-text'
+                        : 'border-border-strong bg-surface text-text'
                     }`}
                   >
                     {sec}s

@@ -30,7 +30,7 @@ export default function StepsPage() {
       <div className="max-w-3xl mx-auto py-6">
         <h1 className="text-2xl font-semibold mb-4">Daily Steps</h1>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6">
+        <div className="bg-surface border border-border rounded-xl p-5 mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-medium">
               {editingEntry ? `Editing ${editingEntry.date}` : 'Add entry'}
@@ -38,7 +38,7 @@ export default function StepsPage() {
             {editingEntry && (
               <button
                 onClick={handleCancelEdit}
-                className="text-sm text-slate-500 hover:text-slate-800"
+                className="text-sm text-text-muted-strong hover:text-text"
               >
                 Cancel
               </button>
@@ -50,27 +50,27 @@ export default function StepsPage() {
           />
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5">
+        <div className="bg-surface border border-border rounded-xl p-5">
           <h2 className="text-lg font-medium mb-3">All entries</h2>
           {isLoading ? (
-            <p className="text-slate-400">Loading…</p>
+            <p className="text-text-muted-strong">Loading…</p>
           ) : entries.length === 0 ? (
-            <p className="text-slate-400">No step entries yet.</p>
+            <p className="text-text-muted-strong">No step entries yet.</p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {entries.map((e: StepEntry) => (
                 <li
                   key={e.id}
-                  className={`flex items-center justify-between py-3 first:pt-0 last:pb-0 ${editingEntry?.id === e.id ? 'bg-blue-50 -mx-5 px-5 rounded-xl' : ''}`}
+                  className={`flex items-center justify-between py-3 first:pt-0 last:pb-0 ${editingEntry?.id === e.id ? 'bg-primary-tint -mx-5 px-5 rounded-xl' : ''}`}
                 >
                   <div>
                     <div className="font-medium">{formatShortDate(e.date)}</div>
-                    <div className="text-sm text-slate-500">{e.steps.toLocaleString()} steps</div>
+                    <div className="text-sm text-text-muted-strong">{e.steps.toLocaleString()} steps</div>
                   </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleEdit(e)}
-                      className="text-sm text-blue-600 hover:text-blue-800 min-h-11 px-3"
+                      className="text-sm text-primary-dark hover:underline min-h-11 px-3"
                     >
                       Edit
                     </button>
@@ -79,7 +79,7 @@ export default function StepsPage() {
                       disabled={deleteStep.isPending}
                       aria-label={`Delete steps for ${formatShortDate(e.date)}`}
                       title="Delete"
-                      className="flex items-center justify-center min-h-11 min-w-11 text-red-500 hover:text-red-700 disabled:opacity-40"
+                      className="flex items-center justify-center min-h-11 min-w-11 text-error hover:text-error-text disabled:opacity-40"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

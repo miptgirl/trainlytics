@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { useHealthMetrics } from '../../lib/analyticsApi'
 import { api } from '../../lib/api'
+import { type ChartToken, axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 interface MetricPrefs {
   health_metric_resting_hr: boolean
@@ -26,7 +27,7 @@ interface MetricConfig {
   prefKey: keyof MetricPrefs
   label: string
   unit: string
-  color: string
+  color: ChartToken
   format: (v: number) => string
   yTickFormat: (v: number) => string
 }
@@ -37,7 +38,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_resting_hr',
     label: 'Resting HR',
     unit: 'bpm',
-    color: '#ef4444',
+    color: 'error',
     format: (v) => `${v.toFixed(0)} bpm`,
     yTickFormat: (v) => String(Math.round(v)),
   },
@@ -46,7 +47,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_hrv',
     label: 'HRV (SDNN)',
     unit: 'ms',
-    color: '#8b5cf6',
+    color: 'accent',
     format: (v) => `${v.toFixed(1)} ms`,
     yTickFormat: (v) => String(Math.round(v)),
   },
@@ -55,7 +56,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_weight',
     label: 'Body Weight',
     unit: 'kg',
-    color: '#f59e0b',
+    color: 'primary-dark',
     format: (v) => `${v.toFixed(1)} kg`,
     yTickFormat: (v) => v.toFixed(1),
   },
@@ -64,7 +65,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_sleep',
     label: 'Sleep Duration',
     unit: 'h',
-    color: '#3b82f6',
+    color: 'primary',
     format: (v) => `${(v / 3600).toFixed(1)} h`,
     yTickFormat: (v) => (v / 3600).toFixed(1),
   },
@@ -73,7 +74,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_vo2_max',
     label: 'VO₂ Max',
     unit: 'mL/kg/min',
-    color: '#10b981',
+    color: 'success',
     format: (v) => `${v.toFixed(1)} mL/kg/min`,
     yTickFormat: (v) => v.toFixed(1),
   },
@@ -82,7 +83,7 @@ const METRICS: MetricConfig[] = [
     prefKey: 'health_metric_active_energy',
     label: 'Active Energy',
     unit: 'kcal',
-    color: '#f97316',
+    color: 'warning',
     format: (v) => `${Math.round(v)} kcal`,
     yTickFormat: (v) => String(Math.round(v)),
   },
@@ -112,7 +113,7 @@ function MetricChart({
   if (!hasData) {
     return (
       <div className="h-52 flex items-center justify-center">
-        <p className="text-slate-400 text-sm text-center px-4">
+        <p className="text-text-muted-strong text-sm text-center px-4">
           No data — import Apple Health data to see this chart
         </p>
       </div>
@@ -122,14 +123,14 @@ function MetricChart({
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data} margin={{ top: 4, right: 12, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tick={{ fontSize: 10, fill: axisColor() }}
           interval="preserveStartEnd"
         />
         <YAxis
-          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tick={{ fontSize: 10, fill: axisColor() }}
           tickFormatter={metric.yTickFormat}
           width={44}
         />
@@ -140,7 +141,7 @@ function MetricChart({
         <Line
           type="monotone"
           dataKey={metric.dataKey}
-          stroke={metric.color}
+          stroke={chartColor(metric.color)}
           strokeWidth={2}
           dot={false}
           connectNulls={false}
@@ -184,21 +185,21 @@ export function HealthMetricsSection() {
   }))
 
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <section className="bg-surface rounded-xl border border-border shadow-sm p-6">
       <button
         className="flex w-full items-center justify-between text-left"
         onClick={() => setOpen((v) => !v)}
       >
-        <h2 className="text-lg font-semibold text-slate-800">Health</h2>
-        <span className="ml-2 text-slate-400 text-sm select-none">{open ? '▲' : '▼'}</span>
+        <h2 className="text-lg font-semibold text-text">Health</h2>
+        <span className="ml-2 text-text-muted-strong text-sm select-none">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
         <div className="mt-4">
           {allDisabled ? (
-            <p className="text-slate-400 text-sm text-center py-8">
+            <p className="text-text-muted-strong text-sm text-center py-8">
               All metrics are disabled —{' '}
-              <a href="/#/profile?tab=connections" className="text-blue-600 hover:underline">
+              <a href="/#/profile?tab=connections" className="text-primary-dark hover:underline">
                 enable them in Profile → Apple Health
               </a>
             </p>
@@ -211,8 +212,8 @@ export function HealthMetricsSection() {
                     onClick={() => setDays(opt.days)}
                     className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 rounded text-xs font-medium transition-colors ${
                       days === opt.days
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-primary-tint text-primary-dark border border-primary-dark'
+                        : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
                     }`}
                   >
                     {opt.label}
@@ -223,16 +224,16 @@ export function HealthMetricsSection() {
               {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {enabledMetrics.map((m) => (
-                    <div key={m.dataKey} className="h-52 bg-slate-50 rounded-lg animate-pulse" />
+                    <div key={m.dataKey} className="h-52 bg-bg rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {enabledMetrics.map((m) => (
                     <div key={m.dataKey}>
-                      <h3 className="text-sm font-semibold text-slate-600 mb-2">
+                      <h3 className="text-sm font-semibold text-text-muted-strong mb-2">
                         {m.label}{' '}
-                        <span className="font-normal text-slate-400">({m.unit})</span>
+                        <span className="font-normal text-text-muted-strong">({m.unit})</span>
                       </h3>
                       <MetricChart metric={m} data={chartData} />
                     </div>

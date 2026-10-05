@@ -64,7 +64,7 @@ export function DiffModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative bg-surface text-text rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4"
+        className="relative bg-surface text-text rounded-xl shadow-md max-w-md w-full p-6 space-y-4"
       >
         <h2 id={titleId} className="text-base font-semibold">
           Update template "{templateName}"?

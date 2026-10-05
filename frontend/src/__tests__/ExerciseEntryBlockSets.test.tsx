@@ -83,16 +83,16 @@ describe('ExerciseEntryBlock set rows', () => {
     const user = userEvent.setup()
     await renderBlock(true)
     expect(values().map((v) => v.done)).toEqual([true, false, false])
-    expect(rows()[0]).toHaveClass('bg-green-50')
-    expect(rows()[1]).not.toHaveClass('bg-green-50')
+    expect(rows()[0]).toHaveClass('bg-success/10')
+    expect(rows()[1]).not.toHaveClass('bg-success/10')
 
     await user.click(within(rows()[1]).getByLabelText('Mark done'))
     expect(values().map((v) => v.done)).toEqual([true, true, false])
-    expect(rows()[1]).toHaveClass('bg-green-50')
+    expect(rows()[1]).toHaveClass('bg-success/10')
 
     await user.click(within(rows()[0]).getByLabelText('Mark undone'))
     expect(values()[0].done).toBe(false)
-    expect(rows()[0]).not.toHaveClass('bg-green-50')
+    expect(rows()[0]).not.toHaveClass('bg-success/10')
   })
 
   it('does not strike numbers through on phones', async () => {

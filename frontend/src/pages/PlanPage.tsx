@@ -5,16 +5,7 @@ import { PlanSessionForm } from '../components/plan/PlanSessionForm'
 import { WeeklyOverviewCard } from '../components/plan/WeeklyOverviewCard'
 import { useWeekPlan, useCopyFromLastWeek, type PlannedSessionOut } from '../lib/planApi'
 import { PlanVsActualCard } from '../components/plan/PlanVsActualCard'
-import { toLocalDateStr } from '../lib/dateUtils'
-
-function getMondayOfCurrentWeek(): string {
-  const today = new Date()
-  const day = today.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? -6 : 1 - day
-  const monday = new Date(today)
-  monday.setDate(today.getDate() + diff)
-  return toLocalDateStr(monday)
-}
+import { toLocalDateStr, getMondayOfCurrentWeek } from '../lib/dateUtils'
 
 function shiftWeek(weekStart: string, direction: -1 | 1): string {
   const date = new Date(weekStart + 'T00:00:00')
@@ -108,7 +99,7 @@ export default function PlanPage() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => setWeekStart((w) => shiftWeek(w, -1))}
-            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-bg text-text-muted-strong hover:text-primary-dark transition-colors"
             aria-label="Previous week"
           >
             <svg
@@ -124,13 +115,13 @@ export default function PlanPage() {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-slate-800 whitespace-nowrap">
+          <h1 className="text-lg font-semibold text-text whitespace-nowrap">
             <span className="sm:hidden">{formatWeekRangeShort(weekStart)}</span>
             <span className="hidden sm:inline">{formatWeekRange(weekStart)}</span>
           </h1>
           <button
             onClick={() => setWeekStart((w) => shiftWeek(w, 1))}
-            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-bg text-text-muted-strong hover:text-primary-dark transition-colors"
             aria-label="Next week"
           >
             <svg
@@ -160,11 +151,11 @@ export default function PlanPage() {
             <button
               onClick={handleCopyFromLastWeek}
               disabled={copyFromLastWeek.isPending}
-              className="flex items-center gap-2 text-sm text-slate-600 border border-slate-300 rounded-lg px-4 py-2 hover:bg-slate-50 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 text-sm text-text-muted-strong border border-border rounded-lg px-4 py-2 hover:bg-bg transition-colors disabled:opacity-50"
             >
               {copyFromLastWeek.isPending ? (
                 <svg
-                  className="animate-spin h-4 w-4 text-slate-500"
+                  className="animate-spin h-4 w-4 text-text-muted-strong"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -201,7 +192,7 @@ export default function PlanPage() {
 
         {/* Toast notification */}
         {toast && (
-          <div className="fixed bottom-6 max-md:bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 bg-slate-800 text-white text-sm px-4 py-2.5 rounded-lg shadow-lg">
+          <div className="fixed bottom-6 max-md:bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 z-50 bg-text text-white text-sm px-4 py-2.5 rounded-lg shadow-md">
             {toast}
           </div>
         )}
@@ -211,8 +202,8 @@ export default function PlanPage() {
           <div className="space-y-6">
             {Array.from({ length: 7 }).map((_, i) => (
               <div key={i} className="animate-pulse">
-                <div className="h-4 bg-slate-200 rounded w-40 mb-2" />
-                <div className="h-16 bg-slate-100 rounded-xl" />
+                <div className="h-4 bg-border rounded w-40 mb-2" />
+                <div className="h-16 bg-bg rounded-xl" />
               </div>
             ))}
           </div>

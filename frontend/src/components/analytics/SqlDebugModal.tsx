@@ -37,21 +37,21 @@ export function SqlDebugModal({ fetchUrl, isOpen, onClose, title }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-text/40"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl mx-4 flex flex-col max-h-[80vh]"
+        className="bg-surface rounded-xl shadow-md w-full max-w-2xl mx-4 flex flex-col max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 shrink-0">
-          <span className="text-xs font-mono font-semibold text-slate-500 tracking-wide">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
+          <span className="text-xs font-mono font-semibold text-text-muted-strong tracking-wide">
             SQL — {title}
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-lg leading-none ml-4"
+            className="text-text-muted hover:text-text-muted-strong text-lg leading-none ml-4"
             aria-label="Close"
           >
             ✕
@@ -59,13 +59,13 @@ export function SqlDebugModal({ fetchUrl, isOpen, onClose, title }: Props) {
         </div>
         <div className="p-5 overflow-auto flex-1 min-h-0">
           {isLoading && (
-            <div className="h-32 flex items-center justify-center text-slate-400 text-sm">
+            <div className="h-32 flex items-center justify-center text-text-muted-strong text-sm">
               Loading…
             </div>
           )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-error-text">{error}</p>}
           {sql && (
-            <pre className="text-xs font-mono text-slate-700 whitespace-pre overflow-x-auto bg-slate-50 rounded-lg p-4 leading-relaxed">
+            <pre className="text-xs font-mono text-text whitespace-pre overflow-x-auto bg-bg rounded-lg p-4 leading-relaxed">
               {sql}
             </pre>
           )}

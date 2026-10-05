@@ -143,7 +143,7 @@ export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => voi
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
-        className="w-full bg-surface rounded-t-2xl shadow-xl pb-[env(safe-area-inset-bottom)]"
+        className="w-full bg-surface rounded-t-[20px] shadow-md pb-[env(safe-area-inset-bottom)]"
       >
         <div className="flex items-center justify-between px-4 h-14 border-b border-border">
           <span className="text-sm font-medium text-text-muted-strong">{username}</span>
@@ -224,8 +224,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
-      ? 'text-blue-600 font-semibold border-b-2 border-blue-600 pb-0.5'
-      : 'text-slate-600 hover:text-blue-600 transition-colors'
+      ? 'text-primary-dark font-semibold border-b-2 border-primary-dark pb-0.5'
+      : 'text-text-muted-strong hover:text-primary-dark transition-colors'
 
   return (
     <div className="min-h-screen flex flex-col bg-bg">
@@ -251,10 +251,10 @@ export function Layout({ children }: { children: ReactNode }) {
 
           {/* Desktop user / sign out */}
           <div className="hidden md:flex items-center gap-3 text-sm">
-            <span className="text-slate-500 font-medium">{username}</span>
+            <span className="text-text-muted-strong font-medium">{username}</span>
             <button
               onClick={logout}
-              className="text-slate-500 hover:text-blue-600 transition-colors"
+              className="text-text-muted-strong hover:text-primary-dark transition-colors"
             >
               Sign out
             </button>

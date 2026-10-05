@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Layout } from '../components/Layout'
+import { StatsGlance } from '../components/analytics/StatsGlance'
 import { SummaryHeader } from '../components/analytics/SummaryHeader'
 import { ConsistencyHeatmap } from '../components/analytics/ConsistencyHeatmap'
 import { OverviewTrendsChart } from '../components/analytics/OverviewTrendsChart'
@@ -23,7 +24,7 @@ function DebugIcon({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="hidden sm:block text-xs text-slate-300 hover:text-slate-500 font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
+      className="hidden sm:block text-xs text-text-muted-strong hover:text-text font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
       title="View SQL"
     >
       {'</>'}
@@ -42,12 +43,12 @@ function SectionCard({
 }) {
   const [debugOpen, setDebugOpen] = useState(false)
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <section className="bg-surface rounded-xl border border-border shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+        <h2 className="text-lg font-semibold text-text">{title}</h2>
         {debugUrl && <DebugIcon onClick={() => setDebugOpen(true)} />}
       </div>
-      {children ?? <p className="text-slate-400 text-sm">Coming soon.</p>}
+      {children ?? <p className="text-text-muted-strong text-sm">Coming soon.</p>}
       {debugUrl && (
         <SqlDebugModal
           fetchUrl={debugUrl}
@@ -71,13 +72,13 @@ function CollapsibleSectionCard({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+    <section className="bg-surface rounded-xl border border-border shadow-sm p-6">
       <button
         className="flex w-full items-center justify-between text-left"
         onClick={() => setOpen((v) => !v)}
       >
-        <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
-        <span className="ml-2 text-slate-400 text-sm select-none">{open ? '▲' : '▼'}</span>
+        <h2 className="text-lg font-semibold text-text">{title}</h2>
+        <span className="ml-2 text-text-muted-strong text-sm select-none">{open ? '▲' : '▼'}</span>
       </button>
       {open && <div className="mt-4">{children}</div>}
     </section>
@@ -97,7 +98,7 @@ function ChartPanel({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-600">{title}</h3>
+        <h3 className="text-sm font-semibold text-text-muted-strong">{title}</h3>
         <DebugIcon onClick={() => setDebugOpen(true)} />
       </div>
       {children}
@@ -116,7 +117,9 @@ export function AnalyticsPageContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+      <h1 className="text-2xl font-bold text-text">Analytics</h1>
+
+      <StatsGlance />
 
       <SectionCard title="All-time Summary" debugUrl="/analytics/summary">
         <SummaryHeader />
@@ -160,7 +163,7 @@ export function AnalyticsPageContent() {
                 <PersonalRecordsPanel />
               </ChartPanel>
               <button
-                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-sm text-text-muted-strong hover:text-text transition-colors"
                 onClick={() => setShowMoreStrength(false)}
               >
                 Show less ▲
@@ -168,7 +171,7 @@ export function AnalyticsPageContent() {
             </>
           ) : (
             <button
-              className="text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
+              className="text-sm text-primary-dark hover:underline transition-colors font-medium"
               onClick={() => setShowMoreStrength(true)}
             >
               Show more ▼

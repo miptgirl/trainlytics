@@ -51,7 +51,7 @@ export function RestTimer({
         <span
           data-testid="rest-clock"
           className={`text-2xl font-semibold tabular-nums ${
-            remaining === null ? 'text-text-muted' : expired ? 'text-success-text' : 'text-text'
+            remaining === null ? 'text-text-muted-strong' : expired ? 'text-success-text' : 'text-text'
           }`}
         >
           {clock}

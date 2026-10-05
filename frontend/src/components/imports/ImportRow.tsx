@@ -147,15 +147,15 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
   const sourceLabel = item.source === 'strava' ? 'Strava' : 'Apple Health'
   const sourceBadgeCls =
     item.source === 'strava'
-      ? 'bg-orange-50 text-orange-700'
-      : 'bg-red-50 text-red-700'
+      ? 'bg-warning/10 text-warning-text'
+      : 'bg-error/10 text-error-text'
 
   const displayType = mapped.activity_type ?? mapped.proposed_type_name ?? null
 
   return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       {/* ── Main row ── */}
-      <div className="px-4 py-3 bg-white flex flex-col gap-2">
+      <div className="px-4 py-3 bg-surface flex flex-col gap-2">
         {/* Top line: source badge + metadata / edit form */}
         <div className="flex items-start gap-2 flex-wrap">
           <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${sourceBadgeCls}`}>
@@ -169,20 +169,20 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 placeholder="Title"
-                className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full"
               />
               <div className="flex gap-2 flex-wrap">
                 <input
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark"
                 />
                 {isCardio && (
                   <select
                     value={editActivityType}
                     onChange={(e) => setEditActivityType(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white flex-1 min-w-32"
+                    className="border border-border-strong rounded-sm px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark bg-surface flex-1 min-w-32"
                   >
                     <option value="">— activity type —</option>
                     {cardioTypes.map((t) => (
@@ -198,14 +198,14 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                   type="button"
                   disabled={patchMutation.isPending}
                   onClick={handleSaveEdit}
-                  className="text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+                  className="text-sm bg-primary-dark hover:brightness-95 disabled:opacity-40 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
                 >
                   {patchMutation.isPending ? 'Saving…' : 'Save'}
                 </button>
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="text-sm text-slate-500 hover:text-slate-700 px-3 py-1.5 transition-colors"
+                  className="text-sm text-text-muted-strong hover:text-text px-3 py-1.5 transition-colors"
                 >
                   Cancel
                 </button>
@@ -214,23 +214,23 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
           ) : (
             <div className="flex-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 min-w-0">
               {mapped.title && (
-                <span className="text-sm font-semibold text-slate-800 truncate">{mapped.title}</span>
+                <span className="text-sm font-semibold text-text truncate">{mapped.title}</span>
               )}
               {displayType && (
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-text-muted-strong">
                   {displayType}
                   {mapped.proposed_type_name && !mapped.activity_type && (
-                    <span className="ml-1 text-xs text-amber-600">(new type)</span>
+                    <span className="ml-1 text-xs text-warning-text">(new type)</span>
                   )}
                 </span>
               )}
-              <span className="text-sm text-slate-500">{formatDate(mapped.date)}</span>
-              <span className="text-sm text-slate-500">{formatDuration(mapped.duration_seconds)}</span>
+              <span className="text-sm text-text-muted-strong">{formatDate(mapped.date)}</span>
+              <span className="text-sm text-text-muted-strong">{formatDuration(mapped.duration_seconds)}</span>
               {isCardio && mapped.distance_m ? (
-                <span className="text-sm text-slate-500">{formatDistance(mapped.distance_m)}</span>
+                <span className="text-sm text-text-muted-strong">{formatDistance(mapped.distance_m)}</span>
               ) : null}
               {mapped.avg_hr_bpm != null && (
-                <span className="text-sm text-slate-400">{mapped.avg_hr_bpm} bpm</span>
+                <span className="text-sm text-text-muted-strong">{mapped.avg_hr_bpm} bpm</span>
               )}
             </div>
           )}
@@ -238,7 +238,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
 
         {/* Conflict warning */}
         {conflict && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-800 flex items-center justify-between gap-3">
+          <div className="bg-warning/10 border border-warning/40 rounded-lg px-3 py-2 text-sm text-warning-text flex items-center justify-between gap-3">
             <span>
               Possible duplicate of session on {conflict.date}
               {conflict.duration != null && ` (${formatDuration(conflict.duration)})`} — accept anyway?
@@ -250,7 +250,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
                 setConflict(null)
                 acceptMutation.mutate(true)
               }}
-              className="shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 underline whitespace-nowrap"
+              className="shrink-0 text-xs font-medium text-warning-text underline whitespace-nowrap"
             >
               Accept anyway
             </button>
@@ -263,7 +263,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-xs text-text-muted-strong hover:text-text transition-colors"
             >
               Edit
             </button>
@@ -271,7 +271,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-xs text-text-muted-strong hover:text-text transition-colors"
           >
             {expanded ? 'Hide details' : 'Details'}
           </button>
@@ -280,19 +280,19 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
 
           {discardConfirm ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Discard this import?</span>
+              <span className="text-xs text-text-muted-strong">Discard this import?</span>
               <button
                 type="button"
                 disabled={discardMutation.isPending}
                 onClick={() => discardMutation.mutate()}
-                className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors"
+                className="text-xs font-medium text-error-text hover:underline transition-colors"
               >
                 Yes, discard
               </button>
               <button
                 type="button"
                 onClick={() => setDiscardConfirm(false)}
-                className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-xs text-text-muted-strong hover:text-text transition-colors"
               >
                 Cancel
               </button>
@@ -301,7 +301,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
             <button
               type="button"
               onClick={() => setDiscardConfirm(true)}
-              className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+              className="text-xs text-text-muted-strong hover:text-error-text transition-colors"
             >
               Discard
             </button>
@@ -314,7 +314,7 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
               setConflict(null)
               acceptMutation.mutate(false)
             }}
-            className="text-xs font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs font-medium bg-primary-dark hover:brightness-95 disabled:opacity-40 text-white px-3 py-1.5 rounded-lg transition-colors"
           >
             {acceptMutation.isPending ? 'Accepting…' : 'Accept'}
           </button>
@@ -323,34 +323,34 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
 
       {/* ── Expanded details ── */}
       {expanded && (
-        <div className="border-t border-slate-100 bg-slate-50 px-4 py-3">
-          <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
+        <div className="border-t border-border bg-bg px-4 py-3">
+          <p className="text-xs font-semibold text-text-muted-strong mb-2 uppercase tracking-wide">
             Session preview
           </p>
-          <div className="text-xs text-slate-600 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-            <span className="text-slate-400">Type</span>
+          <div className="text-xs text-text-muted-strong grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+            <span className="text-text-muted-strong">Type</span>
             <span>{mapped.type ?? '—'}</span>
-            <span className="text-slate-400">Source</span>
+            <span className="text-text-muted-strong">Source</span>
             <span>{mapped.source ?? '—'}</span>
-            <span className="text-slate-400">Date</span>
+            <span className="text-text-muted-strong">Date</span>
             <span>{mapped.date ?? '—'}</span>
-            <span className="text-slate-400">Duration</span>
+            <span className="text-text-muted-strong">Duration</span>
             <span>{formatDuration(mapped.duration_seconds)}</span>
             {isCardio && (
               <>
-                <span className="text-slate-400">Distance</span>
+                <span className="text-text-muted-strong">Distance</span>
                 <span>{formatDistance(mapped.distance_m) || '—'}</span>
               </>
             )}
             {mapped.calories != null && (
               <>
-                <span className="text-slate-400">Calories</span>
+                <span className="text-text-muted-strong">Calories</span>
                 <span>{mapped.calories} kcal</span>
               </>
             )}
             {mapped.avg_hr_bpm != null && (
               <>
-                <span className="text-slate-400">Avg HR</span>
+                <span className="text-text-muted-strong">Avg HR</span>
                 <span>{mapped.avg_hr_bpm} bpm</span>
               </>
             )}
@@ -358,12 +358,12 @@ export function ImportRow({ item, cardioTypes }: ImportRowProps) {
 
           {isCardio && mapped.segments && mapped.segments.length > 0 && (
             <div className="mt-3">
-              <p className="text-xs text-slate-400 mb-1">
+              <p className="text-xs text-text-muted-strong mb-1">
                 Segments ({mapped.segments.length})
               </p>
               <div className="flex flex-col gap-0.5">
                 {mapped.segments.map((seg, i) => (
-                  <div key={i} className="text-xs font-mono text-slate-600 grid grid-cols-3 gap-x-4">
+                  <div key={i} className="text-xs font-mono text-text-muted-strong grid grid-cols-3 gap-x-4">
                     <span>
                       {i + 1}. {seg.activity_type ?? '—'}
                     </span>

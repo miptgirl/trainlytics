@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useReadinessCorrelation } from '../../lib/analyticsApi'
+import { axisColor, chartColor, gridColor } from '../../lib/chartPalette'
 
 type SessionFilter = 'all' | 'strength' | 'cardio'
 
@@ -36,12 +37,12 @@ export function WellbeingCorrelationChart() {
   const [filter, setFilter] = useState<SessionFilter>('all')
 
   if (isLoading) {
-    return <div className="h-52 bg-slate-50 rounded-lg animate-pulse" />
+    return <div className="h-52 bg-bg rounded-lg animate-pulse" />
   }
 
   if (!data || data.length === 0) {
     return (
-      <p className="text-slate-400 text-sm text-center py-8">
+      <p className="text-text-muted-strong text-sm text-center py-8">
         No readiness correlation data available.
       </p>
     )
@@ -75,10 +76,10 @@ export function WellbeingCorrelationChart() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-full font-medium capitalize transition-colors ${
+            className={`px-3 py-1 max-md:min-h-11 max-md:min-w-11 max-md:px-4 text-xs rounded-sm font-medium capitalize transition-colors ${
               filter === f
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-primary-dark text-white border border-primary-dark'
+                : 'bg-surface border border-border-strong text-text-muted-strong hover:bg-bg'
             }`}
           >
             {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -88,7 +89,7 @@ export function WellbeingCorrelationChart() {
 
       <ResponsiveContainer width="100%" height={280}>
         <ScatterChart margin={{ top: 4, right: 16, left: 0, bottom: 24 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
           <XAxis
             type="number"
             dataKey="x"
@@ -100,9 +101,9 @@ export function WellbeingCorrelationChart() {
               position: 'insideBottom',
               offset: -12,
               fontSize: 11,
-              fill: '#94a3b8',
+              fill: axisColor(),
             }}
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: axisColor() }}
           />
           <YAxis
             type="number"
@@ -116,9 +117,9 @@ export function WellbeingCorrelationChart() {
               position: 'insideLeft',
               offset: 10,
               fontSize: 11,
-              fill: '#94a3b8',
+              fill: axisColor(),
             }}
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: axisColor() }}
           />
           <Tooltip
             cursor={{ strokeDasharray: '3 3' }}
@@ -126,17 +127,17 @@ export function WellbeingCorrelationChart() {
           />
           <Legend />
           {(filter === 'all' || filter === 'strength') && (
-            <Scatter name="Strength" data={strengthData} fill="#3b82f6" opacity={0.75} />
+            <Scatter name="Strength" data={strengthData} fill={chartColor('chart-strength')} opacity={0.75} />
           )}
           {(filter === 'all' || filter === 'cardio') && (
-            <Scatter name="Cardio" data={cardioData} fill="#10b981" opacity={0.75} />
+            <Scatter name="Cardio" data={cardioData} fill={chartColor('chart-running')} opacity={0.75} />
           )}
           {trendData.length === 2 && (
             <Scatter
               name="Trend"
               data={trendData}
               fill="none"
-              line={{ stroke: '#94a3b8', strokeWidth: 1.5, strokeDasharray: '4 2' }}
+              line={{ stroke: axisColor(), strokeWidth: 1.5, strokeDasharray: '4 2' }}
               shape={() => null as unknown as React.ReactElement}
               legendType="none"
             />

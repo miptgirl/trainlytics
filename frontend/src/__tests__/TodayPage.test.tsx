@@ -182,7 +182,7 @@ describe('TodayPage', () => {
     mockPlan([session({ skip_note: 'Knee pain' })])
     vi.mocked(api.patch).mockResolvedValue({})
     renderToday()
-    expect(await screen.findByText('Skipped')).toBeInTheDocument()
+    expect(await screen.findByText('✗ Skipped')).toBeInTheDocument()
     expect(screen.getByText(/Knee pain/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Start' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Move to tomorrow' })).not.toBeInTheDocument()
