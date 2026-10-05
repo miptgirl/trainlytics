@@ -745,7 +745,8 @@ function StrengthForm() {
         <button
           type="button"
           onClick={handleWorkoutMode}
-          className="min-h-11 px-4 rounded-xl border border-border bg-surface text-sm font-medium text-primary-dark"
+          disabled={isLoadingTemplate}
+          className="min-h-11 px-4 rounded-xl border border-border bg-surface text-sm font-medium text-primary-dark disabled:opacity-50"
         >
           Workout mode
         </button>

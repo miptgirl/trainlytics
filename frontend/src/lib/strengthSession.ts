@@ -388,6 +388,8 @@ export interface StrengthDraft {
   values: StrengthFormValues
   templateId: number | null
   workout: WorkoutModeState
+  /** Absent in drafts written before it was stored; readers then infer it from the title. */
+  titleTouched?: boolean
 }
 
 /** Flat on-disk shape: form values at the top level, so v1 readers still work. */
@@ -397,6 +399,7 @@ export function serializeStrengthDraft(draft: StrengthDraft): Record<string, unk
     ...draft.values,
     templateId: draft.templateId,
     workout: draft.workout,
+    ...(draft.titleTouched === undefined ? {} : { titleTouched: draft.titleTouched }),
   }
 }
 
@@ -440,6 +443,7 @@ export function parseStrengthDraft(raw: unknown): StrengthDraft | null {
       exercises: Array.isArray(raw.exercises) ? raw.exercises.map(parseEntry) : [emptyEntry()],
     },
     templateId: num(raw.templateId),
+    ...(typeof raw.titleTouched === 'boolean' ? { titleTouched: raw.titleTouched } : {}),
     workout: {
       currentExerciseIndex: index !== null && index >= 0 ? Math.floor(index) : 0,
       restEndsAt: num(w.restEndsAt),

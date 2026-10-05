@@ -16,7 +16,7 @@ import { api } from '../lib/api'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
 import { useWakeLock } from '../lib/hooks/useWakeLock'
-import { describeDraft, setSetDone, strengthViewUrl, type TemplateSummary, type WorkoutModeState } from '../lib/strengthSession'
+import { describeDraft, emptyStrengthDefaults, setSetDone, strengthViewUrl, type TemplateSummary, type WorkoutModeState } from '../lib/strengthSession'
 import {
   REST_LENGTHS,
   allExercisesDone,
@@ -103,24 +103,28 @@ export default function WorkoutModePage() {
   const nextIndex = nextUnfinishedIndex(exercises, exIndex)
   const allDone = allExercisesDone(exercises)
   const decided = s.pendingDraft === null
+  // Applying a template resets the whole form, so it is only offered while
+  // nothing is entered: blank entries, no template, scalar fields at defaults.
+  // Latched: once the session has been touched (or a template picked) the entry
+  // is gone for this mount, even if the user later clears a field.
+  const [templateOffered, setTemplateOffered] = useState(true)
+  const defaults = emptyStrengthDefaults()
+  const pristine =
+    s.selectedTemplateId === null &&
+    exercises.every(isBlankEntry) &&
+    (s.values.notes ?? '') === defaults.notes &&
+    (s.values.calories ?? '') === defaults.calories &&
+    (s.values.wellbeing ?? null) === defaults.wellbeing &&
+    (s.values.rpe ?? null) === defaults.rpe &&
+    (s.values.duration_seconds ?? null) === defaults.duration_seconds
+  if (templateOffered && decided && !pristine) setTemplateOffered(false)
   const { data: templates = [] } = useQuery({
     queryKey: ['templates', 'strength'],
     queryFn: () => api.get<TemplateSummary[]>('/templates/strength'),
+    enabled: templateOffered && decided && pristine,
   })
-  // Applying a template resets the form, so it is only offered before anything
-  // is logged. Latched: once the session has been touched (or a template picked)
-  // the entry is gone for this mount, even if the user later clears a field.
-  const [templateOffered, setTemplateOffered] = useState(true)
-  const pristine = s.selectedTemplateId === null && exercises.every(isBlankEntry)
-  if (templateOffered && decided && !pristine) setTemplateOffered(false)
-  const canPickTemplate =
-    templateOffered &&
-    decided &&
-    s.selectedTemplateId === null &&
-    !s.isLoadingTemplate &&
-    !s.templateError &&
-    templates.length > 0 &&
-    pristine
+  // Rendered only in the branch without a draft question, loading or error
+  const canPickTemplate = templateOffered && pristine && templates.length > 0
   const nameOf = (id: string) => names.get(id) ?? (id ? '…' : 'No exercise chosen')
 
   // Once the draft question is settled: stamp the start time and make a reload
@@ -207,14 +211,14 @@ export default function WorkoutModePage() {
 
   async function startFromTemplate(id: number) {
     setSheet(null)
-    const ok = await s.selectTemplate(id)
-    if (!ok) return
-    s.updateWorkout({ currentExerciseIndex: 0 })
-    setListVersion((v) => v + 1)
+    // The undo targets the old list; the pick replaces it
+    setUndoAction(null)
+    await s.selectTemplate(id, { claimDraft: true })
   }
 
   function continueWithoutTemplate() {
-    void s.selectTemplate(null)
+    s.dismissTemplateError()
+    setUndoAction(null)
     // Drop a URL template too, or a reload would load it (and fail) again
     setSearchParams(
       (prev) => {

@@ -617,4 +617,97 @@ describe('Workout mode: starting from a template', () => {
     })
     expect(entryButton()).not.toBeInTheDocument()
   })
+
+  it('picking a template clears a pending undo toast', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength')
+    await screen.findByRole('button', { name: 'Start from template' })
+    await user.click(screen.getByRole('button', { name: '+ Add set' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 2' }))
+    expect(await screen.findByText('Set 2 deleted')).toBeInTheDocument()
+
+    const dialog = await openSheet(user)
+    await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.queryByText('Set 2 deleted')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
+  })
+
+  it('Retry after a failed pick claims the draft and starts at the first exercise', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify(
+        blankDraft({
+          exercises: [
+            { exercise_id: '', sets: [set('', '')] },
+            { exercise_id: '', sets: [set('', '')] },
+          ],
+          workout: { currentExerciseIndex: 1, restEndsAt: null, startedAt: Date.now() - 60_000 },
+        }),
+      ),
+    )
+    let fail = true
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/4' && fail) throw new Error('offline')
+      return base(path)
+    })
+    renderAt('/workout?type=strength&resume=1')
+    expect(await screen.findByText('Exercise 2 of 2')).toBeInTheDocument()
+    const dialog = await openSheet(user)
+    await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
+    await screen.findByRole('alert')
+    fail = false
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(await screen.findByText('Exercise 1 of 2')).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.templateId).toBe(4))
+  })
+
+  it('notes typed in the full form keep the template entry hidden in workout mode, and are kept', async () => {
+    const user = userEvent.setup()
+    renderAt('/log?type=strength')
+    await user.type(await screen.findByPlaceholderText('Optional notes…'), 'sore knee')
+    await user.click(screen.getByRole('button', { name: 'Workout mode' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+    expect(entryButton()).not.toBeInTheDocument()
+    expect(storedDraft().notes).toBe('sore knee')
+  })
+
+  it('Continue without template keeps entered fields and offers the entry again', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blankDraft({ notes: '' })))
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') throw new Error('offline')
+      return base(path)
+    })
+    renderAt('/workout?type=strength&resume=1')
+    const dialog = await openSheet(user)
+    await user.click(within(dialog).getByRole('button', { name: 'Leg day' }))
+    await screen.findByRole('alert')
+    await user.click(screen.getByRole('button', { name: 'Continue without template' }))
+    expect(await screen.findByRole('button', { name: 'Start from template' })).toBeInTheDocument()
+  })
+
+  it('Continue without template does not reset a form that already holds a custom title', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(blankDraft({ title: 'Mine', titleTouched: true })))
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') throw new Error('offline')
+      return base(path)
+    })
+    renderAt('/workout?type=strength&resume=1')
+    const dialog = await openSheet(user)
+    await user.click(within(dialog).getByRole('button', { name: 'Leg day' }))
+    await screen.findByRole('alert')
+    await user.click(screen.getByRole('button', { name: 'Continue without template' }))
+    await waitFor(() => expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Mine'))
+  })
 })
+
