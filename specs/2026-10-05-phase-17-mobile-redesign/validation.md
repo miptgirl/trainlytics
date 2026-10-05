@@ -35,11 +35,11 @@ A group is complete when its checklist passes on a 390px viewport (and 1280px wh
 ## Group 3 — Today + mobile navigation
 
 - [x] `/` and login land on `/today`
-- [ ] Today shows today's planned sessions; Start, Move to tomorrow and Skip work; a strength Start opens workout mode at 390px
+- [x] Today shows today's planned sessions; Start, Move to tomorrow and Skip work; a strength Start opens workout mode at 390px
 - [x] A Resume card appears when a draft exists and opens the right view
 - [x] With nothing planned today the page says so and still offers Quick log
 - [x] Below 768px: slim header, profile menu sheet with Templates/Steps/Profile/Settings/Sign out, Today/Plan/Stats tab bar with the correct active tab (Stats active on `/sessions/:id`)
-- [ ] The tab bar is hidden on `/workout` and `/log`; no content or toast sits under it; with `viewport-fit=cover` the tab bar clears the home indicator
+- [x] The tab bar is hidden on `/workout` and `/log`; no content or toast sits under it; with `viewport-fit=cover` the tab bar clears the home indicator _(meta tag and `env(safe-area-inset-bottom)` padding verified; home-indicator clearance itself is device-only, and the toast offset is verified by CSS, not triggered)_
 - [x] At 1280px the top nav shows Today first and nothing else changes
 
 ## Group 4 — Sage palette + Stats glance

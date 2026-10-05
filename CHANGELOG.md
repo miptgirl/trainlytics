@@ -11,7 +11,8 @@ All notable changes to Trainlytics are documented here.
 - **Today screen** (`/today`) — today's date, a card per session planned today (Start, Move to tomorrow, Skip), a Resume card when a strength or cardio draft exists, Quick log tiles (Cardio, Strength, Steps) and a This week card (done of planned, next session). Uses existing endpoints only
 - **Mobile shell below 768px** — slim header with a profile button that opens a bottom sheet (Templates, Steps, Profile, Settings, Sign out), and a Today / Plan / Stats tab bar (Stats is also active on `/sessions/:id`). The tab bar is hidden on `/log` and `/workout`
 - **Safe areas** — `viewport-fit=cover`, tab bar padded by `env(safe-area-inset-bottom)`, content padded above the bar, Plan toast sits above it
-- `getStartUrl` helper (`lib/planStart.ts`) shared by the Plan cards and Today
+- `getStartUrl` helper (`lib/planStart.ts`) shared by the Plan cards and Today; it builds strength URLs with `strengthViewUrl` and takes the view (`workout` or `form`) from the caller
+- **Workout mode integration** — Today's strength Start, the Strength Quick log tile (blank workout) and the Resume card open workout mode below 768px and the full form from 768px; a strength Resume card restores the draft without asking (`resume=1`) and shows its title, sets done and age
 
 ### Behaviour notes
 
