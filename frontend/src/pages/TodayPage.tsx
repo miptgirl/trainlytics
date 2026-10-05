@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Layout, MenuSheet, ProfileButton } from '../components/Layout'
@@ -6,8 +6,15 @@ import { SkipNoteModal } from '../components/plan/SkipNoteModal'
 import { api } from '../lib/api'
 import { toLocalDateStr, formatShortDate } from '../lib/dateUtils'
 import { loadDraft } from '../lib/draftUtils'
+import { draftStartedAt, formatDraftAge } from '../lib/draftAge'
+import { summarizeWeek } from '../lib/planStats'
 import { getStartUrl } from '../lib/planStart'
-import { useWeekPlan, useUpdatePlannedSession, type PlannedSessionOut } from '../lib/planApi'
+import {
+  useWeekPlan,
+  useUpdatePlannedSession,
+  useUpdateSkipNote,
+  type PlannedSessionOut,
+} from '../lib/planApi'
 
 function getMonday(d: Date): string {
   const day = d.getDay()
@@ -44,6 +51,36 @@ function sessionSummary(s: PlannedSessionOut): string | null {
     .join(' · ')
 }
 
+/** Current date, refreshed when the app returns to the foreground and at midnight. */
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    const refresh = () => setNow((prev) => {
+      const next = new Date()
+      return toLocalDateStr(prev) === toLocalDateStr(next) ? prev : next
+    })
+    const schedule = () => {
+      const n = new Date()
+      const midnight = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 1)
+      timer = setTimeout(() => {
+        refresh()
+        schedule()
+      }, midnight.getTime() - n.getTime())
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    schedule()
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearTimeout(timer)
+    }
+  }, [])
+  return now
+}
+
 const typeBadgeClass = 'bg-primary-tint text-primary-dark'
 const tileClass =
   'flex flex-col items-center justify-center gap-1 min-h-20 rounded-xl border border-border bg-surface text-sm font-medium text-text hover:bg-primary-tint transition-colors'
@@ -64,7 +101,9 @@ function TodaySessionCard({
   const [skipOpen, setSkipOpen] = useState(false)
   const move = useUpdatePlannedSession()
   const summary = sessionSummary(session)
+  const undo = useUpdateSkipNote()
   const done = session.status === 'done'
+  const skipped = !done && !!session.skip_note?.trim()
 
   function moveToTomorrow() {
     move.mutate({
@@ -97,10 +136,11 @@ function TodaySessionCard({
           {session.session_type === 'strength' ? 'Strength' : 'Cardio'}
         </span>
         {done && <span className="text-xs font-medium text-success-text">✓ Done</span>}
+        {skipped && <span className="text-xs font-medium text-warning-text">Skipped</span>}
       </div>
       <h2 className="text-base font-semibold text-text">{sessionTitle(session, typeName)}</h2>
       {summary && <p className="text-sm text-text-muted-strong mt-0.5">{summary}</p>}
-      {session.status === 'skipped' && session.skip_note && (
+      {(skipped || session.status === 'skipped') && session.skip_note && (
         <p className="text-sm text-text-muted-strong mt-1 italic">"{session.skip_note}"</p>
       )}
 
@@ -113,6 +153,17 @@ function TodaySessionCard({
             View session →
           </Link>
         )
+      ) : skipped ? (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => undo.mutate({ weekStart, sessionId: session.id, skip_note: null })}
+            disabled={undo.isPending}
+            className="inline-flex items-center justify-center min-h-11 px-3 -ml-3 rounded-xl text-sm font-medium text-primary-dark disabled:opacity-50"
+          >
+            {undo.isPending ? 'Undoing…' : 'Undo skip'}
+          </button>
+        </div>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Link
@@ -140,14 +191,19 @@ function TodaySessionCard({
           </button>
         </div>
       )}
-      {move.isError && (
+      {(move.isError || undo.isError) && (
         <p role="alert" className="text-sm text-error-text mt-2">
-          Couldn't move the session. Try again.
+          Couldn't update the session. Try again.
         </p>
       )}
 
       {skipOpen && (
-        <SkipNoteModal session={session} weekStart={weekStart} onClose={() => setSkipOpen(false)} />
+        <SkipNoteModal
+          session={session}
+          weekStart={weekStart}
+          requireNote
+          onClose={() => setSkipOpen(false)}
+        />
       )}
     </div>
   )
@@ -156,7 +212,7 @@ function TodaySessionCard({
 export default function TodayPage() {
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
-  const now = new Date()
+  const now = useNow()
   const today = toLocalDateStr(now)
   const weekStart = getMonday(now)
   const tomorrow = addDays(today, 1)
@@ -165,9 +221,8 @@ export default function TodayPage() {
 
   const { data, isLoading, isError } = useWeekPlan(weekStart)
   const { data: cardioTypes = [] } = useQuery({
-    queryKey: ['cardioTypes'],
+    queryKey: ['cardio-types'],
     queryFn: () => api.get<{ id: number; name: string }[]>('/cardio-types'),
-    staleTime: Infinity,
   })
   const typeMap = new Map(cardioTypes.map((t) => [t.id, t.name]))
 
@@ -175,14 +230,17 @@ export default function TodayPage() {
   const todays = sessions
     .filter((s) => s.planned_date === today)
     .sort((a, b) => a.display_order - b.display_order)
-  const doneCount = sessions.filter((s) => s.status === 'done').length
+  const week = summarizeWeek(sessions)
   const next = sessions
     .filter((s) => s.status === 'planned' && s.planned_date > today)
     .sort((a, b) => a.planned_date.localeCompare(b.planned_date) || a.display_order - b.display_order)[0]
 
-  const strengthDraft = loadDraft('strength') !== null
-  const cardioDraft = loadDraft('cardio') !== null
-  const resumeType = strengthDraft ? 'strength' : cardioDraft ? 'cardio' : null
+  const drafts = (['strength', 'cardio'] as const).flatMap((type) => {
+    const draft = loadDraft(type)
+    if (draft === null) return []
+    const startedAt = draftStartedAt(draft)
+    return [{ type, age: startedAt ? formatDraftAge(startedAt, now) : null }]
+  })
 
   const dateLabel = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
 
@@ -191,23 +249,26 @@ export default function TodayPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-semibold text-text">{dateLabel}</h1>
-          <ProfileButton onClick={() => setMenuOpen(true)} className="md:hidden -mr-2" />
+          <ProfileButton onClick={() => setMenuOpen(true)} expanded={menuOpen} className="md:hidden -mr-2" />
         </div>
 
-        {resumeType && (
+        {drafts.map(({ type, age }) => (
           <Link
-            to={`/log?type=${resumeType}`}
+            key={type}
+            to={`/log?type=${type}`}
             className="flex items-center justify-between gap-3 min-h-14 px-4 py-3 rounded-xl border border-primary-light bg-primary-tint"
           >
             <span>
               <span className="block text-sm font-semibold text-primary-dark">
-                Resume {resumeType} workout
+                Resume {type} workout
               </span>
-              <span className="block text-xs text-text-muted-strong">You have an unsaved draft</span>
+              <span className="block text-xs text-text-muted-strong">
+                {age ?? 'You have an unsaved draft'}
+              </span>
             </span>
             <span aria-hidden className="text-primary-dark">→</span>
           </Link>
-        )}
+        ))}
 
         {isLoading ? (
           <div className="h-28 rounded-xl bg-surface border border-border animate-pulse" />
@@ -250,18 +311,26 @@ export default function TodayPage() {
           </h2>
           {isLoading ? (
             <div className="h-10 animate-pulse" />
+          ) : isError ? (
+            <p role="alert" className="text-sm text-error-text">Couldn't load this week.</p>
+          ) : sessions.length === 0 ? (
+            <p className="text-sm text-text-muted-strong">No sessions planned this week.</p>
           ) : (
             <>
               <p className="text-sm text-text">
-                <span className="text-2xl font-semibold">{doneCount}</span>
+                <span className="text-2xl font-semibold">{week.done}</span>
                 <span className="text-text-muted-strong"> of {sessions.length} sessions done</span>
               </p>
               <div className="h-2 bg-bg rounded-full overflow-hidden mt-2">
                 <div
                   className="h-full bg-success rounded-full"
-                  style={{ width: `${sessions.length ? Math.round((doneCount / sessions.length) * 100) : 0}%` }}
+                  style={{ width: `${Math.round((week.done / sessions.length) * 100)}%` }}
                 />
               </div>
+              <p className="text-xs text-text-muted-strong mt-2">
+                {week.planned} planned · {week.skipped} skipped
+                {week.completionPct !== null && ` · ${week.completionPct}% completion`}
+              </p>
               <p className="text-sm text-text-muted-strong mt-3">
                 {next
                   ? `Next: ${sessionTitle(next, next.activity_type_id != null ? (typeMap.get(next.activity_type_id) ?? null) : null)} · ${formatShortDate(next.planned_date)}`

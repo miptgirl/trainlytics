@@ -35,6 +35,12 @@ describe('getStartUrl', () => {
     expect(getStartUrl(make({}), '2026-10-05')).toBe('/log?type=strength')
   })
 
+  it('keeps the planned date for a skipped session without a template', () => {
+    expect(getStartUrl(make({ status: 'skipped' }), '2026-10-05')).toBe(
+      '/log?type=strength&date=2026-10-05T10:00',
+    )
+  })
+
   it('links a cardio session to its plan', () => {
     expect(getStartUrl(make({ session_type: 'cardio' }), '2026-09-28')).toBe(
       '/log?type=cardio&plannedSessionId=7&weekStart=2026-09-28',

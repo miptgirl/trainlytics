@@ -62,6 +62,44 @@ describe('Layout mobile shell', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it.each(['/login', '/logout', '/logbook'])('keeps the tab bar on %s (not a /log route)', (path) => {
+    renderAt(path)
+    expect(tabBar()).toBeInTheDocument()
+  })
+
+  it('exposes the open state and returns focus to the trigger on Escape', async () => {
+    renderAt('/plan')
+    const trigger = screen.getAllByRole('button', { name: 'Open menu' })[0]
+    expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await userEvent.click(trigger)
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Close menu' })).toHaveFocus()
+    expect(document.body.style.overflow).toBe('hidden')
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
+    expect(document.body.style.overflow).toBe('')
+  })
+
+  it('traps Tab inside the sheet', async () => {
+    renderAt('/plan')
+    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+    const dialog = screen.getByRole('dialog', { name: 'Menu' })
+    const signOut = within(dialog).getByRole('button', { name: 'Sign out' })
+    signOut.focus()
+    await userEvent.tab()
+    expect(screen.getByRole('button', { name: 'Close menu' })).toHaveFocus()
+    await userEvent.tab({ shift: true })
+    expect(signOut).toHaveFocus()
+  })
+
+  it('closes when a menu link navigates', async () => {
+    renderAt('/plan')
+    await userEvent.click(screen.getByRole('button', { name: 'Open menu' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('link', { name: 'Steps' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('lists Today first in the desktop nav', () => {
     renderAt('/plan')
     const nav = screen.getAllByRole('navigation').find((n) => n.className.includes('hidden md:flex'))!

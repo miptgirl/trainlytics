@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import logo from '../assets/logo.svg'
@@ -77,28 +77,69 @@ const MENU_LINKS = [
   { to: '/settings', label: 'Settings' },
 ]
 
-/** Profile button + bottom sheet; shared by the mobile header and the Today header. */
+export const MENU_SHEET_ID = 'menu-sheet'
+
+const FOCUSABLE = 'a[href], button:not([disabled])'
+
+/** Profile menu as a modal bottom sheet (below md): focus is trapped, body scroll locked. */
 export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { username, logout } = useAuth()
+  const { pathname } = useLocation()
+  const sheetRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  // Close on navigation
+  useEffect(() => {
+    onCloseRef.current()
+  }, [pathname])
 
   useEffect(() => {
     if (!open) return
+    const trigger = document.activeElement as HTMLElement | null
+    closeRef.current?.focus()
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onCloseRef.current()
+        return
+      }
+      if (e.key !== 'Tab' || !sheetRef.current) return
+      const items = Array.from(sheetRef.current.querySelectorAll<HTMLElement>(FOCUSABLE))
+      if (items.length === 0) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && (active === first || !sheetRef.current.contains(active))) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (active === last || !sheetRef.current.contains(active))) {
+        e.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = prevOverflow
+      trigger?.focus?.()
+    }
+  }, [open])
 
   if (!open) return null
   return (
     <div
-      className="md:hidden fixed inset-0 z-50 flex items-end bg-black/40"
+      className="md:hidden fixed inset-0 z-50 flex items-end bg-text/40"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
     >
       <div
+        ref={sheetRef}
+        id={MENU_SHEET_ID}
         role="dialog"
         aria-modal="true"
         aria-label="Menu"
@@ -107,6 +148,7 @@ export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => voi
         <div className="flex items-center justify-between px-4 h-14 border-b border-border">
           <span className="text-sm font-medium text-text-muted-strong">{username}</span>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label="Close menu"
@@ -146,13 +188,23 @@ export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => voi
   )
 }
 
-export function ProfileButton({ onClick, className = '' }: { onClick: () => void; className?: string }) {
+export function ProfileButton({
+  onClick,
+  expanded = false,
+  className = '',
+}: {
+  onClick: () => void
+  expanded?: boolean
+  className?: string
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label="Open menu"
       aria-haspopup="dialog"
+      aria-expanded={expanded}
+      aria-controls={MENU_SHEET_ID}
       className={`flex items-center justify-center min-h-11 min-w-11 rounded-full text-text-muted-strong hover:text-primary-dark hover:bg-primary-tint transition-colors ${className}`}
     >
       <svg {...iconProps}>
@@ -169,9 +221,6 @@ export function Layout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const showTabBar = !isTabBarHidden(pathname)
   const current = activeTab(pathname)
-
-  // Close the sheet whenever the route changes
-  useEffect(() => setMenuOpen(false), [pathname])
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive
@@ -214,6 +263,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {/* Profile / menu button (mobile only) */}
           <ProfileButton
             onClick={() => setMenuOpen(true)}
+            expanded={menuOpen}
             className={`md:hidden -mr-2 ${pathname === '/today' ? 'invisible' : ''}`}
           />
         </div>

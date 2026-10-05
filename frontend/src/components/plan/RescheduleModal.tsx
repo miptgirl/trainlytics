@@ -68,7 +68,7 @@ export function RescheduleModal({ session, weekStart, onClose }: RescheduleModal
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl">
+      <div className="bg-white pb-[env(safe-area-inset-bottom)] sm:pb-0 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl shadow-xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <h2 className="text-base font-semibold text-slate-800">Reschedule session</h2>
           <button

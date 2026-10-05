@@ -13,8 +13,18 @@ All notable changes to Trainlytics are documented here.
 - **Safe areas** — `viewport-fit=cover`, tab bar padded by `env(safe-area-inset-bottom)`, content padded above the bar, Plan toast sits above it
 - `getStartUrl` helper (`lib/planStart.ts`) shared by the Plan cards and Today
 
+### Behaviour notes
+
+- **Skip on Today** — the backend only stores a skip note, and a session dated today keeps status `planned`. On Today a session with a non-empty skip note is shown as Skipped (badge, note, no Start / Move to tomorrow) with **Undo skip**, which clears the note (`PATCH …/skip-note` with `null`). Skipping from Today requires a note. The Plan page and its week counts still go by the backend status, so a session skipped today looks planned there until the day passes
+- **Move to tomorrow** is hidden on Sundays: the reschedule API only moves a session within its own week
+- **Strength Start without a template** opens a blank strength form (`/log?type=strength`) instead of doing nothing; a skipped session keeps its planned date (`&date=`) with or without a template
+- **This week** uses the same counts as the Plan overview (`summarizeWeek`), has error and empty states, and the page recomputes today when the app returns to the foreground or at midnight
+- **Resume** shows one card per draft (strength and cardio) with the draft's age when it stored a start or session date
+
 ### Changed
 
+- Menu sheet is a real modal: focus moves in and returns to the trigger, Tab is trapped, body scroll is locked, and it closes on navigation
+- Bottom-sheet modals (skip note, reschedule, adapt, plan form, exercise swap, Settings and Exercises dialogs) add `env(safe-area-inset-bottom)` padding below `sm`
 - `/` and the post-login landing go to `/today` (was `/stats`); the desktop top nav gains **Today** as its first link
 
 ### Tests

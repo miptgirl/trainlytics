@@ -119,6 +119,106 @@ describe('TodayPage', () => {
     await screen.findByText('Upper body')
     await userEvent.click(screen.getByRole('button', { name: 'Skip' }))
     expect(screen.getByRole('heading', { name: 'Skip note' })).toBeInTheDocument()
+    // Skipping needs a reason: the note is what marks the session skipped
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
+  })
+
+  it('shows a Skipped card without Start after skipping, and Undo skip clears the note', async () => {
+    mockPlan([session({ skip_note: 'Knee pain' })])
+    vi.mocked(api.patch).mockResolvedValue({})
+    renderToday()
+    expect(await screen.findByText('Skipped')).toBeInTheDocument()
+    expect(screen.getByText(/Knee pain/)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Start' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move to tomorrow' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Undo skip' }))
+    expect(api.patch).toHaveBeenCalledWith(`/plans/${WEEK}/sessions/1/skip-note`, { skip_note: null })
+  })
+
+  it('saves the skip note through the plan API', async () => {
+    mockPlan([session({})])
+    vi.mocked(api.patch).mockResolvedValue({})
+    renderToday()
+    await screen.findByText('Upper body')
+    await userEvent.click(screen.getByRole('button', { name: 'Skip' }))
+    await userEvent.type(screen.getByPlaceholderText(/knee pain/i), 'Travel')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(api.patch).toHaveBeenCalledWith(`/plans/${WEEK}/sessions/1/skip-note`, { skip_note: 'Travel' })
+  })
+
+  it('hides Move to tomorrow on Sunday (tomorrow is next week)', async () => {
+    vi.setSystemTime(new Date(2026, 9, 11, 9, 0))
+    mockPlan([session({ planned_date: '2026-10-11' })])
+    renderToday()
+    await screen.findByText('Upper body')
+    expect(screen.getByRole('link', { name: 'Start' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Move to tomorrow' })).not.toBeInTheDocument()
+  })
+
+  it('shows a done session without Start but with a link to it', async () => {
+    mockPlan([session({ status: 'done', matched_session_id: 55 })])
+    renderToday()
+    await screen.findByText('Upper body')
+    expect(screen.queryByRole('link', { name: 'Start' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /view session/i })).toHaveAttribute('href', '/sessions/55')
+  })
+
+  it('shows both Resume cards, with the draft age, when both drafts exist', async () => {
+    localStorage.setItem('trainlytics_draft_strength', JSON.stringify({ date: '2026-10-05T09:00' }))
+    localStorage.setItem('trainlytics_draft_cardio', JSON.stringify({ exercises: [] }))
+    mockPlan([])
+    renderToday()
+    const strength = await screen.findByRole('link', { name: /resume strength workout/i })
+    expect(strength).toHaveTextContent('Started 2 days ago')
+    expect(screen.getByRole('link', { name: /resume cardio workout/i })).toHaveAttribute(
+      'href',
+      '/log?type=cardio',
+    )
+  })
+
+  it('counts the week exactly like the Plan overview', async () => {
+    mockPlan([
+      session({ id: 1 }),
+      session({ id: 2, planned_date: '2026-10-05', status: 'done' }),
+      session({ id: 3, planned_date: '2026-10-06', status: 'skipped' }),
+      session({ id: 4, planned_date: '2026-10-05', status: 'done' }),
+    ])
+    renderToday()
+    await screen.findByText(/of 4 sessions done/)
+    const week = within(screen.getByRole('region', { name: 'This week' }))
+    expect(week.getByText(/1 planned · 1 skipped · 67% completion/)).toBeInTheDocument()
+  })
+
+  it('shows empty and error states for the week card', async () => {
+    mockPlan([])
+    const { unmount } = renderToday()
+    expect(await screen.findByText('No sessions planned this week.')).toBeInTheDocument()
+    unmount()
+    mockGet.mockImplementation((url: string) =>
+      url === '/cardio-types' ? Promise.resolve([]) : Promise.reject(new Error('boom')),
+    )
+    renderToday()
+    expect(await screen.findByText("Couldn't load this week.")).toBeInTheDocument()
+  })
+
+  it('rolls over to the new day when the app returns to the foreground', async () => {
+    mockGet.mockImplementation((url: string) => {
+      if (url === `/plans/${WEEK}`)
+        return Promise.resolve({
+          plan_id: 1,
+          week_start: WEEK,
+          sessions: [session({ title: 'Wed run' }), session({ id: 2, planned_date: '2026-10-08', title: 'Thu lift' })],
+        })
+      return Promise.resolve([])
+    })
+    renderToday()
+    expect(await screen.findByText('Wed run')).toBeInTheDocument()
+    vi.setSystemTime(new Date(2026, 9, 8, 7, 0))
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(await screen.findByText('Thu lift')).toBeInTheDocument()
+    expect(screen.queryByText('Wed run')).not.toBeInTheDocument()
+    expect(screen.getByText('Thursday, October 8')).toBeInTheDocument()
   })
 
   it('moves a session to tomorrow via the plan API', async () => {
