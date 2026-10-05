@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   activityColor,
+  activityColors,
   axisColor,
   categoricalColor,
   chartColor,
@@ -59,5 +60,20 @@ describe('chartPalette', () => {
       '#C86F62',
     ])
     expect(heatmapRamp()).toEqual(['#E8E4DA', '#B8C9B2', '#7E9B76', '#4F6B52'])
+  })
+
+  it('keeps unnamed types off colours already used by named types in the same chart', () => {
+    // Running is ochre; Rowing must not also be ochre (the first categorical colour not in use is sage)
+    const [running, rowing] = activityColors(['Running', 'Rowing'])
+    expect(running).toBe('#D1A15D')
+    expect(rowing).not.toBe(running)
+    expect(rowing).toBe('#7E9B76')
+  })
+
+  it('gives each unknown type its own free colour and keeps named ones stable', () => {
+    const colors = activityColors(['Rowing', 'Cycling', 'Climbing', 'Running'])
+    expect(colors[1]).toBe('#8297A5')
+    expect(colors[3]).toBe('#D1A15D')
+    expect(new Set(colors).size).toBe(4)
   })
 })

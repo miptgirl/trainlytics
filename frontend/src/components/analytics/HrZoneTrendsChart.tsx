@@ -10,9 +10,8 @@ import {
 } from 'recharts'
 import { useHrZoneTrends } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
-import { axisColor, gridColor, zoneColor } from '../../lib/chartPalette'
+import { axisColor, gridColor, useChartPalette } from '../../lib/chartPalette'
 
-const zoneColors = () => ([1, 2, 3, 4, 5] as const).map(zoneColor)
 const ZONE_LABELS = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5']
 const ZONE_RANGES = ['< 132 bpm', '133–144 bpm', '145–157 bpm', '158–169 bpm', '≥ 170 bpm']
 
@@ -30,6 +29,7 @@ interface ChartRow {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function HrZoneTooltip({ active, payload }: any) {
+  const { zones } = useChartPalette()
   if (!active || !payload?.length) return null
   const row = payload[0]?.payload as ChartRow
   const zoneMinutes = [row.z1_m, row.z2_m, row.z3_m, row.z4_m, row.z5_m]
@@ -41,7 +41,7 @@ function HrZoneTooltip({ active, payload }: any) {
         const pct = row.total_m > 0 ? (minutes / row.total_m * 100).toFixed(1) : '0.0'
         return (
           <div key={label} className="flex items-center gap-2 mb-0.5 last:mb-0">
-            <span className="inline-block w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: zoneColors()[i] }} />
+            <span className="inline-block w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: zones[i] }} />
             <span className="text-text-muted-strong w-32">{label} ({ZONE_RANGES[i]})</span>
             <span className="font-medium text-text w-14 text-right">{minutes.toFixed(1)} min</span>
             <span className="text-text-muted-strong w-10 text-right">({pct}%)</span>
@@ -53,6 +53,7 @@ function HrZoneTooltip({ active, payload }: any) {
 }
 
 export function HrZoneTrendsChart() {
+  const { zones } = useChartPalette()
   const { data, isLoading } = useHrZoneTrends()
   const [mode, setMode] = useState<'minutes' | 'percent'>('minutes')
 
@@ -116,18 +117,18 @@ export function HrZoneTrendsChart() {
             domain={mode === 'percent' ? [0, 100] : undefined}
           />
           <Tooltip content={<HrZoneTooltip />} />
-          <Bar dataKey="z1" stackId="zones" fill={zoneColors()[0]} name="Z1" />
-          <Bar dataKey="z2" stackId="zones" fill={zoneColors()[1]} name="Z2" />
-          <Bar dataKey="z3" stackId="zones" fill={zoneColors()[2]} name="Z3" />
-          <Bar dataKey="z4" stackId="zones" fill={zoneColors()[3]} name="Z4" />
-          <Bar dataKey="z5" stackId="zones" fill={zoneColors()[4]} name="Z5" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="z1" stackId="zones" fill={zones[0]} name="Z1" />
+          <Bar dataKey="z2" stackId="zones" fill={zones[1]} name="Z2" />
+          <Bar dataKey="z3" stackId="zones" fill={zones[2]} name="Z3" />
+          <Bar dataKey="z4" stackId="zones" fill={zones[3]} name="Z4" />
+          <Bar dataKey="z5" stackId="zones" fill={zones[4]} name="Z5" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
 
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 justify-center">
         {ZONE_LABELS.map((label, i) => (
           <div key={label} className="flex items-center gap-1.5 text-xs text-text-muted-strong">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: zoneColors()[i] }} />
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: zones[i] }} />
             <span>{label} {ZONE_RANGES[i]}</span>
           </div>
         ))}

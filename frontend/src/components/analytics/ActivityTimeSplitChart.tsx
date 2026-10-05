@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 import { useCardioTimeSplit } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
-import { activityColor, axisColor, gridColor } from '../../lib/chartPalette'
+import { activityColors, axisColor, gridColor } from '../../lib/chartPalette'
 
 const PERIODS = [
   { label: '30d', value: 30 },
@@ -39,6 +39,8 @@ export function ActivityTimeSplitChart() {
       </p>
     )
   }
+
+  const colors = activityColors(data.map((d) => d.activity_type))
 
   return (
     <div>
@@ -94,8 +96,8 @@ export function ActivityTimeSplitChart() {
             />
             <Tooltip formatter={(v: number) => [`${v} min`, 'Total minutes']} />
             <Bar dataKey="total_minutes" radius={[4, 4, 0, 0]}>
-              {data.map((entry, i) => (
-                <Cell key={i} fill={activityColor(entry.activity_type, i)} />
+              {data.map((_, i) => (
+                <Cell key={i} fill={colors[i]} />
               ))}
             </Bar>
           </BarChart>
@@ -114,8 +116,8 @@ export function ActivityTimeSplitChart() {
                 `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`
               }
             >
-              {data.map((entry, i) => (
-                <Cell key={i} fill={activityColor(entry.activity_type, i)} />
+              {data.map((_, i) => (
+                <Cell key={i} fill={colors[i]} />
               ))}
             </Pie>
             <Tooltip formatter={(v: number) => [`${v} min`, 'Total minutes']} />

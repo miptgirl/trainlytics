@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useAnalyticsHeatmap } from '../../lib/analyticsApi'
 import type { HeatmapDay } from '../../lib/analyticsApi'
-import { axisColor, chartColor } from '../../lib/chartPalette'
+import { useChartPalette } from '../../lib/chartPalette'
 
 const CELL = 12
 const GAP = 3
@@ -19,14 +19,10 @@ interface HeatColors {
   both: string
 }
 
-function heatColors(): HeatColors {
-  const strength = chartColor('chart-strength')
-  const cardio = chartColor('chart-running')
+function heatColors(p: ReturnType<typeof useChartPalette>): HeatColors {
   return {
-    strength,
-    cardio,
-    rest: chartColor('border'),
-    both: `linear-gradient(135deg, ${strength} 50%, ${cardio} 50%)`,
+    ...p.heat,
+    both: `linear-gradient(135deg, ${p.heat.strength} 50%, ${p.heat.cardio} 50%)`,
   }
 }
 
@@ -110,7 +106,9 @@ interface TooltipState {
 }
 
 export function ConsistencyHeatmap() {
-  const colors = heatColors()
+  const palette = useChartPalette()
+  const colors = heatColors(palette)
+  const axis = palette.axis
   const { data, isLoading } = useAnalyticsHeatmap()
   const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -200,7 +198,7 @@ export function ConsistencyHeatmap() {
             return (
               <div
                 key={wi}
-                style={{ width: CELL + GAP, minWidth: CELL + GAP, fontSize: 10, color: axisColor() }}
+                style={{ width: CELL + GAP, minWidth: CELL + GAP, fontSize: 10, color: axis }}
               >
                 {label?.label ?? ''}
               </div>
@@ -215,7 +213,7 @@ export function ConsistencyHeatmap() {
             {DAY_LABELS.map((label, i) => (
               <div
                 key={i}
-                style={{ height: CELL, fontSize: 9, color: axisColor(), lineHeight: `${CELL}px` }}
+                style={{ height: CELL, fontSize: 9, color: axis, lineHeight: `${CELL}px` }}
               >
                 {label}
               </div>
@@ -287,7 +285,7 @@ export function ConsistencyHeatmap() {
             <div className="text-primary-light">Rest day</div>
           ) : (
             tooltip.types.map(t => (
-              <div key={t} style={{ color: t === 'strength' ? chartColor('primary-light') : chartColor('warning') }}>
+              <div key={t} style={{ color: t === 'strength' ? colors.strength : colors.cardio }}>
                 {t === 'strength' ? 'Strength' : 'Cardio'}
               </div>
             ))

@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { useCardioDistanceProgression } from '../../lib/analyticsApi'
 import { formatCompact } from '../../lib/chartUtils'
-import { activityColor, axisColor, gridColor } from '../../lib/chartPalette'
+import { activityColors, axisColor, gridColor } from '../../lib/chartPalette'
 
 function formatMonthLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -35,6 +35,7 @@ export function CardioDistanceProgressionChart() {
   }
 
   const activityTypes = [...new Set(data.map((p) => p.activity_type))]
+  const colors = activityColors(activityTypes)
   const monthSet = [...new Set(data.map((p) => p.month_start))].sort()
 
   const pivoted = monthSet.map((month) => {
@@ -73,7 +74,7 @@ export function CardioDistanceProgressionChart() {
             key={type}
             type="monotone"
             dataKey={type}
-            stroke={activityColor(type, i)}
+            stroke={colors[i]}
             strokeWidth={2}
             dot={false}
             hide={hidden.has(type)}

@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+
 /**
  * Chart colours for recharts and inline styles.
  *
@@ -88,6 +90,45 @@ const ACTIVITY_RULES: [RegExp, ChartToken][] = [
 export function activityColor(name: string, fallbackIndex = 0): string {
   for (const [rx, token] of ACTIVITY_RULES) if (rx.test(name)) return chartColor(token)
   return categoricalColor(fallbackIndex)
+}
+
+/**
+ * Colours for a set of activity types in one chart: named types keep their
+ * token colour; unknown names take categorical colours not already used by a
+ * named type (or an earlier unknown), so two series never share a colour until
+ * the six categorical colours run out.
+ */
+export function activityColors(names: string[]): string[] {
+  const named = names.map((n) => ACTIVITY_RULES.find(([rx]) => rx.test(n))?.[1] ?? null)
+  const used = new Set<ChartToken>(named.filter((t): t is ChartToken => t !== null))
+  let next = 0
+  return names.map((_, i) => {
+    const token = named[i]
+    if (token) return chartColor(token)
+    const free = CATEGORICAL.find((t) => !used.has(t))
+    if (free) {
+      used.add(free)
+      return chartColor(free)
+    }
+    return categoricalColor(next++)
+  })
+}
+
+/** Memoised palette for components that need many colours per render. */
+export function useChartPalette() {
+  return useMemo(
+    () => ({
+      axis: axisColor(),
+      grid: gridColor(),
+      zones: ([1, 2, 3, 4, 5] as const).map(zoneColor),
+      heat: {
+        strength: chartColor('chart-strength'),
+        cardio: chartColor('chart-running'),
+        rest: chartColor('border'),
+      },
+    }),
+    [],
+  )
 }
 
 /** Sage ramp for intensity heatmaps, empty to strongest. */

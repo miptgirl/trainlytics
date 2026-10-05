@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Layout, MenuSheet, ProfileButton } from '../components/Layout'
 import { SkipNoteModal } from '../components/plan/SkipNoteModal'
 import { api } from '../lib/api'
+import { TypeBadge, StatusBadge } from '../components/SessionBadges'
 import { toLocalDateStr, formatShortDate, getMondayOf } from '../lib/dateUtils'
 import { loadDraft } from '../lib/draftUtils'
 import { draftStartedAt, formatDraftAge } from '../lib/draftAge'
@@ -89,7 +90,6 @@ function useNow(): Date {
   return now
 }
 
-const typeBadgeClass = 'bg-primary-tint text-primary-dark'
 const tileClass =
   'flex flex-col items-center justify-center gap-1 min-h-20 rounded-xl border border-border bg-surface text-sm font-medium text-text hover:bg-primary-tint transition-colors'
 
@@ -142,11 +142,9 @@ function TodaySessionCard({
   return (
     <div className="bg-surface rounded-xl border border-border shadow-sm p-4">
       <div className="flex items-center gap-2 mb-1">
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeBadgeClass}`}>
-          {session.session_type === 'strength' ? 'Strength' : 'Cardio'}
-        </span>
-        {done && <span className="text-xs font-medium text-success-text">✓ Done</span>}
-        {skipped && <span className="text-xs font-medium text-warning-text">Skipped</span>}
+        <TypeBadge type={session.session_type} />
+        {done && <StatusBadge status="done" />}
+        {skipped && <StatusBadge status="skipped" />}
       </div>
       <h2 className="text-base font-semibold text-text">{sessionTitle(session, typeName)}</h2>
       {summary && <p className="text-sm text-text-muted-strong mt-0.5">{summary}</p>}

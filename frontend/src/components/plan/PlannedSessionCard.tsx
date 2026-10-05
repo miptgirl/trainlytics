@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { TypeBadge, StatusBadge } from '../SessionBadges'
 import { type PlannedSessionOut, useDeletePlannedSession } from '../../lib/planApi'
 import { getStartUrl } from '../../lib/planStart'
 import { SkipNoteModal } from './SkipNoteModal'
@@ -46,23 +47,6 @@ function buildCardioTitle(
     return `${base} – ${Math.round(totalSecs / 60)} min`
   }
   return base
-}
-
-const statusBadgeClass = {
-  planned: 'bg-primary-tint text-primary-dark',
-  done: 'bg-success/10 text-success-text',
-  skipped: 'bg-warning/10 text-warning-text',
-}
-
-const statusLabel = {
-  planned: '○ Planned',
-  done: '✓ Done',
-  skipped: '✗ Skipped',
-}
-
-const typeBadgeClass = {
-  strength: 'bg-chart-strength/10 text-primary-dark',
-  cardio: 'bg-chart-running/10 text-warning-text',
 }
 
 export function PlannedSessionCard({
@@ -117,20 +101,8 @@ export function PlannedSessionCard({
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                typeBadgeClass[session.session_type]
-              }`}
-            >
-              {session.session_type === 'strength' ? 'Strength' : 'Cardio'}
-            </span>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                statusBadgeClass[session.status]
-              }`}
-            >
-              {statusLabel[session.status]}
-            </span>
+            <TypeBadge type={session.session_type} />
+            <StatusBadge status={session.status} />
           </div>
         </div>
 

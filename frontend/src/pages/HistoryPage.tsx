@@ -27,6 +27,7 @@ import {
   type StrengthSession,
   type CardioSession,
 } from '../lib/exportUtils'
+import { TypeBadge } from '../components/SessionBadges'
 import { axisColor, categoricalColor, chartColor, gridColor } from '../lib/chartPalette'
 
 interface SessionSummary {
@@ -124,12 +125,12 @@ function WeeklySummaryCard() {
         <p className="text-text-muted-strong text-sm">Loading…</p>
       ) : data ? (
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-success/10 rounded-xl p-4">
-            <p className="text-xs font-medium text-success-text mb-2">🏃 Cardio</p>
-            <p className="text-2xl font-bold text-success-text">{data.cardio.minutes}<span className="text-sm font-normal ml-1">min</span></p>
-            <p className="text-sm text-success-text mt-1">{data.cardio.calories} kcal</p>
+          <div className="bg-chart-running/10 rounded-xl p-4">
+            <p className="text-xs font-medium text-warning-text mb-2">🏃 Cardio</p>
+            <p className="text-2xl font-bold text-warning-text">{data.cardio.minutes}<span className="text-sm font-normal ml-1">min</span></p>
+            <p className="text-sm text-warning-text mt-1">{data.cardio.calories} kcal</p>
           </div>
-          <div className="bg-primary-tint rounded-xl p-4">
+          <div className="bg-chart-strength/10 rounded-xl p-4">
             <p className="text-xs font-medium text-primary-dark mb-2">🏋️ Strength</p>
             <p className="text-2xl font-bold text-primary-dark">{data.strength.minutes}<span className="text-sm font-normal ml-1">min</span></p>
             <p className="text-sm text-primary-dark mt-1">{data.strength.calories} kcal</p>
@@ -470,15 +471,9 @@ function HistoryCard({ s }: { s: SessionSummary }) {
     <li className="bg-surface border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all overflow-hidden">
       <div className="px-4 py-3">
         <div className="flex items-center gap-2 sm:gap-3">
-          <span
-            className={`shrink-0 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-              s.type === 'cardio'
-                ? 'bg-success/10 text-success-text'
-                : 'bg-primary-tint text-primary-dark'
-            }`}
-          >
+          <TypeBadge type={s.type} className="shrink-0">
             {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
-          </span>
+          </TypeBadge>
           <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0 text-sm text-text-muted-strong truncate">
             {formatSessionDateTime(s.date)}
           </Link>
