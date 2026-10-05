@@ -31,6 +31,7 @@ import {
   emptyStrengthDefaults,
   fetchLastSessionSets,
   initialWorkoutModeState,
+  insertExercise as insertExerciseInto,
   insertSet as insertSetInto,
   parseStrengthDraft,
   parseStrengthFormParams,
@@ -50,6 +51,24 @@ import {
 
 /** Upper bound between a change and its draft write. */
 export const STRENGTH_AUTOSAVE_MS = 300
+/** Give up on a template snapshot request after this long (api.ts has no timeout). */
+const TEMPLATE_FETCH_TIMEOUT_MS = 10_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('Request timed out')), ms)
+    promise.then(
+      (v) => {
+        clearTimeout(t)
+        resolve(v)
+      },
+      (e) => {
+        clearTimeout(t)
+        reject(e)
+      },
+    )
+  })
+}
 
 export interface DiffState {
   formData: StrengthFormValues
@@ -86,6 +105,8 @@ export interface StrengthSessionForm {
   /**
    * Draft found at mount and not yet restored or discarded (drives the banner).
    * With `resume=1` in the URL the draft is restored automatically instead.
+   * While it is set nothing is autosaved and saving is refused, so the stored
+   * draft can't be overwritten before the user decides.
    */
   pendingDraft: StrengthDraft | null
   /** True while a draft restore (including its template fetch) is in progress. */
@@ -111,8 +132,9 @@ export interface StrengthSessionForm {
   deleteSet: (exIndex: number, setIndex: number) => SetFormValues | null
   setSetDone: (exIndex: number, setIndex: number, done?: boolean) => void
   addExercise: (entry?: ExerciseEntryFormValues) => void
-  /** No-op on the last remaining exercise. */
-  removeExercise: (exIndex: number) => void
+  /** Returns the removed entry (for undo), or null on the last remaining exercise. */
+  removeExercise: (exIndex: number) => ExerciseEntryFormValues | null
+  insertExercise: (exIndex: number, entry: ExerciseEntryFormValues) => void
   /** Keeps the current sets unless `sets` is given. */
   replaceExercise: (exIndex: number, exerciseId: string, sets?: SetFormValues[]) => void
   /** Replaces an exercise's sets with its last-session defaults (one empty set if none). */
@@ -122,8 +144,12 @@ export interface StrengthSessionForm {
   buildPayload: () => StrengthSessionPayload
   /** Validates via RHF, then runs `requestSave`. Usable as a form `onSubmit`. */
   submit: (e?: BaseSyntheticEvent) => Promise<void>
-  /** Posts `data`, or opens the template-diff prompt when it differs from the template. */
-  requestSave: (data: StrengthFormValues) => void
+  /**
+   * Posts `data`, or opens the template-diff prompt when it differs from the
+   * template. Ignored while a draft decision is pending, a save is in flight or
+   * the prompt is open; once the prompt was answered it isn't asked again.
+   */
+  requestSave: (data: StrengthFormValues) => Promise<void>
   saveMutation: UseMutationResult<{ id: number }, Error, StrengthFormValues>
   templateMutation: UseMutationResult<unknown, Error, StrengthFormValues>
   /** Pending template-diff prompt, or null. */
@@ -195,12 +221,18 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   // `resume=1` (view switch, reload of workout mode) restores without asking
   const [resumeDraft] = useState(() => params.resume === true && initialDraft !== null)
   const [pendingDraft, setPendingDraft] = useState<StrengthDraft | null>(resumeDraft ? null : initialDraft)
-  const [isRestoring, setIsRestoring] = useState(resumeDraft)
+  const [isRestoring, setIsRestoring] = useState(false)
   const [workout, setWorkout] = useState<WorkoutModeState>(initialWorkoutModeState)
   const hasMounted = useRef(false)
   // True once this session owns the stored draft: every later change is written,
   // even one that makes the form equal to its defaults again.
   const draftActive = useRef(false)
+  // Bumped by every template load, restore and clear; a template response for
+  // an older generation is dropped so it can't overwrite newer state.
+  const templateGeneration = useRef(0)
+  const saving = useRef(false)
+  // The template-diff answer for this session: not asked again on retry
+  const diffAnswered = useRef(false)
   const { schedule: scheduleDraft, flush: flushDraft, cancel: cancelDraft } = useDraftWriter(autosaveMs)
 
   const { data: exerciseLibrary = [] } = useQuery({
@@ -216,14 +248,15 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   const values = useWatch({ control }) as StrengthFormValues
 
   useEffect(() => {
-    // A resumed draft already carries its template and values
-    if (resumeDraft) return
-    if (params.templateId) applyTemplate(params.templateId)
+    // A resumed draft already carries its template and values; a pending one
+    // waits for Restore/Discard (Discard loads the URL template then)
+    if (resumeDraft || pendingDraft) return
+    if (params.templateId) void applyTemplate(params.templateId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.templateId])
 
   useEffect(() => {
-    if (resumeDraft) void applyDraft(initialDraft)
+    if (resumeDraft) applyDraft(initialDraft!)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -232,17 +265,24 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
       hasMounted.current = true
       return
     }
+    // Never write over a stored draft the user hasn't restored or discarded
+    if (pendingDraft) return
+    // Workout position alone (e.g. the start time) doesn't create a draft;
+    // it is saved along with the first real change
     if (!isDirty && !draftActive.current) return
     draftActive.current = true
     scheduleDraft(serializeStrengthDraft({ values, templateId: selectedTemplateId, workout }))
-  }, [values, selectedTemplateId, workout, isDirty, scheduleDraft])
+  }, [values, selectedTemplateId, workout, isDirty, pendingDraft, scheduleDraft])
 
   // ── Template ──────────────────────────────────────────────────────────────
 
   async function applyTemplate(id: number) {
+    const generation = ++templateGeneration.current
     setIsLoadingTemplate(true)
     try {
       const detail = await api.get<TemplateSnapshot>(`/templates/strength/${id}`)
+      if (generation !== templateGeneration.current) return
+      diffAnswered.current = false
       setSelectedTemplateId(id)
       setTemplateSnapshot(detail)
       const currentDate = getValues('date')
@@ -253,12 +293,15 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
       }
       reset(newValues)
     } finally {
-      setIsLoadingTemplate(false)
+      if (generation === templateGeneration.current) setIsLoadingTemplate(false)
     }
   }
 
   async function selectTemplate(id: number | null) {
     if (id === null) {
+      templateGeneration.current++
+      setIsLoadingTemplate(false)
+      diffAnswered.current = false
       setSelectedTemplateId(null)
       setTemplateSnapshot(null)
       const currentDate = getValues('date')
@@ -276,10 +319,12 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   // ── Draft ─────────────────────────────────────────────────────────────────
 
   function discardDraft() {
+    if (!pendingDraft) return
     cancelDraft()
     clearDraft('strength')
     draftActive.current = false
     setPendingDraft(null)
+    if (params.templateId) void applyTemplate(params.templateId)
   }
 
   async function restoreDraft() {
@@ -287,37 +332,49 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     await applyDraft(pendingDraft)
   }
 
-  async function applyDraft(draft: StrengthDraft) {
+  /**
+   * Puts the draft into the form at once; the template snapshot (needed only
+   * for the diff prompt) loads in the background. The template link is kept
+   * even when that request fails, and the save retries it.
+   */
+  function applyDraft(draft: StrengthDraft): Promise<void> {
     const { values: draftValues, templateId: draftTemplateId, workout: draftWorkout } = draft
-    setIsRestoring(true)
-    if (draftTemplateId) {
-      setIsLoadingTemplate(true)
-      try {
-        const snapshot = await api.get<TemplateSnapshot>(`/templates/strength/${draftTemplateId}`)
-        setSelectedTemplateId(draftTemplateId)
-        setTemplateSnapshot(snapshot)
-      } catch {
-        // Template may have been deleted; restore form values without template link
-      } finally {
-        setIsLoadingTemplate(false)
-      }
-    }
+    const generation = ++templateGeneration.current
+    setIsLoadingTemplate(false)
     setTitleTouched(true)
     draftActive.current = true
     reset(draftValues)
     setWorkout(draftWorkout)
+    setSelectedTemplateId(draftTemplateId)
+    setTemplateSnapshot(null)
     setPendingDraft(null)
-    setIsRestoring(false)
+    if (!draftTemplateId) return Promise.resolve()
+    setIsRestoring(true)
+    return loadSnapshot(draftTemplateId)
+      .then((snapshot) => {
+        if (generation === templateGeneration.current && snapshot) setTemplateSnapshot(snapshot)
+      })
+      .finally(() => {
+        if (generation === templateGeneration.current) setIsRestoring(false)
+      })
+  }
+
+  async function loadSnapshot(id: number): Promise<TemplateSnapshot | null> {
+    try {
+      return await withTimeout(api.get<TemplateSnapshot>(`/templates/strength/${id}`), TEMPLATE_FETCH_TIMEOUT_MS)
+    } catch {
+      return null
+    }
   }
 
   function persistDraft() {
+    if (pendingDraft) return
     cancelDraft()
     draftActive.current = true
     saveDraft('strength', serializeStrengthDraft({ values: getValues(), templateId: selectedTemplateId, workout }))
   }
 
   function updateWorkout(patch: Partial<WorkoutModeState>) {
-    draftActive.current = true
     setWorkout((w) => ({ ...w, ...patch }))
   }
 
@@ -366,10 +423,16 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     setValue('exercises', addExerciseTo(getValues('exercises'), entry), dirty)
   }
 
-  function removeExercise(exIndex: number) {
+  function removeExercise(exIndex: number): ExerciseEntryFormValues | null {
     const exercises = getValues('exercises')
     const next = removeExerciseFrom(exercises, exIndex)
-    if (next !== exercises) setValue('exercises', next, dirty)
+    if (next === exercises) return null
+    setValue('exercises', next, dirty)
+    return exercises[exIndex]
+  }
+
+  function insertExercise(exIndex: number, entry: ExerciseEntryFormValues) {
+    setValue('exercises', insertExerciseInto(getValues('exercises'), exIndex, entry), dirty)
   }
 
   function replaceExercise(exIndex: number, exerciseId: string, sets?: SetFormValues[]) {
@@ -391,15 +454,29 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   const saveMutation = useMutation({
     mutationFn: (data: StrengthFormValues) =>
       api.post<{ id: number }>('/sessions/strength', buildStrengthPayload(data)),
+    onMutate: () => {
+      saving.current = true
+    },
+    onSettled: () => {
+      saving.current = false
+    },
     onSuccess: (session) => {
       cancelDraft()
       clearDraft('strength')
       draftActive.current = false
       qc.invalidateQueries({ queryKey: ['sessions'] })
+      qc.invalidateQueries({ queryKey: ['last-session-defaults'] })
       if (onSaved) onSaved(session.id)
-      else navigate(`/sessions/${session.id}`)
+      // replace: Back must not reopen the form (or workout mode) and start a new draft
+      else navigate(`/sessions/${session.id}`, { replace: true })
     },
   })
+
+  function post(data: StrengthFormValues) {
+    if (saving.current) return
+    saving.current = true
+    saveMutation.mutate(data)
+  }
 
   const templateMutation = useMutation({
     mutationFn: (data: StrengthFormValues) =>
@@ -409,28 +486,38 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     },
   })
 
-  function requestSave(data: StrengthFormValues) {
+  async function requestSave(data: StrengthFormValues) {
+    if (pendingDraft || saving.current || diffState) return
     // Persist what is about to be sent, so a failed save or closed tab keeps it
     flushDraft()
-    if (!templateSnapshot) {
-      saveMutation.mutate(data)
+    let snapshot = templateSnapshot
+    if (!snapshot && selectedTemplateId && !diffAnswered.current) {
+      // Restored draft whose template didn't load yet: one more try for the diff
+      saving.current = true
+      snapshot = await loadSnapshot(selectedTemplateId)
+      saving.current = false
+      if (snapshot) setTemplateSnapshot(snapshot)
+    }
+    if (!snapshot || diffAnswered.current) {
+      post(data)
       return
     }
     const exerciseMap = new Map(exerciseLibrary.map((e) => [e.id, e.name]))
-    const changes = computeDiff(templateSnapshot, data, exerciseMap)
+    const changes = computeDiff(snapshot, data, exerciseMap)
     if (changes.length === 0) {
-      saveMutation.mutate(data)
+      post(data)
       return
     }
     setDiffState({ formData: data, changes })
   }
 
   async function confirmTemplateUpdate() {
-    if (!diffState) return
+    if (!diffState || templateMutation.isPending) return
     try {
       await templateMutation.mutateAsync(diffState.formData)
+      diffAnswered.current = true
       setDiffState(null)
-      saveMutation.mutate(diffState.formData)
+      post(diffState.formData)
     } catch {
       // templateMutation.isError shows the error in the modal
     }
@@ -439,8 +526,9 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   function keepTemplate() {
     if (!diffState) return
     const data = diffState.formData
+    diffAnswered.current = true
     setDiffState(null)
-    saveMutation.mutate(data)
+    post(data)
   }
 
   return {
@@ -470,6 +558,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     setSetDone,
     addExercise,
     removeExercise,
+    insertExercise,
     replaceExercise,
     prefillFromLastSession,
     buildPayload: () => buildStrengthPayload(getValues()),

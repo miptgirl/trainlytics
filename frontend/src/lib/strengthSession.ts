@@ -316,6 +316,12 @@ export function addExercise(exercises: Exercises, entry: ExerciseEntryFormValues
   return [...exercises, entry]
 }
 
+/** Inserts an exercise at `exIndex` (clamped), e.g. to undo a removal. */
+export function insertExercise(exercises: Exercises, exIndex: number, entry: ExerciseEntryFormValues): Exercises {
+  const at = Math.max(0, Math.min(exIndex, exercises.length))
+  return [...exercises.slice(0, at), entry, ...exercises.slice(at)]
+}
+
 /** Removes an exercise. The last remaining exercise is never removed. */
 export function removeExercise(exercises: Exercises, exIndex: number): Exercises {
   if (exercises.length <= 1 || exIndex < 0 || exIndex >= exercises.length) return exercises
@@ -351,12 +357,15 @@ export interface WorkoutModeState {
   restEndsAt: number | null
   /** Epoch ms when workout mode was first opened for this draft. */
   startedAt: number | null
+  /** Duration last filled in automatically from `startedAt`; a different value means the user edited it. */
+  autoDurationSeconds: number | null
 }
 
 export const initialWorkoutModeState = (): WorkoutModeState => ({
   currentExerciseIndex: 0,
   restEndsAt: null,
   startedAt: null,
+  autoDurationSeconds: null,
 })
 
 export interface StrengthDraft {
@@ -419,8 +428,24 @@ export function parseStrengthDraft(raw: unknown): StrengthDraft | null {
       currentExerciseIndex: index !== null && index >= 0 ? Math.floor(index) : 0,
       restEndsAt: num(w.restEndsAt),
       startedAt: num(w.startedAt),
+      autoDurationSeconds: num(w.autoDurationSeconds),
     },
   }
+}
+
+/** "Leg day · 1 Sep, 10:00 · 3 of 4 sets done" — tells the user which draft is waiting. */
+export function describeDraft(draft: StrengthDraft): string {
+  const { values } = draft
+  const parts: string[] = [values.title || 'Untitled session']
+  const d = new Date(values.date)
+  if (!Number.isNaN(d.getTime())) {
+    const month = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[d.getMonth()]
+    const pad = (n: number) => String(n).padStart(2, '0')
+    parts.push(`${d.getDate()} ${month}, ${pad(d.getHours())}:${pad(d.getMinutes())}`)
+  }
+  const sets = values.exercises.flatMap((e) => e.sets)
+  parts.push(`${sets.filter((s) => s.done).length} of ${sets.length} sets done`)
+  return parts.join(' · ')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -462,7 +487,7 @@ export function strengthViewUrl(
   { resume = false }: { resume?: boolean } = {},
 ): string {
   const q = new URLSearchParams()
-  if (view === 'log') q.set('type', 'strength')
+  q.set('type', 'strength')
   if (params.templateId) q.set('templateId', String(params.templateId))
   if (params.date) q.set('date', params.date)
   if (params.plannedSessionId) q.set('plannedSessionId', String(params.plannedSessionId))

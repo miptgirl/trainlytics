@@ -266,7 +266,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
     const user = userEvent.setup()
     renderPage('/log?type=strength')
 
-    const banner = (await screen.findByText('You have an unsaved Strength draft.')).parentElement!
+    const banner = (await screen.findByText('You have an unsaved Strength draft.')).closest('.mb-4') as HTMLElement
     await user.click(within(banner).getByRole('button', { name: 'Discard' }))
     expect(screen.queryByText('You have an unsaved Strength draft.')).not.toBeInTheDocument()
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull()

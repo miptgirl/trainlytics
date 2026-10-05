@@ -10,14 +10,15 @@ export function FinishSheet({
   onField,
   onSave,
   isSaving,
-  saveFailed,
+  errorMessage,
   onClose,
 }: {
   values: StrengthFormValues
   onField: <K extends StrengthScalarField>(name: K, value: StrengthFormValues[K]) => void
   onSave: () => void
   isSaving: boolean
-  saveFailed: boolean
+  /** Set after a failed save; the button then reads "Retry save". */
+  errorMessage: string | null
   onClose: () => void
 }) {
   const field =
@@ -28,9 +29,9 @@ export function FinishSheet({
       onClose={onClose}
       footer={
         <div className="space-y-2">
-          {saveFailed && (
+          {errorMessage && (
             <p role="alert" className="text-sm text-error-text">
-              Couldn't save the workout. It's still kept on this device — check your connection and retry.
+              {errorMessage}
             </p>
           )}
           <button
@@ -39,7 +40,7 @@ export function FinishSheet({
             disabled={isSaving}
             className="w-full min-h-12 rounded-xl bg-primary-dark text-white text-base font-semibold disabled:opacity-50"
           >
-            {isSaving ? 'Saving…' : saveFailed ? 'Retry save' : 'Save workout'}
+            {isSaving ? 'Saving…' : errorMessage ? 'Retry save' : 'Save workout'}
           </button>
         </div>
       }

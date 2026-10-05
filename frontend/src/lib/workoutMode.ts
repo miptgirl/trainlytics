@@ -78,11 +78,16 @@ export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
   return !entry.exercise_id && entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.done)
 }
 
-/** Three sets for a newly added exercise, reps taken from last session when known. */
+/** Three sets for a newly added exercise, reps and weight from last session when known. */
 export function newExerciseSets(defaults: LastSessionDefaults | null | undefined): SetFormValues[] {
+  const sets = defaults?.sets ?? []
   return [0, 1, 2].map((i) => {
-    const reps = defaults?.sets[i]?.reps ?? defaults?.sets[defaults.sets.length - 1]?.reps ?? null
-    return { ...emptySet(), reps: reps != null ? String(reps) : '' }
+    const src = sets[i] ?? sets[sets.length - 1]
+    return {
+      ...emptySet(),
+      reps: src?.reps != null ? String(src.reps) : '',
+      weight: src?.weight != null ? formatNumber(src.weight) : '',
+    }
   })
 }
 
@@ -92,6 +97,14 @@ export function newExerciseSets(defaults: LastSessionDefaults | null | undefined
 
 /** Drops float noise: 57.49999 → "57.5", 60 → "60". */
 export const formatNumber = (n: number): string => String(Math.round(n * 100) / 100)
+
+/** Keeps a typed weight a valid decimal: comma → dot, one dot, digits only ("2.5.5" → "2.55", "." → "0."). */
+export function sanitizeDecimal(raw: string): string {
+  const cleaned = raw.replace(/,/g, '.').replace(/[^\d.]/g, '')
+  const [head, ...rest] = cleaned.split('.')
+  const out = rest.length > 0 ? `${head}.${rest.join('')}` : head
+  return out.startsWith('.') ? `0${out}` : out
+}
 
 /** Adds `delta` to a numeric string field; empty counts as 0; never below 0. */
 export function stepValue(value: string, delta: number): string {
@@ -160,6 +173,26 @@ export function formatClock(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
   const s = totalSeconds % 60
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Save errors
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * What to tell the user after a failed save. ApiError carries an HTTP status;
+ * anything without one (fetch TypeError) is a network problem.
+ */
+export function saveErrorMessage(err: unknown): string {
+  const status = (err as { status?: unknown } | null)?.status
+  const message = err instanceof Error ? err.message : ''
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    return `Couldn't save the workout: ${message || `error ${status}`}. It's still kept on this device.`
+  }
+  if (typeof status === 'number') {
+    return `The server couldn't save the workout (error ${status}). It's still kept on this device — try again.`
+  }
+  return "Couldn't reach the server. Your workout is still kept on this device — check your connection and retry."
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

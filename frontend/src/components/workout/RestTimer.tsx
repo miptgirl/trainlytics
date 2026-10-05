@@ -19,14 +19,15 @@ export function RestTimer({
   onAddThirty: () => void
   onSkip: () => void
 }) {
-  const [now, setNow] = useState(() => Date.now())
-  const remaining = endsAt === null ? null : restRemaining(endsAt, now)
+  // The interval only forces a re-render; the time is read fresh on every
+  // render, so a Reset or +30s after expiry never shows a stale value
+  const [, setTick] = useState(0)
+  const remaining = endsAt === null ? null : restRemaining(endsAt, Date.now())
   const expired = remaining === 0
 
   useEffect(() => {
     if (endsAt === null || expired) return
-    setNow(Date.now())
-    const id = setInterval(() => setNow(Date.now()), 250)
+    const id = setInterval(() => setTick((t) => t + 1), 250)
     return () => clearInterval(id)
   }, [endsAt, expired])
 

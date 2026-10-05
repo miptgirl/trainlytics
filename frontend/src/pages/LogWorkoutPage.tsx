@@ -18,7 +18,7 @@ import { AdaptCardioModal } from '../components/plan/AdaptCardioModal'
 import { HrInputSection } from '../components/HrInputSection'
 import { DiffModal } from '../components/DiffModal'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
-import { strengthViewUrl, type TemplateSummary } from '../lib/strengthSession'
+import { describeDraft, strengthViewUrl, type TemplateSummary } from '../lib/strengthSession'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared types
@@ -713,14 +713,18 @@ function StrengthForm() {
     // still waiting for Restore/Discard (workout mode then asks the same question)
     const resume = pendingDraft === null
     if (resume) persistDraft()
-    navigate(strengthViewUrl('workout', params, { resume }))
+    // replace: Back from workout mode must not land on a stale form entry (B1)
+    navigate(strengthViewUrl('workout', params, { resume }), { replace: true })
   }
 
   return (
     <>
       {showDraftBanner && (
         <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between gap-3">
-          <span className="text-sm text-amber-800">You have an unsaved Strength draft.</span>
+          <div className="min-w-0">
+            <span className="text-sm text-amber-800">You have an unsaved Strength draft.</span>
+            <p className="text-xs text-amber-800">{describeDraft(pendingDraft)} · Restore or discard it to save.</p>
+          </div>
           <div className="flex gap-2 shrink-0">
             <button
               type="button"
@@ -908,7 +912,7 @@ function StrengthForm() {
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={createMutation.isPending || showDraftBanner}
               className="flex-1 bg-blue-600 text-white py-2.5 max-md:min-h-11 rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
             >
               {createMutation.isPending ? 'Saving…' : 'Save Session'}

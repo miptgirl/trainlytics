@@ -353,7 +353,7 @@ describe('Workout mode: draft', () => {
 
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     await user.click(screen.getByRole('button', { name: 'Save workout' }))
-    expect(await screen.findByText(/Couldn't save the workout/)).toBeInTheDocument()
+    expect(await screen.findByText(/Couldn't reach the server/)).toBeInTheDocument()
     expect(storedDraft()?.exercises[0].sets.map((s: { done: boolean }) => s.done)).toEqual([true, true])
 
     await user.click(screen.getByRole('button', { name: 'Retry save' }))

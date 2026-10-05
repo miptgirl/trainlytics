@@ -26,7 +26,16 @@ export function BottomSheet({
     const panel = panelRef.current
     const first = panel?.querySelector<HTMLElement>('[data-autofocus]') ?? panel?.querySelector<HTMLElement>(FOCUSABLE)
     ;(first ?? panel)?.focus()
-    return () => opener?.focus?.()
+    // Keep the page behind the sheet from scrolling (incl. iOS rubber-banding)
+    const root = document.documentElement
+    const prev = { html: root.style.overflow, body: document.body.style.overflow }
+    root.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      root.style.overflow = prev.html
+      document.body.style.overflow = prev.body
+      opener?.focus?.()
+    }
   }, [])
 
   function handleKeyDown(e: React.KeyboardEvent) {

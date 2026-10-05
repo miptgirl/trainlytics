@@ -9,21 +9,27 @@ export function useWakeLock(active = true): void {
   useEffect(() => {
     if (!active || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
     let sentinel: WakeLockSentinel | null = null
+    let requesting = false
     let disposed = false
 
     async function acquire() {
-      if (disposed || document.visibilityState !== 'visible') return
+      // One request at a time; visibility can flip while the first is pending
+      if (disposed || requesting || document.visibilityState !== 'visible') return
+      if (sentinel && !sentinel.released) return
+      requesting = true
       try {
         const lock = await navigator.wakeLock.request('screen')
-        if (disposed) void lock.release()
+        if (disposed || (sentinel && !sentinel.released)) void lock.release()
         else sentinel = lock
       } catch {
         // Denied (battery saver, permissions policy): the screen may sleep
+      } finally {
+        requesting = false
       }
     }
 
     function onVisibility() {
-      if (document.visibilityState === 'visible' && (sentinel === null || sentinel.released)) void acquire()
+      if (document.visibilityState === 'visible') void acquire()
     }
 
     void acquire()

@@ -6,7 +6,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import type { SetFormValues } from '../components/ExerciseEntryBlock'
 import { DiffModal } from '../components/DiffModal'
 import { BottomSheet } from '../components/workout/BottomSheet'
 import { ChooseExerciseSheet } from '../components/workout/ChooseExerciseSheet'
@@ -16,7 +15,7 @@ import { WorkoutSetList } from '../components/workout/WorkoutSetList'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
 import { useWakeLock } from '../lib/hooks/useWakeLock'
-import { setSetDone, strengthViewUrl, type WorkoutModeState } from '../lib/strengthSession'
+import { describeDraft, setSetDone, strengthViewUrl, type WorkoutModeState } from '../lib/strengthSession'
 import {
   REST_LENGTHS,
   allExercisesDone,
@@ -28,16 +27,17 @@ import {
   loadRestLength,
   newExerciseSets,
   nextUnfinishedIndex,
+  saveErrorMessage,
   saveRestLength,
   sessionProgress,
 } from '../lib/workoutMode'
 
 type Sheet = 'exercises' | 'add-exercise' | 'finish' | 'options' | null
 
-interface DeletedSet {
-  exIndex: number
-  setIndex: number
-  set: SetFormValues
+/** Undo toast: what was removed and how to put it back. */
+interface UndoAction {
+  label: string
+  undo: () => void
 }
 
 const UNDO_MS = 5000
@@ -51,8 +51,14 @@ export default function WorkoutModePage() {
 
   const [sheet, setSheet] = useState<Sheet>(null)
   const [restLength, setRestLength] = useState(loadRestLength)
-  const [deleted, setDeleted] = useState<DeletedSet | null>(null)
+  const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const [guardError, setGuardError] = useState<string | null>(null)
+  // Bumped on every structural change (delete, undo, remove) so the set list
+  // remounts and drops an in-progress "Edit set" that now points elsewhere
+  const [listVersion, setListVersion] = useState(0)
+  // Index of an entry without an exercise that "Choose an exercise" fills
+  const [fillIndex, setFillIndex] = useState<number | null>(null)
+  const [adding, setAdding] = useState(false)
 
   const exercises = s.values.exercises ?? []
   const exIndex = clampIndex(s.workout.currentExerciseIndex, exercises.length)
@@ -62,7 +68,7 @@ export default function WorkoutModePage() {
   const progress = sessionProgress(exercises)
   const nextIndex = nextUnfinishedIndex(exercises, exIndex)
   const allDone = allExercisesDone(exercises)
-  const decided = s.pendingDraft === null && !s.isRestoring
+  const decided = s.pendingDraft === null
   const nameOf = (id: string) => names.get(id) ?? (id ? '…' : 'No exercise chosen')
 
   // Once the draft question is settled: stamp the start time and make a reload
@@ -93,10 +99,10 @@ export default function WorkoutModePage() {
   }, [decided, s.workout.startedAt, s.params.resume])
 
   useEffect(() => {
-    if (!deleted) return
-    const t = setTimeout(() => setDeleted(null), UNDO_MS)
+    if (!undoAction) return
+    const t = setTimeout(() => setUndoAction(null), UNDO_MS)
     return () => clearTimeout(t)
-  }, [deleted])
+  }, [undoAction])
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -104,21 +110,47 @@ export default function WorkoutModePage() {
     const after = setSetDone(exercises, exIndex, setIndex, true)
     s.setSetDone(exIndex, setIndex)
     s.updateWorkout({
-      restEndsAt: Date.now() + restLength * 1000,
+      // No rest after the very last set of the workout
+      restEndsAt: allExercisesDone(after) ? null : Date.now() + restLength * 1000,
       currentExerciseIndex: exerciseAfterCompletion(after, exIndex),
     })
   }
 
   function deleteSet(setIndex: number) {
-    const set = s.deleteSet(exIndex, setIndex)
-    if (set) setDeleted({ exIndex, setIndex, set })
+    const at = exIndex
+    const set = s.deleteSet(at, setIndex)
+    if (!set) return
+    setListVersion((v) => v + 1)
+    setUndoAction({
+      label: `Set ${setIndex + 1} deleted`,
+      undo: () => {
+        s.insertSet(at, setIndex, set)
+        s.updateWorkout({ currentExerciseIndex: at })
+      },
+    })
   }
 
-  function undoDelete() {
-    if (!deleted) return
-    s.insertSet(deleted.exIndex, deleted.setIndex, deleted.set)
-    s.updateWorkout({ currentExerciseIndex: deleted.exIndex })
-    setDeleted(null)
+  function removeCurrentExercise() {
+    const at = exIndex
+    const removed = s.removeExercise(at)
+    if (!removed) return
+    setListVersion((v) => v + 1)
+    s.updateWorkout({ currentExerciseIndex: Math.min(at, exercises.length - 2) })
+    setSheet(null)
+    setUndoAction({
+      label: `${nameOf(removed.exercise_id)} removed`,
+      undo: () => {
+        s.insertExercise(at, removed)
+        s.updateWorkout({ currentExerciseIndex: at })
+      },
+    })
+  }
+
+  function runUndo() {
+    if (!undoAction) return
+    undoAction.undo()
+    setListVersion((v) => v + 1)
+    setUndoAction(null)
   }
 
   function selectExercise(index: number) {
@@ -126,19 +158,41 @@ export default function WorkoutModePage() {
     setSheet(null)
   }
 
+  /** `fill`: index of an entry without an exercise to fill; otherwise the pick is appended. */
+  function openAddExercise(fill: number | null, addMode = true) {
+    setFillIndex(fill)
+    setSheet(addMode ? 'add-exercise' : 'exercises')
+  }
+
   async function addExercise(exerciseId: string) {
-    const sets = newExerciseSets(await fetchLastSessionDefaults(qc, exerciseId))
-    const list = s.form.getValues('exercises') ?? []
-    const at = clampIndex(s.workout.currentExerciseIndex, list.length)
-    if (list[at] && isBlankEntry(list[at])) {
-      // Fill the empty placeholder instead of leaving it behind
-      s.replaceExercise(at, exerciseId, sets)
-      s.updateWorkout({ currentExerciseIndex: at })
-    } else {
-      s.addExercise({ exercise_id: exerciseId, sets })
-      s.updateWorkout({ currentExerciseIndex: list.length })
+    if (adding) return
+    setAdding(true)
+    try {
+      const sets = newExerciseSets(await fetchLastSessionDefaults(qc, exerciseId))
+      const list = s.form.getValues('exercises') ?? []
+      const current = clampIndex(s.workout.currentExerciseIndex, list.length)
+      // An entry without an exercise is filled rather than left behind: the one
+      // "Choose an exercise" was tapped for, else an untouched current placeholder
+      const target =
+        fillIndex !== null && list[fillIndex] && !list[fillIndex].exercise_id
+          ? fillIndex
+          : list[current] && isBlankEntry(list[current])
+            ? current
+            : null
+      if (target !== null) {
+        // Keep sets the user already filled in; replace an untouched placeholder's
+        s.replaceExercise(target, exerciseId, isBlankEntry(list[target]) ? sets : undefined)
+        s.updateWorkout({ currentExerciseIndex: target })
+      } else {
+        s.addExercise({ exercise_id: exerciseId, sets })
+        s.updateWorkout({ currentExerciseIndex: list.length })
+      }
+      setListVersion((v) => v + 1)
+      setFillIndex(null)
+      setSheet(null)
+    } finally {
+      setAdding(false)
     }
-    setSheet(null)
   }
 
   function openFinish() {
@@ -149,9 +203,15 @@ export default function WorkoutModePage() {
       return
     }
     setGuardError(null)
-    if (s.values.duration_seconds == null && s.workout.startedAt !== null) {
-      const elapsed = Math.floor((Date.now() - s.workout.startedAt) / 60_000) * 60
-      if (elapsed > 0) s.setField('duration_seconds', elapsed)
+    // Refresh the elapsed time on every open, unless the user typed a duration
+    const { startedAt, autoDurationSeconds } = s.workout
+    const duration = s.values.duration_seconds
+    if (startedAt !== null && (duration == null || duration === autoDurationSeconds)) {
+      const elapsed = Math.floor((Date.now() - startedAt) / 60_000) * 60
+      if (elapsed > 0 && elapsed !== duration) {
+        s.setField('duration_seconds', elapsed)
+        s.updateWorkout({ autoDurationSeconds: elapsed })
+      }
     }
     setSheet('finish')
   }
@@ -166,7 +226,8 @@ export default function WorkoutModePage() {
   function openFullForm() {
     const resume = s.pendingDraft === null
     if (resume) s.persistDraft()
-    navigate(strengthViewUrl('log', s.params, { resume }))
+    // replace: Back from the full form must not land on a stale workout-mode entry
+    navigate(strengthViewUrl('log', s.params, { resume }), { replace: true })
   }
 
   function chooseRestLength(seconds: number) {
@@ -217,6 +278,7 @@ export default function WorkoutModePage() {
         {s.pendingDraft !== null ? (
           <div className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">You have an unsaved Strength draft.</p>
+            <p className="text-sm font-medium text-text">{describeDraft(s.pendingDraft)}</p>
             <p className="text-sm text-text-muted-strong">Continue it, or discard it and start this workout fresh.</p>
             <div className="flex gap-2">
               <button
@@ -263,7 +325,7 @@ export default function WorkoutModePage() {
                 {!entry.exercise_id && (
                   <button
                     type="button"
-                    onClick={() => setSheet('add-exercise')}
+                    onClick={() => openAddExercise(exIndex)}
                     className="min-h-11 text-sm font-medium text-primary-dark"
                   >
                     Choose an exercise
@@ -278,7 +340,7 @@ export default function WorkoutModePage() {
             ) : (
               <button
                 type="button"
-                onClick={() => setSheet('add-exercise')}
+                onClick={() => openAddExercise(null, true)}
                 className="w-full min-h-12 rounded-xl border border-border bg-surface font-medium text-primary-dark"
               >
                 + Add exercise
@@ -287,7 +349,7 @@ export default function WorkoutModePage() {
 
             {entry && (
               <WorkoutSetList
-                key={exIndex}
+                key={`${exIndex}-${listVersion}`}
                 sets={entry.sets}
                 onUpdateSet={(setIndex, patch) => s.updateSet(exIndex, setIndex, patch)}
                 onCompleteSet={completeSet}
@@ -299,11 +361,11 @@ export default function WorkoutModePage() {
         )}
       </main>
 
-      {deleted && (
+      {undoAction && (
         <div className="fixed inset-x-0 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
           <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-lg">
-            <span className="text-sm">Set {deleted.setIndex + 1} deleted</span>
-            <button type="button" onClick={undoDelete} className="min-h-11 px-3 text-sm font-semibold text-primary-light">
+            <span className="text-sm">{undoAction.label}</span>
+            <button type="button" onClick={runUndo} className="min-h-11 px-3 text-sm font-semibold text-primary-light">
               Undo
             </button>
           </div>
@@ -330,19 +392,22 @@ export default function WorkoutModePage() {
               >
                 Choose exercise
               </button>
+              {/* Secondary: "Complete set" stays the one primary action on screen */}
               {nextIndex !== -1 ? (
                 <button
                   type="button"
                   onClick={() => selectExercise(nextIndex)}
-                  className={`${barBtn} flex-1 min-w-0 bg-primary-dark text-white flex items-center justify-between gap-2`}
+                  className={`${barBtn} flex-1 min-w-0 border border-primary-dark bg-surface text-primary-dark flex items-center justify-between gap-2`}
                 >
                   <span className="truncate">Next: {nameOf(exercises[nextIndex].exercise_id)}</span>
                   <span aria-hidden="true">›</span>
                 </button>
-              ) : (
+              ) : allDone ? (
                 <button type="button" onClick={openFinish} className={`${barBtn} flex-1 bg-primary-dark text-white`}>
                   Finish ›
                 </button>
+              ) : (
+                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted`}>Last exercise</span>
               )}
             </div>
           </div>
@@ -357,9 +422,13 @@ export default function WorkoutModePage() {
           lastByExercise={lastByExercise}
           library={s.exerciseLibrary}
           startInAddMode={sheet === 'add-exercise'}
+          busy={adding}
           onSelect={selectExercise}
           onAdd={(id) => void addExercise(id)}
-          onClose={() => setSheet(null)}
+          onClose={() => {
+            setFillIndex(null)
+            setSheet(null)
+          }}
         />
       )}
 
@@ -373,6 +442,15 @@ export default function WorkoutModePage() {
             >
               Full form
             </button>
+            {exercises.length > 1 && entry && (
+              <button
+                type="button"
+                onClick={removeCurrentExercise}
+                className="w-full min-h-12 rounded-xl border border-border bg-surface text-base font-medium text-error-text"
+              >
+                Remove {entry.exercise_id ? nameOf(entry.exercise_id) : 'this exercise'}
+              </button>
+            )}
             <fieldset>
               <legend className="text-sm font-medium text-text-muted-strong mb-2">Rest timer</legend>
               <div className="grid grid-cols-4 gap-2">
@@ -403,7 +481,7 @@ export default function WorkoutModePage() {
           onField={s.setField}
           onSave={() => void s.submit()}
           isSaving={s.saveMutation.isPending || s.templateMutation.isPending}
-          saveFailed={s.saveMutation.isError}
+          errorMessage={s.saveMutation.isError ? saveErrorMessage(s.saveMutation.error) : null}
           onClose={() => setSheet(null)}
         />
       )}

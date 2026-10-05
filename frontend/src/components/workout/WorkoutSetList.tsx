@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
-import { currentSetIndex, formatSet, stepValue } from '../../lib/workoutMode'
+import { currentSetIndex, formatSet, sanitizeDecimal, stepValue } from '../../lib/workoutMode'
 
 const REPS_STEP = 1
 const WEIGHT_STEP = 2.5
@@ -11,7 +11,13 @@ const deleteBtn =
 function DeleteButton({ setNumber, onClick }: { setNumber: number; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} aria-label={`Delete set ${setNumber}`} className={deleteBtn}>
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="w-4 h-4"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
         <path
           fillRule="evenodd"
           d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -22,6 +28,7 @@ function DeleteButton({ setNumber, onClick }: { setNumber: number; onClick: () =
   )
 }
 
+/** One value row: label, then [−] value [+] with 52px buttons and a wide typed input. */
 function Stepper({
   label,
   unit,
@@ -40,12 +47,11 @@ function Stepper({
   onChange: (value: string) => void
 }) {
   const stepBtn =
-    'min-h-[52px] min-w-[52px] rounded-xl border border-border bg-surface text-2xl font-medium text-text active:bg-primary-tint'
+    'h-[52px] w-[52px] shrink-0 rounded-xl border border-border bg-surface text-2xl font-medium text-text active:bg-primary-tint'
   const name = label.toLowerCase()
-  const clean = (raw: string) =>
-    inputMode === 'numeric' ? raw.replace(/\D/g, '') : raw.replace(',', '.').replace(/[^\d.]/g, '')
+  const clean = (raw: string) => (inputMode === 'numeric' ? raw.replace(/\D/g, '') : sanitizeDecimal(raw))
   return (
-    <div className="flex-1 min-w-0">
+    <div>
       <p className="text-xs font-medium text-text-muted-strong mb-1">
         {label}
         {unit ? ` (${unit})` : ''}
@@ -67,7 +73,7 @@ function Stepper({
           onFocus={(e) => e.currentTarget.select()}
           placeholder="0"
           aria-label={`${label} for set ${setNumber}`}
-          className="w-full min-w-0 min-h-[52px] text-center text-3xl font-semibold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border focus:outline-none focus:border-primary-dark"
+          className="w-28 min-w-0 h-[52px] px-1 text-center text-[2rem] leading-none font-bold tabular-nums bg-transparent text-text border-0 border-b-2 border-dashed border-border focus:outline-none focus:border-primary-dark"
         />
         <button
           type="button"
@@ -106,17 +112,19 @@ function SetEditor({
 }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const showNote = noteOpen || set.notes !== ''
-  const primary =
-    'flex-1 min-h-12 rounded-xl bg-primary-dark text-white text-base font-semibold active:opacity-90'
+  const primary = 'flex-1 min-h-12 rounded-xl bg-primary-dark text-white text-base font-semibold active:opacity-90'
   return (
-    <div className="rounded-xl border-2 border-primary bg-primary-tint p-3 space-y-3" aria-label={`Set ${setNumber} editor`}>
+    <div
+      className="rounded-xl border-2 border-primary bg-primary-tint p-3 space-y-3"
+      aria-label={`Set ${setNumber} editor`}
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-primary-dark">
           {editing ? `Edit set ${setNumber}` : `Set ${setNumber}`}
         </h3>
         {canDelete && <DeleteButton setNumber={setNumber} onClick={onDelete} />}
       </div>
-      <div className="flex gap-3 max-[360px]:flex-col">
+      <div className="space-y-3">
         <Stepper
           label="Reps"
           value={set.reps}

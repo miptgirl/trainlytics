@@ -16,6 +16,8 @@ import {
   nextUnfinishedIndex,
   prefersWorkoutMode,
   restRemaining,
+  sanitizeDecimal,
+  saveErrorMessage,
   saveRestLength,
   sessionProgress,
   stepValue,
@@ -56,11 +58,16 @@ describe('progress and navigation', () => {
     expect(isBlankEntry(ex('4', set('', '')))).toBe(false)
   })
 
-  it('new exercises get three sets with reps from last session', () => {
+  it('new exercises get three sets with reps and weight from last session', () => {
     expect(newExerciseSets(null)).toEqual([set('', ''), set('', ''), set('', '')])
     expect(
-      newExerciseSets({ sets: [{ set_number: 1, reps: 8, weight: 60 }, { set_number: 2, reps: 6, weight: 65 }] }),
-    ).toEqual([set('8', ''), set('6', ''), set('6', '')])
+      newExerciseSets({ sets: [{ set_number: 1, reps: 8, weight: 60 }, { set_number: 2, reps: 6, weight: 62.5 }] }),
+    ).toEqual([set('8', '60'), set('6', '62.5'), set('6', '62.5')])
+    expect(newExerciseSets({ sets: [{ set_number: 1, reps: 10, weight: null }] })).toEqual([
+      set('10', ''),
+      set('10', ''),
+      set('10', ''),
+    ])
   })
 })
 
@@ -92,6 +99,22 @@ describe('formatting and steppers', () => {
     expect(formatClock(5)).toBe('0:05')
     expect(restRemaining(10_500, 10_000)).toBe(1)
     expect(restRemaining(9_000, 10_000)).toBe(0)
+  })
+})
+
+describe('input sanitising and save errors', () => {
+  it('keeps weights a valid decimal', () => {
+    expect(sanitizeDecimal('97,5')).toBe('97.5')
+    expect(sanitizeDecimal('2.5.5')).toBe('2.55')
+    expect(sanitizeDecimal('.')).toBe('0.')
+    expect(sanitizeDecimal('1a2')).toBe('12')
+  })
+
+  it('says "connection" only for network errors', () => {
+    expect(saveErrorMessage(new TypeError('Failed to fetch'))).toMatch(/check your connection/)
+    const e422 = Object.assign(new Error('Invalid set'), { status: 422 })
+    expect(saveErrorMessage(e422)).toBe("Couldn't save the workout: Invalid set. It's still kept on this device.")
+    expect(saveErrorMessage(Object.assign(new Error('x'), { status: 503 }))).toMatch(/error 503/)
   })
 })
 
@@ -163,6 +186,16 @@ describe('RestTimer', () => {
     expect(vibrate).not.toHaveBeenCalled()
   })
 
+  it('Reset after expiry shows the new time at once, not a stale value', () => {
+    const { rerender } = render(
+      <RestTimer endsAt={Date.now() + 1_000} lengthSeconds={90} onReset={noop} onAddThirty={noop} onSkip={noop} />,
+    )
+    act(() => vi.advanceTimersByTime(60_000))
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent('0:00')
+    rerender(<RestTimer endsAt={Date.now() + 30_000} lengthSeconds={90} onReset={noop} onAddThirty={noop} onSkip={noop} />)
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent('0:30')
+  })
+
   it('shows the configured length when idle', () => {
     render(<RestTimer endsAt={null} lengthSeconds={120} onReset={noop} onAddThirty={noop} onSkip={noop} />)
     expect(screen.getByTestId('rest-clock')).toHaveTextContent('2:00')
@@ -195,6 +228,22 @@ describe('useWakeLock', () => {
 
     unmount()
     expect(sentinels[1].release).toHaveBeenCalled()
+  })
+
+  it('requests only one lock when visibility flips during the first request', async () => {
+    let resolve: (s: { released: boolean; release: () => Promise<void> }) => void = () => {}
+    const request = vi.fn(() => new Promise((r) => (resolve = r)))
+    vi.stubGlobal('navigator', { ...navigator, wakeLock: { request } })
+    const { unmount } = renderHook(() => useWakeLock())
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'))
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(request).toHaveBeenCalledTimes(1)
+    const lock = { released: false, release: vi.fn(async () => {}) }
+    await act(async () => resolve(lock))
+    unmount()
+    expect(lock.release).toHaveBeenCalledTimes(1)
   })
 
   it('does nothing where the API is missing', () => {

@@ -50,7 +50,8 @@ function setup(url: string, options: UseStrengthSessionFormOptions = {}) {
       <MemoryRouter initialEntries={[url]}>{children}</MemoryRouter>
     </QueryClientProvider>
   )
-  return renderHook(() => useStrengthSessionForm({ autosaveMs: 20, ...options }), { wrapper })
+  const hook = renderHook(() => useStrengthSessionForm({ autosaveMs: 20, ...options }), { wrapper })
+  return Object.assign(hook, { qc })
 }
 
 async function setupWithTemplate(options: UseStrengthSessionFormOptions = {}) {
@@ -223,6 +224,7 @@ describe('useStrengthSessionForm: draft', () => {
       currentExerciseIndex: 0,
       restEndsAt: 1_790_000_090_000,
       startedAt: null,
+      autoDurationSeconds: null,
     }))
   })
 
@@ -255,7 +257,7 @@ describe('useStrengthSessionForm: draft', () => {
     expect(result.current.selectedTemplateId).toBe(3)
     expect(result.current.templateSnapshot?.name).toBe('Leg day')
     expect(result.current.titleTouched).toBe(true)
-    expect(result.current.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null })
+    expect(result.current.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })
     expect(result.current.buildPayload()).toEqual({
       title: 'Old draft',
       duration_seconds: null,
@@ -296,6 +298,7 @@ describe('useStrengthSessionForm: draft', () => {
       currentExerciseIndex: 1,
       restEndsAt: 1_790_000_090_000,
       startedAt: 1_790_000_000_000,
+      autoDurationSeconds: null,
     })
     expect(result.current.values.exercises[0].sets[0].done).toBe(true)
   })
@@ -340,14 +343,27 @@ describe('useStrengthSessionForm: draft', () => {
     expect(storedDraft()).toMatchObject({ version: STRENGTH_DRAFT_VERSION, title: 'Leg day', templateId: 3 })
   })
 
-  it('discardDraft clears the stored draft and drops a pending write', async () => {
+  it('never autosaves or saves over a draft that is waiting for Restore/Discard (B1)', async () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: 'Stale', exercises: [] }))
-    const { result } = setup('/log?type=strength', { autosaveMs: 40 })
-    act(() => result.current.setField('notes', 'typed before discarding'))
+    const { result } = setup('/log?type=strength', { autosaveMs: 20 })
+    act(() => result.current.setField('notes', 'typed while the banner shows'))
+    await act(() => sleep(60))
+    expect(storedDraft()).toEqual({ title: 'Stale', exercises: [] })
+
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    act(() => result.current.persistDraft())
+    expect(mockPost).not.toHaveBeenCalled()
+    expect(storedDraft()).toEqual({ title: 'Stale', exercises: [] })
+  })
+
+  it('discardDraft removes the stored draft; later edits start a new one', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ title: 'Stale', exercises: [] }))
+    const { result } = setup('/log?type=strength', { autosaveMs: 20 })
     act(() => result.current.discardDraft())
     expect(result.current.pendingDraft).toBeNull()
-    await act(() => sleep(80))
     expect(storedDraft()).toBeNull()
+    act(() => result.current.setField('notes', 'fresh'))
+    await waitFor(() => expect(storedDraft()).toMatchObject({ notes: 'fresh', title: 'Strength session' }))
   })
 
   it('keeps the draft on a failed save and clears it only after a 2xx', async () => {
@@ -389,5 +405,119 @@ describe('useStrengthSessionForm: draft', () => {
     expect(storedDraft()).toBeNull()
     unmount()
     expect(storedDraft()?.exercises[0].sets[0].done).toBe(true)
+  })
+})
+
+describe('useStrengthSessionForm: review fixes', () => {
+  const draftWithTemplate = {
+    version: 2,
+    title: 'Linked',
+    duration_seconds: null,
+    calories: '',
+    date: '2026-09-01T10:00',
+    notes: '',
+    wellbeing: null,
+    rpe: null,
+    exercises: [{ exercise_id: '1', sets: [set('6', '100', '', true), set('5', '102.5', 'tough')] }],
+    templateId: 3,
+    workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null },
+  }
+
+  it('B2: a stale template response is dropped when another template was chosen meanwhile', async () => {
+    let releaseLegDay: () => void = () => {}
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') {
+        return new Promise((r) => {
+          releaseLegDay = () => r(legDay)
+        }) as never
+      }
+      if (path === '/templates/strength/9') return { id: 9, name: 'Other', exercises: [] } as never
+      if (path === '/exercises') return [] as never
+      return { sets: [] } as never
+    })
+    const { result } = setup('/log?type=strength')
+    act(() => {
+      void result.current.selectTemplate(3)
+    })
+    await act(() => result.current.selectTemplate(9))
+    expect(result.current.templateSnapshot?.name).toBe('Other')
+    await act(async () => releaseLegDay())
+    expect(result.current.templateSnapshot?.name).toBe('Other')
+    expect(result.current.selectedTemplateId).toBe(9)
+  })
+
+  it('3: restore applies the draft at once, even while the template request hangs', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftWithTemplate))
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') return new Promise(() => {}) as never
+      return [] as never
+    })
+    const { result } = setup('/log?type=strength')
+    act(() => {
+      void result.current.restoreDraft()
+    })
+    expect(result.current.values.title).toBe('Linked')
+    expect(result.current.pendingDraft).toBeNull()
+    expect(result.current.selectedTemplateId).toBe(3)
+    expect(result.current.isRestoring).toBe(true)
+  })
+
+  it('3: a failed template request keeps the link, and the save fetches it again for the diff', async () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftWithTemplate))
+    let templateCalls = 0
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') {
+        templateCalls++
+        if (templateCalls === 1) throw new Error('offline')
+        return legDay as never
+      }
+      if (path === '/exercises') return [{ id: 1, name: 'Squat' }] as never
+      return [] as never
+    })
+    const { result } = setup('/log?type=strength')
+    await act(() => result.current.restoreDraft())
+    expect(result.current.templateSnapshot).toBeNull()
+    expect(result.current.selectedTemplateId).toBe(3)
+    act(() => result.current.setField('notes', 'x'))
+    await waitFor(() => expect(storedDraft()?.templateId).toBe(3))
+
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    expect(templateCalls).toBe(2)
+    expect(result.current.diffState?.changes).toEqual(['Changed reps on Squat set 1'])
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+
+  it('5: a second save while the first is in flight is ignored', async () => {
+    let resolvePost: (v: unknown) => void = () => {}
+    mockPost.mockImplementation(() => new Promise((r) => (resolvePost = r)) as never)
+    const onSaved = vi.fn()
+    const { result } = setup('/log?type=strength', { onSaved })
+    act(() => result.current.addExercise({ exercise_id: '1', sets: [set('5', '100')] }))
+    await act(async () => {
+      void result.current.requestSave(result.current.form.getValues())
+      void result.current.requestSave(result.current.form.getValues())
+    })
+    await act(() => result.current.submit())
+    expect(mockPost).toHaveBeenCalledTimes(1)
+    await act(async () => resolvePost({ id: 7 }))
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(7))
+  })
+
+  it('8: a successful save refreshes last-session defaults', async () => {
+    const onSaved = vi.fn()
+    const { result, qc } = setup('/log?type=strength', { onSaved })
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    await act(() => result.current.requestSave(result.current.form.getValues()))
+    await waitFor(() => expect(onSaved).toHaveBeenCalled())
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['last-session-defaults'] })
+  })
+
+  it('4: workout position alone does not create a draft', async () => {
+    const { result } = await setupWithTemplate()
+    act(() => result.current.updateWorkout({ startedAt: 123, currentExerciseIndex: 0 }))
+    await act(() => sleep(60))
+    expect(storedDraft()).toBeNull()
+    act(() => result.current.setSetDone(0, 0))
+    await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(123))
   })
 })

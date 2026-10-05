@@ -5,6 +5,8 @@ import {
   buildStrengthPayload,
   deleteSet,
   insertSet,
+  insertExercise,
+  describeDraft,
   parseStrengthDraft,
   parseStrengthFormParams,
   strengthViewUrl,
@@ -149,7 +151,7 @@ describe('strength draft schema', () => {
   const draft: StrengthDraft = {
     values,
     templateId: 3,
-    workout: { currentExerciseIndex: 1, restEndsAt: 1_790_000_000_000, startedAt: 1_789_999_000_000 },
+    workout: { currentExerciseIndex: 1, restEndsAt: 1_790_000_000_000, startedAt: 1_789_999_000_000, autoDurationSeconds: 1200 },
   }
 
   it('round-trips through JSON', () => {
@@ -187,7 +189,7 @@ describe('strength draft schema', () => {
       exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', done: true }] }],
     })
     expect(parsed.templateId).toBeNull()
-    expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null })
+    expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })
   })
 
   it('fills fields missing from partial or older drafts', () => {
@@ -203,7 +205,7 @@ describe('strength draft schema', () => {
     expect(parsed.values).toMatchObject({ calories: '', notes: '', wellbeing: null, rpe: null, duration_seconds: null })
     expect(typeof parsed.values.date).toBe('string')
     expect(parsed.templateId).toBeNull()
-    expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null })
+    expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })
     // Builds the same body the pre-hook form would have sent for these values
     expect(buildStrengthPayload({ ...parsed.values, date: '2026-01-01T00:00' })).toMatchObject({
       title: 'Partial',
@@ -242,10 +244,27 @@ describe('parseStrengthFormParams / strengthViewUrl', () => {
   it('builds the URL of the other view with the same params', () => {
     const params = parseStrengthFormParams(new URLSearchParams('type=strength&templateId=3&date=2026-09-01T10:00'))
     expect(strengthViewUrl('workout', params, { resume: true })).toBe(
-      '/workout?templateId=3&date=2026-09-01T10%3A00&resume=1',
+      '/workout?type=strength&templateId=3&date=2026-09-01T10%3A00&resume=1',
     )
     expect(strengthViewUrl('log', { ...params, resume: true })).toBe(
       '/log?type=strength&templateId=3&date=2026-09-01T10%3A00',
     )
+  })
+})
+
+describe('insertExercise / describeDraft', () => {
+  it('puts a removed exercise back at its index', () => {
+    const list = [{ exercise_id: '1', sets: [] }, { exercise_id: '3', sets: [] }]
+    expect(insertExercise(list, 1, { exercise_id: '2', sets: [] }).map((e) => e.exercise_id)).toEqual(['1', '2', '3'])
+    expect(insertExercise(list, 9, { exercise_id: '4', sets: [] }).map((e) => e.exercise_id)).toEqual(['1', '3', '4'])
+  })
+
+  it('describes which draft is waiting', () => {
+    const draft = parseStrengthDraft({
+      title: '',
+      date: '2026-09-01T07:05',
+      exercises: [{ exercise_id: '1', sets: [set('5', '1', '', true), set('5', '1')] }],
+    })!
+    expect(describeDraft(draft)).toBe('Untitled session · 1 Sep, 07:05 · 1 of 2 sets done')
   })
 })

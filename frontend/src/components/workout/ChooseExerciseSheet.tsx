@@ -24,7 +24,7 @@ function ProgressRing({ done, total }: { done: number; total: number }) {
           className="stroke-primary-dark"
         />
       </svg>
-      <span className="relative text-[11px] font-semibold tabular-nums text-text">
+      <span className="relative text-xs font-semibold tabular-nums text-text">
         {done}/{total}
       </span>
     </span>
@@ -42,6 +42,7 @@ export function ChooseExerciseSheet({
   lastByExercise,
   library,
   startInAddMode = false,
+  busy = false,
   onSelect,
   onAdd,
   onClose,
@@ -52,6 +53,8 @@ export function ChooseExerciseSheet({
   lastByExercise: Map<string, LastSessionDefaults>
   library: ExerciseOption[]
   startInAddMode?: boolean
+  /** An exercise is being added: further picks are ignored. */
+  busy?: boolean
   onSelect: (index: number) => void
   onAdd: (exerciseId: string) => void
   onClose: () => void
@@ -91,7 +94,7 @@ export function ChooseExerciseSheet({
             <span className="flex items-center gap-2">
               <span className="text-base font-medium text-text break-words">{name}</span>
               {isCurrent && (
-                <span className="shrink-0 rounded-full bg-primary-dark px-2 py-0.5 text-[11px] font-semibold text-white">
+                <span className="shrink-0 rounded-full bg-primary-dark px-2 py-0.5 text-xs font-semibold text-white">
                   Current
                 </span>
               )}
@@ -137,7 +140,8 @@ export function ChooseExerciseSheet({
               <button
                 type="button"
                 onClick={() => onAdd(String(ex.id))}
-                className="w-full min-h-16 px-4 py-2 text-left text-base text-text break-words"
+                disabled={busy}
+                className="w-full min-h-16 px-4 py-2 text-left text-base text-text break-words disabled:opacity-50"
               >
                 {ex.name}
               </button>
