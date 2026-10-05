@@ -77,7 +77,7 @@ export function WeekGrid({ weekStart, sessions, onAddSession, onEditSession }: W
 
               <button
                 onClick={() => onAddSession(day)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 max-md:min-h-11 rounded-lg border transition-colors ${
                   isPast
                     ? 'text-slate-400 border-slate-200 hover:bg-slate-50'
                     : 'text-blue-600 border-blue-200 hover:bg-blue-50'

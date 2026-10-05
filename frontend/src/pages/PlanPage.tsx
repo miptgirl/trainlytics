@@ -37,6 +37,19 @@ function formatWeekRange(weekStart: string): string {
   return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${year}`
 }
 
+/** Compact range for narrow screens, e.g. "Sep 28 – Oct 4". */
+function formatWeekRangeShort(weekStart: string): string {
+  const start = new Date(weekStart + 'T00:00:00')
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+
+  const startMonth = start.toLocaleDateString('en-US', { month: 'short' })
+  const endMonth = end.toLocaleDateString('en-US', { month: 'short' })
+
+  if (startMonth === endMonth) return `${startMonth} ${start.getDate()} – ${end.getDate()}`
+  return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}`
+}
+
 interface FormModal {
   open: boolean
   date: string
@@ -95,7 +108,7 @@ export default function PlanPage() {
         <div className="flex items-center justify-between">
           <button
             onClick={() => setWeekStart((w) => shiftWeek(w, -1))}
-            className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
             aria-label="Previous week"
           >
             <svg
@@ -111,10 +124,13 @@ export default function PlanPage() {
               />
             </svg>
           </button>
-          <h1 className="text-lg font-semibold text-slate-800">{formatWeekRange(weekStart)}</h1>
+          <h1 className="text-lg font-semibold text-slate-800 whitespace-nowrap">
+            <span className="sm:hidden">{formatWeekRangeShort(weekStart)}</span>
+            <span className="hidden sm:inline">{formatWeekRange(weekStart)}</span>
+          </h1>
           <button
             onClick={() => setWeekStart((w) => shiftWeek(w, 1))}
-            className="p-2 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
+            className="flex items-center justify-center p-2 max-md:min-h-11 max-md:min-w-11 rounded hover:bg-slate-100 text-slate-600 hover:text-blue-600 transition-colors"
             aria-label="Next week"
           >
             <svg

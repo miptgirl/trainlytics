@@ -18,14 +18,45 @@
   --color-primary-900: #1e3a8a;
 
   /* Neutral greys */
-  --color-surface: #f8fafc;
   --color-surface-card: #ffffff;
+
+  /* Semantic tokens (names from specs/design-system.md). Interim blue/slate
+     values; Phase 17 group 4 switches them to the sage palette. */
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-primary-light: #bfdbfe;
+  --color-primary-tint: #eff6ff;
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-border: #e2e8f0;
+  --color-text: #1e293b;
+  --color-text-muted: #64748b;
+  --color-text-muted-strong: #475569;
+  --color-accent: #f43f5e;
+  --color-accent-light: #ffe4e6;
+  --color-accent-text: #be123c;
+  --color-success: #16a34a;
+  --color-success-text: #15803d;
+  --color-warning: #f59e0b;
+  --color-warning-text: #b45309;
+  --color-error: #ef4444;
+  --color-error-text: #b91c1c;
 }
 
 /* Global base */
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-surface);
-  color: #1e293b;
+  background-color: var(--color-bg);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* iOS Safari zooms into any focused field under 16px and stays zoomed.
+   Unlayered on purpose: it must beat the text-sm/text-xs utilities. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

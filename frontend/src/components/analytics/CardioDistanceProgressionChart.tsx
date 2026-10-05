@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useCardioDistanceProgression } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 const COLORS = [
   '#3b82f6',
@@ -71,8 +72,9 @@ export function CardioDistanceProgressionChart() {
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
         <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
         <YAxis
-          tickFormatter={(v) => `${v}km`}
+          tickFormatter={formatCompact}
           tick={{ fontSize: 12, fill: '#94a3b8' }}
+          width={40}
         />
         <Tooltip formatter={(v: number) => [`${v.toFixed(1)} km`]} />
         <Legend onClick={handleLegendClick} style={{ cursor: 'pointer' }} />

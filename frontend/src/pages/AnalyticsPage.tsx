@@ -23,7 +23,7 @@ function DebugIcon({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-xs text-slate-300 hover:text-slate-500 font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
+      className="hidden sm:block text-xs text-slate-300 hover:text-slate-500 font-mono transition-colors px-1.5 py-0.5 rounded shrink-0"
       title="View SQL"
     >
       {'</>'}
@@ -133,7 +133,7 @@ export function AnalyticsPageContent() {
       <SectionCard title="Strength">
         <div className="space-y-8">
           <ChartPanel
-            title="Weekly Volume by Type"
+            title="Weekly Volume by Type (kg)"
             debugUrl="/analytics/strength/volume-by-tag?weeks=12"
           >
             <StrengthVolumeBreakdown />
@@ -186,7 +186,7 @@ export function AnalyticsPageContent() {
             <HrZoneTrendsChart />
           </ChartPanel>
           <ChartPanel
-            title="Activity Time Split"
+            title="Activity Time Split (min)"
             debugUrl="/analytics/cardio/time-split?period=90"
           >
             <ActivityTimeSplitChart />
@@ -198,7 +198,7 @@ export function AnalyticsPageContent() {
             <WalkSegmentsTrendChart />
           </ChartPanel>
           <ChartPanel
-            title="Distance Progression"
+            title="Distance Progression (km)"
             debugUrl="/analytics/cardio/distance-progression"
           >
             <CardioDistanceProgressionChart />

@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout'
 import { useSteps, useDeleteStep } from '../lib/hooks/useSteps'
 import type { StepEntry } from '../lib/hooks/useSteps'
 import StepsForm from '../components/StepsForm'
+import { formatShortDate } from '../lib/dateUtils'
 
 export default function StepsPage() {
   const { data: entries = [], isLoading } = useSteps()
@@ -63,22 +64,35 @@ export default function StepsPage() {
                   className={`flex items-center justify-between py-3 first:pt-0 last:pb-0 ${editingEntry?.id === e.id ? 'bg-blue-50 -mx-5 px-5 rounded-xl' : ''}`}
                 >
                   <div>
-                    <div className="font-medium">{e.date}</div>
+                    <div className="font-medium">{formatShortDate(e.date)}</div>
                     <div className="text-sm text-slate-500">{e.steps.toLocaleString()} steps</div>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleEdit(e)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="text-sm text-blue-600 hover:text-blue-800 min-h-11 px-3"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(e)}
                       disabled={deleteStep.isPending}
-                      className="text-sm text-red-500 hover:text-red-700 disabled:opacity-40"
+                      aria-label="Delete"
+                      title="Delete"
+                      className="flex items-center justify-center min-h-11 min-w-11 text-red-500 hover:text-red-700 disabled:opacity-40"
                     >
-                      Delete
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     </button>
                   </div>
                 </li>

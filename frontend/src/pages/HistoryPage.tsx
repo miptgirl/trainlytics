@@ -19,6 +19,7 @@ import { api } from '../lib/api'
 import { useSteps, type StepEntry } from '../lib/hooks/useSteps'
 import { usePaceTrends } from '../lib/hooks/usePaceTrends'
 import { formatSessionDateTime, toLocalDateStr } from '../lib/dateUtils'
+import { formatCompact } from '../lib/chartUtils'
 import { metresToKm, secPerKmToMinPerKm } from '../lib/unitUtils'
 import {
   formatStrengthSession,
@@ -205,7 +206,7 @@ function TrainingTrendsChart() {
         <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
           <button
             onClick={() => setView('minutes')}
-            className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
               view === 'minutes'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -215,7 +216,7 @@ function TrainingTrendsChart() {
           </button>
           <button
             onClick={() => setView('calories')}
-            className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
               view === 'calories'
                 ? 'bg-white text-blue-600 shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -227,6 +228,8 @@ function TrainingTrendsChart() {
       </div>
       {isLoading ? (
         <p className="text-slate-400 text-sm">Loading…</p>
+      ) : chartData && chartData.length === 0 ? (
+        <p className="text-slate-400 text-sm text-center py-8">No data yet</p>
       ) : chartData ? (
         <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={chartData} margin={{ top: 0, right: 20, left: -20, bottom: 0 }}>
@@ -242,10 +245,10 @@ function TrainingTrendsChart() {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={formatCompact} allowDecimals={false} />
             {/* Right-side axis for steps (only shown if any weekly step data exists) */}
             {Array.from(weeklyStepsMap.values()).some((v) => v != null) && (
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} allowDecimals={false} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={formatCompact} allowDecimals={false} />
             )}
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
@@ -333,7 +336,7 @@ function PaceTrendsChart() {
               <button
                 key={type}
                 onClick={() => toggleType(type)}
-                className={`text-xs px-3 py-1 rounded-full font-medium border transition-colors ${
+                className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-full font-medium border transition-colors ${
                   !hiddenTypes.has(type)
                     ? 'bg-slate-800 text-white border-slate-800'
                     : 'bg-white text-slate-500 border-slate-300 hover:border-slate-400'
@@ -469,40 +472,44 @@ function HistoryCard({ s }: { s: SessionSummary }) {
   const [notesOpen, setNotesOpen] = useState(false)
   return (
     <li className="bg-white border border-slate-200 rounded-xl hover:border-blue-400 hover:shadow-sm transition-all overflow-hidden">
-      <div className="flex items-start gap-3 px-4 py-3">
-        <span
-          className={`shrink-0 mt-0.5 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-            s.type === 'cardio'
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-blue-100 text-blue-700'
-          }`}
-        >
-          {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
-        </span>
-        <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0">
-          <p className="text-sm text-slate-500">{formatSessionDateTime(s.date)}</p>
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span
+            className={`shrink-0 inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+              s.type === 'cardio'
+                ? 'bg-emerald-100 text-emerald-700'
+                : 'bg-blue-100 text-blue-700'
+            }`}
+          >
+            {s.type === 'cardio' ? '🏃 Cardio' : '🏋️ Strength'}
+          </span>
+          <Link to={`/sessions/${s.id}`} className="flex-1 min-w-0 text-sm text-slate-500 truncate">
+            {formatSessionDateTime(s.date)}
+          </Link>
+          <div className="shrink-0 flex items-center gap-0 sm:gap-1">
+            {s.notes && (
+              <button
+                onClick={e => { e.preventDefault(); setNotesOpen(o => !o) }}
+                className="flex items-center justify-center p-1 max-md:min-h-11 max-md:min-w-11 max-md:-mr-1 text-slate-400 hover:text-slate-600 transition-colors"
+                title="Toggle notes"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                  className={`w-4 h-4 transition-transform ${notesOpen ? 'rotate-180' : ''}`}>
+                  <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+            <CopyRowButton session={s} />
+          </div>
+        </div>
+        <Link to={`/sessions/${s.id}`} className="block mt-2">
           {s.title && (
-            <p className="font-medium text-slate-900 mt-0.5">{s.title}</p>
+            <p className="font-medium text-slate-900">{s.title}</p>
           )}
           <div className="text-sm text-slate-600 mt-1">
             {s.type === 'cardio' ? <CardioStats s={s} /> : <StrengthStats s={s} />}
           </div>
         </Link>
-        <div className="shrink-0 flex items-center gap-1">
-          {s.notes && (
-            <button
-              onClick={e => { e.preventDefault(); setNotesOpen(o => !o) }}
-              className="p-1 text-slate-400 hover:text-slate-600 transition-colors"
-              title="Toggle notes"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
-                className={`w-4 h-4 transition-transform ${notesOpen ? 'rotate-180' : ''}`}>
-                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z" clipRule="evenodd" />
-              </svg>
-            </button>
-          )}
-          <CopyRowButton session={s} />
-        </div>
       </div>
       {s.notes && notesOpen && (
         <div className="border-t border-slate-100 px-4 py-2">
@@ -558,7 +565,7 @@ export function HistoryPageContent() {
       <div className="flex gap-1 bg-slate-100 rounded-lg p-1 mb-4 w-fit">
         <button
           onClick={() => setChartTab('trends')}
-          className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
             chartTab === 'trends'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -568,7 +575,7 @@ export function HistoryPageContent() {
         </button>
         <button
           onClick={() => setChartTab('pace')}
-          className={`text-xs px-3 py-1 rounded-md font-medium transition-colors ${
+          className={`text-xs px-3 py-1 max-md:min-h-11 max-md:px-4 rounded-md font-medium transition-colors ${
             chartTab === 'pace'
               ? 'bg-white text-blue-600 shadow-sm'
               : 'text-slate-500 hover:text-slate-700'
@@ -654,7 +661,7 @@ export function HistoryPageContent() {
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                className="px-3 py-1.5 max-md:min-h-11 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
               >
                 Previous
               </button>
@@ -664,7 +671,7 @@ export function HistoryPageContent() {
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1.5 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                className="px-3 py-1.5 max-md:min-h-11 border border-slate-300 rounded-lg disabled:opacity-40 hover:bg-slate-50 transition-colors"
               >
                 Next
               </button>

@@ -9,6 +9,7 @@ import {
   ReferenceLine,
 } from 'recharts'
 import { usePlanAdherence } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 function formatWeekLabel(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
@@ -71,9 +72,8 @@ export function PlanAdherenceChart() {
             <XAxis dataKey="week" tick={{ fontSize: 10, fill: '#94a3b8' }} />
             <YAxis
               tick={{ fontSize: 10, fill: '#94a3b8' }}
-              width={52}
-              tickFormatter={(v: number) => (v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v))}
-              unit=" kg"
+              width={40}
+              tickFormatter={formatCompact}
             />
             <Tooltip formatter={(v: number) => `${v > 0 ? '+' : ''}${Math.round(v)} kg·reps`} />
             <ReferenceLine y={0} stroke="#94a3b8" />
@@ -98,7 +98,7 @@ export function PlanAdherenceChart() {
             <YAxis
               tick={{ fontSize: 10, fill: '#94a3b8' }}
               width={40}
-              unit=" km"
+              tickFormatter={formatCompact}
             />
             <Tooltip formatter={(v: number) => `${v > 0 ? '+' : ''}${v} km`} />
             <ReferenceLine y={0} stroke="#94a3b8" />

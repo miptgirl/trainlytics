@@ -13,6 +13,7 @@ import {
 import type { DotItemDotProps } from 'recharts'
 import { api } from '../../lib/api'
 import { useStrengthProgression } from '../../lib/analyticsApi'
+import { formatCompact } from '../../lib/chartUtils'
 
 interface Exercise {
   id: number
@@ -68,7 +69,7 @@ export function ExerciseProgressionChart() {
         {selectedId !== null && (
           <button
             onClick={() => setShowVolume((v) => !v)}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1.5 max-md:min-h-11 rounded-md font-medium transition-colors ${
               showVolume
                 ? 'bg-blue-100 text-blue-700'
                 : 'bg-slate-100 text-slate-500 hover:text-slate-700'
@@ -106,16 +107,16 @@ export function ExerciseProgressionChart() {
               <YAxis
                 yAxisId="weight"
                 tick={{ fontSize: 11, fill: '#94a3b8' }}
-                unit=" kg"
-                width={55}
+                tickFormatter={formatCompact}
+                width={40}
               />
               {showVolume && (
                 <YAxis
                   yAxisId="volume"
                   orientation="right"
                   tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  unit=" kg"
-                  width={60}
+                  tickFormatter={formatCompact}
+                  width={40}
                 />
               )}
               <Tooltip />

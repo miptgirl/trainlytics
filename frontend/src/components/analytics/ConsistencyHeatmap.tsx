@@ -104,6 +104,22 @@ export function ConsistencyHeatmap() {
     }
   }, [data])
 
+  // Touch: a tap shows the tooltip (iOS only emulates hover on elements with a click
+  // handler); a tap anywhere else, or scrolling, dismisses it.
+  useEffect(() => {
+    if (!tooltip) return
+    const dismiss = (e: Event) => {
+      if (e.type === 'pointerdown' && (e.target as HTMLElement).closest?.('[data-heatmap-cell]')) return
+      setTooltip(null)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    window.addEventListener('scroll', dismiss, true)
+    return () => {
+      document.removeEventListener('pointerdown', dismiss)
+      window.removeEventListener('scroll', dismiss, true)
+    }
+  }, [tooltip])
+
   if (isLoading) return <div className="h-40 bg-slate-50 rounded-lg animate-pulse" />
   if (!data) return null
 
@@ -176,6 +192,7 @@ export function ConsistencyHeatmap() {
                   return (
                     <div
                       key={di}
+                      data-heatmap-cell
                       style={{
                         width: CELL,
                         height: CELL,
@@ -186,6 +203,7 @@ export function ConsistencyHeatmap() {
                       }}
                       onMouseEnter={(e) => handleMouseEnter(e, day)}
                       onMouseLeave={() => setTooltip(null)}
+                      onClick={(e) => handleMouseEnter(e, day)}
                     />
                   )
                 })}

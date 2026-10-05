@@ -9,6 +9,16 @@ export function toLocalDateStr(d: Date): string {
 }
 
 /**
+ * Formats a "YYYY-MM-DD" date string as "Sun, 4 Oct" (no timezone shift).
+ */
+export function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  const weekday = d.toLocaleDateString('en-GB', { weekday: 'short' })
+  const month = d.toLocaleDateString('en-GB', { month: 'short' })
+  return `${weekday}, ${d.getDate()} ${month}`
+}
+
+/**
  * Returns the current local date/time as a value suitable for
  * <input type="datetime-local"> (format: "YYYY-MM-DDTHH:MM").
  */
