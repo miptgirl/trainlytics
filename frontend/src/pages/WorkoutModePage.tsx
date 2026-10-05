@@ -336,7 +336,6 @@ export default function WorkoutModePage() {
         ) : s.templateError ? (
           <div role="alert" className="rounded-2xl border border-border bg-surface p-4 space-y-3">
             <p className="text-base font-medium">{s.templateError}</p>
-            <p className="text-sm text-text-muted-strong">Check your connection and try again.</p>
             <button
               type="button"
               onClick={s.retryTemplate}

@@ -582,7 +582,7 @@ describe('Second review', () => {
       return legDay
     }
     renderAt(['/workout?type=strength&templateId=3'])
-    expect(await screen.findByText("Couldn't load the template.")).toBeInTheDocument()
+    expect(await screen.findByText(/Couldn't load the template/)).toBeInTheDocument()
     fail = false
     await user.click(screen.getByRole('button', { name: 'Retry' }))
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))

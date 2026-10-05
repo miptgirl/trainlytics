@@ -310,8 +310,15 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
         newValues.title = getValues('title')
       }
       reset(newValues)
-    } catch {
-      if (generation === templateGeneration.current) setTemplateError("Couldn't load the template.")
+    } catch (err) {
+      if (generation === templateGeneration.current) {
+        const status = (err as { status?: unknown } | null)?.status
+        setTemplateError(
+          status === 404
+            ? 'This template no longer exists.'
+            : "Couldn't load the template. Check your connection and try again.",
+        )
+      }
     } finally {
       if (generation === templateGeneration.current) setIsLoadingTemplate(false)
     }

@@ -674,11 +674,22 @@ describe('useStrengthSessionForm: second review', () => {
       return [] as never
     })
     const { result } = setup('/workout?templateId=3')
-    await waitFor(() => expect(result.current.templateError).toBe("Couldn't load the template."))
+    await waitFor(() =>
+      expect(result.current.templateError).toBe("Couldn't load the template. Check your connection and try again."),
+    )
     expect(result.current.isLoadingTemplate).toBe(false)
     fail = false
     act(() => result.current.retryTemplate())
     await waitFor(() => expect(result.current.templateSnapshot?.name).toBe('Leg day'))
     expect(result.current.templateError).toBeNull()
+  })
+
+  it('nit: a deleted template says so instead of blaming the connection', async () => {
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/templates/strength/3') throw Object.assign(new Error('Not found'), { status: 404 })
+      return [] as never
+    })
+    const { result } = setup('/workout?templateId=3')
+    await waitFor(() => expect(result.current.templateError).toBe('This template no longer exists.'))
   })
 })
