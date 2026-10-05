@@ -4,6 +4,23 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-05 — Sage palette and Stats glance (Phase 17, part 4)
+
+### Added
+
+- **Stats glance** — at the top of the Analytics tab below 768px: this week (sessions done of planned, training time, km run), the latest personal record, 12 weeks of training time as small bars, and average feeling and effort over the last 7 days. It uses existing analytics endpoints only. The records endpoint has no date, so the PR date comes from each exercise's progression series (the first day its max weight reached the record weight)
+- `lib/chartPalette.ts` — chart colours read from the design-system CSS variables at runtime, with the spec hex as fallback (recharts writes SVG attributes, where `var()` is unreliable). Activity types map to their `chart-*` colour by name; tags and pace series use the categorical order; HR zones use `chart-zone-1…5`
+
+### Changed
+
+- **Sage palette** — the semantic tokens in `index.css` now hold the "Minimal & Clean" values, with accent, success, warning, error, chart, HR zone and shadow tokens added. The old blue `--color-primary-50…900` scale is gone
+- Every hard-coded Tailwind palette class and chart hex colour in `frontend/src` is replaced by a semantic token or `chartPalette`, following the spec's recipes and contrast rules (white text only on `primary-dark`/`error` fills, `text-muted-strong` for small muted text, accent never as text). Exceptions: the Strava and Apple Health brand colours and the SVG logo files
+- Radii normalised to Tailwind's defaults (inputs and chips `rounded-sm`, buttons `rounded-lg`, cards and modals `rounded-xl`, bottom sheets 20px). The spec's `--radius-*` tokens are not adopted because they would override those defaults app-wide
+- Logos recoloured to the sage palette; `theme-color` and the manifest already matched
+- Week summaries share one helper (`summarizeWeek`) across the Plan card, Today and Stats glance, and one `getMondayOf` helper in `dateUtils`
+
+---
+
 ## 2026-10-05 — Today screen and mobile navigation (Phase 17, part 3)
 
 ### Added

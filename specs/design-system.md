@@ -2,7 +2,7 @@
 
 The target visual language for Trainlytics: fresh, calm and airy, with sage green as the hero colour. Use it for every redesign and new screen. The source artwork is [`design/colour-palette.webp`](design/colour-palette.webp).
 
-> **Status:** the PWA icons already use this palette. The app UI still uses the older blue tokens in `frontend/src/index.css` (`--color-primary-*`, `--color-surface*`). Migrating the UI means replacing those tokens with the block in [Tailwind tokens](#tailwind-tokens).
+> **Status:** the app UI and the PWA icons use this palette. The tokens live in `frontend/src/index.css`; chart colours are read from them at runtime by `frontend/src/lib/chartPalette.ts`.
 
 ## Colours
 
@@ -115,7 +115,7 @@ Rules:
 
 ## Tailwind tokens
 
-Tailwind v4 `@theme` block for `frontend/src/index.css`. It isn't applied yet. Paste it in when migrating the UI and delete the old blue `--color-primary-*` scale.
+Tailwind v4 `@theme` block for `frontend/src/index.css`. `index.css` applies it (as `@theme static`, plus the `--color-chart-zone-1…5` HR zone tokens), minus the radius tokens.
 
 ```css
 @theme {
@@ -159,6 +159,8 @@ Tailwind v4 `@theme` block for `frontend/src/index.css`. It isn't applied yet. P
   --radius-xl: 20px;
 }
 ```
+
+The app does not adopt the `--radius-*` tokens above: they would override Tailwind's `rounded-sm/md/lg/xl` scale and silently restyle every existing `rounded-*` class (for example `rounded-lg` from 8px to 12px). It uses Tailwind's defaults, which already match the shapes: `rounded-sm` (4px) for inputs and chips, `rounded-lg` (8px) for buttons, `rounded-xl` (12px) for cards and modals, and `rounded-[20px]` for bottom sheets and hero elements.
 
 ## App icon
 
