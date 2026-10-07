@@ -160,6 +160,31 @@ export function isValidSetRpe(value: string): boolean {
   return n !== null && n >= 1 && n <= 10 && Number.isInteger(n * 2)
 }
 
+/** The parsed RPE as display text ("8.0" → "8", "08" → "8"); the raw text when it is not a number. */
+export function formatSetRpe(value: string): string {
+  const n = parseSetRpe(value)
+  return n === null ? value.trim() : String(n)
+}
+
+/**
+ * Message for the first set whose RPE the API would reject, or null when all
+ * are valid. Checks values, not inputs: collapsed blocks and workout mode have
+ * no mounted RPE input for the form's own validation to run on.
+ */
+export function invalidSetRpeMessage(
+  exercises: ExerciseEntryFormValues[],
+  nameOf: (exerciseId: string) => string | undefined,
+): string | null {
+  for (let i = 0; i < exercises.length; i++) {
+    const sets = exercises[i].sets ?? []
+    const j = sets.findIndex((s) => !isValidSetRpe(s.rpe ?? ''))
+    if (j === -1) continue
+    const name = nameOf(exercises[i].exercise_id) ?? `Exercise ${i + 1}`
+    return `${name}, set ${j + 1}: RPE "${sets[j].rpe.trim()}" must be 1–10 in steps of 0.5.`
+  }
+  return null
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Template diff and payloads
 // ─────────────────────────────────────────────────────────────────────────────

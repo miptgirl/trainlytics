@@ -5,7 +5,7 @@
  */
 import type { ExerciseEntryFormValues, SetFormValues } from '../components/ExerciseEntryBlock'
 import { emptySet } from '../components/exerciseEntryDefaults'
-import { parseSetRpe, type LastSessionDefaults } from './strengthSession'
+import { formatSetRpe, parseSetRpe, type LastSessionDefaults } from './strengthSession'
 
 type Exercises = ExerciseEntryFormValues[]
 
@@ -116,7 +116,7 @@ export function stepValue(value: string, delta: number): string {
 export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { rpe?: string }): string {
   const reps = set.reps || '–'
   const base = set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
-  return set.rpe ? `${base} @${set.rpe}` : base
+  return set.rpe?.trim() ? `${base} @${formatSetRpe(set.rpe)}` : base
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

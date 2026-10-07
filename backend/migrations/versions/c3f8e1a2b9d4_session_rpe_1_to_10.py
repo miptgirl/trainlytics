@@ -21,7 +21,8 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute("UPDATE workout_sessions SET rpe = 12 - 2 * rpe WHERE rpe IS NOT NULL")
+    # Only the old scale's values: anything outside 1–5 would land outside 1–10
+    op.execute("UPDATE workout_sessions SET rpe = 12 - 2 * rpe WHERE rpe BETWEEN 1 AND 5")
 
 
 def downgrade() -> None:

@@ -528,7 +528,10 @@ async def update_session(
         else:
             raise HTTPException(status_code=400, detail="Unknown session type")
     except ValidationError as e:
-        raise RequestValidationError(e.errors(include_url=False)) from e
+        # "body" prefix: same `loc` shape as FastAPI's own request validation errors
+        raise RequestValidationError(
+            [{**err, "loc": ("body", *err["loc"])} for err in e.errors(include_url=False)]
+        ) from e
 
     if ws_check.type == "cardio":
         return await _patch_cardio(session_id, patch_cardio, user, db)

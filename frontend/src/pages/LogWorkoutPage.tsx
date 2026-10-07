@@ -673,6 +673,7 @@ function StrengthForm() {
     restoreDraft: handleRestore,
     discardDraft: handleDiscard,
     requestSave: handleFormSubmit,
+    validationError,
     saveMutation: createMutation,
     templateMutation: patchTemplateMutation,
     diffState,
@@ -916,6 +917,9 @@ function StrengthForm() {
 
         <div className={PINNED_ACTIONS}>
           {/* Inside the pinned bar so a failed save is visible from anywhere in the form */}
+          {validationError && (
+            <p role="alert" className="text-sm text-error-text mb-2">{validationError}</p>
+          )}
           {createMutation.isError && (
             <p role="alert" className="text-sm text-error-text mb-2">Failed to save session. Please try again.</p>
           )}

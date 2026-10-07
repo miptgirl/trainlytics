@@ -41,6 +41,22 @@ function refreshAccessToken(): Promise<string | null> {
   return _refreshPromise
 }
 
+/**
+ * FastAPI `detail` as text: a string as is; a validation error list (422) as
+ * its `msg`s joined, not "[object Object]".
+ */
+export function formatErrorDetail(detail: unknown): string {
+  if (detail == null || detail === '') return 'Request failed'
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    const msgs = detail.map((d) =>
+      d && typeof d === 'object' && 'msg' in d ? String((d as { msg: unknown }).msg) : String(d),
+    )
+    return msgs.length > 0 ? msgs.join('; ') : 'Request failed'
+  }
+  return JSON.stringify(detail)
+}
+
 function send(method: string, path: string, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (_token) headers['Authorization'] = `Bearer ${_token}`
@@ -72,7 +88,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as Record<string, unknown>
-    const message = String(err['detail'] ?? 'Request failed')
+    const message = formatErrorDetail(err['detail'])
     console.error(`[api] ${method} ${path} → ${res.status}:`, message, err)
     throw new ApiError(message, res.status, err)
   }

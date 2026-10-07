@@ -73,6 +73,16 @@ def test_compact_sets_keeps_different_rpe_apart():
     assert compact_sets(sets) == "2×5@100kg RPE8, 5@100kg RPE8.5, 5@100kg"
 
 
+def test_compact_sets_ignores_non_numeric_snapshot_rpe():
+    sets = [
+        {"reps": 5, "weight_kg": 100.0, "rpe": "hard"},
+        {"reps": 5, "weight_kg": 100.0, "rpe": None},
+        {"reps": 5, "weight_kg": 100.0, "rpe": "8.5"},
+        {"reps": 5, "weight_kg": 100.0, "rpe": {"x": 1}},
+    ]
+    assert compact_sets(sets) == "2×5@100kg, 5@100kg RPE8.5, 5@100kg"
+
+
 def test_compact_sets_dict_input_with_and_without_rpe():
     sets = [
         {"reps": 5, "weight_kg": 100.0, "rpe": 9},

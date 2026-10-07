@@ -995,3 +995,43 @@ async def test_last_session_defaults_never_carry_set_rpe(db_session, auth_client
     assert resp.status_code == 200
     sets = resp.json()["sets"]
     assert sets and all("rpe" not in s for s in sets)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("rpe", ["hard", "8.5", "", True])
+async def test_set_rpe_rejects_non_numbers(db_session, auth_client: AsyncClient, rpe):
+    # NaN is not covered: FastAPI's 422 handler can't JSON-encode it as the echoed input
+    ex_id = await _create_exercise(auth_client)
+    resp = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id, rpe=rpe))
+    assert resp.status_code == 422
+
+    created = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id))
+    patch = await auth_client.patch(
+        f"/api/sessions/{created.json()['id']}",
+        json={"exercises": _one_set_payload(ex_id, rpe=rpe)["exercises"]},
+    )
+    assert patch.status_code == 422
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("rpe,status", [(0, 422), (1, 200), (10, 200), (11, 422)])
+async def test_patch_cardio_session_rpe_bounds(
+    db_session, auth_client: AsyncClient, rpe, status
+):
+    created = await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
+    resp = await auth_client.patch(f"/api/sessions/{created.json()['id']}", json={"rpe": rpe})
+    assert resp.status_code == status
+    if status == 200:
+        assert resp.json()["rpe"] == rpe
+
+
+@pytest.mark.asyncio
+async def test_patch_422_loc_starts_with_body(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    created = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id))
+    patch = await auth_client.patch(
+        f"/api/sessions/{created.json()['id']}",
+        json={"exercises": _one_set_payload(ex_id, rpe=8.3)["exercises"]},
+    )
+    assert patch.status_code == 422
+    assert patch.json()["detail"][0]["loc"] == ["body", "exercises", 0, "sets", 0, "rpe"]

@@ -93,6 +93,8 @@ describe('formatting and steppers', () => {
   it('appends the set RPE when set', () => {
     expect(formatSet(set('5', '100', false, '', '8.5'))).toBe('5 × 100 kg @8.5')
     expect(formatSet(set('12', '', false, '', '7'))).toBe('12 reps @7')
+    expect(formatSet(set('5', '100', false, '', '8.0'))).toBe('5 × 100 kg @8')
+    expect(formatSet(set('5', '100', false, '', '08'))).toBe('5 × 100 kg @8')
   })
 })
 

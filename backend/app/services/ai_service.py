@@ -11,6 +11,7 @@ All AI calls go through `call_ai()` which:
 from __future__ import annotations
 
 import datetime
+import math
 import time
 from typing import Any
 
@@ -118,7 +119,15 @@ def compact_sets(sets: list[Any]) -> str:
         return s.weight if hasattr(s, "weight") else s.get("weight_kg") or s.get("weight")
 
     def _rpe(s: Any) -> float | None:
-        return s.get("rpe") if isinstance(s, dict) else getattr(s, "rpe", None)
+        # The adapt-session snapshot is unvalidated client JSON: ignore non-numeric values
+        raw = s.get("rpe") if isinstance(s, dict) else getattr(s, "rpe", None)
+        if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+            return None
+        try:
+            value = float(raw)
+        except ValueError:
+            return None
+        return value if math.isfinite(value) else None
 
     def _key(s: Any) -> tuple[Any, Any, Any]:
         return _reps(s), _weight(s), _rpe(s)

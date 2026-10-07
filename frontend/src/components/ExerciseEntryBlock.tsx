@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
 import { isValidSetRpe, lastSessionToFormSets } from '../lib/strengthSession'
+import { sanitizeDecimal } from '../lib/workoutMode'
 
 export interface SetFormValues {
   reps: string
@@ -623,6 +624,12 @@ export function ExerciseEntryBlock({
               {setFields.map((setField, setIndex) => {
                 const isDone = showDone && (setValues[setIndex]?.done ?? false)
                 const rpeError = showRpe ? errors?.exercises?.[exIndex]?.sets?.[setIndex]?.rpe : undefined
+                // The form rule covers mounted inputs; saving re-checks the values (collapsed blocks have none)
+                const rpeField = showRpe
+                  ? register(`exercises.${exIndex}.sets.${setIndex}.rpe`, {
+                      validate: (v: string | undefined) => isValidSetRpe(v ?? '') || 'RPE is 1–10 in steps of 0.5',
+                    })
+                  : null
                 return (
                   <div
                     key={setField.id}
@@ -663,21 +670,20 @@ export function ExerciseEntryBlock({
                       </label>
                     )}
                     <div className="max-sm:col-span-3 max-sm:flex max-sm:gap-1.5 sm:contents">
-                      {showRpe && (
+                      {rpeField && (
                         <input
-                          type="number"
+                          type="text"
                           inputMode="decimal"
-                          step="0.5"
-                          min="1"
-                          max="10"
                           placeholder="RPE"
                           aria-label={`RPE for set ${setIndex + 1}`}
                           aria-invalid={rpeError ? true : undefined}
                           title={rpeError ? 'RPE is 1–10 in steps of 0.5' : undefined}
-                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark max-sm:w-16 max-sm:shrink-0 sm:w-full sm:order-1 ${rpeError ? 'border-error' : isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
-                          {...register(`exercises.${exIndex}.sets.${setIndex}.rpe`, {
-                            validate: (v: string | undefined) => isValidSetRpe(v ?? '') || 'RPE is 1–10 in steps of 0.5',
-                          })}
+                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark max-sm:w-16 max-sm:shrink-0 sm:w-full sm:order-1 ${rpeError ? 'border-error' : isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
+                          {...rpeField}
+                          onChange={(e) => {
+                            e.target.value = sanitizeDecimal(e.target.value)
+                            return rpeField.onChange(e)
+                          }}
                         />
                       )}
                       <div className="relative max-sm:flex-1 max-sm:min-w-0 sm:order-1">

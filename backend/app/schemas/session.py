@@ -99,7 +99,8 @@ class StrengthSetCreate(BaseModel):
     reps: int | None = None
     weight: float | None = None
     notes: str | None = None
-    rpe: float | None = Field(default=None, ge=1, le=10, multiple_of=0.5)
+    # strict: no "8.5" strings or booleans coerced to numbers
+    rpe: float | None = Field(default=None, ge=1, le=10, multiple_of=0.5, strict=True)
 
 
 class StrengthSetOut(BaseModel):

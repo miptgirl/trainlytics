@@ -136,8 +136,11 @@ describe('LogWorkoutPage strength path: POST body', () => {
 
     await screen.findByText(/Pre-filled from/)
     await user.click(screen.getAllByRole('button', { name: 'Remove set' })[1])
+    await user.type(screen.getByLabelText('RPE for set 1'), '9')
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    // RPE is not part of the template, so it is not listed as a change
     expect(await screen.findByText('Removed 1 set from Squat')).toBeInTheDocument()
+    expect(screen.queryByText(/RPE/i, { selector: 'li' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Yes, update template' }))
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
@@ -162,10 +165,44 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
+          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9 }],
         },
       ],
     })
+    // The template PATCH carries no RPE
+    const templateBody = mockPatch.mock.calls[0][1] as { exercises: { sets: object[] }[] }
+    expect(templateBody.exercises[0].sets[0]).not.toHaveProperty('rpe')
+  })
+
+  it('changing only set RPE on a template session asks nothing and posts it', async () => {
+    const user = userEvent.setup()
+    renderPage('/log?type=strength&templateId=3&date=2026-09-01T10:00')
+    await screen.findByText(/Pre-filled from/)
+    await user.type(screen.getByLabelText('RPE for set 2'), '8.5')
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText(/Update template/)).not.toBeInTheDocument()
+    expect(mockPatch).not.toHaveBeenCalled()
+    const body = mockPost.mock.calls[0][1] as { exercises: { sets: { rpe: number | null }[] }[] }
+    expect(body.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 8.5])
+  })
+
+  it('an invalid set RPE in a collapsed exercise blocks the save', async () => {
+    const user = userEvent.setup()
+    renderPage('/log?type=strength&templateId=3&date=2026-09-01T10:00')
+    await screen.findByText(/Pre-filled from/)
+    await user.type(screen.getByLabelText('RPE for set 1'), '85')
+    // Marking every set done collapses the block, unmounting its inputs (and their form rules)
+    for (const box of screen.getAllByLabelText('Mark done')) await user.click(box)
+    await waitFor(() => expect(screen.queryByLabelText('RPE for set 1')).not.toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Squat, set 1: RPE "85" must be 1–10 in steps of 0.5.',
+    )
+    expect(mockPost).not.toHaveBeenCalled()
+    expect(mockPatch).not.toHaveBeenCalled()
   })
 
   it('no template: picker + last-session defaults posts directly without a diff prompt', async () => {

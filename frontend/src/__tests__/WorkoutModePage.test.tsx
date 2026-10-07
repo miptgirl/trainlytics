@@ -382,6 +382,48 @@ describe('Workout mode: set RPE', () => {
     expect(chip('RPE 7 for set 1')).toHaveAttribute('aria-pressed', 'true')
     expect(group).toHaveTextContent(/^RPE7/)
   })
+
+  it('shows the parsed number, not the raw text', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Leg day', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [{ exercise_id: '1', sets: [set('5', '100', true, '', '8.0'), set('5', '100', false, '', '09')] }],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8, done' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'RPE for set 2' })).toHaveTextContent(/^RPE9/)
+    expect(chip('RPE 9 for set 2')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('Finish is refused while a set has an RPE the API would reject', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Full body', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true)] },
+          { exercise_id: '2', sets: [set('8', '60', true), set('8', '60', true, '', '85')] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Finish ›' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Bench, set 2: RPE "85" must be 1–10 in steps of 0.5.')
+    // Jumps to the exercise with the bad value; no finish sheet, nothing sent
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expect(screen.queryByRole('dialog', { name: 'Finish workout' })).not.toBeInTheDocument()
+    expect(mockPost).not.toHaveBeenCalled()
+  })
 })
 
 describe('Workout mode: draft', () => {

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
+import { formatSetRpe } from '../../lib/strengthSession'
 import {
   RPE_CHIPS,
   currentSetIndex,
@@ -120,7 +121,7 @@ function RpeChips({
     <div role="group" aria-label={`RPE for set ${setNumber}`}>
       <p className="text-xs font-medium text-text-muted-strong mb-1">
         RPE
-        {value !== '' && <span className="ml-1 text-primary-dark tabular-nums">{value}</span>}
+        {value.trim() !== '' && <span className="ml-1 text-primary-dark tabular-nums">{formatSetRpe(value)}</span>}
       </p>
       <div className="grid grid-cols-6 gap-1">
         {RPE_CHIPS.map((n) => {

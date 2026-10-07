@@ -128,6 +128,42 @@ describe('Strength session edit form', () => {
     ])
   })
 
+  it('blocks saving an invalid RPE in a collapsed exercise', async () => {
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.type(screen.getByLabelText('RPE for set 2'), '85')
+    await user.click(screen.getByLabelText('Collapse exercise'))
+    expect(screen.queryByLabelText('RPE for set 2')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squat, set 2: RPE "85" must be 1–10 in steps of 0.5.')
+    expect(mockPatch).not.toHaveBeenCalled()
+  })
+
+  it('shows the server error when saving fails', async () => {
+    mockPatch.mockRejectedValue(new Error('Input should be a multiple of 0.5'))
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't save the changes: Input should be a multiple of 0.5",
+    )
+  })
+
+  it('hides the RPE column when no set has one', async () => {
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/sessions/5') {
+        return {
+          ...session,
+          exercises: [{ ...session.exercises[0], sets: session.exercises[0].sets.map((s) => ({ ...s, rpe: null })) }],
+        } as never
+      }
+      return [] as never
+    })
+    renderPage()
+    expect(await screen.findByText('Squat')).toBeInTheDocument()
+    expect(screen.queryByText('RPE')).not.toBeInTheDocument()
+  })
+
   it('shows set RPE in the set table', async () => {
     renderPage()
     expect(await screen.findByText('RPE')).toBeInTheDocument()

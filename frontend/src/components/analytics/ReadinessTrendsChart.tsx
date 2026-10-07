@@ -40,7 +40,8 @@ export function ReadinessTrendsChart() {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
+        {/* Recharts draws the grid against axis id 0 unless told otherwise */}
+        <CartesianGrid yAxisId="wellbeing" strokeDasharray="3 3" stroke={gridColor()} />
         <XAxis
           dataKey="week"
           tick={{ fontSize: 11, fill: axisColor() }}
