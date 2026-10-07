@@ -4,11 +4,14 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
+import { sanitizeRpeInput } from '../lib/strengthSession'
 
 export interface SetFormValues {
   reps: string
   weight: string
   notes: string
+  /** Per-set RPE 1–10 as typed; '' when not rated. Never prefilled. */
+  rpe: string
   done: boolean
 }
 
@@ -368,6 +371,7 @@ export function ExerciseEntryBlock({
   onRemove,
   errors,
   showDone = false,
+  showRpe = false,
   prefillFromLastSession = true,
   isCollapsed = false,
   onToggleCollapse,
@@ -385,6 +389,8 @@ export function ExerciseEntryBlock({
   errors: any
   /* eslint-enable @typescript-eslint/no-explicit-any */
   showDone?: boolean
+  /** Per-set RPE column (sessions only; templates have no RPE). Hidden below sm. */
+  showRpe?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
   isCollapsed?: boolean
@@ -443,6 +449,7 @@ export function ExerciseEntryBlock({
             reps: s.reps !== null ? String(s.reps) : '',
             weight: s.weight !== null ? String(s.weight) : '',
             notes: '',
+            rpe: '',
             done: false,
           })))
           setFilledFromSession(true)
@@ -482,6 +489,7 @@ export function ExerciseEntryBlock({
           reps: s.reps !== null ? String(s.reps) : '',
           weight: s.weight !== null ? String(s.weight) : '',
           notes: '',
+          rpe: '',
           done: false,
         })))
         setFilledFromSession(true)
@@ -508,9 +516,14 @@ export function ExerciseEntryBlock({
   // DOM order is the mobile reading/tab order (reps, weight, done, note, delete);
   // from sm up `order-*` puts Note back before Done for the single-row layout.
   // The action columns are 44px until md so they stay tappable.
+  // With showRpe a narrow RPE column sits after Weight from sm up; below sm it is hidden.
   const gridCols = showDone
-    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
-    : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
+    ? showRpe
+      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2rem_1.5rem]'
+      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+    : showRpe
+      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_1.5rem]'
+      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
     <div className="bg-surface rounded-xl border border-border">
@@ -611,6 +624,7 @@ export function ExerciseEntryBlock({
               <span className="text-xs text-text-muted-strong">#</span>
               <span className="text-xs text-text-muted-strong">Reps</span>
               <span className={`text-xs text-text-muted-strong ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
+              {showRpe && <span className="max-sm:hidden text-xs text-text-muted-strong">RPE</span>}
               <span className="max-sm:hidden text-xs text-text-muted-strong">Notes</span>
               {showDone && <span className="text-xs text-text-muted-strong text-center">Done</span>}
               <span className="max-sm:hidden" />
@@ -619,6 +633,7 @@ export function ExerciseEntryBlock({
             <div className="space-y-2">
               {setFields.map((setField, setIndex) => {
                 const isDone = showDone && (setValues[setIndex]?.done ?? false)
+                const rpeField = showRpe ? register(`exercises.${exIndex}.sets.${setIndex}.rpe`) : null
                 return (
                   <div
                     key={setField.id}
@@ -639,6 +654,21 @@ export function ExerciseEntryBlock({
                       className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
+                    {rpeField && (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={2}
+                        placeholder="rpe"
+                        aria-label={`RPE for set ${setIndex + 1}`}
+                        className={`max-sm:hidden border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
+                        {...rpeField}
+                        onChange={(e) => {
+                          e.target.value = sanitizeRpeInput(e.target.value)
+                          return rpeField.onChange(e)
+                        }}
+                      />
+                    )}
                     {showDone && (
                       <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 sm:order-2">
                         <input

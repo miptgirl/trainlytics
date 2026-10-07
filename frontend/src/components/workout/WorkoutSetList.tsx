@@ -88,6 +88,46 @@ function Stepper({
   )
 }
 
+const RPE_CHIPS = ['5', '6', '7', '8', '9', '10']
+
+/** "RPE" label and chips 5–10; tapping the selected chip clears it. */
+function RpeChips({
+  value,
+  setNumber,
+  onChange,
+}: {
+  value: string
+  setNumber: number
+  onChange: (value: string) => void
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-text-muted-strong mb-1">RPE</p>
+      <div className="flex gap-1.5">
+        {RPE_CHIPS.map((chip) => {
+          const selected = value === chip
+          return (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => onChange(selected ? '' : chip)}
+              aria-pressed={selected}
+              aria-label={`RPE ${chip} for set ${setNumber}`}
+              className={`flex-1 min-h-11 rounded-xl border text-base tabular-nums transition-colors ${
+                selected
+                  ? 'border-primary bg-primary-tint text-primary-dark font-semibold'
+                  : 'border-border bg-surface text-text'
+              }`}
+            >
+              {chip}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function SetEditor({
   set,
   setNumber,
@@ -142,6 +182,7 @@ function SetEditor({
           setNumber={setNumber}
           onChange={(weight) => onChange({ weight })}
         />
+        <RpeChips value={set.rpe} setNumber={setNumber} onChange={(rpe) => onChange({ rpe })} />
       </div>
       {showNote ? (
         <label className="block">
@@ -151,7 +192,7 @@ function SetEditor({
             value={set.notes}
             onChange={(e) => onChange({ notes: e.target.value })}
             autoFocus={noteOpen}
-            placeholder="e.g. RPE 8, slow negatives"
+            placeholder="e.g. slow negatives, paused reps"
             className="mt-1 w-full min-h-11 rounded-sm border border-border-strong bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
           />
         </label>

@@ -412,6 +412,13 @@ A user can tap "Review week" after a hard week, see AI-proposed adjustments to n
 - [x] **Group 3 — Today screen and mobile navigation** — `/today`, bottom tab bar, mobile header and menu sheet, safe areas _(all checks pass in Chromium at 390/1280px; home-indicator clearance on a real iPhone is still to confirm)_
 - [x] **Group 4 — Sage palette and Stats glance** — switch tokens to the design system, remove hard-coded colours, mobile stats summary
 
+### Per-set RPE *(2026-10-07)* — see `specs/2026-10-07-per-set-rpe/`
+
+- [x] Optional integer RPE (1–10) on every logged strength set, stored in `strength_sets.rpe`
+- [x] Workout mode: one-tap chips 5–10 under Weight, tap again to clear; done rows show `@8`
+- [x] Log page and session detail: RPE column (hidden on phones in the log grid); text export and AI context carry it
+- [x] Never prefilled from the previous set, last session or template; template sets have no RPE yet
+
 ---
 
 ## Developer Tooling

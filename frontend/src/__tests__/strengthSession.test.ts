@@ -7,8 +7,10 @@ import {
   insertSet,
   insertExercise,
   describeDraft,
+  parseSetRpe,
   parseStrengthDraft,
   parseStrengthFormParams,
+  sanitizeRpeInput,
   strengthViewUrl,
   removeExercise,
   replaceExercise,
@@ -21,7 +23,7 @@ import {
 } from '../lib/strengthSession'
 import type { ExerciseEntryFormValues } from '../components/ExerciseEntryBlock'
 
-const set = (reps: string, weight: string, notes = '', done = false) => ({ reps, weight, notes, done })
+const set = (reps: string, weight: string, notes = '', done = false, rpe = '') => ({ reps, weight, notes, rpe, done })
 
 const values: StrengthFormValues = {
   title: 'Leg day',
@@ -52,8 +54,8 @@ describe('buildStrengthPayload', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok' },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough' },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
           ],
         },
       ],
@@ -76,10 +78,49 @@ describe('buildStrengthPayload', () => {
     })
     expect(body).toMatchObject({ title: null, calories: null, notes: null, duration_seconds: null })
     expect(body.exercises).toEqual([
-      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null }] },
+      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null, rpe: null }] },
       // '0' is a non-empty string, so weight 0 is kept
-      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null }] },
+      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null, rpe: null }] },
     ])
+  })
+})
+
+describe('per-set RPE', () => {
+  it('sends an integer 1–10 or null in the POST body', () => {
+    const body = buildStrengthPayload({
+      ...values,
+      exercises: [
+        {
+          exercise_id: '1',
+          sets: [set('5', '100', '', true, '8'), set('5', '100', '', true, ''), set('5', '100', '', true, '10')],
+        },
+      ],
+    })
+    expect(body.exercises[0].sets.map((s) => s.rpe)).toEqual([8, null, 10])
+  })
+
+  it('parseSetRpe accepts only whole numbers in range', () => {
+    expect(parseSetRpe('7')).toBe(7)
+    expect(parseSetRpe(' 9 ')).toBe(9)
+    expect(parseSetRpe('')).toBeNull()
+    expect(parseSetRpe('0')).toBeNull()
+    expect(parseSetRpe('11')).toBeNull()
+    expect(parseSetRpe('7.5')).toBeNull()
+    expect(parseSetRpe(undefined)).toBeNull()
+  })
+
+  it('sanitizeRpeInput keeps typed values to digits forming 1–10', () => {
+    expect(sanitizeRpeInput('8')).toBe('8')
+    expect(sanitizeRpeInput('10')).toBe('10')
+    expect(sanitizeRpeInput('11')).toBe('1')
+    expect(sanitizeRpeInput('0')).toBe('')
+    expect(sanitizeRpeInput('7.5')).toBe('7')
+    expect(sanitizeRpeInput('a9')).toBe('9')
+  })
+
+  it('addSet does not copy RPE from the previous set', () => {
+    const list: ExerciseEntryFormValues[] = [{ exercise_id: '1', sets: [set('5', '100', '', true, '9')] }]
+    expect(addSet(list, 0)[0].sets[1]).toEqual(set('5', '100'))
   })
 })
 
@@ -186,7 +227,8 @@ describe('strength draft schema', () => {
       notes: 'from yesterday',
       wellbeing: 2,
       rpe: null,
-      exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', done: true }] }],
+      // Drafts written before per-set RPE load with the field empty
+      exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', rpe: '', done: true }] }],
     })
     expect(parsed.templateId).toBeNull()
     expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })
@@ -212,6 +254,16 @@ describe('strength draft schema', () => {
       calories: null,
       notes: null,
     })
+  })
+
+  it('reads per-set rpe from a draft and leaves it empty when the draft predates it', () => {
+    const parsed = parseStrengthDraft({
+      title: 'Mixed',
+      exercises: [
+        { exercise_id: '1', sets: [{ reps: '5', weight: '100', rpe: '8', done: true }, { reps: '5', weight: '100' }] },
+      ],
+    })!
+    expect(parsed.values.exercises[0].sets.map((s) => s.rpe)).toEqual(['8', ''])
   })
 
   it('keeps an empty exercise list as-is', () => {

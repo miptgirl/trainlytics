@@ -63,6 +63,33 @@ def test_compact_sets_dict_input():
     assert compact_sets(sets) == "2×5@100kg, 3@110kg"
 
 
+def test_compact_sets_rpe_keeps_sets_apart():
+    """Sets differing only in RPE are not merged; each group carries its RPE."""
+    sets = [
+        SimpleNamespace(reps=5, weight=100.0, rpe=7),
+        SimpleNamespace(reps=5, weight=100.0, rpe=7),
+        SimpleNamespace(reps=5, weight=100.0, rpe=8),
+        SimpleNamespace(reps=5, weight=100.0, rpe=None),
+    ]
+    assert compact_sets(sets) == "2×5@100kg RPE7, 5@100kg RPE8, 5@100kg"
+
+
+def test_compact_sets_dict_rpe():
+    sets = [
+        {"reps": 5, "weight": 100.0, "rpe": 9},
+        {"reps": 5, "weight": 100.0, "rpe": 9},
+    ]
+    assert compact_sets(sets) == "2×5@100kg RPE9"
+
+
+def test_compact_sets_template_sets_without_rpe_still_compact():
+    """Template / snapshot sets have no rpe attribute or key and compact as before."""
+    obj_sets = [SimpleNamespace(reps=8, weight=60.0)] * 3
+    dict_sets = [{"reps": 8, "weight_kg": 60.0}] * 3
+    assert compact_sets(obj_sets) == "3×8@60kg"
+    assert compact_sets(dict_sets) == "3×8@60kg"
+
+
 # ── compact_cardio_segments ───────────────────────────────────────────────────
 
 
