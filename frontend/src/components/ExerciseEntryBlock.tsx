@@ -389,7 +389,7 @@ export function ExerciseEntryBlock({
   errors: any
   /* eslint-enable @typescript-eslint/no-explicit-any */
   showDone?: boolean
-  /** Per-set RPE column (sessions only; templates have no RPE). Hidden below sm. */
+  /** Per-set RPE column (sessions only; templates have no RPE). Below sm it sits on line 2 after Note. */
   showRpe?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
@@ -511,12 +511,13 @@ export function ExerciseEntryBlock({
     prevAllDoneRef.current = allDone
   }, [allDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Below sm each set takes two lines: `# Reps Weight Done` then `Note … Delete`
+  // Below sm each set takes two lines on a 4-column grid: `# Reps Weight Done`,
+  // then `Note(span 2) RPE Delete` with showRpe or `Note(span 3) Delete` without
   // (Done/Delete sit in the 44px last column; without Done, Weight spans it).
-  // DOM order is the mobile reading/tab order (reps, weight, done, note, delete);
-  // from sm up `order-*` puts Note back before Done for the single-row layout.
+  // DOM order is reps, weight, rpe, done, note, delete; below sm `max-sm:order-*`
+  // moves RPE onto line 2 after Note, and from sm up `sm:order-*` puts Note back
+  // before Done for the single-row layout, with RPE as a narrow column after Weight.
   // The action columns are 44px until md so they stay tappable.
-  // With showRpe a narrow RPE column sits after Weight from sm up; below sm it is hidden.
   const gridCols = showDone
     ? showRpe
       ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2rem_1.5rem]'
@@ -655,19 +656,28 @@ export function ExerciseEntryBlock({
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
                     {rpeField && (
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={2}
-                        placeholder="rpe"
-                        aria-label={`RPE for set ${setIndex + 1}`}
-                        className={`max-sm:hidden border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
-                        {...rpeField}
-                        onChange={(e) => {
-                          e.target.value = sanitizeRpeInput(e.target.value)
-                          return rpeField.onChange(e)
-                        }}
-                      />
+                      <div className="relative max-sm:order-2">
+                        {/* Phones have no header row for line 2, so the field names itself */}
+                        <span
+                          className="sm:hidden absolute left-2 top-1/2 -translate-y-1/2 text-xs text-text-muted-strong pointer-events-none select-none"
+                          aria-hidden="true"
+                        >
+                          RPE
+                        </span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={2}
+                          placeholder="rpe"
+                          aria-label={`RPE for set ${setIndex + 1}`}
+                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full max-sm:pl-10 max-sm:placeholder:text-transparent ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
+                          {...rpeField}
+                          onChange={(e) => {
+                            e.target.value = sanitizeRpeInput(e.target.value)
+                            return rpeField.onChange(e)
+                          }}
+                        />
+                      </div>
                     )}
                     {showDone && (
                       <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 sm:order-2">
@@ -688,7 +698,7 @@ export function ExerciseEntryBlock({
                         </span>
                       </label>
                     )}
-                    <div className="relative max-sm:col-span-3 sm:order-1">
+                    <div className={`relative ${showRpe ? 'max-sm:col-span-2' : 'max-sm:col-span-3'} max-sm:order-1 sm:order-1`}>
                       <input
                         type="text"
                         placeholder="note"
@@ -710,7 +720,7 @@ export function ExerciseEntryBlock({
                       <button
                         type="button"
                         onClick={() => removeSet(setIndex)}
-                        className="flex items-center justify-center max-md:min-h-11 text-text-muted-strong hover:text-error-text text-sm leading-none sm:order-3"
+                        className="flex items-center justify-center max-md:min-h-11 text-text-muted-strong hover:text-error-text text-sm leading-none max-sm:order-3 sm:order-3"
                         aria-label="Remove set"
                       >
                         ✕
