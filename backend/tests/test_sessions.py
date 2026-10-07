@@ -107,6 +107,29 @@ async def test_patch_cardio_session(db_session, auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_patch_cardio_clears_wellbeing_and_rpe(db_session, auth_client: AsyncClient):
+    create = await auth_client.post(
+        "/api/sessions/cardio", json={**CARDIO_PAYLOAD, "wellbeing": 4, "rpe": 3}
+    )
+    session_id = create.json()["id"]
+
+    # Omitting the fields leaves them untouched.
+    patch = await auth_client.patch(f"/api/sessions/{session_id}", json={"notes": "Edited"})
+    assert patch.status_code == 200
+    assert patch.json()["wellbeing"] == 4
+    assert patch.json()["rpe"] == 3
+
+    # Explicit null clears them.
+    patch = await auth_client.patch(
+        f"/api/sessions/{session_id}", json={"wellbeing": None, "rpe": None}
+    )
+    assert patch.status_code == 200
+    data = (await auth_client.get(f"/api/sessions/{session_id}")).json()
+    assert data["wellbeing"] is None
+    assert data["rpe"] is None
+
+
+@pytest.mark.asyncio
 async def test_delete_cardio_session(db_session, auth_client: AsyncClient):
     create = await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)
     session_id = create.json()["id"]
@@ -269,6 +292,31 @@ async def test_patch_strength_session(db_session, auth_client: AsyncClient):
     assert data["duration_seconds"] == 2700
     assert len(data["exercises"][0]["sets"]) == 1
     assert data["exercises"][0]["sets"][0]["reps"] == 12
+
+
+@pytest.mark.asyncio
+async def test_patch_strength_clears_wellbeing_and_rpe(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    create = await auth_client.post(
+        "/api/sessions/strength",
+        json={**STRENGTH_PAYLOAD_FACTORY(ex_id), "wellbeing": 4, "rpe": 3},
+    )
+    session_id = create.json()["id"]
+
+    # Omitting the fields leaves them untouched.
+    patch_resp = await auth_client.patch(f"/api/sessions/{session_id}", json={"notes": "Edited"})
+    assert patch_resp.status_code == 200
+    assert patch_resp.json()["wellbeing"] == 4
+    assert patch_resp.json()["rpe"] == 3
+
+    # Explicit null clears them.
+    patch_resp = await auth_client.patch(
+        f"/api/sessions/{session_id}", json={"wellbeing": None, "rpe": None}
+    )
+    assert patch_resp.status_code == 200
+    data = (await auth_client.get(f"/api/sessions/{session_id}")).json()
+    assert data["wellbeing"] is None
+    assert data["rpe"] is None
 
 
 @pytest.mark.asyncio
