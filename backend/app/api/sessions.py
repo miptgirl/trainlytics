@@ -543,9 +543,9 @@ async def _patch_cardio(
         ws.title = body.title
     if body.calories is not None:
         ws.calories = body.calories
-    if body.wellbeing is not None:
+    if "wellbeing" in body.model_fields_set:
         ws.wellbeing = body.wellbeing
-    if body.rpe is not None:
+    if "rpe" in body.model_fields_set:
         ws.rpe = body.rpe
 
     for hr_field in ("avg_hr_bpm", "z1_seconds", "z2_seconds", "z3_seconds", "z4_seconds", "z5_seconds"):
@@ -591,9 +591,9 @@ async def _patch_strength(
         ws.title = body.title
     if body.calories is not None:
         ws.calories = body.calories
-    if body.wellbeing is not None:
+    if "wellbeing" in body.model_fields_set:
         ws.wellbeing = body.wellbeing
-    if body.rpe is not None:
+    if "rpe" in body.model_fields_set:
         ws.rpe = body.rpe
     if body.duration_seconds is not None:
         ws.strength_session.duration_seconds = body.duration_seconds
