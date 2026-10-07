@@ -383,7 +383,11 @@ class _Api:
                 f"demo login failed ({resp.status_code}). If USERS defines '{DEMO_USERNAME}', "
                 "that entry takes precedence over the built-in demo login; remove it from USERS."
             )
-        self.headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+        self.headers = {
+            "Authorization": f"Bearer {resp.json()['access_token']}",
+            # Session rpe values here are on the 1–10 scale (see sessions._require_rpe_scale)
+            "X-Session-Rpe-Scale": "10",
+        }
 
 
 async def seed_demo(

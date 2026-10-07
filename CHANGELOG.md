@@ -9,7 +9,10 @@ All notable changes to Trainlytics are documented here.
 ### Changed
 
 - **Session RPE uses the standard 1–10 scale** (10 = maximal effort) instead of the inverted 1–5 one (1 = All-out). Migration `c3f8e1a2b9d4` converts existing rows (`new = 12 − 2 × old`: All-out 1 → 10 … Very easy 5 → 2). The five emoji pickers now read easy → hard and save 2/4/6/8/10; odd values display as the nearest option. The text export shows `Effort: 😐 Moderate (6/10)`, Stats glance `/10`, the readiness chart plots RPE on its own 0–10 axis, and the AI context labels it `session RPE=6/10`. Strength and cardio drafts saved under the old scale drop their session RPE on load
-- `scripts/deploy.sh` runs migrations with the backend stopped (build → stop backend → migrate → up), so new code never writes rows a pending migration rewrites. The API is briefly down during a deploy
+- `scripts/deploy.sh` runs migrations with the backend down (pull → re-exec the updated script → build → remove backend → migrate → up), so new code never writes rows a pending migration rewrites. The API is briefly down during a deploy
+- Session create and PATCH refuse a non-null session `rpe` without `X-Session-Rpe-Scale: 10` (409, "The app was updated. Reload the page and set effort again"), so a tab or PWA loaded before this release can't save an old-scale value; the frontend sends the header on every request
+- nginx resolves the backend per request (10s cache) instead of once at start, so recreating the backend container no longer causes 502s until the frontend restarts
+- The production db healthcheck probes every 2s while starting, so a cold start doesn't delay the deploy's migration step by a full 60s interval
 
 ### Fixed
 
@@ -19,7 +22,8 @@ All notable changes to Trainlytics are documented here.
 
 ### Deploy notes
 
-- Hard-refresh open browser tabs after deploying: the old bundle crashes on session RPE values 6–10
+- Run `git pull` before `bash scripts/deploy.sh` for this release: servers still have the old script, which starts the new backend before migrating
+- Hard-refresh open browser tabs after deploying: the old bundle crashes on session RPE values 6–10, and its saves with a session RPE are refused (409) until reloaded
 
 ---
 

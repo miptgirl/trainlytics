@@ -107,8 +107,10 @@ def test_compact_sets_ignores_non_numeric_snapshot_rpe():
         {"reps": 5, "weight_kg": 100.0, "rpe": 11},
         {"reps": 5, "weight_kg": 100.0, "rpe": True},
         {"reps": 5, "weight_kg": 100.0, "rpe": float("inf")},
+        {"reps": 5, "weight_kg": 100.0, "rpe": float("nan")},
+        {"reps": 5, "weight_kg": 100.0, "rpe": 10**400},
     ]
-    assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 5×5@100kg"
+    assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 7×5@100kg"
 
 
 def test_session_summary_labels_session_rpe():

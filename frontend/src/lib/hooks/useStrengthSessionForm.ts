@@ -604,8 +604,10 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
       // The template changed meanwhile: let the user save again against it
       if (generation !== templateGeneration.current) return
       if (snapshot) setTemplateSnapshot(snapshot)
-      // Include anything typed while waiting
+      // Include anything typed while waiting, and check it again: the template
+      // must not be updated (diff prompt) for a save that would then be refused
       data = getValues()
+      if (!validateForSave(data)) return
     }
     if (!snapshot) {
       post(data)

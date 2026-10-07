@@ -1064,3 +1064,66 @@ async def test_patch_422_loc_starts_with_body(db_session, auth_client: AsyncClie
     )
     assert patch.status_code == 422
     assert patch.json()["detail"][0]["loc"] == ["body", "exercises", 0, "sets", 0, "rpe"]
+
+
+# ── Stale clients (pre-1–10 bundles) ─────────────────────────────────────────
+
+STALE_DETAIL = "The app was updated. Reload the page and set effort again"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("scale", [None, "5"])
+async def test_session_rpe_without_scale_header_is_refused(
+    db_session, auth_client: AsyncClient, scale
+):
+    ex_id = await _create_exercise(auth_client)
+    # Created by a current client, so the PATCH below has something to hit
+    cardio_id = (await auth_client.post("/api/sessions/cardio", json=CARDIO_PAYLOAD)).json()["id"]
+    strength_id = (
+        await auth_client.post("/api/sessions/strength", json=STRENGTH_PAYLOAD_FACTORY(ex_id))
+    ).json()["id"]
+
+    del auth_client.headers["X-Session-Rpe-Scale"]
+    if scale is not None:
+        auth_client.headers["X-Session-Rpe-Scale"] = scale
+
+    for path, payload in (
+        ("/api/sessions/cardio", {**CARDIO_PAYLOAD, "rpe": 1}),
+        ("/api/sessions/strength", {**STRENGTH_PAYLOAD_FACTORY(ex_id), "rpe": 1}),
+    ):
+        resp = await auth_client.post(path, json=payload)
+        assert resp.status_code == 409
+        assert resp.json()["detail"] == STALE_DETAIL
+    for session_id in (cardio_id, strength_id):
+        resp = await auth_client.patch(f"/api/sessions/{session_id}", json={"rpe": 1})
+        assert resp.status_code == 409
+        assert resp.json()["detail"] == STALE_DETAIL
+
+    # Nothing was stored
+    listed = await auth_client.get("/api/sessions")
+    assert listed.json()["total"] == 2
+    for session_id in (cardio_id, strength_id):
+        assert (await auth_client.get(f"/api/sessions/{session_id}")).json()["rpe"] is None
+
+
+@pytest.mark.asyncio
+async def test_requests_without_session_rpe_need_no_scale_header(
+    db_session, auth_client: AsyncClient
+):
+    del auth_client.headers["X-Session-Rpe-Scale"]
+    ex_id = await _create_exercise(auth_client)
+
+    cardio = await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "wellbeing": 4})
+    assert cardio.status_code == 201
+    # Set-level rpe is a different field and is not affected
+    strength = await auth_client.post("/api/sessions/strength", json=_rpe_payload(ex_id, 8))
+    assert strength.status_code == 201
+    assert strength.json()["exercises"][0]["sets"][0]["rpe"] == 8
+
+    for created in (cardio, strength):
+        session_id = created.json()["id"]
+        resp = await auth_client.patch(f"/api/sessions/{session_id}", json={"notes": "x"})
+        assert resp.status_code == 200
+        # Clearing (explicit null) is not a value on either scale
+        resp = await auth_client.patch(f"/api/sessions/{session_id}", json={"rpe": None})
+        assert resp.status_code == 200

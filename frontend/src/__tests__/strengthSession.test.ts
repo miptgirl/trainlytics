@@ -235,10 +235,6 @@ describe('strength draft schema', () => {
     expect(parseStrengthDraft(stored)).toEqual(draft)
   })
 
-  it('is version 3', () => {
-    expect(STRENGTH_DRAFT_VERSION).toBe(3)
-  })
-
   it('drops session rpe from a v2 draft (old inverted 1–5 scale)', () => {
     const v2 = { ...serializeStrengthDraft(draft), version: 2, rpe: 1 }
     const parsed = parseStrengthDraft(v2)!

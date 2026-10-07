@@ -23,8 +23,11 @@
 
 ### Deploy Notes
 
-- **Migrate before the new backend serves.** `scripts/deploy.sh` builds, stops the backend, runs `alembic upgrade head`, then starts everything. With the old order (start, then migrate), a session saved as the new "Very easy" (2) before the migration ran would have been rewritten to 8. The API is down for the length of the migration.
+- **Migrate before the new backend serves.** `scripts/deploy.sh` builds, removes the backend, runs `alembic upgrade head`, then starts everything. With the old order (start, then migrate), a session saved as the new "Very easy" (2) before the migration ran would have been rewritten to 8. The API is down for the length of the migration.
+- **Run `git pull` before `deploy.sh` for this release.** The script now re-execs itself after pulling, but servers still have the old version, which would deploy in the old order.
+- **Old clients get a 409 instead of saving inverted values.** A session `rpe` without `X-Session-Rpe-Scale: 10` is refused; the old client keeps its draft, and the reloaded bundle drops the draft's old-scale value. Remove the check once no pre-1–10 clients can exist.
 - **Hard-refresh open browser tabs after deploying.** The old frontend bundle looks options up as `RPE_OPTIONS[rpe - 1]`, so a session RPE of 6–10 crashes it.
+- **nginx follows a recreated backend.** `/api` is proxied through a variable with a per-request resolver (the container's nameserver, filled in by the nginx image's entrypoint), so a backend recreated with a new IP doesn't leave nginx returning 502.
 
 ### Implementation Notes
 

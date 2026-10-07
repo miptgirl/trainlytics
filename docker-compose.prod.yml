@@ -14,6 +14,10 @@ services:
       interval: 60s
       timeout: 5s
       retries: 5
+      # Probe every 2s while starting, so a cold db doesn't hold up `run`/`up` for a full
+      # interval. start_interval needs Docker Engine 25+ (Compose refuses it on older engines).
+      start_period: 30s
+      start_interval: 2s
 
   backend:
     build: ./backend

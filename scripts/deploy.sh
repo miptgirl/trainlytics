@@ -9,19 +9,28 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+# Bash keeps running the script it started with, so changes that `git pull`
+# brings to this file would only apply from the next deploy. Pull, then restart
+# once with the updated script (same arguments and working directory).
+if [ -z "${DEPLOY_PULLED:-}" ]; then
+  git pull
+  DEPLOY_PULLED=1 exec bash "$0" "$@"
+fi
+
 compose=(docker compose -f docker-compose.prod.yml)
 
-git pull
 "${compose[@]}" build
 
 # Migrate while no backend is serving, so new code never writes rows that a
 # pending data migration then rewrites (and old code never meets the new
 # schema). The API is down from here until `up -d`; the frontend keeps serving.
-"${compose[@]}" stop backend
+# `rm` rather than `stop`: a stopped container with `restart: always` would come
+# back (old code) if the host restarted mid-deploy.
+"${compose[@]}" rm -sf backend
 
 # `run` uses the service's env_file, environment (DATABASE_URL) and waits for a
 # healthy db via depends_on. If the migration fails, `set -e` exits here and the
-# backend stays stopped: the safe failure. Fix the problem and run this again.
+# backend stays down: the safe failure. Fix the problem and run this again.
 "${compose[@]}" run --rm backend uv run alembic upgrade head
 
 "${compose[@]}" up -d

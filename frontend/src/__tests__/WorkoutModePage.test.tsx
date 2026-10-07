@@ -469,6 +469,22 @@ describe('Workout mode: draft', () => {
     expect(screen.getByText('0 of 2 sets · 0 of 1 exercises')).toBeInTheDocument()
   })
 
+  it('a 409 from the stale-client check keeps the draft and shows the reason', async () => {
+    const user = userEvent.setup()
+    const detail = 'The app was updated. Reload the page and set effort again'
+    mockPost.mockRejectedValueOnce(Object.assign(new Error(detail), { status: 409 }))
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    await user.click(screen.getByRole('button', { name: 'Save workout' }))
+    expect(
+      await screen.findByText(`Couldn't save the workout: ${detail}. It's still kept on this device.`),
+    ).toBeInTheDocument()
+    expect(storedDraft()?.exercises[0].sets[0].done).toBe(true)
+  })
+
   it('a failed save keeps the draft and offers retry', async () => {
     const user = userEvent.setup()
     mockPost.mockRejectedValueOnce(new Error('Request failed'))

@@ -41,21 +41,27 @@ function refreshAccessToken(): Promise<string | null> {
   return _refreshPromise
 }
 
+/** List fields whose items read better in the singular: "exercise 1", not "exercises 1". */
+const LOC_ITEM_NAMES: Record<string, string> = { exercises: 'exercise', sets: 'set', segments: 'segment' }
+
 /**
  * A validation error location for people: ["body", "exercises", 0, "sets", 1, "rpe"]
  * → "exercise 1 › set 2 › rpe". Drops the leading "body"; a list index joins the
- * (singular) name before it and counts from 1.
+ * name before it and counts from 1. Any other number (e.g. the character offset
+ * in a JSON decode error, ["body", 123]) is left out.
  */
 function formatErrorLoc(loc: unknown): string {
   if (!Array.isArray(loc)) return ''
   const parts = loc[0] === 'body' ? loc.slice(1) : loc
   const out: string[] = []
+  let prevName: string | null = null
   for (const part of parts) {
-    const prev = out[out.length - 1]
-    if (typeof part === 'number' && prev !== undefined && !/\d$/.test(prev)) {
-      out[out.length - 1] = `${prev.replace(/s$/, '')} ${part + 1}`
+    if (typeof part === 'number') {
+      if (prevName !== null) out[out.length - 1] = `${LOC_ITEM_NAMES[prevName] ?? prevName} ${part + 1}`
+      prevName = null
     } else {
-      out.push(typeof part === 'number' ? String(part + 1) : String(part))
+      out.push(String(part))
+      prevName = String(part)
     }
   }
   return out.join(' › ')
@@ -81,7 +87,12 @@ export function formatErrorDetail(detail: unknown): string {
 }
 
 function send(method: string, path: string, body?: unknown): Promise<Response> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    // Session RPE is on the 1–10 scale; without this the API refuses a session rpe
+    // (409), so a bundle from before that change can't save an inverted value
+    'X-Session-Rpe-Scale': '10',
+  }
   if (_token) headers['Authorization'] = `Bearer ${_token}`
   return fetch(`/api${path}`, {
     method,

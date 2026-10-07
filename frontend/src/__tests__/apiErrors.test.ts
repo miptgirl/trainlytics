@@ -28,6 +28,22 @@ describe('formatErrorDetail', () => {
     )
   })
 
+  it('names only known list items in the singular and counts other lists as is', () => {
+    const detail = [
+      { type: 'missing', loc: ['body', 'segments', 2, 'duration_seconds'], msg: 'Field required' },
+      { type: 'missing', loc: ['body', 'items', 0, 'name'], msg: 'Field required' },
+      { type: 'missing', loc: ['body', 'address'], msg: 'Field required' },
+    ]
+    expect(formatErrorDetail(detail)).toBe(
+      'segment 3 › duration_seconds: Field required; items 1 › name: Field required; address: Field required',
+    )
+  })
+
+  it('leaves out a bare number after "body" (JSON decode error offset)', () => {
+    const detail = [{ type: 'json_invalid', loc: ['body', 123], msg: 'JSON decode error' }]
+    expect(formatErrorDetail(detail)).toBe('JSON decode error')
+  })
+
   it('shows just the message when the location is only "body"', () => {
     expect(formatErrorDetail([{ type: 'missing', loc: ['body'], msg: 'Field required' }])).toBe('Field required')
   })

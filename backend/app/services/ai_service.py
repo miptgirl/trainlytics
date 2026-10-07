@@ -124,7 +124,8 @@ def compact_sets(sets: list[Any]) -> str:
         # 1–10 (8 or 8.0), ignore anything else rather than printing it into the prompt
         if isinstance(raw, bool) or not isinstance(raw, (int, float)):
             return None
-        if not float(raw).is_integer() or not 1 <= raw <= 10:
+        # Range first: float() of a huge int (10**400) raises OverflowError; NaN fails it too
+        if not 1 <= raw <= 10 or not float(raw).is_integer():
             return None
         return int(raw)
 
