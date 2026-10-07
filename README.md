@@ -93,10 +93,13 @@ bash scripts/deploy.sh
 bash scripts/deploy.sh
 ```
 
-The script performs three steps in order:
+The script performs these steps in order:
 1. `git pull` — fetch the latest code from the current branch.
-2. `docker compose -f docker-compose.prod.yml up --build -d` — rebuild images and restart containers.
-3. `alembic upgrade head` — apply any pending database migrations.
+2. `docker compose -f docker-compose.prod.yml build` — rebuild the images.
+3. `stop backend`, then `run --rm backend uv run alembic upgrade head` — apply pending database migrations while no backend is serving requests.
+4. `up -d` — start the new containers.
+
+The API is unavailable between steps 3 and 4 (usually a few seconds; longer if a migration rewrites many rows). If a migration fails, the script stops and leaves the backend stopped rather than running code against an unmigrated database; fix the cause and run it again.
 
 The script is idempotent — safe to run multiple times.
 

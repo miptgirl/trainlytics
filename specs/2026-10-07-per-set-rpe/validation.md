@@ -17,7 +17,7 @@
 
 - **Template editor has no RPE column.** `ExerciseEntryBlock` is shared with templates, so the column is behind a `showRpe` prop; `StrengthExerciseList` (sessions only) turns it on.
 - **Phones hide the log-page RPE field entirely.** Below `sm` both header and input are hidden; workout mode is the phone entry point. Notes, by contrast, only hides its header and wraps to a second line.
-- **Out-of-range values never reach the API.** `parseSetRpe` maps anything that is not an integer 1–10 (e.g. a hand-edited draft) to `null`; the log-page input also clamps typing (`11` → `1`, `0` → empty).
+- **Out-of-range values never reach the API.** `parseSetRpe` maps anything that is not an integer 1–10 (e.g. a hand-edited draft) to `null`; the log-page input also clamps typing (`11` → `1`, `0` → empty). Saving now catches such a value first and refuses with a message naming the exercise and set, rather than sending `null` (see `specs/2026-10-07-rpe/`).
 - **Chips are 5–10, integers only**, per the decision in `requirements.md`; the API accepts 1–10.
 - **Selected chip style** reuses the `EmojiRating` tokens (primary border, tinted background, bold). On the editor's tinted background the fill is subtle; the border and weight carry the state. A solid `primary-dark` fill is the fallback if this reads as too quiet on a real phone.
 - **Not touched:** session-level `workout_sessions.rpe` and its `RPE=N/10` line in the AI context (another branch is revising it), template sets, `last-session-defaults`, adapt/diff snapshots.

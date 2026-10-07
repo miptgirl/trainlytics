@@ -8,7 +8,7 @@ import {
   insertExercise,
   describeDraft,
   computeDiff,
-  invalidSetRpeMessage,
+  findInvalidSetRpe,
   isValidSetRpe,
   toTemplatePayload,
   parseSetRpe,
@@ -130,10 +130,13 @@ describe('per-set RPE', () => {
       { exercise_id: '2', sets: [set('8', '60'), set('8', '60', '', false, '7.5')] },
     ]
     const names = new Map([['2', 'Bench']])
-    expect(invalidSetRpeMessage(exercises, (id) => names.get(id))).toBe(
-      'Bench, set 2: RPE "7.5" must be a whole number from 1 to 10.',
-    )
-    expect(invalidSetRpeMessage(exercises.slice(0, 1), () => undefined)).toBeNull()
+    expect(findInvalidSetRpe(exercises, (id) => names.get(id))).toEqual({
+      exerciseIndex: 1,
+      setIndex: 1,
+      message: 'Bench, set 2: RPE "7.5" must be a whole number from 1 to 10.',
+    })
+    expect(findInvalidSetRpe(exercises.slice(0, 1), () => undefined)).toBeNull()
+    expect(findInvalidSetRpe(undefined, () => undefined)).toBeNull()
   })
 
   it('stays out of templates: not saved to them and not a template change', () => {
@@ -249,6 +252,11 @@ describe('strength draft schema', () => {
     const v1: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe: 5 }
     delete v1.version
     expect(parseStrengthDraft(v1)!.values.rpe).toBeNull()
+  })
+
+  it.each([7.5, 0, 11, '8', null])('loads a v3 session rpe of %s as null (not an integer 1–10)', (rpe) => {
+    const v3: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe }
+    expect(parseStrengthDraft(v3)!.values.rpe).toBeNull()
   })
 
   it('keeps session rpe from a v3 draft', () => {

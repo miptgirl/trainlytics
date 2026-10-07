@@ -27,7 +27,7 @@ import {
   buildAdaptSnapshot,
   buildStrengthPayload,
   computeDiff,
-  invalidSetRpeMessage,
+  findInvalidSetRpe,
   deleteSet as deleteSetFrom,
   emptyStrengthDefaults,
   fetchLastSessionSets,
@@ -558,13 +558,13 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   // After a refused save the message tracks the live values, so it clears once fixed
   const [showValidation, setShowValidation] = useState(false)
   const exerciseNames = new Map(exerciseLibrary.map((e) => [String(e.id), e.name]))
-  const rpeMessage = (exercises: ExerciseEntryFormValues[] | undefined) =>
-    invalidSetRpeMessage(exercises ?? [], (id) => exerciseNames.get(id))
-  const validationError = showValidation ? rpeMessage(values.exercises) : null
+  const invalidRpe = (exercises: ExerciseEntryFormValues[] | undefined) =>
+    findInvalidSetRpe(exercises, (id) => exerciseNames.get(id))
+  const validationError = showValidation ? (invalidRpe(values.exercises)?.message ?? null) : null
 
   /** Returns false (and shows why) when `data` would be rejected by the API. */
   function validateForSave(data: StrengthFormValues): boolean {
-    const ok = rpeMessage(data.exercises) === null
+    const ok = invalidRpe(data.exercises) === null
     setShowValidation(!ok)
     return ok
   }

@@ -21,6 +21,11 @@
 
 ---
 
+### Deploy Notes
+
+- **Migrate before the new backend serves.** `scripts/deploy.sh` builds, stops the backend, runs `alembic upgrade head`, then starts everything. With the old order (start, then migrate), a session saved as the new "Very easy" (2) before the migration ran would have been rewritten to 8. The API is down for the length of the migration.
+- **Hard-refresh open browser tabs after deploying.** The old frontend bundle looks options up as `RPE_OPTIONS[rpe - 1]`, so a session RPE of 6–10 crashes it.
+
 ### Implementation Notes
 
 - **Migration chain.** `c3f8e1a2b9d4` sits on top of the per-set migration `c7d8e9f0a1b2`. It only touches rows with 1–5. The downgrade is exact for even values; odd values (possible only after the upgrade) round half away from zero (7 → 3, Moderate) and are clamped with `CASE`, because SQLite has no `GREATEST`/`LEAST`. Verified up/down on Postgres 16; `tests/test_migration_session_rpe.py` runs it on SQLite by binding the migration to `Operations` directly, since the full chain has Postgres-only steps.

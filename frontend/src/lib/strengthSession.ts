@@ -8,6 +8,7 @@ import type { ExerciseEntryFormValues, ExerciseOption, SetFormValues } from '../
 import { emptyEntry, emptySet } from '../components/exerciseEntryDefaults'
 import { api } from './api'
 import { datetimeLocalToUTC, localDateTimeNow } from './dateUtils'
+import { draftSessionRpe } from './draftUtils'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -91,22 +92,34 @@ export function isValidSetRpe(value: string | null | undefined): boolean {
   return !value?.trim() || parseSetRpe(value) !== null
 }
 
+export interface InvalidSetRpe {
+  exerciseIndex: number
+  setIndex: number
+  /** "Bench, set 2: RPE "7.5" must be a whole number from 1 to 10." */
+  message: string
+}
+
 /**
- * Message for the first set whose RPE would not be saved, or null when all are
- * valid. `parseSetRpe` turns an invalid value into null, so without this check
- * it would be dropped silently. Checks values, not inputs: collapsed blocks and
+ * The first set whose RPE would not be saved, or null when all are valid.
+ * `parseSetRpe` turns an invalid value into null, so without this check it
+ * would be dropped silently. Checks values, not inputs: collapsed blocks and
  * workout mode have no mounted RPE input.
  */
-export function invalidSetRpeMessage(
-  exercises: ExerciseEntryFormValues[],
+export function findInvalidSetRpe(
+  exercises: ExerciseEntryFormValues[] | undefined,
   nameOf: (exerciseId: string) => string | undefined,
-): string | null {
-  for (let i = 0; i < exercises.length; i++) {
-    const sets = exercises[i].sets ?? []
+): InvalidSetRpe | null {
+  const list = exercises ?? []
+  for (let i = 0; i < list.length; i++) {
+    const sets = list[i].sets ?? []
     const j = sets.findIndex((s) => !isValidSetRpe(s.rpe))
     if (j === -1) continue
-    const name = nameOf(exercises[i].exercise_id) ?? `Exercise ${i + 1}`
-    return `${name}, set ${j + 1}: RPE "${sets[j].rpe.trim()}" must be a whole number from 1 to 10.`
+    const name = nameOf(list[i].exercise_id) ?? `Exercise ${i + 1}`
+    return {
+      exerciseIndex: i,
+      setIndex: j,
+      message: `${name}, set ${j + 1}: RPE "${sets[j].rpe.trim()}" must be a whole number from 1 to 10.`,
+    }
   }
   return null
 }
@@ -499,7 +512,7 @@ export function parseStrengthDraft(raw: unknown): StrengthDraft | null {
       date: typeof raw.date === 'string' ? raw.date : localDateTimeNow(),
       notes: str(raw.notes),
       wellbeing: num(raw.wellbeing),
-      rpe: version >= 3 ? num(raw.rpe) : null,
+      rpe: version >= 3 ? draftSessionRpe(raw.rpe) : null,
       exercises: Array.isArray(raw.exercises) ? raw.exercises.map(parseEntry) : [emptyEntry()],
     },
     templateId: num(raw.templateId),

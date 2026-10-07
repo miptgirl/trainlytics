@@ -4,6 +4,25 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-07 — Session RPE on 1–10
+
+### Changed
+
+- **Session RPE uses the standard 1–10 scale** (10 = maximal effort) instead of the inverted 1–5 one (1 = All-out). Migration `c3f8e1a2b9d4` converts existing rows (`new = 12 − 2 × old`: All-out 1 → 10 … Very easy 5 → 2). The five emoji pickers now read easy → hard and save 2/4/6/8/10; odd values display as the nearest option. The text export shows `Effort: 😐 Moderate (6/10)`, Stats glance `/10`, the readiness chart plots RPE on its own 0–10 axis, and the AI context labels it `session RPE=6/10`. Strength and cardio drafts saved under the old scale drop their session RPE on load
+- `scripts/deploy.sh` runs migrations with the backend stopped (build → stop backend → migrate → up), so new code never writes rows a pending migration rewrites. The API is briefly down during a deploy
+
+### Fixed
+
+- A set RPE that would not be saved (e.g. from a stored draft) now blocks the save with a message naming the exercise and set, on the log page (including collapsed exercises), the session edit page and workout mode's Finish. Before, it was sent as `null` and lost
+- API validation errors read as text with their location (`exercise 1 › set 2 › rpe: …`) instead of `[object Object]`; the session edit page now shows a failed save
+- `PATCH /sessions/{id}` returns 422 for an invalid body instead of 500
+
+### Deploy notes
+
+- Hard-refresh open browser tabs after deploying: the old bundle crashes on session RPE values 6–10
+
+---
+
 ## 2026-10-05 — Sage palette and Stats glance (Phase 17, part 4)
 
 ### Added

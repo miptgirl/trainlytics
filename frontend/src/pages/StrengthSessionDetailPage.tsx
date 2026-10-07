@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { formatStrengthSession } from '../lib/exportUtils'
-import { invalidSetRpeMessage, parseSetRpe } from '../lib/strengthSession'
+import { findInvalidSetRpe, parseSetRpe } from '../lib/strengthSession'
 import { EmojiRating, EmojiRatingDisplay } from '../components/EmojiRating'
 import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -99,14 +99,18 @@ function EditForm({
   const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<EditFormValues>({
     defaultValues: toForm(session),
   })
-  const [rpeError, setRpeError] = useState<string | null>(null)
+  // Checks values, not inputs: a collapsed exercise has no mounted RPE input.
+  // After a refused save the message follows the live values, so it clears once fixed.
+  const [showRpeError, setShowRpeError] = useState(false)
+  const watchedExercises = useWatch({ control, name: 'exercises' })
+  const names = new Map(exercises.map((e) => [String(e.id), e.name]))
+  const invalidRpe = (list: ExerciseEntryFormValues[] | undefined) => findInvalidSetRpe(list, (id) => names.get(id))
+  const rpeError = showRpeError ? (invalidRpe(watchedExercises)?.message ?? null) : null
 
-  // Checks values, not inputs: a collapsed exercise has no mounted RPE input
   function save(data: EditFormValues) {
-    const names = new Map(exercises.map((e) => [String(e.id), e.name]))
-    const message = invalidSetRpeMessage(data.exercises, (id) => names.get(id))
-    setRpeError(message)
-    if (message === null) onSave(data)
+    const ok = invalidRpe(data.exercises) === null
+    setShowRpeError(!ok)
+    if (ok) onSave(data)
   }
 
   return (

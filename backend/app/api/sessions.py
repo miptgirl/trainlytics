@@ -518,24 +518,24 @@ async def update_session(
     if ws_check is None or ws_check.user_id != user:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    patchers = {
+        "cardio": (CardioSessionPatch, _patch_cardio),
+        "strength": (StrengthSessionPatch, _patch_strength),
+    }
+    if ws_check.type not in patchers:
+        raise HTTPException(status_code=400, detail="Unknown session type")
+    schema, apply_patch = patchers[ws_check.type]
+
     # The body is validated here rather than by FastAPI (the schema depends on
     # the session type), so map pydantic errors to the usual 422 response.
     try:
-        if ws_check.type == "cardio":
-            patch_cardio = CardioSessionPatch.model_validate(body)
-        elif ws_check.type == "strength":
-            patch_strength = StrengthSessionPatch.model_validate(body)
-        else:
-            raise HTTPException(status_code=400, detail="Unknown session type")
+        patch = schema.model_validate(body)
     except ValidationError as e:
         # "body" prefix: same `loc` shape as FastAPI's own request validation errors
         raise RequestValidationError(
             [{**err, "loc": ("body", *err["loc"])} for err in e.errors(include_url=False)]
         ) from e
-
-    if ws_check.type == "cardio":
-        return await _patch_cardio(session_id, patch_cardio, user, db)
-    return await _patch_strength(session_id, patch_strength, user, db)
+    return await apply_patch(session_id, patch, user, db)
 
 
 async def _patch_cardio(

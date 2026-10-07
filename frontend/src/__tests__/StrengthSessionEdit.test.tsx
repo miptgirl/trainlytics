@@ -136,6 +136,28 @@ describe('Strength session edit form', () => {
     expect(payload.exercises[0].sets[0].rpe).toBe(9)
   })
 
+  it('refuses a set RPE that would not be saved, and the message clears once it is fixed', async () => {
+    // Not reachable by typing (the field clamps to 1–10); a stored value can still be off
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/sessions/5') {
+        return { ...session, exercises: [{ ...session.exercises[0], sets: [{ ...session.exercises[0].sets[0], rpe: 12 }] }] } as never
+      }
+      if (path === '/exercises') return exerciseList as never
+      if (path.endsWith('/replacements')) return [] as never
+      return { sets: [] } as never
+    })
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squat, set 1: RPE "12" must be a whole number from 1 to 10.')
+    expect(mockPatch).not.toHaveBeenCalled()
+
+    const rpe = screen.getByLabelText('RPE for set 1')
+    await user.clear(rpe)
+    await user.type(rpe, '9')
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  })
+
   it('shows the server error when saving fails', async () => {
     mockPatch.mockRejectedValue(new Error('Input should be less than or equal to 10'))
     const user = await openEdit()

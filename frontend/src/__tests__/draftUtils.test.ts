@@ -119,6 +119,10 @@ describe('cardio draft versioning', () => {
     })
   })
 
+  it.each([7.5, 0, 11, '8'])('loads a versioned draft rpe of %s as null (not an integer 1–10)', (rpe) => {
+    expect(parseCardioDraft({ version: CARDIO_DRAFT_VERSION, title: 'Run', rpe })).toEqual({ title: 'Run', rpe: null })
+  })
+
   it('returns null for a missing draft', () => {
     expect(parseCardioDraft(null)).toBeNull()
   })

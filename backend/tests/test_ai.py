@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,7 +12,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ai_request_log import AiRequestLog
-from app.services.ai_service import compact_cardio_segments, compact_sets
+from app.services.ai_service import (
+    compact_cardio_segments,
+    compact_session_summary,
+    compact_sets,
+)
 from app.services.crypto import encrypt
 from tests.conftest import TEST_USERNAME
 
@@ -98,8 +103,31 @@ def test_compact_sets_ignores_non_numeric_snapshot_rpe():
         {"reps": 5, "weight_kg": 100.0, "rpe": {"x": 1}},
         {"reps": 5, "weight_kg": 100.0, "rpe": 8.0},
         {"reps": 5, "weight_kg": 100.0, "rpe": 7.5},
+        {"reps": 5, "weight_kg": 100.0, "rpe": 0},
+        {"reps": 5, "weight_kg": 100.0, "rpe": 11},
+        {"reps": 5, "weight_kg": 100.0, "rpe": True},
+        {"reps": 5, "weight_kg": 100.0, "rpe": float("inf")},
     ]
-    assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 5@100kg"
+    assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 5×5@100kg"
+
+
+def test_session_summary_labels_session_rpe():
+    """The session-level rating reads "session RPE=…/10", apart from per-set "RPE8"."""
+    s = SimpleNamespace(reps=5, weight=100.0, rpe=8)
+    entry = SimpleNamespace(exercise=SimpleNamespace(name="Squat"), sets=[s, s])
+    ws = SimpleNamespace(
+        date=datetime.datetime(2026, 10, 7, 9, 0),
+        type="strength",
+        title=None,
+        notes=None,
+        wellbeing=4,
+        rpe=6,
+        strength_session=SimpleNamespace(exercise_entries=[entry]),
+        cardio_session=None,
+    )
+    summary = compact_session_summary(ws)
+    assert "wellbeing=4/5, session RPE=6/10" in summary
+    assert "Squat: 2×5@100kg RPE8" in summary
 
 
 # ── compact_cardio_segments ───────────────────────────────────────────────────

@@ -42,16 +42,39 @@ function refreshAccessToken(): Promise<string | null> {
 }
 
 /**
+ * A validation error location for people: ["body", "exercises", 0, "sets", 1, "rpe"]
+ * → "exercise 1 › set 2 › rpe". Drops the leading "body"; a list index joins the
+ * (singular) name before it and counts from 1.
+ */
+function formatErrorLoc(loc: unknown): string {
+  if (!Array.isArray(loc)) return ''
+  const parts = loc[0] === 'body' ? loc.slice(1) : loc
+  const out: string[] = []
+  for (const part of parts) {
+    const prev = out[out.length - 1]
+    if (typeof part === 'number' && prev !== undefined && !/\d$/.test(prev)) {
+      out[out.length - 1] = `${prev.replace(/s$/, '')} ${part + 1}`
+    } else {
+      out.push(typeof part === 'number' ? String(part + 1) : String(part))
+    }
+  }
+  return out.join(' › ')
+}
+
+/**
  * FastAPI `detail` as text: a string as is; a validation error list (422) as
- * its `msg`s joined, not "[object Object]".
+ * "where: msg" entries joined, not "[object Object]".
  */
 export function formatErrorDetail(detail: unknown): string {
   if (detail == null || detail === '') return 'Request failed'
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
-    const msgs = detail.map((d) =>
-      d && typeof d === 'object' && 'msg' in d ? String((d as { msg: unknown }).msg) : String(d),
-    )
+    const msgs = detail.map((d) => {
+      if (!d || typeof d !== 'object' || !('msg' in d)) return String(d)
+      const { msg, loc } = d as { msg: unknown; loc?: unknown }
+      const where = formatErrorLoc(loc)
+      return where ? `${where}: ${String(msg)}` : String(msg)
+    })
     return msgs.length > 0 ? msgs.join('; ') : 'Request failed'
   }
   return JSON.stringify(detail)
