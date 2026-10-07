@@ -34,6 +34,20 @@
 - [x] Demo seed produces real `rpe` values and no `RPE: N` notes
 - [x] `pnpm lint`, `pnpm build`, `pnpm test`, `uv run pytest -q` green
 
+### Review round (PR #31)
+
+Five findings, all fixed:
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | Phones could not see or edit set RPE on the log and edit pages | Line 2 of a phone set row is now `Note · RPE · Delete`; the field carries a phone-only "RPE" prefix since line 2 has no header |
+| 2 | Workout mode hid typed values 1–4 | Label reads `RPE · 4` with a Clear button; chips still replace it |
+| 3 | Selected chip barely stood out on the tinted editor | Solid `primary-dark` fill, white text |
+| 4 | Chips ~43px wide at 375px | Chip gap 6px → 4px (≈45px) |
+| 5 | Done sets did not strike the RPE input through | Same `sm:line-through` as reps and weight |
+
+Screenshots: `review-workout-selected-chip.jpg`, `review-workout-rpe-4-clear.jpg`, `review-log-page-phone.png`, `review-edit-page-phone.jpg`, `review-log-page-tablet.png`. Tests: 377 frontend (was 373).
+
 ### Verified in the browser (2026-10-07, Chromium 375×812)
 
 Worktree frontend against the local backend as `demo`: the RPE row sits under Weight with six chips that fit the phone width at ≥44px tall; selecting 8 and completing the set shows `1 × 5 kg @8` on the done row and an unrated set 2. The running backend was not migrated, so persistence was checked by pytest, not end to end.

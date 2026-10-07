@@ -357,6 +357,67 @@ describe('Workout mode: per-set RPE', () => {
   })
 })
 
+describe('Workout mode: RPE chips', () => {
+  const draftWithRpe = (rpe: string) => ({
+    version: 2,
+    title: 'Leg day',
+    duration_seconds: null,
+    calories: '',
+    date: '2026-09-01T10:00',
+    notes: '',
+    wellbeing: null,
+    rpe: null,
+    exercises: [{ exercise_id: '1', sets: [set('5', '100', false, '', rpe), set('5', '100')] }],
+    templateId: 3,
+    workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() - 5 * 60_000 },
+  })
+
+  it('marks the selected chip pressed with the dark selected style', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    const chip7 = screen.getByRole('button', { name: 'RPE 7 for set 1' })
+    expect(chip7).toHaveClass('border-border', 'bg-surface', 'text-text')
+    await user.click(chip7)
+    expect(chip7).toHaveAttribute('aria-pressed', 'true')
+    expect(chip7).toHaveClass('border-primary-dark', 'bg-primary-dark', 'text-white', 'font-semibold')
+    expect(screen.getByRole('button', { name: 'RPE 8 for set 1' })).toHaveClass('border-border', 'bg-surface', 'text-text')
+  })
+
+  it('shows an off-chip value (typed on the log page) in the label with a Clear button', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftWithRpe('4')))
+    renderAt('/workout?templateId=3&resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    expect(screen.getByText(/^RPE ·/)).toHaveTextContent('RPE · 4')
+    for (const n of [5, 6, 7, 8, 9, 10]) {
+      expect(screen.getByRole('button', { name: `RPE ${n} for set 1` })).toHaveAttribute('aria-pressed', 'false')
+    }
+    await user.click(screen.getByRole('button', { name: 'Clear RPE for set 1' }))
+    expect(screen.queryByRole('button', { name: 'Clear RPE for set 1' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^RPE ·/)).not.toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe(''))
+  })
+
+  it('a chip replaces an off-chip value', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftWithRpe('4')))
+    renderAt('/workout?templateId=3&resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    await user.click(screen.getByRole('button', { name: 'RPE 9 for set 1' }))
+    expect(screen.getByRole('button', { name: 'RPE 9 for set 1' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: 'Clear RPE for set 1' })).not.toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe('9'))
+
+    await user.click(screen.getByRole('button', { name: 'RPE 6 for set 1' }))
+    expect(screen.getByRole('button', { name: 'RPE 6 for set 1' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'RPE 9 for set 1' })).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe('6'))
+  })
+})
+
 describe('Workout mode: draft', () => {
   const midWorkout = (restEndsAt: number) => ({
     version: 2,

@@ -103,6 +103,14 @@ describe('ExerciseEntryBlock set rows', () => {
     expect(reps).not.toHaveClass('line-through')
   })
 
+  it('strikes a done set\'s RPE through from sm up only, like reps and weight', async () => {
+    await renderBlock(true, true)
+    const rpe = within(rows()[0]).getByLabelText('RPE for set 1')
+    expect(rpe).toHaveClass('sm:line-through')
+    expect(rpe).not.toHaveClass('line-through')
+    expect(within(rows()[1]).getByLabelText('RPE for set 2')).not.toHaveClass('sm:line-through')
+  })
+
   it('removes exactly the set whose Delete was pressed', async () => {
     const user = userEvent.setup()
     await renderBlock(true)
@@ -118,12 +126,22 @@ describe('ExerciseEntryBlock set rows', () => {
     expect(within(rows()[0]).getByPlaceholderText('kg')).toHaveClass('max-sm:col-span-2')
   })
 
-  it('shows an RPE input after Weight only when showRpe is set, hidden on phones', async () => {
+  it('shows an RPE input after Weight only when showRpe is set, on line 2 after Note on phones', async () => {
     const user = userEvent.setup()
     await renderBlock(true, true)
     const row = rows()[1]
     const rpe = within(row).getByLabelText('RPE for set 2')
-    expect(rpe).toHaveClass('max-sm:hidden')
+    // Visible on phones: line 2 is Note(span 2) RPE Delete via order classes
+    expect(rpe).not.toHaveClass('max-sm:hidden')
+    expect(rpe.parentElement).toHaveClass('max-sm:order-2')
+    expect(within(row).getByPlaceholderText('note').parentElement).toHaveClass('max-sm:col-span-2', 'max-sm:order-1')
+    expect(within(row).getByRole('button', { name: 'Remove set' })).toHaveClass('max-sm:order-3')
+    // DOM order stays reps, weight, rpe, done, note, delete
+    expect(follows(rpe, within(row).getByLabelText('Mark done').closest('label')!)).toBe(true)
+    // The header cell stays hidden on phones; the field carries its own phone-only "RPE" prefix instead
+    const header = screen.getAllByText('RPE').find((el) => el.classList.contains('max-sm:hidden'))
+    expect(header).toBeDefined()
+    expect(within(row).getByText('RPE')).toHaveClass('sm:hidden')
     expect(rpe).toHaveAttribute('inputmode', 'numeric')
     expect(follows(within(row).getByPlaceholderText('kg'), rpe)).toBe(true)
     await user.type(rpe, '8')
@@ -134,6 +152,8 @@ describe('ExerciseEntryBlock set rows', () => {
     await renderBlock(false)
     expect(screen.queryByLabelText(/RPE for set/)).not.toBeInTheDocument()
     expect(screen.queryByText('RPE')).not.toBeInTheDocument()
+    // Without RPE the note keeps the full width of line 2 before Delete
+    expect(within(rows()[0]).getByPlaceholderText('note').parentElement).toHaveClass('max-sm:col-span-3')
   })
 
   it('adds a set from the full-width button below the last set', async () => {
