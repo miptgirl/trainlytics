@@ -99,6 +99,7 @@ class StrengthSetCreate(BaseModel):
     reps: int | None = None
     weight: float | None = None
     notes: str | None = None
+    rpe: float | None = Field(default=None, ge=1, le=10, multiple_of=0.5)
 
 
 class StrengthSetOut(BaseModel):
@@ -109,6 +110,7 @@ class StrengthSetOut(BaseModel):
     reps: int | None
     weight: float | None
     notes: str | None
+    rpe: float | None = None
 
 
 class StrengthExerciseEntryCreate(BaseModel):

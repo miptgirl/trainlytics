@@ -156,6 +156,25 @@ describe('formatStrengthSession', () => {
     expect(formatStrengthSession({ ...baseStrength, rpe })).toContain(`Effort: ${label}`)
   })
 
+  it('appends per-set rpe when set', () => {
+    const result = formatStrengthSession({
+      ...baseStrength,
+      exercises: [
+        {
+          exercise_name: 'Bench Press',
+          sets: [
+            { set_number: 1, reps: 8, weight: 80, rpe: 8 },
+            { set_number: 2, reps: 6, weight: 82.5, rpe: 9.5 },
+            { set_number: 3, reps: 6, weight: 82.5, rpe: null },
+          ],
+        },
+      ],
+    })
+    expect(result).toContain('- Set 1: 80 kg × 8 @RPE 8\n')
+    expect(result).toContain('- Set 2: 82.5 kg × 6 @RPE 9.5\n')
+    expect(result).toMatch(/- Set 3: 82\.5 kg × 6$/m)
+  })
+
   it('omits feeling and effort lines when wellbeing and rpe are null', () => {
     const result = formatStrengthSession({ ...baseStrength, wellbeing: null, rpe: null })
     expect(result).not.toContain('Feeling:')

@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
-import { currentSetIndex, formatSet, sanitizeDecimal, stepValue } from '../../lib/workoutMode'
+import {
+  RPE_CHIPS,
+  currentSetIndex,
+  formatSet,
+  rpeChipState,
+  sanitizeDecimal,
+  stepValue,
+  tapRpeChip,
+  toggleRpeHalf,
+} from '../../lib/workoutMode'
 
 const REPS_STEP = 1
 const WEIGHT_STEP = 2.5
@@ -88,6 +97,62 @@ function Stepper({
   )
 }
 
+/**
+ * RPE row: chips 6–10 and a `.5` toggle in one row of 44px+ targets (fits a
+ * 375px phone). A value the chips cannot show (e.g. 5 typed on the log page)
+ * stays visible in the label; tapping a chip replaces it.
+ */
+function RpeChips({
+  value,
+  setNumber,
+  onChange,
+}: {
+  value: string
+  setNumber: number
+  onChange: (value: string) => void
+}) {
+  const state = rpeChipState(value)
+  const halfDisabled = !state || state.base === 10
+  const chip = 'min-h-11 min-w-0 rounded-lg border text-base font-semibold tabular-nums disabled:opacity-40'
+  const on = 'border-primary-dark bg-primary-dark text-white'
+  const off = 'border-border-strong bg-surface text-text'
+  return (
+    <div role="group" aria-label={`RPE for set ${setNumber}`}>
+      <p className="text-xs font-medium text-text-muted-strong mb-1">
+        RPE
+        {value !== '' && <span className="ml-1 text-primary-dark tabular-nums">{value}</span>}
+      </p>
+      <div className="grid grid-cols-6 gap-1">
+        {RPE_CHIPS.map((n) => {
+          const pressed = state?.base === n
+          return (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={pressed}
+              aria-label={`RPE ${n} for set ${setNumber}`}
+              onClick={() => onChange(tapRpeChip(value, n))}
+              className={`${chip} ${pressed ? on : off}`}
+            >
+              {n}
+            </button>
+          )
+        })}
+        <button
+          type="button"
+          aria-pressed={state?.half ?? false}
+          aria-label={`RPE half step for set ${setNumber}`}
+          disabled={halfDisabled}
+          onClick={() => onChange(toggleRpeHalf(value))}
+          className={`${chip} ${state?.half ? on : off}`}
+        >
+          .5
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function SetEditor({
   set,
   setNumber,
@@ -142,6 +207,7 @@ function SetEditor({
           setNumber={setNumber}
           onChange={(weight) => onChange({ weight })}
         />
+        <RpeChips value={set.rpe} setNumber={setNumber} onChange={(rpe) => onChange({ rpe })} />
       </div>
       {showNote ? (
         <label className="block">
@@ -151,7 +217,7 @@ function SetEditor({
             value={set.notes}
             onChange={(e) => onChange({ notes: e.target.value })}
             autoFocus={noteOpen}
-            placeholder="e.g. RPE 8, slow negatives"
+            placeholder="e.g. slow negatives, paused reps"
             className="mt-1 w-full min-h-11 rounded-sm border border-border-strong bg-surface px-3 text-base text-text focus:outline-none focus:border-primary-dark"
           />
         </label>

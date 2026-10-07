@@ -35,7 +35,10 @@ const session = {
       exercise_id: 1,
       exercise_name: 'Squat',
       order: 1,
-      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null }],
+      sets: [
+        { id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: 8.5 },
+        { id: 2, set_number: 2, reps: 6, weight: 90, notes: null, rpe: null },
+      ],
     },
   ],
 }
@@ -114,7 +117,44 @@ describe('Strength session edit form', () => {
     expect(path).toBe('/sessions/5')
     expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
-      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null }] },
+      {
+        exercise_id: 1,
+        order: 1,
+        sets: [
+          { set_number: 1, reps: 5, weight: 100, notes: null, rpe: 8.5 },
+          { set_number: 2, reps: 6, weight: 90, notes: null, rpe: null },
+        ],
+      },
     ])
+  })
+
+  it('shows set RPE in the set table', async () => {
+    renderPage()
+    expect(await screen.findByText('RPE')).toBeInTheDocument()
+    expect(screen.getByText('8.5')).toBeInTheDocument()
+  })
+
+  it('edits set RPE with a typed value and sends it in the PATCH', async () => {
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    const rpe2 = screen.getByLabelText('RPE for set 2')
+    await user.type(rpe2, '7.5')
+    await user.clear(screen.getByLabelText('RPE for set 1'))
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+    const [, payload] = mockPatch.mock.calls[0] as [string, { exercises: { sets: { rpe: number | null }[] }[] }]
+    expect(payload.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 7.5])
+  })
+
+  it('blocks saving an RPE that is not a half step in 1–10', async () => {
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    const input = screen.getByLabelText('RPE for set 2')
+    await user.type(input, '8.3')
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    // Native constraint validation (min/max/step) and the form rule both reject it
+    await waitFor(() => expect(input).toBeInvalid())
+    expect(mockPatch).not.toHaveBeenCalled()
   })
 })

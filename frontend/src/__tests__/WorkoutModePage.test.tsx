@@ -77,7 +77,7 @@ function renderAt(url: string) {
 }
 
 const exerciseHeading = () => screen.getByRole('heading', { level: 2 })
-const set = (reps: string, weight: string, done = false, notes = '') => ({ reps, weight, notes, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 
 beforeEach(() => {
   localStorage.clear()
@@ -115,6 +115,8 @@ describe('Workout mode: payload parity with the full form', () => {
     await user.type(reps, '6')
     await user.click(screen.getByRole('button', { name: '+ Add note' }))
     await user.type(screen.getByLabelText('Note'), 'felt ok')
+    await user.click(screen.getByRole('button', { name: 'RPE 8 for set 1' }))
+    await user.click(screen.getByRole('button', { name: 'RPE half step for set 1' }))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
 
     await user.click(screen.getByRole('button', { name: 'Finish' }))
@@ -148,8 +150,8 @@ describe('Workout mode: payload parity with the full form', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok' },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough' },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: 8.5 },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
           ],
         },
       ],
@@ -298,6 +300,87 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Exercise 1 has no exercise chosen')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Workout mode: set RPE', () => {
+  const chip = (label: string) => screen.getByRole('button', { name: label })
+
+  it('chips select, add a half step, clear, and show on the done row', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    const half = chip('RPE half step for set 1')
+    expect(half).toBeDisabled()
+    for (const n of [6, 7, 8, 9, 10]) expect(chip(`RPE ${n} for set 1`)).toHaveAttribute('aria-pressed', 'false')
+
+    await user.click(chip('RPE 8 for set 1'))
+    expect(chip('RPE 8 for set 1')).toHaveAttribute('aria-pressed', 'true')
+    expect(half).toBeEnabled()
+    await user.click(half)
+    expect(half).toHaveAttribute('aria-pressed', 'true')
+    await user.click(half)
+    expect(half).toHaveAttribute('aria-pressed', 'false')
+    await user.click(half)
+
+    // Tapping the selected number clears it
+    await user.click(chip('RPE 9 for set 1'))
+    await user.click(chip('RPE 9 for set 1'))
+    expect(chip('RPE 9 for set 1')).toHaveAttribute('aria-pressed', 'false')
+    expect(half).toBeDisabled()
+
+    // 10 has no half step
+    await user.click(chip('RPE 10 for set 1'))
+    expect(half).toBeDisabled()
+
+    await user.click(chip('RPE 8 for set 1'))
+    await user.click(half)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8.5, done' })).toBeInTheDocument()
+    // The next set starts without an RPE
+    expect(chip('RPE 8 for set 2')).toHaveAttribute('aria-pressed', 'false')
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets.map((x: { rpe: string }) => x.rpe)).toEqual(['8.5', '']))
+  })
+
+  it('Add set does not copy the RPE', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(chip('RPE 7 for set 1'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(chip('RPE 9 for set 2'))
+    await user.click(screen.getByRole('button', { name: '+ Add set' }))
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[2]).toEqual(set('5', '102.5')))
+  })
+
+  it('shows a value the chips cannot show and lets a chip replace it', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3,
+        title: 'Leg day',
+        duration_seconds: null,
+        calories: '',
+        date: '2026-09-01T10:00',
+        notes: '',
+        wellbeing: null,
+        rpe: null,
+        exercises: [{ exercise_id: '1', sets: [set('5', '100', false, '', '5')] }],
+        templateId: null,
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    const group = screen.getByRole('group', { name: 'RPE for set 1' })
+    expect(group).toHaveTextContent(/^RPE5/)
+    expect(within(group).queryAllByRole('button', { pressed: true })).toHaveLength(0)
+
+    await user.click(chip('RPE 7 for set 1'))
+    expect(chip('RPE 7 for set 1')).toHaveAttribute('aria-pressed', 'true')
+    expect(group).toHaveTextContent(/^RPE7/)
   })
 })
 

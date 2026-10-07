@@ -13,6 +13,7 @@ from app.models import (
     DailySteps,
     Exercise,
     PlannedSession,
+    StrengthSet,
     StrengthTemplate,
     UserSettings,
     WeeklyPlan,
@@ -130,6 +131,18 @@ async def test_seed_populates_resets_and_isolates(
     assert await _count(db_session, DailySteps, DailySteps.user_id == demo) == first["step_days"]
     assert await _count(db_session, StrengthTemplate, StrengthTemplate.user_id == demo) == 3
     assert await _count(db_session, UserSettings, UserSettings.username == demo) == 1
+
+    # Session RPE is on the 1–10 scale; some sets carry a real RPE, none a fake "RPE: N" note
+    async with db_session() as db:
+        session_rpes = set((await db.execute(
+            select(WorkoutSession.rpe).where(WorkoutSession.user_id == demo)
+        )).scalars())
+        set_rows = (await db.execute(select(StrengthSet.rpe, StrengthSet.notes))).all()
+    assert session_rpes - {None} <= {2, 4, 6, 8, 10} and max(session_rpes - {None}) > 5
+    set_rpes = [r for r, _ in set_rows if r is not None]
+    assert 0.15 < len(set_rpes) / len(set_rows) < 0.45
+    assert all(6 <= r <= 10 and (r * 2).is_integer() for r in set_rpes)
+    assert not any(n and "RPE" in n for _, n in set_rows)
 
     # Today has an undone cardio + strength plan; this week has a skip with a note
     async with db_session() as db:

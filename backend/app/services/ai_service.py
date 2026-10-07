@@ -103,9 +103,10 @@ def build_athlete_context_block(row: UserSettings | None) -> str:
 # ── Set / segment compaction ──────────────────────────────────────────────────
 
 def compact_sets(sets: list[Any]) -> str:
-    """Collapse consecutive identical (reps, weight) sets into N×reps@weight notation.
+    """Collapse consecutive identical (reps, weight, rpe) sets into N×reps@weight notation.
 
-    Each element must have .reps and .weight attributes (or dict keys).
+    Each element must have .reps and .weight attributes (or dict keys); .rpe is
+    optional and, when set, is appended as " RPE8.5".
     """
     if not sets:
         return ""
@@ -116,20 +117,27 @@ def compact_sets(sets: list[Any]) -> str:
     def _weight(s: Any) -> float | None:
         return s.weight if hasattr(s, "weight") else s.get("weight_kg") or s.get("weight")
 
+    def _rpe(s: Any) -> float | None:
+        return s.get("rpe") if isinstance(s, dict) else getattr(s, "rpe", None)
+
+    def _key(s: Any) -> tuple[Any, Any, Any]:
+        return _reps(s), _weight(s), _rpe(s)
+
     parts: list[str] = []
     i = 0
     while i < len(sets):
-        r, w = _reps(sets[i]), _weight(sets[i])
+        r, w, rpe = _key(sets[i])
         j = i + 1
-        while j < len(sets) and _reps(sets[j]) == r and _weight(sets[j]) == w:
+        while j < len(sets) and _key(sets[j]) == (r, w, rpe):
             j += 1
         count = j - i
         w_str = f"{w:g}" if w is not None else "0"
         r_str = str(r) if r is not None else "0"
+        rpe_str = f" RPE{rpe:g}" if rpe is not None else ""
         if count == 1:
-            parts.append(f"{r_str}@{w_str}kg")
+            parts.append(f"{r_str}@{w_str}kg{rpe_str}")
         else:
-            parts.append(f"{count}×{r_str}@{w_str}kg")
+            parts.append(f"{count}×{r_str}@{w_str}kg{rpe_str}")
         i = j
 
     return ", ".join(parts)

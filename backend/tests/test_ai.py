@@ -63,6 +63,24 @@ def test_compact_sets_dict_input():
     assert compact_sets(sets) == "2×5@100kg, 3@110kg"
 
 
+def test_compact_sets_keeps_different_rpe_apart():
+    sets = [
+        SimpleNamespace(reps=5, weight=100.0, rpe=8.0),
+        SimpleNamespace(reps=5, weight=100.0, rpe=8.0),
+        SimpleNamespace(reps=5, weight=100.0, rpe=8.5),
+        SimpleNamespace(reps=5, weight=100.0, rpe=None),
+    ]
+    assert compact_sets(sets) == "2×5@100kg RPE8, 5@100kg RPE8.5, 5@100kg"
+
+
+def test_compact_sets_dict_input_with_and_without_rpe():
+    sets = [
+        {"reps": 5, "weight_kg": 100.0, "rpe": 9},
+        {"reps": 5, "weight_kg": 100.0},
+    ]
+    assert compact_sets(sets) == "5@100kg RPE9, 5@100kg"
+
+
 # ── compact_cardio_segments ───────────────────────────────────────────────────
 
 

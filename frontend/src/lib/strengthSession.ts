@@ -65,7 +65,13 @@ export interface StrengthSessionPayload {
   exercises: {
     exercise_id: number
     order: number
-    sets: { set_number: number; reps: number | null; weight: number | null; notes: string | null }[]
+    sets: {
+      set_number: number
+      reps: number | null
+      weight: number | null
+      notes: string | null
+      rpe: number | null
+    }[]
   }[]
 }
 
@@ -99,6 +105,7 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: s.notes ?? '',
+        rpe: '',
         done: false,
       })),
     })),
@@ -113,12 +120,12 @@ export interface LastSessionDefaults {
   sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
 }
 
+/** Reps and weight only: a set's RPE describes how that set felt, so it is never carried over. */
 export function lastSessionToFormSets(data: LastSessionDefaults): SetFormValues[] {
   return data.sets.map((s) => ({
+    ...emptySet(),
     reps: s.reps !== null ? String(s.reps) : '',
     weight: s.weight !== null ? String(s.weight) : '',
-    notes: '',
-    done: false,
   }))
 }
 
@@ -133,6 +140,24 @@ export async function fetchLastSessionSets(exerciseId: string | number): Promise
   } catch {
     return [emptySet()]
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Set RPE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A set's RPE field as a number; null when empty or not a number. */
+export function parseSetRpe(value: string): number | null {
+  if (!value.trim()) return null
+  const n = Number(value.replace(',', '.'))
+  return Number.isFinite(n) ? n : null
+}
+
+/** True for '' or 1–10 in half steps (what the API accepts). */
+export function isValidSetRpe(value: string): boolean {
+  if (!value.trim()) return true
+  const n = parseSetRpe(value)
+  return n !== null && n >= 1 && n <= 10 && Number.isInteger(n * 2)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -249,6 +274,7 @@ export function buildStrengthPayload(data: StrengthFormValues): StrengthSessionP
         reps: s.reps ? parseInt(s.reps, 10) : null,
         weight: s.weight ? parseFloat(s.weight) : null,
         notes: s.notes || null,
+        rpe: parseSetRpe(s.rpe),
       })),
     })),
   }
@@ -413,7 +439,7 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 
 function parseSet(raw: unknown): SetFormValues {
   const s = isRecord(raw) ? raw : {}
-  return { reps: str(s.reps), weight: str(s.weight), notes: str(s.notes), done: s.done === true }
+  return { reps: str(s.reps), weight: str(s.weight), notes: str(s.notes), rpe: str(s.rpe), done: s.done === true }
 }
 
 function parseEntry(raw: unknown): ExerciseEntryFormValues {
