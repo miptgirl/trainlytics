@@ -40,7 +40,7 @@ describe('Log form: failed save', () => {
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
 
     const alert = await screen.findByRole('alert')
-    expect(alert).toHaveTextContent(/failed to save/i)
+    expect(alert).toHaveTextContent('boom')
     // same container as the Save button, so it travels with the pinned bar
     const bar = screen.getByRole('button', { name: 'Save Session' }).parentElement!.parentElement!
     await waitFor(() => expect(within(bar).getByRole('alert')).toBeInTheDocument())

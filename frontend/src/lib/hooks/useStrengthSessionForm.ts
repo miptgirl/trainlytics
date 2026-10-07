@@ -566,6 +566,8 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   function validateForSave(data: StrengthFormValues): boolean {
     const ok = invalidRpe(data.exercises) === null
     setShowValidation(!ok)
+    // A refused save replaces the last failed one; two alerts would contradict each other
+    if (!ok) saveMutation.reset()
     return ok
   }
 

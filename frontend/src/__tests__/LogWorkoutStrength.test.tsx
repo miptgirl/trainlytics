@@ -319,7 +319,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
 
   it('keeps the draft and shows an error when the save fails; clears it on success', async () => {
     const user = userEvent.setup()
-    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    mockPost.mockRejectedValueOnce(new Error('exercise 1 › set 1 › reps: Input should be a valid integer'))
     renderPage('/log?type=strength&date=2026-09-02T07:30')
 
     await user.click(await screen.findByText('— select exercise —'))
@@ -329,7 +329,10 @@ describe('LogWorkoutPage strength path: POST body', () => {
     await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull())
 
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
-    expect(await screen.findByText('Failed to save session. Please try again.')).toBeInTheDocument()
+    // The server's reason, not a generic message
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'exercise 1 › set 1 › reps: Input should be a valid integer',
+    )
     expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Save Session' }))

@@ -11,15 +11,20 @@ fi
 
 # Bash keeps running the script it started with, so changes that `git pull`
 # brings to this file would only apply from the next deploy. Pull, then restart
-# once with the updated script (same arguments and working directory).
-if [ -z "${DEPLOY_PULLED:-}" ]; then
+# once with the updated script (same arguments and working directory). The
+# marker is an argument, not an env var, so nothing inherited can skip the pull.
+if [ "${1:-}" = "--after-pull" ]; then
+  shift
+else
   git pull
-  DEPLOY_PULLED=1 exec bash "$0" "$@"
+  exec bash "$0" --after-pull "$@"
 fi
 
 compose=(docker compose -f docker-compose.prod.yml)
 
-"${compose[@]}" build
+# --pull: never build on a stale cached base image (the frontend relies on
+# nginx:alpine's 15-local-resolvers.envsh entrypoint script)
+"${compose[@]}" build --pull
 
 # Migrate while no backend is serving, so new code never writes rows that a
 # pending data migration then rewrites (and old code never meets the new

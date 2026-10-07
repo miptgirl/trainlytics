@@ -12,7 +12,6 @@ All notable changes to Trainlytics are documented here.
 - `scripts/deploy.sh` runs migrations with the backend down (pull → re-exec the updated script → build → remove backend → migrate → up), so new code never writes rows a pending migration rewrites. The API is briefly down during a deploy
 - Session create and PATCH refuse a non-null session `rpe` without `X-Session-Rpe-Scale: 10` (409, "The app was updated. Reload the page and set effort again"), so a tab or PWA loaded before this release can't save an old-scale value; the frontend sends the header on every request
 - nginx resolves the backend per request (10s cache) instead of once at start, so recreating the backend container no longer causes 502s until the frontend restarts
-- The production db healthcheck probes every 2s while starting, so a cold start doesn't delay the deploy's migration step by a full 60s interval
 
 ### Fixed
 

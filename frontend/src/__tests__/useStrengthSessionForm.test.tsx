@@ -366,6 +366,20 @@ describe('useStrengthSessionForm: draft', () => {
     await waitFor(() => expect(storedDraft()).toMatchObject({ notes: 'fresh', title: 'Strength session' }))
   })
 
+  it('a save refused for an invalid set RPE clears the previous save error', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    const { result } = await setupWithTemplate()
+    await act(() => result.current.submit())
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(true))
+
+    // Not typeable (the field clamps), but a stored draft can hold it
+    act(() => result.current.updateSet(0, 1, { rpe: '7.5' }))
+    await act(() => result.current.submit())
+    expect(result.current.validationError).toBe('Squat, set 2: RPE "7.5" must be a whole number from 1 to 10.')
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(false))
+    expect(mockPost).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the draft on a failed save and clears it only after a 2xx', async () => {
     const onSaved = vi.fn()
     mockPost.mockRejectedValueOnce(new Error('Request failed'))

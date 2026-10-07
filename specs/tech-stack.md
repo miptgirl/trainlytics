@@ -126,8 +126,8 @@ bash scripts/deploy.sh
 
 What the script does (in order):
 
-1. **`git pull`** — fetch and apply the latest commits from the current branch, then re-exec the script once (`DEPLOY_PULLED=1`) so a changed `deploy.sh` applies to this deploy.
-2. **`docker compose -f docker-compose.prod.yml build`** — rebuild the images.
+1. **`git pull`** — fetch and apply the latest commits from the current branch, then re-exec the script once (`--after-pull`) so a changed `deploy.sh` applies to this deploy.
+2. **`docker compose -f docker-compose.prod.yml build --pull`** — rebuild the images, pulling fresh base images.
 3. **`rm -sf backend`** — remove the running backend, so nothing serves requests during migrations (and `restart: always` can't revive the old container if the host reboots mid-deploy).
 4. **`run --rm backend uv run alembic upgrade head`** — run pending migrations in a one-off backend container (same env and db dependency as the service).
 5. **`up -d`** — start all containers in detached mode.

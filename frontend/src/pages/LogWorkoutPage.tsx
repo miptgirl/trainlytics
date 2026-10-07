@@ -920,8 +920,10 @@ function StrengthForm() {
           {validationError && (
             <p role="alert" className="text-sm text-error-text mb-2">{validationError}</p>
           )}
-          {createMutation.isError && (
-            <p role="alert" className="text-sm text-error-text mb-2">Failed to save session. Please try again.</p>
+          {createMutation.error && (
+            <p role="alert" className="text-sm text-error-text mb-2">
+              {createMutation.error.message || 'Failed to save session. Please try again.'}
+            </p>
           )}
           <div className="flex gap-3">
             <button

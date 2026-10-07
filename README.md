@@ -95,7 +95,7 @@ bash scripts/deploy.sh
 
 The script performs these steps in order:
 1. `git pull` — fetch the latest code from the current branch, then restart the script once so any change to `deploy.sh` itself applies to this deploy.
-2. `docker compose -f docker-compose.prod.yml build` — rebuild the images.
+2. `docker compose -f docker-compose.prod.yml build --pull` — rebuild the images on fresh base images.
 3. `rm -sf backend`, then `run --rm backend uv run alembic upgrade head` — apply pending database migrations while no backend is serving requests.
 4. `up -d` — start the new containers.
 
