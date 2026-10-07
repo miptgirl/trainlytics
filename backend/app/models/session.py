@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -145,8 +145,7 @@ class StrengthSet(Base):
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight: Mapped[float | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # 1–10 in half steps (10 = maximal effort); never copied between sets
-    rpe: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rpe: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     exercise_entry: Mapped["StrengthExerciseEntry"] = relationship(
         "StrengthExerciseEntry", back_populates="sets"

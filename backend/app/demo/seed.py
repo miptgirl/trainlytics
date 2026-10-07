@@ -196,7 +196,6 @@ TEMPLATES = {
 }
 
 SET_NOTES = ["Felt heavy", "Last rep slow", "Easy, add weight next time", "Form check ok"]
-SET_RPE = [7, 7.5, 8, 8, 8.5, 9]
 STRENGTH_NOTES = ["Good session, energy was high.", "Slept badly, kept it controlled.",
                   "Shoulder felt a bit tight on pressing.", "New PR on the first lift!",
                   "Short on time, skipped accessories."]
@@ -251,10 +250,13 @@ def _strength_payload(ids: _Ids, rng: random.Random, tname: str, d: date, w: int
         sets = []
         for s in range(1, nsets + 1):
             r = reps + rng.choice([-1, 0, 0, 1]) - (1 if s == nsets and rng.random() < 0.6 else 0)
+            rpe = None
+            if rng.random() < 0.33:  # roughly a third of sets carry an RPE; last set runs harder
+                rpe = min(9, rng.choice([6, 7, 7, 8]) + (1 if s == nsets else 0))
             sets.append({
                 "set_number": s, "reps": r, "weight": weight,
-                "rpe": rng.choice(SET_RPE) if rng.random() < 0.3 else None,
                 "notes": rng.choice(SET_NOTES) if rng.random() < 0.15 else None,
+                "rpe": rpe,
             })
         entries.append({"exercise_id": ids.exercises[name], "order": i, "sets": sets})
     return {

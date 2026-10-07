@@ -63,32 +63,43 @@ def test_compact_sets_dict_input():
     assert compact_sets(sets) == "2×5@100kg, 3@110kg"
 
 
-def test_compact_sets_keeps_different_rpe_apart():
+def test_compact_sets_rpe_keeps_sets_apart():
+    """Sets differing only in RPE are not merged; each group carries its RPE."""
     sets = [
-        SimpleNamespace(reps=5, weight=100.0, rpe=8.0),
-        SimpleNamespace(reps=5, weight=100.0, rpe=8.0),
-        SimpleNamespace(reps=5, weight=100.0, rpe=8.5),
+        SimpleNamespace(reps=5, weight=100.0, rpe=7),
+        SimpleNamespace(reps=5, weight=100.0, rpe=7),
+        SimpleNamespace(reps=5, weight=100.0, rpe=8),
         SimpleNamespace(reps=5, weight=100.0, rpe=None),
     ]
-    assert compact_sets(sets) == "2×5@100kg RPE8, 5@100kg RPE8.5, 5@100kg"
+    assert compact_sets(sets) == "2×5@100kg RPE7, 5@100kg RPE8, 5@100kg"
+
+
+def test_compact_sets_dict_rpe():
+    sets = [
+        {"reps": 5, "weight": 100.0, "rpe": 9},
+        {"reps": 5, "weight": 100.0, "rpe": 9},
+    ]
+    assert compact_sets(sets) == "2×5@100kg RPE9"
+
+
+def test_compact_sets_template_sets_without_rpe_still_compact():
+    """Template / snapshot sets have no rpe attribute or key and compact as before."""
+    obj_sets = [SimpleNamespace(reps=8, weight=60.0)] * 3
+    dict_sets = [{"reps": 8, "weight_kg": 60.0}] * 3
+    assert compact_sets(obj_sets) == "3×8@60kg"
+    assert compact_sets(dict_sets) == "3×8@60kg"
 
 
 def test_compact_sets_ignores_non_numeric_snapshot_rpe():
+    """The adapt-session snapshot is unvalidated JSON: junk rpe is dropped, 8.0 reads as 8."""
     sets = [
         {"reps": 5, "weight_kg": 100.0, "rpe": "hard"},
         {"reps": 5, "weight_kg": 100.0, "rpe": None},
-        {"reps": 5, "weight_kg": 100.0, "rpe": "8.5"},
         {"reps": 5, "weight_kg": 100.0, "rpe": {"x": 1}},
+        {"reps": 5, "weight_kg": 100.0, "rpe": 8.0},
+        {"reps": 5, "weight_kg": 100.0, "rpe": 7.5},
     ]
-    assert compact_sets(sets) == "2×5@100kg, 5@100kg RPE8.5, 5@100kg"
-
-
-def test_compact_sets_dict_input_with_and_without_rpe():
-    sets = [
-        {"reps": 5, "weight_kg": 100.0, "rpe": 9},
-        {"reps": 5, "weight_kg": 100.0},
-    ]
-    assert compact_sets(sets) == "5@100kg RPE9, 5@100kg"
+    assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 5@100kg"
 
 
 # ── compact_cardio_segments ───────────────────────────────────────────────────

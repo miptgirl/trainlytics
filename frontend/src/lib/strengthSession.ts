@@ -76,6 +76,48 @@ export interface StrengthSessionPayload {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Per-set RPE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Per-set RPE as sent to the API: an integer 1–10, or null when blank or out of range. */
+export function parseSetRpe(value: string | null | undefined): number | null {
+  if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) return null
+  const n = parseInt(value, 10)
+  return n >= 1 && n <= 10 ? n : null
+}
+
+/** True for a blank per-set RPE or one the API accepts (an integer 1–10). */
+export function isValidSetRpe(value: string | null | undefined): boolean {
+  return !value?.trim() || parseSetRpe(value) !== null
+}
+
+/**
+ * Message for the first set whose RPE would not be saved, or null when all are
+ * valid. `parseSetRpe` turns an invalid value into null, so without this check
+ * it would be dropped silently. Checks values, not inputs: collapsed blocks and
+ * workout mode have no mounted RPE input.
+ */
+export function invalidSetRpeMessage(
+  exercises: ExerciseEntryFormValues[],
+  nameOf: (exerciseId: string) => string | undefined,
+): string | null {
+  for (let i = 0; i < exercises.length; i++) {
+    const sets = exercises[i].sets ?? []
+    const j = sets.findIndex((s) => !isValidSetRpe(s.rpe))
+    if (j === -1) continue
+    const name = nameOf(exercises[i].exercise_id) ?? `Exercise ${i + 1}`
+    return `${name}, set ${j + 1}: RPE "${sets[j].rpe.trim()}" must be a whole number from 1 to 10.`
+  }
+  return null
+}
+
+/** Keeps a typed per-set RPE to digits forming 1–10 ("11" → "1", "0" → ""). */
+export function sanitizeRpeInput(value: string): string {
+  const digits = value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2)
+  return parseInt(digits, 10) > 10 ? digits.slice(0, 1) : digits
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Defaults and template prefill
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -120,12 +162,13 @@ export interface LastSessionDefaults {
   sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
 }
 
-/** Reps and weight only: a set's RPE describes how that set felt, so it is never carried over. */
 export function lastSessionToFormSets(data: LastSessionDefaults): SetFormValues[] {
   return data.sets.map((s) => ({
-    ...emptySet(),
     reps: s.reps !== null ? String(s.reps) : '',
     weight: s.weight !== null ? String(s.weight) : '',
+    notes: '',
+    rpe: '',
+    done: false,
   }))
 }
 
@@ -140,49 +183,6 @@ export async function fetchLastSessionSets(exerciseId: string | number): Promise
   } catch {
     return [emptySet()]
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Set RPE
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** A set's RPE field as a number; null when empty or not a number. */
-export function parseSetRpe(value: string): number | null {
-  if (!value.trim()) return null
-  const n = Number(value.replace(',', '.'))
-  return Number.isFinite(n) ? n : null
-}
-
-/** True for '' or 1–10 in half steps (what the API accepts). */
-export function isValidSetRpe(value: string): boolean {
-  if (!value.trim()) return true
-  const n = parseSetRpe(value)
-  return n !== null && n >= 1 && n <= 10 && Number.isInteger(n * 2)
-}
-
-/** The parsed RPE as display text ("8.0" → "8", "08" → "8"); the raw text when it is not a number. */
-export function formatSetRpe(value: string): string {
-  const n = parseSetRpe(value)
-  return n === null ? value.trim() : String(n)
-}
-
-/**
- * Message for the first set whose RPE the API would reject, or null when all
- * are valid. Checks values, not inputs: collapsed blocks and workout mode have
- * no mounted RPE input for the form's own validation to run on.
- */
-export function invalidSetRpeMessage(
-  exercises: ExerciseEntryFormValues[],
-  nameOf: (exerciseId: string) => string | undefined,
-): string | null {
-  for (let i = 0; i < exercises.length; i++) {
-    const sets = exercises[i].sets ?? []
-    const j = sets.findIndex((s) => !isValidSetRpe(s.rpe ?? ''))
-    if (j === -1) continue
-    const name = nameOf(exercises[i].exercise_id) ?? `Exercise ${i + 1}`
-    return `${name}, set ${j + 1}: RPE "${sets[j].rpe.trim()}" must be 1–10 in steps of 0.5.`
-  }
-  return null
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -464,7 +464,13 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 
 function parseSet(raw: unknown): SetFormValues {
   const s = isRecord(raw) ? raw : {}
-  return { reps: str(s.reps), weight: str(s.weight), notes: str(s.notes), rpe: str(s.rpe), done: s.done === true }
+  return {
+    reps: str(s.reps),
+    weight: str(s.weight),
+    notes: str(s.notes),
+    rpe: str(s.rpe),
+    done: s.done === true,
+  }
 }
 
 function parseEntry(raw: unknown): ExerciseEntryFormValues {

@@ -5,7 +5,7 @@ Moves workout_sessions.rpe from the inverted 1–5 scale (1 = All-out,
 new = 12 - 2 * old.
 
 Revision ID: c3f8e1a2b9d4
-Revises: a1b2c3d4e5f6
+Revises: c7d8e9f0a1b2
 Create Date: 2026-10-07 00:00:00.000000
 
 """
@@ -15,7 +15,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'c3f8e1a2b9d4'
-down_revision: Union[str, Sequence[str], None] = 'a1b2c3d4e5f6'
+down_revision: Union[str, Sequence[str], None] = 'c7d8e9f0a1b2'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

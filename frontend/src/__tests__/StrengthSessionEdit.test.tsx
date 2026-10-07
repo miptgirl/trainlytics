@@ -35,10 +35,7 @@ const session = {
       exercise_id: 1,
       exercise_name: 'Squat',
       order: 1,
-      sets: [
-        { id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: 8.5 },
-        { id: 2, set_number: 2, reps: 6, weight: 90, notes: null, rpe: null },
-      ],
+      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
     },
   ],
 }
@@ -107,6 +104,48 @@ describe('Strength session edit form', () => {
     expect(screen.getByDisplayValue('100')).toBeInTheDocument()
   })
 
+  it('shows per-set RPE in the table and edits it in the form', async () => {
+    const rated = {
+      ...session,
+      exercises: [{ ...session.exercises[0], sets: [{ ...session.exercises[0].sets[0], rpe: 8 }] }],
+    }
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/sessions/5') return rated as never
+      if (path === '/exercises') return exerciseList as never
+      if (path.endsWith('/replacements')) return [] as never
+      return { sets: [] } as never
+    })
+    const user = userEvent.setup()
+    renderPage()
+    expect(await screen.findByText('RPE')).toBeInTheDocument()
+    expect(screen.getByText('8')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Edit' }))
+    const rpe = await screen.findByLabelText('RPE for set 1')
+    expect(rpe).toHaveValue('8')
+    await user.clear(rpe)
+    // Non-digits are dropped and values above 10 are cut back
+    await user.type(rpe, 'x11')
+    expect(rpe).toHaveValue('1')
+    await user.clear(rpe)
+    await user.type(rpe, '9')
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+    await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+    const [, payload] = mockPatch.mock.calls[0] as [string, { exercises: { sets: { rpe: number | null }[] }[] }]
+    expect(payload.exercises[0].sets[0].rpe).toBe(9)
+  })
+
+  it('shows the server error when saving fails', async () => {
+    mockPatch.mockRejectedValue(new Error('Input should be less than or equal to 10'))
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't save the changes: Input should be less than or equal to 10",
+    )
+  })
+
   it('includes wellbeing and rpe in the PATCH payload', async () => {
     const user = await openEdit()
     await screen.findByRole('button', { name: /Squat/ })
@@ -117,80 +156,7 @@ describe('Strength session edit form', () => {
     expect(path).toBe('/sessions/5')
     expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
-      {
-        exercise_id: 1,
-        order: 1,
-        sets: [
-          { set_number: 1, reps: 5, weight: 100, notes: null, rpe: 8.5 },
-          { set_number: 2, reps: 6, weight: 90, notes: null, rpe: null },
-        ],
-      },
+      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }] },
     ])
-  })
-
-  it('blocks saving an invalid RPE in a collapsed exercise', async () => {
-    const user = await openEdit()
-    await screen.findByRole('button', { name: /Squat/ })
-    await user.type(screen.getByLabelText('RPE for set 2'), '85')
-    await user.click(screen.getByLabelText('Collapse exercise'))
-    expect(screen.queryByLabelText('RPE for set 2')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Squat, set 2: RPE "85" must be 1–10 in steps of 0.5.')
-    expect(mockPatch).not.toHaveBeenCalled()
-  })
-
-  it('shows the server error when saving fails', async () => {
-    mockPatch.mockRejectedValue(new Error('Input should be a multiple of 0.5'))
-    const user = await openEdit()
-    await screen.findByRole('button', { name: /Squat/ })
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      "Couldn't save the changes: Input should be a multiple of 0.5",
-    )
-  })
-
-  it('hides the RPE column when no set has one', async () => {
-    mockGet.mockImplementation(async (path: string) => {
-      if (path === '/sessions/5') {
-        return {
-          ...session,
-          exercises: [{ ...session.exercises[0], sets: session.exercises[0].sets.map((s) => ({ ...s, rpe: null })) }],
-        } as never
-      }
-      return [] as never
-    })
-    renderPage()
-    expect(await screen.findByText('Squat')).toBeInTheDocument()
-    expect(screen.queryByText('RPE')).not.toBeInTheDocument()
-  })
-
-  it('shows set RPE in the set table', async () => {
-    renderPage()
-    expect(await screen.findByText('RPE')).toBeInTheDocument()
-    expect(screen.getByText('8.5')).toBeInTheDocument()
-  })
-
-  it('edits set RPE with a typed value and sends it in the PATCH', async () => {
-    const user = await openEdit()
-    await screen.findByRole('button', { name: /Squat/ })
-    const rpe2 = screen.getByLabelText('RPE for set 2')
-    await user.type(rpe2, '7.5')
-    await user.clear(screen.getByLabelText('RPE for set 1'))
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-
-    await waitFor(() => expect(mockPatch).toHaveBeenCalled())
-    const [, payload] = mockPatch.mock.calls[0] as [string, { exercises: { sets: { rpe: number | null }[] }[] }]
-    expect(payload.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 7.5])
-  })
-
-  it('blocks saving an RPE that is not a half step in 1–10', async () => {
-    const user = await openEdit()
-    await screen.findByRole('button', { name: /Squat/ })
-    const input = screen.getByLabelText('RPE for set 2')
-    await user.type(input, '8.3')
-    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
-    // Native constraint validation (min/max/step) and the form rule both reject it
-    await waitFor(() => expect(input).toBeInvalid())
-    expect(mockPatch).not.toHaveBeenCalled()
   })
 })

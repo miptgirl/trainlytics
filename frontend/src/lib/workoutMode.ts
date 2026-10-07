@@ -5,7 +5,7 @@
  */
 import type { ExerciseEntryFormValues, SetFormValues } from '../components/ExerciseEntryBlock'
 import { emptySet } from '../components/exerciseEntryDefaults'
-import { formatSetRpe, parseSetRpe, type LastSessionDefaults } from './strengthSession'
+import type { LastSessionDefaults } from './strengthSession'
 
 type Exercises = ExerciseEntryFormValues[]
 
@@ -75,7 +75,10 @@ export function exerciseAfterCompletion(exercises: Exercises, exIndex: number): 
 
 /** True for an untouched placeholder entry (no exercise, no values). */
 export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
-  return !entry.exercise_id && entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.rpe && !s.done)
+  return (
+    !entry.exercise_id &&
+    entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.rpe && !s.done)
+  )
 }
 
 /** Three sets for a newly added exercise, reps and weight from last session when known. */
@@ -112,43 +115,11 @@ export function stepValue(value: string, delta: number): string {
   return formatNumber(Math.max(0, (Number.isFinite(n) ? n : 0) + delta))
 }
 
-/** "6 × 100 kg", "8 reps", "– × 60 kg", "5 × 100 kg @8.5" — one set as a compact label. */
+/** "6 × 100 kg", "8 reps", "– × 60 kg", "8 × 100 kg @8" — one set as a compact label. */
 export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { rpe?: string }): string {
   const reps = set.reps || '–'
-  const base = set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
-  return set.rpe?.trim() ? `${base} @${formatSetRpe(set.rpe)}` : base
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Set RPE chips (6–10 plus a half-step toggle)
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const RPE_CHIPS = [6, 7, 8, 9, 10] as const
-
-/**
- * The chip and half step that show `value`, e.g. "8.5" → { base: 8, half: true }.
- * Null when empty or when the chips cannot show it (below 6, "10.5", "8.3").
- */
-export function rpeChipState(value: string): { base: number; half: boolean } | null {
-  const n = parseSetRpe(value)
-  if (n === null) return null
-  const base = Math.floor(n)
-  const half = n - base === 0.5
-  if (n !== base && !half) return null
-  if (base < 6 || base > 10 || (base === 10 && half)) return null
-  return { base, half }
-}
-
-/** Tapping a number chip: selects it, or clears the value when it is already selected. */
-export function tapRpeChip(value: string, chip: number): string {
-  return rpeChipState(value)?.base === chip ? '' : String(chip)
-}
-
-/** Tapping `.5`: adds or removes the half step; no-op with nothing selected or at 10. */
-export function toggleRpeHalf(value: string): string {
-  const state = rpeChipState(value)
-  if (!state || state.base === 10) return value
-  return state.half ? String(state.base) : `${state.base}.5`
+  const label = set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
+  return set.rpe ? `${label} @${set.rpe}` : label
 }
 
 /**

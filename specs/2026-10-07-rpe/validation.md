@@ -1,4 +1,4 @@
-# RPE
+# Session RPE on 1–10
 ## Validation
 
 ### Progress
@@ -6,7 +6,7 @@
 | Task Group | Status |
 |---|---|
 | A. Session RPE on 1–10 | ✅ |
-| B. Per-set RPE | ✅ |
+| B. Save-time checks and errors | ✅ |
 | Tests | ✅ |
 
 ---
@@ -15,18 +15,15 @@
 
 - [x] Existing session RPE values converted by the migration; downgrade restores them
 - [x] Session pickers read easy → hard and save 2/4/6/8/10
-- [x] A set's RPE can be entered in workout mode with one or two taps, and on the log and edit pages
-- [x] Set RPE is saved, shown on the session detail page, in the text export and in the AI context
-- [x] Backend and frontend test suites, lint and type check pass (ruff: no new findings; the backend had 230 pre-existing ones, now 229)
+- [x] A set RPE that would not be saved blocks the save with a message naming the exercise and set, including in collapsed exercises and workout mode
+- [x] Validation errors from the API show as readable text; PATCH returns 422, not 500
+- [x] Backend and frontend test suites, type check and eslint pass; single Alembic head; ruff has no new findings (the backend already had about 230)
 
 ---
 
 ### Implementation Notes
 
-- **Migrations.** `c3f8e1a2b9d4` remaps session RPE (`12 − 2 × old`, only rows with 1–5); `d4a9b7c2e6f1` adds `strength_sets.rpe`. The remap downgrade is exact for even values; odd values (enterable only after the upgrade) round half away from zero (7 → 3, Moderate), and the result is clamped to 1–5 with `CASE` because SQLite has no `GREATEST`/`LEAST`. Both were run up, down and up on Postgres 16; `tests/test_migration_session_rpe.py` runs the remap on SQLite by binding the migration to `Operations` directly, because the full chain has Postgres-only steps.
-- **Odd session values** display as the nearest emoji option, ties to the lower one (7 → Moderate), the same way the downgrade rounds. `optionForValue` in `emojiRatingOptions.ts` does this for the display and the text export.
-- **Drafts.** Strength drafts below v3 and unversioned cardio drafts (cardio drafts now carry `version: 2`) load with session `rpe: null`, because their 1–5 values meant the opposite. A missing set `rpe` loads as `''`, so no version bump was needed for Part B.
-- **Set RPE validation runs on values, not inputs.** React Hook Form skips unmounted fields (collapsed exercise blocks, workout mode), so saving checks every set with `invalidSetRpeMessage` in `useStrengthSessionForm`, the session edit form and workout mode's Finish. The API field is `strict`, so strings and booleans are rejected rather than coerced.
-- **PATCH validation.** `PATCH /sessions/{id}` validates its body inside the handler, so pydantic errors used to surface as 500. They now return 422 like the create endpoints, with `loc` prefixed by `"body"` to match.
-- **Log page grid.** The RPE header is hidden below `sm` like Notes; the input sits on the second mobile row before the note (the wrapper is `display: contents` from `sm` up). The template editor shares `ExerciseEntryBlock` and passes `showRpe={false}`.
-- **Workout mode chips.** Selected chips use a `primary-dark` fill rather than the design system's `primary-tint` chip, because the set editor's background is already `primary-tint`.
+- **Migration chain.** `c3f8e1a2b9d4` sits on top of the per-set migration `c7d8e9f0a1b2`. It only touches rows with 1–5. The downgrade is exact for even values; odd values (possible only after the upgrade) round half away from zero (7 → 3, Moderate) and are clamped with `CASE`, because SQLite has no `GREATEST`/`LEAST`. Verified up/down on Postgres 16; `tests/test_migration_session_rpe.py` runs it on SQLite by binding the migration to `Operations` directly, since the full chain has Postgres-only steps.
+- **Odd session values** display as the nearest emoji option, ties to the lower one (7 → Moderate), the same way the downgrade rounds.
+- **Drafts.** Strength drafts below v3 and unversioned cardio drafts load with session `rpe: null`, because their 1–5 values meant the opposite. Per-set `rpe` needed no bump (a missing field loads as `''`).
+- **Set RPE check.** With per-set RPE's typed input sanitised to 1–10 and chips 5–10, an invalid value mostly comes from a stored draft; the check exists so `parseSetRpe` never turns a user's value into `null` unnoticed.

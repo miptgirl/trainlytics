@@ -13,6 +13,8 @@ from app.models import (
     DailySteps,
     Exercise,
     PlannedSession,
+    StrengthExerciseEntry,
+    StrengthSession,
     StrengthSet,
     StrengthTemplate,
     UserSettings,
@@ -132,17 +134,12 @@ async def test_seed_populates_resets_and_isolates(
     assert await _count(db_session, StrengthTemplate, StrengthTemplate.user_id == demo) == 3
     assert await _count(db_session, UserSettings, UserSettings.username == demo) == 1
 
-    # Session RPE is on the 1–10 scale; some sets carry a real RPE, none a fake "RPE: N" note
+    # Session RPE is on the 1–10 scale (10 = maximal effort), both easy and hard days
     async with db_session() as db:
         session_rpes = set((await db.execute(
             select(WorkoutSession.rpe).where(WorkoutSession.user_id == demo)
-        )).scalars())
-        set_rows = (await db.execute(select(StrengthSet.rpe, StrengthSet.notes))).all()
-    assert session_rpes - {None} <= {2, 4, 6, 8, 10} and max(session_rpes - {None}) > 5
-    set_rpes = [r for r, _ in set_rows if r is not None]
-    assert 0.15 < len(set_rpes) / len(set_rows) < 0.45
-    assert all(6 <= r <= 10 and (r * 2).is_integer() for r in set_rpes)
-    assert not any(n and "RPE" in n for _, n in set_rows)
+        )).scalars()) - {None}
+    assert session_rpes <= {2, 4, 6, 8, 10} and min(session_rpes) <= 4 and max(session_rpes) >= 8
 
     # Today has an undone cardio + strength plan; this week has a skip with a note
     async with db_session() as db:
@@ -157,6 +154,20 @@ async def test_seed_populates_resets_and_isolates(
     assert TODAY not in logged_days and max(logged_days) < TODAY
     monday = TODAY - timedelta(days=TODAY.weekday())
     assert any(p.skip_note and monday <= p.planned_date < TODAY for p in planned)
+
+    # Per-set RPE lives in its own column, not in set notes
+    async with db_session() as db:
+        demo_sets = (await db.execute(
+            select(StrengthSet.rpe, StrengthSet.notes)
+            .join(StrengthExerciseEntry, StrengthExerciseEntry.id == StrengthSet.exercise_entry_id)
+            .join(StrengthSession, StrengthSession.id == StrengthExerciseEntry.strength_session_id)
+            .join(WorkoutSession, WorkoutSession.id == StrengthSession.session_id)
+            .where(WorkoutSession.user_id == demo)
+        )).all()
+    rpes = [r for r, _ in demo_sets if r is not None]
+    assert 0.2 * len(demo_sets) < len(rpes) < 0.5 * len(demo_sets)
+    assert set(rpes) <= {6, 7, 8, 9}
+    assert not any(n and "RPE" in n for _, n in demo_sets)
 
     second = await seed_demo(client, db_session, today=TODAY)
     assert second == first

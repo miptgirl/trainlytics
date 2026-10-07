@@ -11,7 +11,6 @@ All AI calls go through `call_ai()` which:
 from __future__ import annotations
 
 import datetime
-import math
 import time
 from typing import Any
 
@@ -106,8 +105,9 @@ def build_athlete_context_block(row: UserSettings | None) -> str:
 def compact_sets(sets: list[Any]) -> str:
     """Collapse consecutive identical (reps, weight, rpe) sets into N×reps@weight notation.
 
-    Each element must have .reps and .weight attributes (or dict keys); .rpe is
-    optional and, when set, is appended as " RPE8.5".
+    Each element must have .reps and .weight attributes (or dict keys). An optional
+    per-set ``rpe`` (attribute or key) keeps sets apart and renders as ``RPE8``;
+    elements without it (template sets, plan snapshots) compact as before.
     """
     if not sets:
         return ""
@@ -118,19 +118,16 @@ def compact_sets(sets: list[Any]) -> str:
     def _weight(s: Any) -> float | None:
         return s.weight if hasattr(s, "weight") else s.get("weight_kg") or s.get("weight")
 
-    def _rpe(s: Any) -> float | None:
-        # The adapt-session snapshot is unvalidated client JSON: ignore non-numeric values
+    def _rpe(s: Any) -> int | None:
         raw = s.get("rpe") if isinstance(s, dict) else getattr(s, "rpe", None)
-        if isinstance(raw, bool) or not isinstance(raw, (int, float, str)):
+        # The adapt-session snapshot is unvalidated client JSON: keep whole numbers
+        # (8 or 8.0), ignore anything else rather than printing it into the prompt
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
             return None
-        try:
-            value = float(raw)
-        except ValueError:
-            return None
-        return value if math.isfinite(value) else None
+        return int(raw) if float(raw).is_integer() else None
 
-    def _key(s: Any) -> tuple[Any, Any, Any]:
-        return _reps(s), _weight(s), _rpe(s)
+    def _key(s: Any) -> tuple:
+        return (_reps(s), _weight(s), _rpe(s))
 
     parts: list[str] = []
     i = 0
@@ -142,7 +139,7 @@ def compact_sets(sets: list[Any]) -> str:
         count = j - i
         w_str = f"{w:g}" if w is not None else "0"
         r_str = str(r) if r is not None else "0"
-        rpe_str = f" RPE{rpe:g}" if rpe is not None else ""
+        rpe_str = f" RPE{rpe}" if rpe is not None else ""
         if count == 1:
             parts.append(f"{r_str}@{w_str}kg{rpe_str}")
         else:

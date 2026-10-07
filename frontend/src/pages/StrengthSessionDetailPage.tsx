@@ -18,7 +18,7 @@ interface StrengthSet {
   reps: number | null
   weight: number | null
   notes: string | null
-  rpe?: number | null
+  rpe: number | null
 }
 
 interface StrengthExerciseEntry {
@@ -71,7 +71,7 @@ function toForm(session: StrengthSession): EditFormValues {
         reps: s.reps?.toString() ?? '',
         weight: s.weight?.toString() ?? '',
         notes: s.notes ?? '',
-        rpe: s.rpe != null ? String(s.rpe) : '',
+        rpe: s.rpe?.toString() ?? '',
         done: false,
       })),
     })),
@@ -101,7 +101,7 @@ function EditForm({
   })
   const [rpeError, setRpeError] = useState<string | null>(null)
 
-  // Checks values, not inputs: a collapsed exercise has no mounted RPE input to validate
+  // Checks values, not inputs: a collapsed exercise has no mounted RPE input
   function save(data: EditFormValues) {
     const names = new Map(exercises.map((e) => [String(e.id), e.name]))
     const message = invalidSetRpeMessage(data.exercises, (id) => names.get(id))
@@ -308,11 +308,6 @@ export default function StrengthSessionDetailPage() {
   }
 
   const totalSets = session.exercises.reduce((sum, e) => sum + e.sets.length, 0)
-  // RPE column only when some set in the session has one
-  const showSetRpe = session.exercises.some((e) => e.sets.some((s) => s.rpe != null))
-  const setGridCols = showSetRpe
-    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)]'
-    : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]'
 
   return (
     <Layout>
@@ -395,21 +390,21 @@ export default function StrengthSessionDetailPage() {
             <div key={entry.id} className="bg-surface rounded-xl border border-border p-4">
               <h3 className="font-medium text-text mb-3">{entry.exercise_name}</h3>
 
-              <div className={`grid ${setGridCols} gap-1.5 mb-2 px-1`}>
+              <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 mb-2 px-1">
                 <span className="text-xs text-text-muted-strong">#</span>
                 <span className="text-xs font-medium text-text-muted-strong">Reps</span>
                 <span className="text-xs font-medium text-text-muted-strong">Weight</span>
-                {showSetRpe && <span className="text-xs font-medium text-text-muted-strong">RPE</span>}
+                <span className="text-xs font-medium text-text-muted-strong">RPE</span>
                 <span className="text-xs font-medium text-text-muted-strong">Notes</span>
               </div>
 
               <div className="space-y-1">
                 {entry.sets.map((s) => (
-                  <div key={s.id} className={`grid ${setGridCols} gap-1.5 items-center py-1 border-t border-border`}>
+                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-border">
                     <span className="text-xs text-text-muted-strong text-center">{s.set_number}</span>
                     <span className="text-sm text-text">{s.reps ?? '—'}</span>
                     <span className="text-sm text-text">{s.weight != null ? `${s.weight} kg` : '—'}</span>
-                    {showSetRpe && <span className="text-sm text-text tabular-nums">{s.rpe ?? '—'}</span>}
+                    <span className="text-sm text-text tabular-nums">{s.rpe ?? '—'}</span>
                     <span className="text-sm text-text-muted-strong overflow-hidden truncate">{s.notes ?? ''}</span>
                   </div>
                 ))}

@@ -91,7 +91,6 @@ describe('LogWorkoutPage strength path: POST body', () => {
     await user.clear(reps[0])
     await user.type(reps[0], '6')
     await user.type(screen.getAllByPlaceholderText('note')[0], 'felt ok')
-    await user.type(screen.getByLabelText('RPE for set 1'), '8.5')
     await user.click(screen.getByRole('button', { name: /Good/ }))
     await user.click(screen.getByRole('button', { name: /Moderate/ }))
     await user.type(screen.getByPlaceholderText('e.g. 500'), '320')
@@ -121,7 +120,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: 8.5 },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
             { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
           ],
         },
@@ -178,31 +177,39 @@ describe('LogWorkoutPage strength path: POST body', () => {
     const user = userEvent.setup()
     renderPage('/log?type=strength&templateId=3&date=2026-09-01T10:00')
     await screen.findByText(/Pre-filled from/)
-    await user.type(screen.getByLabelText('RPE for set 2'), '8.5')
+    await user.type(screen.getByLabelText('RPE for set 2'), '8')
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
     expect(screen.queryByText(/Update template/)).not.toBeInTheDocument()
     expect(mockPatch).not.toHaveBeenCalled()
     const body = mockPost.mock.calls[0][1] as { exercises: { sets: { rpe: number | null }[] }[] }
-    expect(body.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 8.5])
+    expect(body.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 8])
   })
 
-  it('an invalid set RPE in a collapsed exercise blocks the save', async () => {
+  it('a set RPE that would not be saved blocks the save, even in a collapsed exercise', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Old draft', duration_seconds: null, calories: '', date: '2026-08-30T18:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', rpe: '7.5', done: false }] }],
+      }),
+    )
     const user = userEvent.setup()
-    renderPage('/log?type=strength&templateId=3&date=2026-09-01T10:00')
-    await screen.findByText(/Pre-filled from/)
-    await user.type(screen.getByLabelText('RPE for set 1'), '85')
-    // Marking every set done collapses the block, unmounting its inputs (and their form rules)
-    for (const box of screen.getAllByLabelText('Mark done')) await user.click(box)
-    await waitFor(() => expect(screen.queryByLabelText('RPE for set 1')).not.toBeInTheDocument())
+    renderPage('/log?type=strength')
+    await user.click(await screen.findByRole('button', { name: 'Restore' }))
+    await waitFor(() => expect(screen.getByDisplayValue('Old draft')).toBeInTheDocument())
+    // Collapsing unmounts the set inputs, so only a check on the values can catch it
+    await user.click(screen.getByLabelText('Collapse exercise'))
+    expect(screen.queryByLabelText('RPE for set 1')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Squat, set 1: RPE "85" must be 1–10 in steps of 0.5.',
+      'Bench, set 1: RPE "7.5" must be a whole number from 1 to 10.',
     )
+    // Without the check, parseSetRpe would send rpe: null and drop the value silently
     expect(mockPost).not.toHaveBeenCalled()
-    expect(mockPatch).not.toHaveBeenCalled()
   })
 
   it('no template: picker + last-session defaults posts directly without a diff prompt', async () => {

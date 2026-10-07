@@ -16,9 +16,6 @@ import {
   nextUnfinishedIndex,
   prefersWorkoutMode,
   restRemaining,
-  rpeChipState,
-  tapRpeChip,
-  toggleRpeHalf,
   sanitizeDecimal,
   saveErrorMessage,
   saveRestLength,
@@ -58,8 +55,9 @@ describe('progress and navigation', () => {
   it('recognises an untouched placeholder entry', () => {
     expect(isBlankEntry(ex('', set('', '')))).toBe(true)
     expect(isBlankEntry(ex('', set('5', '')))).toBe(false)
-    expect(isBlankEntry(ex('', set('', '', false, '', '8')))).toBe(false)
     expect(isBlankEntry(ex('4', set('', '')))).toBe(false)
+    // A set with only an RPE has been touched
+    expect(isBlankEntry(ex('', set('', '', false, '', '8')))).toBe(false)
   })
 
   it('new exercises get three sets with reps and weight from last session', () => {
@@ -88,45 +86,9 @@ describe('formatting and steppers', () => {
   it('formats one set', () => {
     expect(formatSet(set('6', '100'))).toBe('6 × 100 kg')
     expect(formatSet(set('12', ''))).toBe('12 reps')
-  })
-
-  it('appends the set RPE when set', () => {
-    expect(formatSet(set('5', '100', false, '', '8.5'))).toBe('5 × 100 kg @8.5')
-    expect(formatSet(set('12', '', false, '', '7'))).toBe('12 reps @7')
-    expect(formatSet(set('5', '100', false, '', '8.0'))).toBe('5 × 100 kg @8')
-    expect(formatSet(set('5', '100', false, '', '08'))).toBe('5 × 100 kg @8')
-  })
-})
-
-describe('set RPE chips', () => {
-  it('reads a value as chip + half step, or null when the chips cannot show it', () => {
-    expect(rpeChipState('')).toBeNull()
-    expect(rpeChipState('8')).toEqual({ base: 8, half: false })
-    expect(rpeChipState('8.5')).toEqual({ base: 8, half: true })
-    expect(rpeChipState('10')).toEqual({ base: 10, half: false })
-    expect(rpeChipState('5')).toBeNull()
-    expect(rpeChipState('5.5')).toBeNull()
-    expect(rpeChipState('10.5')).toBeNull()
-    expect(rpeChipState('8.3')).toBeNull()
-  })
-
-  it('tapping a number selects it; tapping the selected number clears it', () => {
-    expect(tapRpeChip('', 8)).toBe('8')
-    expect(tapRpeChip('7', 8)).toBe('8')
-    expect(tapRpeChip('8', 8)).toBe('')
-    expect(tapRpeChip('8.5', 8)).toBe('')
-    expect(tapRpeChip('9.5', 7)).toBe('7')
-    // A value the chips cannot show is replaced
-    expect(tapRpeChip('5', 6)).toBe('6')
-  })
-
-  it('.5 adds or removes the half step; no-op with nothing selected or at 10', () => {
-    expect(toggleRpeHalf('8')).toBe('8.5')
-    expect(toggleRpeHalf('8.5')).toBe('8')
-    expect(toggleRpeHalf('9')).toBe('9.5')
-    expect(toggleRpeHalf('')).toBe('')
-    expect(toggleRpeHalf('10')).toBe('10')
-    expect(toggleRpeHalf('5')).toBe('5')
+    expect(formatSet(set('8', '100', true, '', '8'))).toBe('8 × 100 kg @8')
+    expect(formatSet(set('12', '', true, '', '10'))).toBe('12 reps @10')
+    expect(formatSet({ reps: '5', weight: '60' })).toBe('5 × 60 kg')
   })
 
   it('steps reps by 1 and weight by 2.5 without going below zero or float noise', () => {

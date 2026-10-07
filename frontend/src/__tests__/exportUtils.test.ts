@@ -84,6 +84,24 @@ describe('formatStrengthSession', () => {
     expect(result).toContain('\n\n### Deadlift')
   })
 
+  it('appends @RPE to a set line when the set has one', () => {
+    const session: StrengthSession = {
+      ...baseStrength,
+      exercises: [
+        {
+          exercise_name: 'Squat',
+          sets: [
+            { set_number: 1, reps: 5, weight: 100, rpe: 8 },
+            { set_number: 2, reps: 5, weight: 100, rpe: null },
+          ],
+        },
+      ],
+    }
+    const result = formatStrengthSession(session)
+    expect(result).toContain('- Set 1: 100 kg × 5 @RPE 8')
+    expect(result).toContain('- Set 2: 100 kg × 5\n')
+  })
+
   it('renders — for null set weight', () => {
     const session: StrengthSession = {
       ...baseStrength,
@@ -154,25 +172,6 @@ describe('formatStrengthSession', () => {
     [9, '😞 Hard (9/10)'],
   ])('labels odd session rpe %i with the nearest option', (rpe, label) => {
     expect(formatStrengthSession({ ...baseStrength, rpe })).toContain(`Effort: ${label}`)
-  })
-
-  it('appends per-set rpe when set', () => {
-    const result = formatStrengthSession({
-      ...baseStrength,
-      exercises: [
-        {
-          exercise_name: 'Bench Press',
-          sets: [
-            { set_number: 1, reps: 8, weight: 80, rpe: 8 },
-            { set_number: 2, reps: 6, weight: 82.5, rpe: 9.5 },
-            { set_number: 3, reps: 6, weight: 82.5, rpe: null },
-          ],
-        },
-      ],
-    })
-    expect(result).toContain('- Set 1: 80 kg × 8 @RPE 8\n')
-    expect(result).toContain('- Set 2: 82.5 kg × 6 @RPE 9.5\n')
-    expect(result).toMatch(/- Set 3: 82\.5 kg × 6$/m)
   })
 
   it('omits feeling and effort lines when wellbeing and rpe are null', () => {

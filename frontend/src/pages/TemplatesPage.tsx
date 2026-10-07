@@ -62,7 +62,7 @@ function detailToFormValues(t: TemplateDetail): TemplateFormValues {
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: s.notes ?? '',
-        rpe: '', // templates have no RPE; the field only satisfies the shared set type
+        rpe: '',
         done: false,
       })),
     })),
@@ -387,7 +387,6 @@ function TemplateForm({
                 control={control}
                 setValue={setValue}
                 exercises={exercises}
-                showRpe={false}
                 canRemove={exerciseFields.length > 1}
                 onRemove={() => {
                   removeExercise(exIndex)

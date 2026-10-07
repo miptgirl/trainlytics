@@ -271,6 +271,70 @@ async def test_patch_strength_session(db_session, auth_client: AsyncClient):
     assert data["exercises"][0]["sets"][0]["reps"] == 12
 
 
+def _rpe_payload(ex_id: int, rpe) -> dict:
+    payload = STRENGTH_PAYLOAD_FACTORY(ex_id)
+    payload["exercises"][0]["sets"][0]["rpe"] = rpe
+    return payload
+
+
+@pytest.mark.asyncio
+async def test_create_strength_session_set_rpe_round_trips(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    resp = await auth_client.post("/api/sessions/strength", json=_rpe_payload(ex_id, 8))
+    assert resp.status_code == 201
+    sets = resp.json()["exercises"][0]["sets"]
+    assert sets[0]["rpe"] == 8
+    assert sets[1]["rpe"] is None
+
+    get_resp = await auth_client.get(f"/api/sessions/{resp.json()['id']}")
+    assert get_resp.json()["exercises"][0]["sets"][0]["rpe"] == 8
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_rpe", [0, 11, 7.5])
+async def test_create_strength_session_rejects_invalid_set_rpe(
+    db_session, auth_client: AsyncClient, bad_rpe
+):
+    ex_id = await _create_exercise(auth_client)
+    resp = await auth_client.post("/api/sessions/strength", json=_rpe_payload(ex_id, bad_rpe))
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_patch_strength_session_keeps_or_changes_set_rpe(
+    db_session, auth_client: AsyncClient
+):
+    ex_id = await _create_exercise(auth_client)
+    create = await auth_client.post("/api/sessions/strength", json=_rpe_payload(ex_id, 8))
+    session_id = create.json()["id"]
+
+    # Patch without exercises leaves sets (and their RPE) untouched.
+    keep = await auth_client.patch(f"/api/sessions/{session_id}", json={"notes": "Edited"})
+    assert keep.status_code == 200
+    assert keep.json()["exercises"][0]["sets"][0]["rpe"] == 8
+
+    # Patch with exercises replaces sets, including RPE.
+    change = await auth_client.patch(
+        f"/api/sessions/{session_id}",
+        json={
+            "exercises": [
+                {
+                    "exercise_id": ex_id,
+                    "order": 1,
+                    "sets": [
+                        {"set_number": 1, "reps": 10, "weight": 60.0, "rpe": 9},
+                        {"set_number": 2, "reps": 8, "weight": 65.0},
+                    ],
+                }
+            ],
+        },
+    )
+    assert change.status_code == 200
+    sets = change.json()["exercises"][0]["sets"]
+    assert sets[0]["rpe"] == 9
+    assert sets[1]["rpe"] is None
+
+
 @pytest.mark.asyncio
 async def test_delete_strength_session(db_session, auth_client: AsyncClient):
     ex_id = await _create_exercise(auth_client)
@@ -921,7 +985,7 @@ async def test_patch_session_rpe_to_10(db_session, auth_client: AsyncClient):
     assert resp.json()["rpe"] == 10
 
 
-# ── Per-set RPE ───────────────────────────────────────────────────────────────
+# ── Per-set RPE extras (main covers bounds and round-trips) ──────────────────
 
 def _one_set_payload(ex_id: int, **set_fields) -> dict:
     return {
@@ -934,60 +998,6 @@ def _one_set_payload(ex_id: int, **set_fields) -> dict:
 
 
 @pytest.mark.asyncio
-async def test_set_rpe_round_trips_on_create_get_and_patch(db_session, auth_client: AsyncClient):
-    ex_id = await _create_exercise(auth_client)
-    payload = STRENGTH_PAYLOAD_FACTORY(ex_id)
-    payload["exercises"][0]["sets"][0]["rpe"] = 8.5
-    payload["exercises"][0]["sets"][1]["rpe"] = 10
-    created = await auth_client.post("/api/sessions/strength", json=payload)
-    assert created.status_code == 201, created.text
-    sets = created.json()["exercises"][0]["sets"]
-    assert [s["rpe"] for s in sets] == [8.5, 10.0, None]
-
-    session_id = created.json()["id"]
-    fetched = await auth_client.get(f"/api/sessions/{session_id}")
-    assert [s["rpe"] for s in fetched.json()["exercises"][0]["sets"]] == [8.5, 10.0, None]
-
-    patched = await auth_client.patch(
-        f"/api/sessions/{session_id}",
-        json={"exercises": [
-            {"exercise_id": ex_id, "order": 1, "sets": [
-                {"set_number": 1, "reps": 5, "weight": 100.0, "rpe": 7},
-                {"set_number": 2, "reps": 5, "weight": 100.0},
-            ]},
-        ]},
-    )
-    assert patched.status_code == 200, patched.text
-    assert [s["rpe"] for s in patched.json()["exercises"][0]["sets"]] == [7.0, None]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("rpe", [1, 1.5, 6, 9.5, 10])
-async def test_set_rpe_accepts_half_steps_1_to_10(db_session, auth_client: AsyncClient, rpe: float):
-    ex_id = await _create_exercise(auth_client)
-    resp = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id, rpe=rpe))
-    assert resp.status_code == 201, resp.text
-    assert resp.json()["exercises"][0]["sets"][0]["rpe"] == rpe
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("rpe", [0.5, 8.25, 8.3, 10.5, 11])
-async def test_set_rpe_rejects_out_of_range_or_off_step(
-    db_session, auth_client: AsyncClient, rpe: float
-):
-    ex_id = await _create_exercise(auth_client)
-    resp = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id, rpe=rpe))
-    assert resp.status_code == 422
-
-    created = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id))
-    patch = await auth_client.patch(
-        f"/api/sessions/{created.json()['id']}",
-        json={"exercises": _one_set_payload(ex_id, rpe=rpe)["exercises"]},
-    )
-    assert patch.status_code == 422
-
-
-@pytest.mark.asyncio
 async def test_last_session_defaults_never_carry_set_rpe(db_session, auth_client: AsyncClient):
     ex_id = await _create_exercise(auth_client)
     await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id, rpe=9))
@@ -995,22 +1005,6 @@ async def test_last_session_defaults_never_carry_set_rpe(db_session, auth_client
     assert resp.status_code == 200
     sets = resp.json()["sets"]
     assert sets and all("rpe" not in s for s in sets)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("rpe", ["hard", "8.5", "", True])
-async def test_set_rpe_rejects_non_numbers(db_session, auth_client: AsyncClient, rpe):
-    # NaN is not covered: FastAPI's 422 handler can't JSON-encode it as the echoed input
-    ex_id = await _create_exercise(auth_client)
-    resp = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id, rpe=rpe))
-    assert resp.status_code == 422
-
-    created = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id))
-    patch = await auth_client.patch(
-        f"/api/sessions/{created.json()['id']}",
-        json={"exercises": _one_set_payload(ex_id, rpe=rpe)["exercises"]},
-    )
-    assert patch.status_code == 422
 
 
 @pytest.mark.asyncio
@@ -1031,7 +1025,7 @@ async def test_patch_422_loc_starts_with_body(db_session, auth_client: AsyncClie
     created = await auth_client.post("/api/sessions/strength", json=_one_set_payload(ex_id))
     patch = await auth_client.patch(
         f"/api/sessions/{created.json()['id']}",
-        json={"exercises": _one_set_payload(ex_id, rpe=8.3)["exercises"]},
+        json={"exercises": _one_set_payload(ex_id, rpe=7.5)["exercises"]},
     )
     assert patch.status_code == 422
     assert patch.json()["detail"][0]["loc"] == ["body", "exercises", 0, "sets", 0, "rpe"]

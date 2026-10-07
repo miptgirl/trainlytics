@@ -4,14 +4,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
-import { isValidSetRpe, lastSessionToFormSets } from '../lib/strengthSession'
-import { sanitizeDecimal } from '../lib/workoutMode'
+import { sanitizeRpeInput } from '../lib/strengthSession'
 
 export interface SetFormValues {
   reps: string
   weight: string
   notes: string
-  /** Set RPE, 1–10 in half steps, or ''. Never prefilled from another set or session. */
+  /** Per-set RPE 1–10 as typed; '' when not rated. Never prefilled. */
   rpe: string
   done: boolean
 }
@@ -372,7 +371,7 @@ export function ExerciseEntryBlock({
   onRemove,
   errors,
   showDone = false,
-  showRpe = true,
+  showRpe = false,
   prefillFromLastSession = true,
   isCollapsed = false,
   onToggleCollapse,
@@ -390,7 +389,7 @@ export function ExerciseEntryBlock({
   errors: any
   /* eslint-enable @typescript-eslint/no-explicit-any */
   showDone?: boolean
-  /** Per-set RPE input; off for templates, which have no RPE. */
+  /** Per-set RPE column (sessions only; templates have no RPE). Hidden below sm. */
   showRpe?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
@@ -446,7 +445,13 @@ export function ExerciseEntryBlock({
       .then((data) => {
         if (cancelled) return
         if (data.sets.length > 0) {
-          replaceSets(lastSessionToFormSets(data))
+          replaceSets(data.sets.map((s) => ({
+            reps: s.reps !== null ? String(s.reps) : '',
+            weight: s.weight !== null ? String(s.weight) : '',
+            notes: '',
+            rpe: '',
+            done: false,
+          })))
           setFilledFromSession(true)
         } else {
           replaceSets([emptySet()])
@@ -480,7 +485,13 @@ export function ExerciseEntryBlock({
     try {
       const data = await api.get<ExerciseDefaults>(`/exercises/${replacement.id}/last-session-defaults`)
       if (data.sets.length > 0) {
-        replaceSets(lastSessionToFormSets(data))
+        replaceSets(data.sets.map((s) => ({
+          reps: s.reps !== null ? String(s.reps) : '',
+          weight: s.weight !== null ? String(s.weight) : '',
+          notes: '',
+          rpe: '',
+          done: false,
+        })))
         setFilledFromSession(true)
       } else {
         replaceSets([emptySet()])
@@ -500,19 +511,18 @@ export function ExerciseEntryBlock({
     prevAllDoneRef.current = allDone
   }, [allDone]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Below sm each set takes two lines: `# Reps Weight Done` then `RPE Note … Delete`
+  // Below sm each set takes two lines: `# Reps Weight Done` then `Note … Delete`
   // (Done/Delete sit in the 44px last column; without Done, Weight spans it).
-  // DOM order is the mobile reading/tab order (reps, weight, done, rpe, note, delete);
-  // from sm up the RPE/Note wrapper is `display: contents` and `order-*` puts
-  // RPE and Note back before Done for the single-row layout.
+  // DOM order is the mobile reading/tab order (reps, weight, done, note, delete);
+  // from sm up `order-*` puts Note back before Done for the single-row layout.
   // The action columns are 44px until md so they stay tappable.
-  // Full literals (not built from parts) so Tailwind finds every class.
-  const gridCols = showRpe
-    ? showDone
-      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,1fr)_2rem_1.5rem]'
-      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_4rem_minmax(0,1fr)_1.5rem]'
-    : showDone
-      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+  // With showRpe a narrow RPE column sits after Weight from sm up; below sm it is hidden.
+  const gridCols = showDone
+    ? showRpe
+      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2rem_1.5rem]'
+      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+    : showRpe
+      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_1.5rem]'
       : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
@@ -623,13 +633,7 @@ export function ExerciseEntryBlock({
             <div className="space-y-2">
               {setFields.map((setField, setIndex) => {
                 const isDone = showDone && (setValues[setIndex]?.done ?? false)
-                const rpeError = showRpe ? errors?.exercises?.[exIndex]?.sets?.[setIndex]?.rpe : undefined
-                // The form rule covers mounted inputs; saving re-checks the values (collapsed blocks have none)
-                const rpeField = showRpe
-                  ? register(`exercises.${exIndex}.sets.${setIndex}.rpe`, {
-                      validate: (v: string | undefined) => isValidSetRpe(v ?? '') || 'RPE is 1–10 in steps of 0.5',
-                    })
-                  : null
+                const rpeField = showRpe ? register(`exercises.${exIndex}.sets.${setIndex}.rpe`) : null
                 return (
                   <div
                     key={setField.id}
@@ -650,6 +654,21 @@ export function ExerciseEntryBlock({
                       className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
+                    {rpeField && (
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={2}
+                        placeholder="rpe"
+                        aria-label={`RPE for set ${setIndex + 1}`}
+                        className={`max-sm:hidden border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
+                        {...rpeField}
+                        onChange={(e) => {
+                          e.target.value = sanitizeRpeInput(e.target.value)
+                          return rpeField.onChange(e)
+                        }}
+                      />
+                    )}
                     {showDone && (
                       <label className="flex items-center justify-center cursor-pointer max-md:min-h-11 sm:order-2">
                         <input
@@ -669,41 +688,23 @@ export function ExerciseEntryBlock({
                         </span>
                       </label>
                     )}
-                    <div className="max-sm:col-span-3 max-sm:flex max-sm:gap-1.5 sm:contents">
-                      {rpeField && (
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="RPE"
-                          aria-label={`RPE for set ${setIndex + 1}`}
-                          aria-invalid={rpeError ? true : undefined}
-                          title={rpeError ? 'RPE is 1–10 in steps of 0.5' : undefined}
-                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark max-sm:w-16 max-sm:shrink-0 sm:w-full sm:order-1 ${rpeError ? 'border-error' : isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
-                          {...rpeField}
-                          onChange={(e) => {
-                            e.target.value = sanitizeDecimal(e.target.value)
-                            return rpeField.onChange(e)
-                          }}
-                        />
+                    <div className="relative max-sm:col-span-3 sm:order-1">
+                      <input
+                        type="text"
+                        placeholder="note"
+                        className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
+                        {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
+                      />
+                      {setValue && setValues[setIndex]?.notes && (
+                        <button
+                          type="button"
+                          onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
+                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong hover:text-text"
+                          aria-label="Clear notes"
+                        >
+                          <EraserIcon />
+                        </button>
                       )}
-                      <div className="relative max-sm:flex-1 max-sm:min-w-0 sm:order-1">
-                        <input
-                          type="text"
-                          placeholder="note"
-                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
-                          {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
-                        />
-                        {setValue && setValues[setIndex]?.notes && (
-                          <button
-                            type="button"
-                            onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                            className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong hover:text-text"
-                            aria-label="Clear notes"
-                          >
-                            <EraserIcon />
-                          </button>
-                        )}
-                      </div>
                     </div>
                     {setFields.length > 1 ? (
                       <button
@@ -716,11 +717,6 @@ export function ExerciseEntryBlock({
                       </button>
                     ) : (
                       <span className="max-sm:hidden sm:order-3" />
-                    )}
-                    {rpeError && (
-                      <p className="col-span-full order-last text-xs text-error-text">
-                        Set {setIndex + 1}: {rpeError.message}
-                      </p>
                     )}
                   </div>
                 )
