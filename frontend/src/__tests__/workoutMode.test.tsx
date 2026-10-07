@@ -23,7 +23,7 @@ import {
   stepValue,
 } from '../lib/workoutMode'
 
-const set = (reps: string, weight: string, done = false, notes = '') => ({ reps, weight, notes, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 const ex = (id: string, ...sets: ReturnType<typeof set>[]) => ({ exercise_id: id, sets })
 
 describe('progress and navigation', () => {
@@ -56,6 +56,8 @@ describe('progress and navigation', () => {
     expect(isBlankEntry(ex('', set('', '')))).toBe(true)
     expect(isBlankEntry(ex('', set('5', '')))).toBe(false)
     expect(isBlankEntry(ex('4', set('', '')))).toBe(false)
+    // A set with only an RPE has been touched
+    expect(isBlankEntry(ex('', set('', '', false, '', '8')))).toBe(false)
   })
 
   it('new exercises get three sets with reps and weight from last session', () => {
@@ -84,6 +86,9 @@ describe('formatting and steppers', () => {
   it('formats one set', () => {
     expect(formatSet(set('6', '100'))).toBe('6 × 100 kg')
     expect(formatSet(set('12', ''))).toBe('12 reps')
+    expect(formatSet(set('8', '100', true, '', '8'))).toBe('8 × 100 kg @8')
+    expect(formatSet(set('12', '', true, '', '10'))).toBe('12 reps @10')
+    expect(formatSet({ reps: '5', weight: '60' })).toBe('5 × 60 kg')
   })
 
   it('steps reps by 1 and weight by 2.5 without going below zero or float noise', () => {

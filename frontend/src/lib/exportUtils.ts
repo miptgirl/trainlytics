@@ -4,6 +4,7 @@ export interface StrengthSet {
   set_number: number
   reps: number | null
   weight: number | null
+  rpe?: number | null
 }
 
 export interface StrengthExerciseEntry {
@@ -91,7 +92,8 @@ export function formatStrengthSession(session: StrengthSession): string {
     for (const set of entry.sets) {
       const w = set.weight != null ? `${set.weight} kg` : '—'
       const r = set.reps != null ? String(set.reps) : '—'
-      lines.push(`- Set ${set.set_number}: ${w} × ${r}`)
+      const rpe = set.rpe != null ? ` @RPE ${set.rpe}` : ''
+      lines.push(`- Set ${set.set_number}: ${w} × ${r}${rpe}`)
     }
     sections.push(lines.join('\n'))
   }

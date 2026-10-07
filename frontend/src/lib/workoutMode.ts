@@ -75,7 +75,10 @@ export function exerciseAfterCompletion(exercises: Exercises, exIndex: number): 
 
 /** True for an untouched placeholder entry (no exercise, no values). */
 export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
-  return !entry.exercise_id && entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.done)
+  return (
+    !entry.exercise_id &&
+    entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.rpe && !s.done)
+  )
 }
 
 /** Three sets for a newly added exercise, reps and weight from last session when known. */
@@ -112,10 +115,11 @@ export function stepValue(value: string, delta: number): string {
   return formatNumber(Math.max(0, (Number.isFinite(n) ? n : 0) + delta))
 }
 
-/** "6 × 100 kg", "8 reps", "– × 60 kg" — one set as a compact label. */
-export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'>): string {
+/** "6 × 100 kg", "8 reps", "– × 60 kg", "8 × 100 kg @8" — one set as a compact label. */
+export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { rpe?: string }): string {
   const reps = set.reps || '–'
-  return set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
+  const label = set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
+  return set.rpe ? `${label} @${set.rpe}` : label
 }
 
 /**

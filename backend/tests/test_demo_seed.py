@@ -13,6 +13,9 @@ from app.models import (
     DailySteps,
     Exercise,
     PlannedSession,
+    StrengthExerciseEntry,
+    StrengthSession,
+    StrengthSet,
     StrengthTemplate,
     UserSettings,
     WeeklyPlan,
@@ -144,6 +147,20 @@ async def test_seed_populates_resets_and_isolates(
     assert TODAY not in logged_days and max(logged_days) < TODAY
     monday = TODAY - timedelta(days=TODAY.weekday())
     assert any(p.skip_note and monday <= p.planned_date < TODAY for p in planned)
+
+    # Per-set RPE lives in its own column, not in set notes
+    async with db_session() as db:
+        demo_sets = (await db.execute(
+            select(StrengthSet.rpe, StrengthSet.notes)
+            .join(StrengthExerciseEntry, StrengthExerciseEntry.id == StrengthSet.exercise_entry_id)
+            .join(StrengthSession, StrengthSession.id == StrengthExerciseEntry.strength_session_id)
+            .join(WorkoutSession, WorkoutSession.id == StrengthSession.session_id)
+            .where(WorkoutSession.user_id == demo)
+        )).all()
+    rpes = [r for r, _ in demo_sets if r is not None]
+    assert 0.2 * len(demo_sets) < len(rpes) < 0.5 * len(demo_sets)
+    assert set(rpes) <= {6, 7, 8, 9}
+    assert not any(n and "RPE" in n for _, n in demo_sets)
 
     second = await seed_demo(client, db_session, today=TODAY)
     assert second == first

@@ -120,8 +120,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok' },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough' },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
           ],
         },
       ],
@@ -161,7 +161,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null }],
+          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
         },
       ],
     })
@@ -197,8 +197,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 8, weight: 60, notes: null },
-            { set_number: 2, reps: 7, weight: 62.5, notes: null },
+            { set_number: 1, reps: 8, weight: 60, notes: null, rpe: null },
+            { set_number: 2, reps: 7, weight: 62.5, notes: null, rpe: null },
           ],
         },
       ],
@@ -253,8 +253,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 10, weight: 50, notes: null },
-            { set_number: 2, reps: null, weight: 55, notes: 'last' },
+            { set_number: 1, reps: 10, weight: 50, notes: null, rpe: null },
+            { set_number: 2, reps: null, weight: 55, notes: 'last', rpe: null },
           ],
         },
       ],

@@ -29,7 +29,7 @@ const storedDraft = () => {
   return raw === null ? null : JSON.parse(raw)
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-const set = (reps: string, weight: string, done = false, notes = '') => ({ reps, weight, notes, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 const tSet = (n: number, reps: number, weight_kg: number, notes: string | null = null) => ({
   set_number: n,
   reps,

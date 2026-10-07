@@ -84,6 +84,24 @@ describe('formatStrengthSession', () => {
     expect(result).toContain('\n\n### Deadlift')
   })
 
+  it('appends @RPE to a set line when the set has one', () => {
+    const session: StrengthSession = {
+      ...baseStrength,
+      exercises: [
+        {
+          exercise_name: 'Squat',
+          sets: [
+            { set_number: 1, reps: 5, weight: 100, rpe: 8 },
+            { set_number: 2, reps: 5, weight: 100, rpe: null },
+          ],
+        },
+      ],
+    }
+    const result = formatStrengthSession(session)
+    expect(result).toContain('- Set 1: 100 kg × 5 @RPE 8')
+    expect(result).toContain('- Set 2: 100 kg × 5\n')
+  })
+
   it('renders — for null set weight', () => {
     const session: StrengthSession = {
       ...baseStrength,

@@ -15,6 +15,7 @@ export function StrengthExerciseList({
   errors,
   exercises,
   showDone = false,
+  showRpe = true,
   prefillFromLastSession = true,
 }: {
   /* eslint-disable @typescript-eslint/no-explicit-any -- shared by forms with different value types */
@@ -25,6 +26,8 @@ export function StrengthExerciseList({
   /* eslint-enable @typescript-eslint/no-explicit-any */
   exercises: ExerciseOption[]
   showDone?: boolean
+  /** Per-set RPE column; on by default since this list only edits sessions. */
+  showRpe?: boolean
   prefillFromLastSession?: boolean
 }) {
   const [collapsedExercises, setCollapsedExercises] = useState<Set<number>>(new Set())
@@ -62,6 +65,7 @@ export function StrengthExerciseList({
             }}
             errors={errors}
             showDone={showDone}
+            showRpe={showRpe}
             prefillFromLastSession={prefillFromLastSession}
             isCollapsed={collapsedExercises.has(exIndex)}
             onToggleCollapse={() =>

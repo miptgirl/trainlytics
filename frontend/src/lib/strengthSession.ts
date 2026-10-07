@@ -65,8 +65,31 @@ export interface StrengthSessionPayload {
   exercises: {
     exercise_id: number
     order: number
-    sets: { set_number: number; reps: number | null; weight: number | null; notes: string | null }[]
+    sets: {
+      set_number: number
+      reps: number | null
+      weight: number | null
+      notes: string | null
+      rpe: number | null
+    }[]
   }[]
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-set RPE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Per-set RPE as sent to the API: an integer 1–10, or null when blank or out of range. */
+export function parseSetRpe(value: string | null | undefined): number | null {
+  if (typeof value !== 'string' || !/^\d+$/.test(value.trim())) return null
+  const n = parseInt(value, 10)
+  return n >= 1 && n <= 10 ? n : null
+}
+
+/** Keeps a typed per-set RPE to digits forming 1–10 ("11" → "1", "0" → ""). */
+export function sanitizeRpeInput(value: string): string {
+  const digits = value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 2)
+  return parseInt(digits, 10) > 10 ? digits.slice(0, 1) : digits
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -99,6 +122,7 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: s.notes ?? '',
+        rpe: '',
         done: false,
       })),
     })),
@@ -118,6 +142,7 @@ export function lastSessionToFormSets(data: LastSessionDefaults): SetFormValues[
     reps: s.reps !== null ? String(s.reps) : '',
     weight: s.weight !== null ? String(s.weight) : '',
     notes: '',
+    rpe: '',
     done: false,
   }))
 }
@@ -249,6 +274,7 @@ export function buildStrengthPayload(data: StrengthFormValues): StrengthSessionP
         reps: s.reps ? parseInt(s.reps, 10) : null,
         weight: s.weight ? parseFloat(s.weight) : null,
         notes: s.notes || null,
+        rpe: parseSetRpe(s.rpe),
       })),
     })),
   }
@@ -411,7 +437,13 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 
 function parseSet(raw: unknown): SetFormValues {
   const s = isRecord(raw) ? raw : {}
-  return { reps: str(s.reps), weight: str(s.weight), notes: str(s.notes), done: s.done === true }
+  return {
+    reps: str(s.reps),
+    weight: str(s.weight),
+    notes: str(s.notes),
+    rpe: str(s.rpe),
+    done: s.done === true,
+  }
 }
 
 function parseEntry(raw: unknown): ExerciseEntryFormValues {

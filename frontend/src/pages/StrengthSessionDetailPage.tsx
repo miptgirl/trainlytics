@@ -6,6 +6,7 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { formatStrengthSession } from '../lib/exportUtils'
+import { parseSetRpe } from '../lib/strengthSession'
 import { EmojiRating, EmojiRatingDisplay } from '../components/EmojiRating'
 import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -17,6 +18,7 @@ interface StrengthSet {
   reps: number | null
   weight: number | null
   notes: string | null
+  rpe: number | null
 }
 
 interface StrengthExerciseEntry {
@@ -69,6 +71,7 @@ function toForm(session: StrengthSession): EditFormValues {
         reps: s.reps?.toString() ?? '',
         weight: s.weight?.toString() ?? '',
         notes: s.notes ?? '',
+        rpe: s.rpe?.toString() ?? '',
         done: false,
       })),
     })),
@@ -238,6 +241,7 @@ export default function StrengthSessionDetailPage() {
             reps: s.reps ? parseInt(s.reps, 10) : null,
             weight: s.weight ? parseFloat(s.weight) : null,
             notes: s.notes || null,
+            rpe: parseSetRpe(s.rpe),
           })),
         })),
       }
@@ -365,19 +369,21 @@ export default function StrengthSessionDetailPage() {
             <div key={entry.id} className="bg-surface rounded-xl border border-border p-4">
               <h3 className="font-medium text-text mb-3">{entry.exercise_name}</h3>
 
-              <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 mb-2 px-1">
+              <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 mb-2 px-1">
                 <span className="text-xs text-text-muted-strong">#</span>
                 <span className="text-xs font-medium text-text-muted-strong">Reps</span>
                 <span className="text-xs font-medium text-text-muted-strong">Weight</span>
+                <span className="text-xs font-medium text-text-muted-strong">RPE</span>
                 <span className="text-xs font-medium text-text-muted-strong">Notes</span>
               </div>
 
               <div className="space-y-1">
                 {entry.sets.map((s) => (
-                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-border">
+                  <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-border">
                     <span className="text-xs text-text-muted-strong text-center">{s.set_number}</span>
                     <span className="text-sm text-text">{s.reps ?? '—'}</span>
                     <span className="text-sm text-text">{s.weight != null ? `${s.weight} kg` : '—'}</span>
+                    <span className="text-sm text-text tabular-nums">{s.rpe ?? '—'}</span>
                     <span className="text-sm text-text-muted-strong overflow-hidden truncate">{s.notes ?? ''}</span>
                   </div>
                 ))}

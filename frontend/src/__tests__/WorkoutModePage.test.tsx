@@ -77,7 +77,7 @@ function renderAt(url: string) {
 }
 
 const exerciseHeading = () => screen.getByRole('heading', { level: 2 })
-const set = (reps: string, weight: string, done = false, notes = '') => ({ reps, weight, notes, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 
 beforeEach(() => {
   localStorage.clear()
@@ -148,8 +148,8 @@ describe('Workout mode: payload parity with the full form', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok' },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough' },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
           ],
         },
       ],
@@ -298,6 +298,37 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Exercise 1 has no exercise chosen')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Workout mode: per-set RPE', () => {
+  it('a tapped chip shows on the done row, is not copied to the next set, and tapping it again clears it', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    const chip8 = screen.getByRole('button', { name: 'RPE 8 for set 1' })
+    expect(chip8).toHaveAttribute('aria-pressed', 'false')
+    await user.click(chip8)
+    expect(chip8).toHaveAttribute('aria-pressed', 'true')
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+
+    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8, done' })).toBeInTheDocument()
+    expect(screen.getByText('5 × 100 kg @8')).toBeInTheDocument()
+    // Never prefilled: the next set starts unrated
+    for (const n of [5, 6, 7, 8, 9, 10]) {
+      expect(screen.getByRole('button', { name: `RPE ${n} for set 2` })).toHaveAttribute('aria-pressed', 'false')
+    }
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe('8'))
+
+    await user.click(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8, done' }))
+    const again = screen.getByRole('button', { name: 'RPE 8 for set 1' })
+    expect(again).toHaveAttribute('aria-pressed', 'true')
+    await user.click(again)
+    expect(again).toHaveAttribute('aria-pressed', 'false')
+    await user.click(screen.getByRole('button', { name: 'Save set 1' }))
+    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe(''))
   })
 })
 

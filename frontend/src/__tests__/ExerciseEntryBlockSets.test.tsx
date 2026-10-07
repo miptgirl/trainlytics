@@ -13,7 +13,7 @@ import { ExerciseEntryBlock, type ExerciseEntryFormValues } from '../components/
 
 const exercises = [{ id: 1, name: 'Squat' }]
 
-function Harness({ showDone }: { showDone: boolean }) {
+function Harness({ showDone, showRpe }: { showDone: boolean; showRpe: boolean }) {
   const { register, control, setValue, formState } = useForm<{ exercises: ExerciseEntryFormValues[] }>({
     defaultValues: {
       exercises: [
@@ -41,6 +41,7 @@ function Harness({ showDone }: { showDone: boolean }) {
         onRemove={() => {}}
         errors={formState.errors}
         showDone={showDone}
+        showRpe={showRpe}
         prefillFromLastSession={false}
       />
       <output data-testid="values">{JSON.stringify(sets)}</output>
@@ -48,19 +49,19 @@ function Harness({ showDone }: { showDone: boolean }) {
   )
 }
 
-async function renderBlock(showDone: boolean) {
+async function renderBlock(showDone: boolean, showRpe = false) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   // act so the replacements fetch settles inside the test
   await act(async () => {
     render(
       <QueryClientProvider client={qc}>
-        <Harness showDone={showDone} />
+        <Harness showDone={showDone} showRpe={showRpe} />
       </QueryClientProvider>,
     )
   })
 }
 
-const values = () => JSON.parse(screen.getByTestId('values').textContent!) as { reps: string; done: boolean }[]
+const values = () => JSON.parse(screen.getByTestId('values').textContent!) as { reps: string; done: boolean; rpe?: string }[]
 const rows = () => screen.getAllByRole('button', { name: 'Remove set' }).map((b) => b.parentElement!)
 const follows = (a: Element, b: Element) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
 
@@ -115,6 +116,24 @@ describe('ExerciseEntryBlock set rows', () => {
     expect(rows()).toHaveLength(3)
     // Weight takes the column Done would use, so line 1 has no empty gap
     expect(within(rows()[0]).getByPlaceholderText('kg')).toHaveClass('max-sm:col-span-2')
+  })
+
+  it('shows an RPE input after Weight only when showRpe is set, hidden on phones', async () => {
+    const user = userEvent.setup()
+    await renderBlock(true, true)
+    const row = rows()[1]
+    const rpe = within(row).getByLabelText('RPE for set 2')
+    expect(rpe).toHaveClass('max-sm:hidden')
+    expect(rpe).toHaveAttribute('inputmode', 'numeric')
+    expect(follows(within(row).getByPlaceholderText('kg'), rpe)).toBe(true)
+    await user.type(rpe, '8')
+    expect(values()[1].rpe).toBe('8')
+  })
+
+  it('has no RPE column in the template editor layout', async () => {
+    await renderBlock(false)
+    expect(screen.queryByLabelText(/RPE for set/)).not.toBeInTheDocument()
+    expect(screen.queryByText('RPE')).not.toBeInTheDocument()
   })
 
   it('adds a set from the full-width button below the last set', async () => {
