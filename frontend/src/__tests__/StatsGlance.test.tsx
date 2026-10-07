@@ -82,9 +82,9 @@ const PROGRESSION: Record<string, unknown[]> = {
 }
 
 const CORRELATION = [
-  { date: '2026-09-20', wellbeing: 1, rpe: 1, type: 'strength' }, // outside 7 days
-  { date: '2026-10-02', wellbeing: 4, rpe: 3, type: 'strength' },
-  { date: '2026-10-06', wellbeing: 5, rpe: 4, type: 'cardio' },
+  { date: '2026-09-20', wellbeing: 1, rpe: 2, type: 'strength' }, // outside 7 days
+  { date: '2026-10-02', wellbeing: 4, rpe: 6, type: 'strength' },
+  { date: '2026-10-06', wellbeing: 5, rpe: 7, type: 'cardio' },
 ]
 
 function mockApi(overrides: Record<string, unknown> = {}) {
@@ -180,7 +180,7 @@ describe('StatsGlance', () => {
     renderGlance()
     const card = await screen.findByTestId('glance-readiness')
     expect(card).toHaveTextContent('4.5/5')
-    expect(card).toHaveTextContent('3.5/5')
+    expect(card).toHaveTextContent('6.5/10')
   })
 
   it('hides the readiness card when nothing falls in the last 7 days', async () => {

@@ -362,9 +362,11 @@ export function replaceExercise(
 
 /**
  * Version 2 adds `version` and `workout`. Version 1 (production before the
- * hook) was `{ ...form values, templateId }` with no version field; both load.
+ * hook) was `{ ...form values, templateId }` with no version field. Version 3
+ * stores session `rpe` on the 1–10 scale; older drafts load with `rpe: null`
+ * because their 1–5 values meant the opposite (1 = all-out). All versions load.
  */
-export const STRENGTH_DRAFT_VERSION = 2
+export const STRENGTH_DRAFT_VERSION = 3
 
 /** Workout-mode position, persisted with the draft so views can be switched. */
 export interface WorkoutModeState {
@@ -423,7 +425,7 @@ function parseEntry(raw: unknown): ExerciseEntryFormValues {
 }
 
 /**
- * Reads a stored draft (v1 or v2). Missing or malformed fields fall back to
+ * Reads a stored draft (v1–v3). Missing or malformed fields fall back to
  * values that build the same payload the form would have sent; returns null
  * only when the stored value is not an object.
  */
@@ -431,6 +433,7 @@ export function parseStrengthDraft(raw: unknown): StrengthDraft | null {
   if (!isRecord(raw)) return null
   const w = isRecord(raw.workout) ? raw.workout : {}
   const index = num(w.currentExerciseIndex)
+  const version = num(raw.version) ?? 1
   return {
     values: {
       title: str(raw.title),
@@ -439,7 +442,7 @@ export function parseStrengthDraft(raw: unknown): StrengthDraft | null {
       date: typeof raw.date === 'string' ? raw.date : localDateTimeNow(),
       notes: str(raw.notes),
       wellbeing: num(raw.wellbeing),
-      rpe: num(raw.rpe),
+      rpe: version >= 3 ? num(raw.rpe) : null,
       exercises: Array.isArray(raw.exercises) ? raw.exercises.map(parseEntry) : [emptyEntry()],
     },
     templateId: num(raw.templateId),

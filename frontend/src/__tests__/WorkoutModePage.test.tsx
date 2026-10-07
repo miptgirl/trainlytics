@@ -142,7 +142,7 @@ describe('Workout mode: payload parity with the full form', () => {
       date: new Date('2026-09-01T10:00').toISOString(),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,

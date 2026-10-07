@@ -1,6 +1,8 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -515,11 +517,21 @@ async def update_session(
     if ws_check is None or ws_check.user_id != user:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # The body is validated here rather than by FastAPI (the schema depends on
+    # the session type), so map pydantic errors to the usual 422 response.
+    try:
+        if ws_check.type == "cardio":
+            patch_cardio = CardioSessionPatch.model_validate(body)
+        elif ws_check.type == "strength":
+            patch_strength = StrengthSessionPatch.model_validate(body)
+        else:
+            raise HTTPException(status_code=400, detail="Unknown session type")
+    except ValidationError as e:
+        raise RequestValidationError(e.errors(include_url=False)) from e
+
     if ws_check.type == "cardio":
-        return await _patch_cardio(session_id, CardioSessionPatch.model_validate(body), user, db)
-    if ws_check.type == "strength":
-        return await _patch_strength(session_id, StrengthSessionPatch.model_validate(body), user, db)
-    raise HTTPException(status_code=400, detail="Unknown session type")
+        return await _patch_cardio(session_id, patch_cardio, user, db)
+    return await _patch_strength(session_id, patch_strength, user, db)
 
 
 async def _patch_cardio(

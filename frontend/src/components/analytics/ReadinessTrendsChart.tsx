@@ -39,24 +39,34 @@ export function ReadinessTrendsChart() {
 
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
+      <LineChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={gridColor()} />
         <XAxis
           dataKey="week"
           tick={{ fontSize: 11, fill: axisColor() }}
           interval="preserveStartEnd"
         />
+        {/* Wellbeing is 1–5 (left), session RPE 1–10 (right) */}
         <YAxis
+          yAxisId="wellbeing"
           domain={[1, 5]}
           ticks={[1, 2, 3, 4, 5]}
+          tick={{ fontSize: 12, fill: axisColor() }}
+        />
+        <YAxis
+          yAxisId="rpe"
+          orientation="right"
+          domain={[0, 10]}
+          ticks={[0, 2, 4, 6, 8, 10]}
           tick={{ fontSize: 12, fill: axisColor() }}
         />
         <Tooltip formatter={(v: number) => v.toFixed(1)} />
         <Legend />
         <Line
           type="monotone"
+          yAxisId="wellbeing"
           dataKey="wellbeing"
-          name="Avg Wellbeing"
+          name="Avg Wellbeing (1–5)"
           stroke={chartColor('success')}
           strokeWidth={2}
           dot={false}
@@ -64,8 +74,9 @@ export function ReadinessTrendsChart() {
         />
         <Line
           type="monotone"
+          yAxisId="rpe"
           dataKey="rpe"
-          name="Avg RPE"
+          name="Avg RPE (1–10)"
           stroke={chartColor('warning')}
           strokeWidth={2}
           dot={false}

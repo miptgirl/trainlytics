@@ -114,7 +114,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
       date: utc('2026-09-01T10:00'),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,

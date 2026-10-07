@@ -8,7 +8,7 @@ import { Layout } from '../components/Layout'
 import { TimeInput } from '../components/TimeInput'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, getMondayOfCurrentWeek, localDateTimeNow, toLocalDateStr } from '../lib/dateUtils'
-import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
+import { saveDraft, loadDraft, clearDraft, parseCardioDraft, serializeCardioDraft } from '../lib/draftUtils'
 import { kmToMetres } from '../lib/unitUtils'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
 import { EmojiRating } from '../components/EmojiRating'
@@ -229,13 +229,13 @@ function CardioForm({
     if (initialPlannedSessionId && !weekPlanForCardio) return // wait for query
 
     startupDone.current = true
-    const draft = loadDraft('cardio')
+    const draft = parseCardioDraft<CardioFormValues>(loadDraft('cardio'))
 
     if (draft && plannedSession) {
-      setPendingDraft(draft as CardioFormValues)
+      setPendingDraft(draft)
       setBannerMode('three-way')
     } else if (draft) {
-      setPendingDraft(draft as CardioFormValues)
+      setPendingDraft(draft)
       setBannerMode('draft')
     } else if (plannedSession) {
       injectPlannedSession(plannedSession)
@@ -249,7 +249,7 @@ function CardioForm({
       return
     }
     if (!isDirty) return
-    saveDraft('cardio', watchedFormValues)
+    saveDraft('cardio', serializeCardioDraft(watchedFormValues))
   }, [watchedFormValues, isDirty])
 
   function handleDiscard() {

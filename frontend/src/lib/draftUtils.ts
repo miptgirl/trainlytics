@@ -30,3 +30,22 @@ export function clearDraft(type: DraftType): void {
     // ignore
   }
 }
+
+/**
+ * Cardio drafts are the raw form values plus `version`. Version 2 stores
+ * session `rpe` on the 1–10 scale; older drafts (no version) had the inverted
+ * 1–5 scale, so their `rpe` is dropped on load.
+ */
+export const CARDIO_DRAFT_VERSION = 2
+
+export function serializeCardioDraft<T extends object>(values: T): T & { version: number } {
+  return { ...values, version: CARDIO_DRAFT_VERSION }
+}
+
+/** Form values from a stored cardio draft (without `version`); null when it is not an object. */
+export function parseCardioDraft<T extends object>(raw: object | null): T | null {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const { version, ...values } = raw as Record<string, unknown>
+  const v = typeof version === 'number' ? version : 1
+  return (v >= CARDIO_DRAFT_VERSION ? values : { ...values, rpe: null }) as T
+}

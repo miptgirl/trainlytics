@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { saveDraft, loadDraft, clearDraft } from '../lib/draftUtils'
+import {
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  parseCardioDraft,
+  serializeCardioDraft,
+  CARDIO_DRAFT_VERSION,
+} from '../lib/draftUtils'
 
 const store: Record<string, string> = {}
 
@@ -93,5 +100,26 @@ describe('error handling', () => {
       removeItem: () => {},
     })
     expect(() => saveDraft('cardio', { title: 'Run' })).not.toThrow()
+  })
+})
+
+describe('cardio draft versioning', () => {
+  it('stores the version and keeps rpe on round-trip', () => {
+    saveDraft('cardio', serializeCardioDraft({ title: 'Run', wellbeing: 3, rpe: 8 }))
+    const raw = loadDraft('cardio') as Record<string, unknown>
+    expect(raw.version).toBe(CARDIO_DRAFT_VERSION)
+    expect(parseCardioDraft(raw)).toEqual({ title: 'Run', wellbeing: 3, rpe: 8 })
+  })
+
+  it('drops rpe from an unversioned draft (old inverted 1–5 scale)', () => {
+    expect(parseCardioDraft({ title: 'Run', wellbeing: 3, rpe: 1 })).toEqual({
+      title: 'Run',
+      wellbeing: 3,
+      rpe: null,
+    })
+  })
+
+  it('returns null for a missing draft', () => {
+    expect(parseCardioDraft(null)).toBeNull()
   })
 })

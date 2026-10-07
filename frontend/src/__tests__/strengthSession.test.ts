@@ -30,7 +30,7 @@ const values: StrengthFormValues = {
   date: '2026-09-01T10:00',
   notes: 'Solid',
   wellbeing: 4,
-  rpe: 3,
+  rpe: 6,
   exercises: [
     { exercise_id: '1', sets: [set('6', '100', 'felt ok', true), set('5', '102.5', 'tough')] },
   ],
@@ -46,7 +46,7 @@ describe('buildStrengthPayload', () => {
       date: new Date('2026-09-01T10:00').toISOString(),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,
@@ -158,6 +158,31 @@ describe('strength draft schema', () => {
     const stored = JSON.parse(JSON.stringify(serializeStrengthDraft(draft)))
     expect(stored.version).toBe(STRENGTH_DRAFT_VERSION)
     expect(parseStrengthDraft(stored)).toEqual(draft)
+  })
+
+  it('is version 3', () => {
+    expect(STRENGTH_DRAFT_VERSION).toBe(3)
+  })
+
+  it('drops session rpe from a v2 draft (old inverted 1–5 scale)', () => {
+    const v2 = { ...serializeStrengthDraft(draft), version: 2, rpe: 1 }
+    const parsed = parseStrengthDraft(v2)!
+    expect(parsed.values.rpe).toBeNull()
+    // Everything else still loads
+    expect(parsed.values.wellbeing).toBe(4)
+    expect(parsed.templateId).toBe(3)
+  })
+
+  it('drops session rpe from a v1 draft with no version field', () => {
+    const v1: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe: 5 }
+    delete v1.version
+    expect(parseStrengthDraft(v1)!.values.rpe).toBeNull()
+  })
+
+  it('keeps session rpe from a v3 draft', () => {
+    const v3: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe: 8 }
+    expect(v3.version).toBe(3)
+    expect(parseStrengthDraft(v3)!.values.rpe).toBe(8)
   })
 
   it('stays flat so a v1 reader still finds the form values at the top level', () => {

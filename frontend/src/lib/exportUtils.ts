@@ -1,3 +1,4 @@
+import { RPE_OPTIONS, WELLBEING_OPTIONS, optionForValue } from '../components/emojiRatingOptions'
 import { metresToKm } from './unitUtils'
 
 export interface StrengthSet {
@@ -42,8 +43,17 @@ export interface CardioSession {
   rpe?: number | null
 }
 
-const WELLBEING_LABELS = ['😫 Exhausted', '😞 Not great', '😐 Okay', '🙂 Good', '😄 Great']
-const RPE_LABELS = ['😫 All-out', '😞 Hard', '😐 Moderate', '🙂 Easy', '😄 Very easy']
+/** "😐 Okay" */
+function feelingLabel(wellbeing: number): string {
+  const opt = optionForValue(WELLBEING_OPTIONS, wellbeing)
+  return `${opt.emoji} ${opt.label}`
+}
+
+/** "😐 Moderate (6/10)"; odd values take the nearest option's label. */
+function effortLabel(rpe: number): string {
+  const opt = optionForValue(RPE_OPTIONS, rpe)
+  return `${opt.emoji} ${opt.label} (${rpe}/10)`
+}
 
 function formatExportDate(isoString: string): string {
   const d = new Date(isoString)
@@ -79,10 +89,10 @@ export function formatStrengthSession(session: StrengthSession): string {
     summaryParts.push(`Calories: ${session.calories} kcal`)
   }
   if (session.wellbeing != null) {
-    summaryParts.push(`Feeling: ${WELLBEING_LABELS[session.wellbeing - 1]}`)
+    summaryParts.push(`Feeling: ${feelingLabel(session.wellbeing)}`)
   }
   if (session.rpe != null) {
-    summaryParts.push(`Effort: ${RPE_LABELS[session.rpe - 1]}`)
+    summaryParts.push(`Effort: ${effortLabel(session.rpe)}`)
   }
   sections.push(`## ${heading} – ${formatExportDate(session.date)}\n${summaryParts.join(' | ')}`)
 
@@ -123,10 +133,10 @@ export function formatCardioSession(session: CardioSession, typeName?: string): 
     summaryParts.push(`Calories: ${session.calories} kcal`)
   }
   if (session.wellbeing != null) {
-    summaryParts.push(`Feeling: ${WELLBEING_LABELS[session.wellbeing - 1]}`)
+    summaryParts.push(`Feeling: ${feelingLabel(session.wellbeing)}`)
   }
   if (session.rpe != null) {
-    summaryParts.push(`Effort: ${RPE_LABELS[session.rpe - 1]}`)
+    summaryParts.push(`Effort: ${effortLabel(session.rpe)}`)
   }
   sections.push(`## ${heading} – ${formatExportDate(session.date)}\n${summaryParts.join(' | ')}`)
 

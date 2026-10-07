@@ -27,7 +27,7 @@ const session = {
   calories: null,
   notes: null,
   wellbeing: 4,
-  rpe: 3,
+  rpe: 6,
   created_at: '2026-09-01T10:00:00Z',
   exercises: [
     {
@@ -112,7 +112,7 @@ describe('Strength session edit form', () => {
     await waitFor(() => expect(mockPatch).toHaveBeenCalled())
     const [path, payload] = mockPatch.mock.calls[0] as [string, Record<string, unknown>]
     expect(path).toBe('/sessions/5')
-    expect(payload).toMatchObject({ wellbeing: 4, rpe: 3 })
+    expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
       { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null }] },
     ])

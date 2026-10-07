@@ -349,7 +349,7 @@ async def test_readiness_trends_excludes_nulls(auth_client: AsyncClient, db_sess
     await _create_cardio_session(
         auth_client, "2026-01-05T08:00:00Z",
         [{"order": 1, "duration_seconds": 1800, "activity_type_id": run_id}],
-        wellbeing=4, rpe=3,
+        wellbeing=4, rpe=6,
     )
     # Session with null values
     await _create_cardio_session(
@@ -371,8 +371,8 @@ async def test_readiness_trends_excludes_nulls(auth_client: AsyncClient, db_sess
     week_point = data[0]
     # avg_wellbeing: (4 + 2) / 2 = 3.0
     assert week_point["avg_wellbeing"] == pytest.approx(3.0)
-    # avg_rpe: only one session with rpe=3
-    assert week_point["avg_rpe"] == pytest.approx(3.0)
+    # avg_rpe: only one session with rpe=6
+    assert week_point["avg_rpe"] == pytest.approx(6.0)
 
 
 # ── 1.10 Readiness correlation ────────────────────────────────────────────────
@@ -385,7 +385,7 @@ async def test_readiness_correlation_excludes_nulls(auth_client: AsyncClient, db
     await _create_cardio_session(
         auth_client, "2026-01-05T08:00:00Z",
         [{"order": 1, "duration_seconds": 1800, "activity_type_id": run_id}],
-        wellbeing=4, rpe=3,
+        wellbeing=4, rpe=6,
     )
     await _create_cardio_session(
         auth_client, "2026-01-06T08:00:00Z",
@@ -396,7 +396,7 @@ async def test_readiness_correlation_excludes_nulls(auth_client: AsyncClient, db
         auth_client, "2026-01-07T08:00:00Z",
         [{"exercise_id": ex_id, "order": 1,
           "sets": [{"set_number": 1, "reps": 5, "weight": 80.0}]}],
-        wellbeing=5, rpe=4,
+        wellbeing=5, rpe=8,
     )
 
     resp = await auth_client.get("/api/analytics/readiness/correlation")

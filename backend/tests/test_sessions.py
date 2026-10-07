@@ -876,3 +876,46 @@ async def test_segment_heart_rate_avg_removed(db_session, auth_client: AsyncClie
     assert resp.status_code == 201
     data = resp.json()
     assert "heart_rate_avg" not in data["segments"][0]
+
+
+# ── Session RPE (1–10, 10 = maximal effort) ──────────────────────────────────
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("rpe", [1, 7, 10])
+async def test_session_rpe_accepts_1_to_10(db_session, auth_client: AsyncClient, rpe: int):
+    cardio = await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "rpe": rpe})
+    assert cardio.status_code == 201
+    assert cardio.json()["rpe"] == rpe
+
+    ex_id = await _create_exercise(auth_client)
+    strength = await auth_client.post(
+        "/api/sessions/strength", json={**STRENGTH_PAYLOAD_FACTORY(ex_id), "rpe": rpe}
+    )
+    assert strength.status_code == 201
+    assert strength.json()["rpe"] == rpe
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("rpe", [0, 11])
+async def test_session_rpe_rejects_out_of_range(db_session, auth_client: AsyncClient, rpe: int):
+    cardio = await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "rpe": rpe})
+    assert cardio.status_code == 422
+
+    ex_id = await _create_exercise(auth_client)
+    strength = await auth_client.post(
+        "/api/sessions/strength", json={**STRENGTH_PAYLOAD_FACTORY(ex_id), "rpe": rpe}
+    )
+    assert strength.status_code == 422
+
+    created = await auth_client.post("/api/sessions/strength", json=STRENGTH_PAYLOAD_FACTORY(ex_id))
+    patch = await auth_client.patch(f"/api/sessions/{created.json()['id']}", json={"rpe": rpe})
+    assert patch.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_patch_session_rpe_to_10(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    created = await auth_client.post("/api/sessions/strength", json=STRENGTH_PAYLOAD_FACTORY(ex_id))
+    resp = await auth_client.patch(f"/api/sessions/{created.json()['id']}", json={"rpe": 10})
+    assert resp.status_code == 200
+    assert resp.json()["rpe"] == 10
