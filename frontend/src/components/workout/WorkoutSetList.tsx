@@ -100,10 +100,28 @@ function RpeChips({
   setNumber: number
   onChange: (value: string) => void
 }) {
+  // Chips cover 5–10; a value typed elsewhere (1–4) shows in the label with a Clear.
+  const offChip = value !== '' && !RPE_CHIPS.includes(value)
   return (
     <div>
-      <p className="text-xs font-medium text-text-muted-strong mb-1">RPE</p>
-      <div className="flex gap-1.5">
+      {offChip ? (
+        <div className="flex items-center gap-1 mb-1">
+          <p className="text-xs font-medium text-text-muted-strong">
+            RPE · <span className="font-semibold text-text">{value}</span>
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            aria-label={`Clear RPE for set ${setNumber}`}
+            className="min-h-11 px-2 text-sm font-medium text-primary-dark"
+          >
+            Clear
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs font-medium text-text-muted-strong mb-1">RPE</p>
+      )}
+      <div className="flex gap-1">
         {RPE_CHIPS.map((chip) => {
           const selected = value === chip
           return (
@@ -115,7 +133,7 @@ function RpeChips({
               aria-label={`RPE ${chip} for set ${setNumber}`}
               className={`flex-1 min-h-11 rounded-xl border text-base tabular-nums transition-colors ${
                 selected
-                  ? 'border-primary bg-primary-tint text-primary-dark font-semibold'
+                  ? 'border-primary-dark bg-primary-dark text-white font-semibold'
                   : 'border-border bg-surface text-text'
               }`}
             >
