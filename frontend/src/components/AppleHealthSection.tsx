@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '../lib/api'
+import { api, formatErrorDetail } from '../lib/api'
 import { useAuth } from '../contexts/AuthContext'
 
 interface MetricPrefs {
@@ -31,20 +31,6 @@ const METRIC_LABELS: { key: keyof MetricPrefs; label: string }[] = [
   { key: 'health_metric_vo2_max', label: 'VO₂ Max' },
   { key: 'health_metric_active_energy', label: 'Active Energy' },
 ]
-
-// FastAPI sends `detail` as a string for HTTPException and as a list of
-// { msg, loc, ... } objects for 422 validation errors. Rendering the list as
-// React children throws, so flatten it to text.
-function formatUploadErrorDetail(detail: unknown): string | null {
-  if (typeof detail === 'string') return detail.trim() ? detail : null
-  if (Array.isArray(detail)) {
-    const msgs = detail
-      .map((d) => (d && typeof d === 'object' && typeof d.msg === 'string' ? d.msg : null))
-      .filter((m): m is string => !!m)
-    return msgs.length > 0 ? msgs.join('; ') : null
-  }
-  return null
-}
 
 export function AppleHealthSection({
   health_metric_resting_hr,
@@ -135,7 +121,7 @@ export function AppleHealthSection({
         let msg = 'Upload failed.'
         try {
           const body = JSON.parse(xhr.responseText) as { detail?: unknown }
-          msg = formatUploadErrorDetail(body.detail) ?? msg
+          if (body.detail) msg = formatErrorDetail(body.detail)
         } catch { /* ignore */ }
         setUploadState({ phase: 'error', messages: [msg] })
       }

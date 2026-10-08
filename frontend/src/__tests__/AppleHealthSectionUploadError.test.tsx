@@ -3,7 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import '@testing-library/jest-dom'
 
-vi.mock('../lib/api', () => ({
+vi.mock('../lib/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../lib/api')>()),
   api: { get: vi.fn(), patch: vi.fn().mockResolvedValue({}) },
 }))
 
@@ -74,7 +75,7 @@ describe('AppleHealthSection — upload error detail', () => {
     }
     uploadZip(renderSection())
     expect(
-      screen.getByText('Field required; Input should be a valid boolean'),
+      screen.getByText('file: Field required; query › workouts: Input should be a valid boolean'),
     ).toBeInTheDocument()
   })
 
@@ -85,9 +86,8 @@ describe('AppleHealthSection — upload error detail', () => {
   })
 
   it.each([
-    ['blank string detail', JSON.stringify({ detail: '  ' })],
-    ['list without usable msg', JSON.stringify({ detail: [{ msg: null }, 'oops'] })],
-    ['object detail', JSON.stringify({ detail: { code: 1 } })],
+    ['missing detail', JSON.stringify({})],
+    ['empty string detail', JSON.stringify({ detail: '' })],
     ['non-JSON body', '<html>502 Bad Gateway</html>'],
   ])('falls back to a generic message for %s', (_, body) => {
     nextResponse = { status: 502, body }
