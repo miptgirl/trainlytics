@@ -32,6 +32,20 @@ const METRIC_LABELS: { key: keyof MetricPrefs; label: string }[] = [
   { key: 'health_metric_active_energy', label: 'Active Energy' },
 ]
 
+// FastAPI sends `detail` as a string for HTTPException and as a list of
+// { msg, loc, ... } objects for 422 validation errors. Rendering the list as
+// React children throws, so flatten it to text.
+function formatUploadErrorDetail(detail: unknown): string | null {
+  if (typeof detail === 'string') return detail.trim() ? detail : null
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((d) => (d && typeof d === 'object' && typeof d.msg === 'string' ? d.msg : null))
+      .filter((m): m is string => !!m)
+    return msgs.length > 0 ? msgs.join('; ') : null
+  }
+  return null
+}
+
 export function AppleHealthSection({
   health_metric_resting_hr,
   health_metric_hrv,
@@ -120,8 +134,8 @@ export function AppleHealthSection({
       } else {
         let msg = 'Upload failed.'
         try {
-          const body = JSON.parse(xhr.responseText) as { detail?: string }
-          if (body.detail) msg = body.detail
+          const body = JSON.parse(xhr.responseText) as { detail?: unknown }
+          msg = formatUploadErrorDetail(body.detail) ?? msg
         } catch { /* ignore */ }
         setUploadState({ phase: 'error', messages: [msg] })
       }
