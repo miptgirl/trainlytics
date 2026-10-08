@@ -83,4 +83,15 @@ describe('AppleHealthSection — upload error detail', () => {
     uploadZip(renderSection())
     expect(screen.getByText('Not a valid Apple Health export.')).toBeInTheDocument()
   })
+
+  it.each([
+    ['blank string detail', JSON.stringify({ detail: '  ' })],
+    ['list without usable msg', JSON.stringify({ detail: [{ msg: null }, 'oops'] })],
+    ['object detail', JSON.stringify({ detail: { code: 1 } })],
+    ['non-JSON body', '<html>502 Bad Gateway</html>'],
+  ])('falls back to a generic message for %s', (_, body) => {
+    nextResponse = { status: 502, body }
+    uploadZip(renderSection())
+    expect(screen.getByText('Upload failed.')).toBeInTheDocument()
+  })
 })

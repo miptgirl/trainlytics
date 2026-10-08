@@ -36,10 +36,10 @@ const METRIC_LABELS: { key: keyof MetricPrefs; label: string }[] = [
 // { msg, loc, ... } objects for 422 validation errors. Rendering the list as
 // React children throws, so flatten it to text.
 function formatUploadErrorDetail(detail: unknown): string | null {
-  if (typeof detail === 'string') return detail || null
+  if (typeof detail === 'string') return detail.trim() ? detail : null
   if (Array.isArray(detail)) {
     const msgs = detail
-      .map((d) => (d && typeof d === 'object' && 'msg' in d ? String(d.msg) : null))
+      .map((d) => (d && typeof d === 'object' && typeof d.msg === 'string' ? d.msg : null))
       .filter((m): m is string => !!m)
     return msgs.length > 0 ? msgs.join('; ') : null
   }
