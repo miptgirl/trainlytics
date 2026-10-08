@@ -1,6 +1,8 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -38,6 +40,31 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
+
+SESSION_RPE_SCALE_HEADER = "X-Session-Rpe-Scale"
+# No final period: clients wrap it, e.g. "Couldn't save the workout: <detail>. It's still kept…"
+STALE_CLIENT_DETAIL = "The app was updated. Reload the page and set effort again"
+
+
+def _require_rpe_scale(rpe: int | None, scale: str | None) -> None:
+    """Refuse a session-level rpe from a client that may still use the old scale.
+
+    Session RPE moved from an inverted 1–5 scale (1 = All-out) to 1–10
+    (10 = maximal effort). A bundle loaded before that deploy would send
+    `rpe: 1` meaning All-out, which now reads as very easy. Current clients send
+    `X-Session-Rpe-Scale: 10`; without it a non-null rpe gets a 409 so the user
+    reloads instead of saving an inverted value. Remove this check once no
+    pre-1–10 clients can exist (open tabs, installed PWAs).
+    """
+    if rpe is not None and scale != "10":
+        raise HTTPException(status_code=409, detail=STALE_CLIENT_DETAIL)
+
+
+def _rpe_scale_header(
+    value: str | None = Header(default=None, alias=SESSION_RPE_SCALE_HEADER),
+) -> str | None:
+    return value
+
 
 def _build_cardio_out(ws: WorkoutSession) -> CardioSessionOut:
     cs = ws.cardio_session
@@ -233,7 +260,9 @@ async def create_cardio_session(
     body: CardioSessionCreate,
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    rpe_scale: str | None = Depends(_rpe_scale_header),
 ) -> CardioSessionOut:
+    _require_rpe_scale(body.rpe, rpe_scale)
     ws = WorkoutSession(
         user_id=user,
         type="cardio",
@@ -282,7 +311,9 @@ async def create_strength_session(
     body: StrengthSessionCreate,
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    rpe_scale: str | None = Depends(_rpe_scale_header),
 ) -> StrengthSessionOut:
+    _require_rpe_scale(body.rpe, rpe_scale)
     exercise_ids = [e.exercise_id for e in body.exercises]
     result = await db.execute(
         select(Exercise).where(Exercise.id.in_(exercise_ids), Exercise.user_id == user)
@@ -511,16 +542,31 @@ async def update_session(
     body: dict,
     user: str = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
+    rpe_scale: str | None = Depends(_rpe_scale_header),
 ) -> Any:
     ws_check = await db.get(WorkoutSession, session_id)
     if ws_check is None or ws_check.user_id != user:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if ws_check.type == "cardio":
-        return await _patch_cardio(session_id, CardioSessionPatch.model_validate(body), user, db)
-    if ws_check.type == "strength":
-        return await _patch_strength(session_id, StrengthSessionPatch.model_validate(body), user, db)
-    raise HTTPException(status_code=400, detail="Unknown session type")
+    patchers = {
+        "cardio": (CardioSessionPatch, _patch_cardio),
+        "strength": (StrengthSessionPatch, _patch_strength),
+    }
+    if ws_check.type not in patchers:
+        raise HTTPException(status_code=400, detail="Unknown session type")
+    schema, apply_patch = patchers[ws_check.type]
+
+    # The body is validated here rather than by FastAPI (the schema depends on
+    # the session type), so map pydantic errors to the usual 422 response.
+    try:
+        patch = schema.model_validate(body)
+    except ValidationError as e:
+        # "body" prefix: same `loc` shape as FastAPI's own request validation errors
+        raise RequestValidationError(
+            [{**err, "loc": ("body", *err["loc"])} for err in e.errors(include_url=False)]
+        ) from e
+    _require_rpe_scale(patch.rpe, rpe_scale)
+    return await apply_patch(session_id, patch, user, db)
 
 
 async def _patch_cardio(

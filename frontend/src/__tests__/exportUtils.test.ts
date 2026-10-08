@@ -146,14 +146,32 @@ describe('formatStrengthSession', () => {
   })
 
   it('includes rpe in summary when set', () => {
-    const result = formatStrengthSession({ ...baseStrength, rpe: 2 })
-    expect(result).toContain('Effort: 😞 Hard')
+    const result = formatStrengthSession({ ...baseStrength, rpe: 8 })
+    expect(result).toContain('Effort: 😞 Hard (8/10)')
   })
 
   it('includes both wellbeing and rpe when set', () => {
-    const result = formatStrengthSession({ ...baseStrength, wellbeing: 5, rpe: 1 })
+    const result = formatStrengthSession({ ...baseStrength, wellbeing: 5, rpe: 10 })
     expect(result).toContain('Feeling: 😄 Great')
-    expect(result).toContain('Effort: 😫 All-out')
+    expect(result).toContain('Effort: 😫 All-out (10/10)')
+  })
+
+  it.each([
+    [2, '😄 Very easy (2/10)'],
+    [4, '🙂 Easy (4/10)'],
+    [6, '😐 Moderate (6/10)'],
+    [8, '😞 Hard (8/10)'],
+    [10, '😫 All-out (10/10)'],
+  ])('labels session rpe %i by value', (rpe, label) => {
+    expect(formatStrengthSession({ ...baseStrength, rpe })).toContain(`Effort: ${label}`)
+  })
+
+  it.each([
+    [1, '😄 Very easy (1/10)'],
+    [7, '😐 Moderate (7/10)'],
+    [9, '😞 Hard (9/10)'],
+  ])('labels odd session rpe %i with the nearest option', (rpe, label) => {
+    expect(formatStrengthSession({ ...baseStrength, rpe })).toContain(`Effort: ${label}`)
   })
 
   it('omits feeling and effort lines when wellbeing and rpe are null', () => {
@@ -303,8 +321,8 @@ describe('formatCardioSession', () => {
   })
 
   it('includes rpe in summary when set', () => {
-    const result = formatCardioSession({ ...baseCardio, rpe: 3 }, 'Run')
-    expect(result).toContain('Effort: 😐 Moderate')
+    const result = formatCardioSession({ ...baseCardio, rpe: 6 }, 'Run')
+    expect(result).toContain('Effort: 😐 Moderate (6/10)')
   })
 
   it('omits feeling and effort lines when wellbeing and rpe are null', () => {

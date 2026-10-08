@@ -27,7 +27,7 @@ const session = {
   calories: null,
   notes: null,
   wellbeing: 4,
-  rpe: 3,
+  rpe: 6,
   created_at: '2026-09-01T10:00:00Z',
   exercises: [
     {
@@ -136,6 +136,38 @@ describe('Strength session edit form', () => {
     expect(payload.exercises[0].sets[0].rpe).toBe(9)
   })
 
+  it('refuses a set RPE that would not be saved, and the message clears once it is fixed', async () => {
+    // Not reachable by typing (the field clamps to 1–10); a stored value can still be off
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/sessions/5') {
+        return { ...session, exercises: [{ ...session.exercises[0], sets: [{ ...session.exercises[0].sets[0], rpe: 12 }] }] } as never
+      }
+      if (path === '/exercises') return exerciseList as never
+      if (path.endsWith('/replacements')) return [] as never
+      return { sets: [] } as never
+    })
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Squat, set 1: RPE "12" must be a whole number from 1 to 10.')
+    expect(mockPatch).not.toHaveBeenCalled()
+
+    const rpe = screen.getByLabelText('RPE for set 1')
+    await user.clear(rpe)
+    await user.type(rpe, '9')
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+  })
+
+  it('shows the server error when saving fails', async () => {
+    mockPatch.mockRejectedValue(new Error('Input should be less than or equal to 10'))
+    const user = await openEdit()
+    await screen.findByRole('button', { name: /Squat/ })
+    await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Couldn't save the changes: Input should be less than or equal to 10",
+    )
+  })
+
   it('includes wellbeing and rpe in the PATCH payload', async () => {
     const user = await openEdit()
     await screen.findByRole('button', { name: /Squat/ })
@@ -144,7 +176,7 @@ describe('Strength session edit form', () => {
     await waitFor(() => expect(mockPatch).toHaveBeenCalled())
     const [path, payload] = mockPatch.mock.calls[0] as [string, Record<string, unknown>]
     expect(path).toBe('/sessions/5')
-    expect(payload).toMatchObject({ wellbeing: 4, rpe: 3 })
+    expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
       { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }] },
     ])

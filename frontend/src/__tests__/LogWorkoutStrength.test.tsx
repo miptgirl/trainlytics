@@ -114,7 +114,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
       date: utc('2026-09-01T10:00'),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,
@@ -135,8 +135,11 @@ describe('LogWorkoutPage strength path: POST body', () => {
 
     await screen.findByText(/Pre-filled from/)
     await user.click(screen.getAllByRole('button', { name: 'Remove set' })[1])
+    await user.type(screen.getByLabelText('RPE for set 1'), '9')
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    // RPE is not part of the template, so it is not listed as a change
     expect(await screen.findByText('Removed 1 set from Squat')).toBeInTheDocument()
+    expect(screen.queryByText(/RPE/i, { selector: 'li' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Yes, update template' }))
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
@@ -161,10 +164,52 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
+          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9 }],
         },
       ],
     })
+    // The template PATCH carries no RPE
+    const templateBody = mockPatch.mock.calls[0][1] as { exercises: { sets: object[] }[] }
+    expect(templateBody.exercises[0].sets[0]).not.toHaveProperty('rpe')
+  })
+
+  it('changing only set RPE on a template session asks nothing and posts it', async () => {
+    const user = userEvent.setup()
+    renderPage('/log?type=strength&templateId=3&date=2026-09-01T10:00')
+    await screen.findByText(/Pre-filled from/)
+    await user.type(screen.getByLabelText('RPE for set 2'), '8')
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText(/Update template/)).not.toBeInTheDocument()
+    expect(mockPatch).not.toHaveBeenCalled()
+    const body = mockPost.mock.calls[0][1] as { exercises: { sets: { rpe: number | null }[] }[] }
+    expect(body.exercises[0].sets.map((s) => s.rpe)).toEqual([null, 8])
+  })
+
+  it('a set RPE that would not be saved blocks the save, even in a collapsed exercise', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Old draft', duration_seconds: null, calories: '', date: '2026-08-30T18:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', rpe: '7.5', done: false }] }],
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage('/log?type=strength')
+    await user.click(await screen.findByRole('button', { name: 'Restore' }))
+    await waitFor(() => expect(screen.getByDisplayValue('Old draft')).toBeInTheDocument())
+    // Collapsing unmounts the set inputs, so only a check on the values can catch it
+    await user.click(screen.getByLabelText('Collapse exercise'))
+    expect(screen.queryByLabelText('RPE for set 1')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Bench, set 1: RPE "7.5" must be a whole number from 1 to 10.',
+    )
+    // Without the check, parseSetRpe would send rpe: null and drop the value silently
+    expect(mockPost).not.toHaveBeenCalled()
   })
 
   it('no template: picker + last-session defaults posts directly without a diff prompt', async () => {
@@ -274,7 +319,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
 
   it('keeps the draft and shows an error when the save fails; clears it on success', async () => {
     const user = userEvent.setup()
-    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    mockPost.mockRejectedValueOnce(new Error('exercise 1 › set 1 › reps: Input should be a valid integer'))
     renderPage('/log?type=strength&date=2026-09-02T07:30')
 
     await user.click(await screen.findByText('— select exercise —'))
@@ -284,7 +329,10 @@ describe('LogWorkoutPage strength path: POST body', () => {
     await waitFor(() => expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull())
 
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
-    expect(await screen.findByText('Failed to save session. Please try again.')).toBeInTheDocument()
+    // The server's reason, not a generic message
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'exercise 1 › set 1 › reps: Input should be a valid integer',
+    )
     expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Save Session' }))

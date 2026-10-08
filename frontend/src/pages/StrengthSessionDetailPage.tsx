@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { formatStrengthSession } from '../lib/exportUtils'
-import { parseSetRpe } from '../lib/strengthSession'
+import { findInvalidSetRpe, parseSetRpe } from '../lib/strengthSession'
 import { EmojiRating, EmojiRatingDisplay } from '../components/EmojiRating'
 import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -86,19 +86,35 @@ function EditForm({
   onSave,
   onCancel,
   isPending,
+  errorMessage,
 }: {
   session: StrengthSession
   exercises: ExerciseOption[]
   onSave: (data: EditFormValues) => void
   onCancel: () => void
   isPending: boolean
+  /** Why the last save failed on the server, or null. */
+  errorMessage: string | null
 }) {
   const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<EditFormValues>({
     defaultValues: toForm(session),
   })
+  // Checks values, not inputs: a collapsed exercise has no mounted RPE input.
+  // After a refused save the message follows the live values, so it clears once fixed.
+  const [showRpeError, setShowRpeError] = useState(false)
+  const watchedExercises = useWatch({ control, name: 'exercises' })
+  const names = new Map(exercises.map((e) => [String(e.id), e.name]))
+  const invalidRpe = (list: ExerciseEntryFormValues[] | undefined) => findInvalidSetRpe(list, (id) => names.get(id))
+  const rpeError = showRpeError ? (invalidRpe(watchedExercises)?.message ?? null) : null
+
+  function save(data: EditFormValues) {
+    const ok = invalidRpe(data.exercises) === null
+    setShowRpeError(!ok)
+    if (ok) onSave(data)
+  }
 
   return (
-    <form onSubmit={handleSubmit(onSave)} className="space-y-6">
+    <form onSubmit={handleSubmit(save)} className="space-y-6">
       <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
         <div>
           <label className="block text-sm font-medium text-text mb-1">Title</label>
@@ -183,6 +199,11 @@ function EditForm({
         prefillFromLastSession={false}
       />
 
+      {(rpeError ?? errorMessage) && (
+        <p role="alert" className="text-sm text-error-text">
+          {rpeError ?? `Couldn't save the changes: ${errorMessage}`}
+        </p>
+      )}
       <div className="flex gap-3">
         <button
           type="submit"
@@ -336,8 +357,12 @@ export default function StrengthSessionDetailPage() {
           session={session}
           exercises={exercises}
           onSave={(data) => updateMutation.mutate(data)}
-          onCancel={() => setEditing(false)}
+          onCancel={() => {
+            updateMutation.reset()
+            setEditing(false)
+          }}
           isPending={updateMutation.isPending}
+          errorMessage={updateMutation.isError ? updateMutation.error.message || 'Request failed' : null}
         />
       ) : (
         <div className="space-y-4">

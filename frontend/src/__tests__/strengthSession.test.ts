@@ -7,6 +7,10 @@ import {
   insertSet,
   insertExercise,
   describeDraft,
+  computeDiff,
+  findInvalidSetRpe,
+  isValidSetRpe,
+  toTemplatePayload,
   parseSetRpe,
   parseStrengthDraft,
   parseStrengthFormParams,
@@ -32,7 +36,7 @@ const values: StrengthFormValues = {
   date: '2026-09-01T10:00',
   notes: 'Solid',
   wellbeing: 4,
-  rpe: 3,
+  rpe: 6,
   exercises: [
     { exercise_id: '1', sets: [set('6', '100', 'felt ok', true), set('5', '102.5', 'tough')] },
   ],
@@ -48,7 +52,7 @@ describe('buildStrengthPayload', () => {
       date: new Date('2026-09-01T10:00').toISOString(),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,
@@ -116,6 +120,36 @@ describe('per-set RPE', () => {
     expect(sanitizeRpeInput('0')).toBe('')
     expect(sanitizeRpeInput('7.5')).toBe('7')
     expect(sanitizeRpeInput('a9')).toBe('9')
+  })
+
+  it('flags a set RPE that would not be saved, naming exercise and set', () => {
+    for (const ok of ['', ' ', '1', '8', '10']) expect(isValidSetRpe(ok)).toBe(true)
+    for (const bad of ['0', '11', '7.5', 'x']) expect(isValidSetRpe(bad)).toBe(false)
+    const exercises: ExerciseEntryFormValues[] = [
+      { exercise_id: '1', sets: [set('5', '100', '', true, '8')] },
+      { exercise_id: '2', sets: [set('8', '60'), set('8', '60', '', false, '7.5')] },
+    ]
+    const names = new Map([['2', 'Bench']])
+    expect(findInvalidSetRpe(exercises, (id) => names.get(id))).toEqual({
+      exerciseIndex: 1,
+      setIndex: 1,
+      message: 'Bench, set 2: RPE "7.5" must be a whole number from 1 to 10.',
+    })
+    expect(findInvalidSetRpe(exercises.slice(0, 1), () => undefined)).toBeNull()
+    expect(findInvalidSetRpe(undefined, () => undefined)).toBeNull()
+  })
+
+  it('stays out of templates: not saved to them and not a template change', () => {
+    const snapshot = {
+      id: 3,
+      name: 'Leg day',
+      exercises: [
+        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100, notes: null }] },
+      ],
+    }
+    const form = { ...values, exercises: [{ exercise_id: '1', sets: [set('5', '100', '', true, '9')] }] }
+    expect(toTemplatePayload(form).exercises[0].sets[0]).not.toHaveProperty('rpe')
+    expect(computeDiff(snapshot, form, new Map([[1, 'Squat']]))).toEqual([])
   })
 
   it('addSet does not copy RPE from the previous set', () => {
@@ -199,6 +233,32 @@ describe('strength draft schema', () => {
     const stored = JSON.parse(JSON.stringify(serializeStrengthDraft(draft)))
     expect(stored.version).toBe(STRENGTH_DRAFT_VERSION)
     expect(parseStrengthDraft(stored)).toEqual(draft)
+  })
+
+  it('drops session rpe from a v2 draft (old inverted 1–5 scale)', () => {
+    const v2 = { ...serializeStrengthDraft(draft), version: 2, rpe: 1 }
+    const parsed = parseStrengthDraft(v2)!
+    expect(parsed.values.rpe).toBeNull()
+    // Everything else still loads
+    expect(parsed.values.wellbeing).toBe(4)
+    expect(parsed.templateId).toBe(3)
+  })
+
+  it('drops session rpe from a v1 draft with no version field', () => {
+    const v1: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe: 5 }
+    delete v1.version
+    expect(parseStrengthDraft(v1)!.values.rpe).toBeNull()
+  })
+
+  it.each([7.5, 0, 11, '8', null])('loads a v3 session rpe of %s as null (not an integer 1–10)', (rpe) => {
+    const v3: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe }
+    expect(parseStrengthDraft(v3)!.values.rpe).toBeNull()
+  })
+
+  it('keeps session rpe from a v3 draft', () => {
+    const v3: Record<string, unknown> = { ...serializeStrengthDraft(draft), rpe: 8 }
+    expect(v3.version).toBe(3)
+    expect(parseStrengthDraft(v3)!.values.rpe).toBe(8)
   })
 
   it('stays flat so a v1 reader still finds the form values at the top level', () => {

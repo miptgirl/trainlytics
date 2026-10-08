@@ -84,3 +84,28 @@ describe('api 401 handling', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/login')
   })
 })
+
+describe('session RPE scale header', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    fetchMock.mockImplementation(async () => json(200, { id: 1 }))
+    vi.stubGlobal('fetch', fetchMock)
+    setToken('token')
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('is sent on every request, so the API accepts a session rpe', async () => {
+    await api.post('/sessions/strength', { rpe: 8 })
+    await api.patch('/sessions/1', { rpe: 2 })
+    await api.get('/sessions')
+    for (const [, init] of fetchMock.mock.calls as [string, RequestInit][]) {
+      expect((init.headers as Record<string, string>)['X-Session-Rpe-Scale']).toBe('10')
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+})

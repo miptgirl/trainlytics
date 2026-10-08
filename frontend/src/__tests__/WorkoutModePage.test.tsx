@@ -142,7 +142,7 @@ describe('Workout mode: payload parity with the full form', () => {
       date: new Date('2026-09-01T10:00').toISOString(),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,
@@ -329,6 +329,31 @@ describe('Workout mode: per-set RPE', () => {
     await user.click(screen.getByRole('button', { name: 'Save set 1' }))
     expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toBeInTheDocument()
     await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe(''))
+  })
+
+  it('Finish is refused while a set has an RPE that would not be saved', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Full body', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true)] },
+          { exercise_id: '2', sets: [set('8', '60', true), set('8', '60', true, '', '85')] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Finish ›' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Bench, set 2: RPE "85" must be a whole number from 1 to 10.')
+    // Jumps to the exercise with the bad value; no finish sheet, nothing sent
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expect(screen.queryByRole('dialog', { name: 'Finish workout' })).not.toBeInTheDocument()
+    expect(mockPost).not.toHaveBeenCalled()
   })
 })
 

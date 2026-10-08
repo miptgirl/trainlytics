@@ -42,7 +42,7 @@ class CardioSessionCreate(BaseModel):
     title: str | None = None
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
-    rpe: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=10)
     avg_hr_bpm: int | None = None
     z1_seconds: int | None = None
     z2_seconds: int | None = None
@@ -60,7 +60,7 @@ class CardioSessionPatch(BaseModel):
     title: str | None = None
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
-    rpe: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=10)
     avg_hr_bpm: int | None = None
     z1_seconds: int | None = None
     z2_seconds: int | None = None
@@ -135,7 +135,7 @@ class StrengthSessionCreate(BaseModel):
     title: str | None = None
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
-    rpe: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=10)
     duration_seconds: int | None = None
     template_id: int | None = None
     exercises: list[StrengthExerciseEntryCreate]
@@ -147,7 +147,7 @@ class StrengthSessionPatch(BaseModel):
     title: str | None = None
     calories: int | None = None
     wellbeing: int | None = Field(default=None, ge=1, le=5)
-    rpe: int | None = Field(default=None, ge=1, le=5)
+    rpe: int | None = Field(default=None, ge=1, le=10)
     duration_seconds: int | None = None
     exercises: list[StrengthExerciseEntryCreate] | None = None
 

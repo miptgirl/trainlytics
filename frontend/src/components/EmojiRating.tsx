@@ -1,6 +1,8 @@
-import { RPE_OPTIONS, WELLBEING_OPTIONS } from './emojiRatingOptions'
+import { RPE_OPTIONS, WELLBEING_OPTIONS, optionForValue } from './emojiRatingOptions'
 
 export interface EmojiOption {
+  /** Stored value; options need not be consecutive (RPE emits 2/4/6/8/10). */
+  value: number
   emoji: string
   label: string
 }
@@ -17,14 +19,14 @@ export function EmojiRating({ label, options, value, onChange }: EmojiRatingProp
     <div>
       <p className="text-sm font-medium text-text mb-2">{label}</p>
       <div className="flex gap-1 justify-between">
-        {options.map((opt, i) => {
-          const grade = i + 1
-          const selected = value === grade
+        {options.map((opt) => {
+          const selected = value === opt.value
           return (
             <button
-              key={grade}
+              key={opt.value}
               type="button"
-              onClick={() => onChange(selected ? null : grade)}
+              aria-pressed={selected}
+              onClick={() => onChange(selected ? null : opt.value)}
               className={`flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-lg border transition-colors ${
                 selected
                   ? 'border-primary bg-primary-tint'
@@ -52,20 +54,24 @@ interface EmojiDisplayProps {
 
 export function EmojiRatingDisplay({ wellbeing, rpe }: EmojiDisplayProps) {
   if (wellbeing == null && rpe == null) return null
+  const feeling = wellbeing != null ? optionForValue(WELLBEING_OPTIONS, wellbeing) : null
+  const effort = rpe != null ? optionForValue(RPE_OPTIONS, rpe) : null
   return (
     <div className="flex gap-4">
-      {wellbeing != null && (
+      {feeling && (
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-text-muted-strong">Feeling</span>
-          <span className="text-lg leading-none">{WELLBEING_OPTIONS[wellbeing - 1].emoji}</span>
-          <span className="text-xs text-text">{WELLBEING_OPTIONS[wellbeing - 1].label}</span>
+          <span className="text-lg leading-none">{feeling.emoji}</span>
+          <span className="text-xs text-text">{feeling.label}</span>
         </div>
       )}
-      {rpe != null && (
+      {effort && (
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-text-muted-strong">Effort</span>
-          <span className="text-lg leading-none">{RPE_OPTIONS[rpe - 1].emoji}</span>
-          <span className="text-xs text-text">{RPE_OPTIONS[rpe - 1].label}</span>
+          <span className="text-lg leading-none">{effort.emoji}</span>
+          <span className="text-xs text-text">
+            {effort.label} <span className="text-text-muted-strong tabular-nums">({rpe}/10)</span>
+          </span>
         </div>
       )}
     </div>

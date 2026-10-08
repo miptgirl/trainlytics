@@ -119,9 +119,15 @@ def compact_sets(sets: list[Any]) -> str:
         return s.weight if hasattr(s, "weight") else s.get("weight_kg") or s.get("weight")
 
     def _rpe(s: Any) -> int | None:
-        if isinstance(s, dict):
-            return s.get("rpe")
-        return getattr(s, "rpe", None)
+        raw = s.get("rpe") if isinstance(s, dict) else getattr(s, "rpe", None)
+        # The adapt-session snapshot is unvalidated client JSON: keep whole numbers
+        # 1–10 (8 or 8.0), ignore anything else rather than printing it into the prompt
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            return None
+        # Range first: float() of a huge int (10**400) raises OverflowError; NaN fails it too
+        if not 1 <= raw <= 10 or not float(raw).is_integer():
+            return None
+        return int(raw)
 
     def _key(s: Any) -> tuple:
         return (_reps(s), _weight(s), _rpe(s))
@@ -303,7 +309,8 @@ def compact_session_summary(ws: WorkoutSession) -> str:
         if ws.wellbeing is not None:
             wb_parts.append(f"wellbeing={ws.wellbeing}/5")
         if ws.rpe is not None:
-            wb_parts.append(f"RPE={ws.rpe}/10")
+            # "session" so it can't be confused with per-set "RPE8" in the set lines
+            wb_parts.append(f"session RPE={ws.rpe}/10")
         lines.append("  " + ", ".join(wb_parts))
 
     if session_type == "strength" and ws.strength_session:

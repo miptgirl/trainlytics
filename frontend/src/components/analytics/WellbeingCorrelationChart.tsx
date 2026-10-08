@@ -62,8 +62,8 @@ export function WellbeingCorrelationChart() {
   const reg = linearRegression(allPoints)
   const trendData = reg
     ? [
-        { x: 1, y: clamp(reg.m * 1 + reg.b, 1, 5) },
-        { x: 5, y: clamp(reg.m * 5 + reg.b, 1, 5) },
+        { x: 1, y: clamp(reg.m * 1 + reg.b, 1, 10) },
+        { x: 5, y: clamp(reg.m * 5 + reg.b, 1, 10) },
       ]
     : []
 
@@ -109,8 +109,8 @@ export function WellbeingCorrelationChart() {
             type="number"
             dataKey="y"
             name="RPE"
-            domain={[0.5, 5.5]}
-            ticks={[1, 2, 3, 4, 5]}
+            domain={[0, 10]}
+            ticks={[0, 2, 4, 6, 8, 10]}
             label={{
               value: 'Post-session RPE',
               angle: -90,

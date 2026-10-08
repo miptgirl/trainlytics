@@ -24,7 +24,7 @@ The RPE row is part of the workout-mode set editor for everyone. It is one row o
 Unlike reps and weight, RPE is not copied from the previous set, the last session or a template. "Last time" summaries do not show it either.
 
 **Name**
-The set column is `rpe`, matching how athletes and the API already name the concept. The session-level `workout_sessions.rpe` is a different, 5-grade scale and is being revised separately.
+The set column is `rpe`, matching how athletes and the API already name the concept. The session-level `workout_sessions.rpe` is a separate field; it now uses the same 1–10 scale (see `specs/2026-10-07-rpe/`).
 
 ---
 

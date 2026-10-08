@@ -19,6 +19,7 @@ import { useWakeLock } from '../lib/hooks/useWakeLock'
 import {
   describeDraft,
   emptyStrengthDefaults,
+  findInvalidSetRpe,
   setSetDone,
   strengthViewUrl,
   type TemplateSummary,
@@ -286,6 +287,12 @@ export default function WorkoutModePage() {
     if (missing !== -1) {
       setGuardError(`Exercise ${missing + 1} has no exercise chosen. Pick one before finishing.`)
       s.updateWorkout({ currentExerciseIndex: missing })
+      return
+    }
+    const badRpe = findInvalidSetRpe(exercises, (id) => names.get(id))
+    if (badRpe) {
+      setGuardError(badRpe.message)
+      s.updateWorkout({ currentExerciseIndex: badRpe.exerciseIndex })
       return
     }
     setGuardError(null)
@@ -620,7 +627,9 @@ export default function WorkoutModePage() {
           onField={s.setField}
           onSave={() => void s.submit()}
           isSaving={s.isSaving}
-          errorMessage={s.saveMutation.isError ? saveErrorMessage(s.saveMutation.error) : null}
+          errorMessage={
+            s.validationError ?? (s.saveMutation.isError ? saveErrorMessage(s.saveMutation.error) : null)
+          }
           onClose={() => setSheet(null)}
         />
       )}

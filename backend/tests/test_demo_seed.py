@@ -134,6 +134,13 @@ async def test_seed_populates_resets_and_isolates(
     assert await _count(db_session, StrengthTemplate, StrengthTemplate.user_id == demo) == 3
     assert await _count(db_session, UserSettings, UserSettings.username == demo) == 1
 
+    # Session RPE is on the 1–10 scale (10 = maximal effort), both easy and hard days
+    async with db_session() as db:
+        session_rpes = set((await db.execute(
+            select(WorkoutSession.rpe).where(WorkoutSession.user_id == demo)
+        )).scalars()) - {None}
+    assert session_rpes <= {2, 4, 6, 8, 10} and min(session_rpes) <= 4 and max(session_rpes) >= 8
+
     # Today has an undone cardio + strength plan; this week has a skip with a note
     async with db_session() as db:
         planned = (await db.execute(

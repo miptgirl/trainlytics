@@ -27,6 +27,7 @@ import {
   buildAdaptSnapshot,
   buildStrengthPayload,
   computeDiff,
+  findInvalidSetRpe,
   deleteSet as deleteSetFrom,
   emptyStrengthDefaults,
   fetchLastSessionSets,
@@ -163,6 +164,8 @@ export interface StrengthSessionForm {
    * the prompt is open; once the prompt was answered it isn't asked again.
    */
   requestSave: (data: StrengthFormValues) => Promise<void>
+  /** Why the last save attempt was refused before sending (e.g. an invalid set RPE), or null. */
+  validationError: string | null
   saveMutation: UseMutationResult<{ id: number }, Error, StrengthFormValues>
   /** Waiting for the template snapshot before the diff prompt (part of `isSaving`). */
   preparingSave: boolean
@@ -552,8 +555,24 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     },
   })
 
+  // After a refused save the message tracks the live values, so it clears once fixed
+  const [showValidation, setShowValidation] = useState(false)
+  const exerciseNames = new Map(exerciseLibrary.map((e) => [String(e.id), e.name]))
+  const invalidRpe = (exercises: ExerciseEntryFormValues[] | undefined) =>
+    findInvalidSetRpe(exercises, (id) => exerciseNames.get(id))
+  const validationError = showValidation ? (invalidRpe(values.exercises)?.message ?? null) : null
+
+  /** Returns false (and shows why) when `data` would be rejected by the API. */
+  function validateForSave(data: StrengthFormValues): boolean {
+    const ok = invalidRpe(data.exercises) === null
+    setShowValidation(!ok)
+    // A refused save replaces the last failed one; two alerts would contradict each other
+    if (!ok) saveMutation.reset()
+    return ok
+  }
+
   function post(data: StrengthFormValues) {
-    if (saving.current) return
+    if (saving.current || !validateForSave(data)) return
     saving.current = true
     saveMutation.mutate(data)
   }
@@ -568,6 +587,8 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
 
   async function requestSave(data: StrengthFormValues) {
     if (pendingDraft || saving.current || diffState) return
+    // Before the template-diff prompt, so an invalid value is fixed first
+    if (!validateForSave(data)) return
     // Persist what is about to be sent, so a failed save or closed tab keeps it
     flushDraft()
     let snapshot = templateSnapshot
@@ -585,8 +606,10 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
       // The template changed meanwhile: let the user save again against it
       if (generation !== templateGeneration.current) return
       if (snapshot) setTemplateSnapshot(snapshot)
-      // Include anything typed while waiting
+      // Include anything typed while waiting, and check it again: the template
+      // must not be updated (diff prompt) for a save that would then be refused
       data = getValues()
+      if (!validateForSave(data)) return
     }
     if (!snapshot) {
       post(data)
@@ -661,6 +684,7 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
     buildPayload: () => buildStrengthPayload(getValues()),
     submit: form.handleSubmit(requestSave),
     requestSave,
+    validationError,
     saveMutation,
     preparingSave,
     isSaving: preparingSave || saveMutation.isPending || templateMutation.isPending,

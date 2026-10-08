@@ -242,7 +242,7 @@ function ReadinessCard() {
           <p className="text-xs text-text-muted-strong mt-0.5">feeling</p>
         </div>
         <div>
-          <Big unit="/5">{avg(recent.map((p) => p.rpe))}</Big>
+          <Big unit="/10">{avg(recent.map((p) => p.rpe))}</Big>
           <p className="text-xs text-text-muted-strong mt-0.5">effort</p>
         </div>
       </div>

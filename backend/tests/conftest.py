@@ -52,10 +52,16 @@ async def client() -> AsyncClient:
         yield c
 
 
+# Current clients declare the session RPE scale (see sessions._require_rpe_scale)
+_CLIENT_HEADERS = {"X-Session-Rpe-Scale": "10"}
+
+
 @pytest.fixture
 async def auth_client() -> AsyncClient:
     """Fresh client authenticated as TEST_USERNAME."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=_CLIENT_HEADERS
+    ) as c:
         resp = await c.post("/api/auth/login", json={"username": TEST_USERNAME, "password": TEST_PASSWORD})
         c.headers["Authorization"] = f"Bearer {resp.json()['access_token']}"
         yield c
@@ -64,7 +70,9 @@ async def auth_client() -> AsyncClient:
 @pytest.fixture
 async def auth_client_2() -> AsyncClient:
     """Fresh client authenticated as TEST_USERNAME_2."""
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test", headers=_CLIENT_HEADERS
+    ) as c:
         resp = await c.post("/api/auth/login", json={"username": TEST_USERNAME_2, "password": TEST_PASSWORD_2})
         c.headers["Authorization"] = f"Bearer {resp.json()['access_token']}"
         yield c

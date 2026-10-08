@@ -265,7 +265,7 @@ def _strength_payload(ids: _Ids, rng: random.Random, tname: str, d: date, w: int
         "title": tname,
         "calories": rng.randint(240, 390),
         "wellbeing": rng.choice([3, 4, 4, 5]),
-        "rpe": rng.choice([2, 3, 3, 4, 4, 5]),
+        "rpe": rng.choice([4, 6, 6, 8, 8, 10]),
         "duration_seconds": rng.randint(2700, 4500),
         "template_id": ids.templates[tname],
         "exercises": entries,
@@ -324,7 +324,7 @@ def _cardio_payload(ids: _Ids, rng: random.Random, kind: str, d: date, w: int) -
         "title": CARDIO_TITLES[kind],
         "calories": int(total / 60 * (4.2 if kind == "walk" else 10.6) * rng.uniform(0.93, 1.07)),
         "wellbeing": rng.choice([3, 4, 4, 5]),
-        "rpe": rng.choice([1, 2, 2, 3]) if easy else rng.choice([3, 4, 4, 5]),
+        "rpe": rng.choice([2, 4, 4, 6]) if easy else rng.choice([6, 8, 8, 10]),
         "avg_hr_bpm": hr,
         "z1_seconds": z[0], "z2_seconds": z[1], "z3_seconds": z[2],
         "z4_seconds": z[3], "z5_seconds": z[4],
@@ -383,7 +383,11 @@ class _Api:
                 f"demo login failed ({resp.status_code}). If USERS defines '{DEMO_USERNAME}', "
                 "that entry takes precedence over the built-in demo login; remove it from USERS."
             )
-        self.headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
+        self.headers = {
+            "Authorization": f"Bearer {resp.json()['access_token']}",
+            # Session rpe values here are on the 1–10 scale (see sessions._require_rpe_scale)
+            "X-Session-Rpe-Scale": "10",
+        }
 
 
 async def seed_demo(

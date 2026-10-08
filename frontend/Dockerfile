@@ -10,5 +10,8 @@ RUN pnpm build
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# A template: the entrypoint substitutes ${NGINX_LOCAL_RESOLVERS} (only defined
+# env vars, so nginx's own $uri, $host… are left alone) into conf.d/default.conf
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 EXPOSE 80

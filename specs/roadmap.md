@@ -419,6 +419,10 @@ A user can tap "Review week" after a hard week, see AI-proposed adjustments to n
 - [x] Log page and session detail: RPE column (hidden on phones in the log grid); text export and AI context carry it
 - [x] Never prefilled from the previous set, last session or template; template sets have no RPE yet
 
+### Session RPE on 1–10 *(2026-10-07)* — see `specs/2026-10-07-rpe/`
+
+- [x] Session effort moves from the inverted 1–5 scale to standard RPE 1–10 (existing rows converted); pickers read easy → hard
+
 ---
 
 ## Developer Tooling

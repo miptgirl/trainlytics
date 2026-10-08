@@ -41,8 +41,58 @@ function refreshAccessToken(): Promise<string | null> {
   return _refreshPromise
 }
 
+/** List fields whose items read better in the singular: "exercise 1", not "exercises 1". */
+const LOC_ITEM_NAMES: Record<string, string> = { exercises: 'exercise', sets: 'set', segments: 'segment' }
+
+/**
+ * A validation error location for people: ["body", "exercises", 0, "sets", 1, "rpe"]
+ * → "exercise 1 › set 2 › rpe". Drops the leading "body"; a list index joins the
+ * name before it and counts from 1. Any other number (e.g. the character offset
+ * in a JSON decode error, ["body", 123]) is left out.
+ */
+function formatErrorLoc(loc: unknown): string {
+  if (!Array.isArray(loc)) return ''
+  const parts = loc[0] === 'body' ? loc.slice(1) : loc
+  const out: string[] = []
+  let prevName: string | null = null
+  for (const part of parts) {
+    if (typeof part === 'number') {
+      if (prevName !== null) out[out.length - 1] = `${LOC_ITEM_NAMES[prevName] ?? prevName} ${part + 1}`
+      prevName = null
+    } else {
+      out.push(String(part))
+      prevName = String(part)
+    }
+  }
+  return out.join(' › ')
+}
+
+/**
+ * FastAPI `detail` as text: a string as is; a validation error list (422) as
+ * "where: msg" entries joined, not "[object Object]".
+ */
+export function formatErrorDetail(detail: unknown): string {
+  if (detail == null || detail === '') return 'Request failed'
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    const msgs = detail.map((d) => {
+      if (!d || typeof d !== 'object' || !('msg' in d)) return String(d)
+      const { msg, loc } = d as { msg: unknown; loc?: unknown }
+      const where = formatErrorLoc(loc)
+      return where ? `${where}: ${String(msg)}` : String(msg)
+    })
+    return msgs.length > 0 ? msgs.join('; ') : 'Request failed'
+  }
+  return JSON.stringify(detail)
+}
+
 function send(method: string, path: string, body?: unknown): Promise<Response> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    // Session RPE is on the 1–10 scale; without this the API refuses a session rpe
+    // (409), so a bundle from before that change can't save an inverted value
+    'X-Session-Rpe-Scale': '10',
+  }
   if (_token) headers['Authorization'] = `Bearer ${_token}`
   return fetch(`/api${path}`, {
     method,
@@ -72,7 +122,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({})) as Record<string, unknown>
-    const message = String(err['detail'] ?? 'Request failed')
+    const message = formatErrorDetail(err['detail'])
     console.error(`[api] ${method} ${path} → ${res.status}:`, message, err)
     throw new ApiError(message, res.status, err)
   }

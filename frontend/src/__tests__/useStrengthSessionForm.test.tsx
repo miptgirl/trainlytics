@@ -87,7 +87,7 @@ describe('useStrengthSessionForm: payload parity', () => {
       result.current.updateSet(0, 0, { reps: '6', notes: 'felt ok' })
       result.current.setSetDone(0, 0)
       result.current.setField('wellbeing', 4)
-      result.current.setField('rpe', 3)
+      result.current.setField('rpe', 6)
       result.current.setField('calories', '320')
       result.current.setField('notes', 'Solid')
       result.current.setField('duration_seconds', 2700)
@@ -101,7 +101,7 @@ describe('useStrengthSessionForm: payload parity', () => {
       date: new Date('2026-09-01T10:00').toISOString(),
       notes: 'Solid',
       wellbeing: 4,
-      rpe: 3,
+      rpe: 6,
       exercises: [
         {
           exercise_id: 1,
@@ -234,7 +234,7 @@ describe('useStrengthSessionForm: draft', () => {
     await waitFor(() => expect(storedDraft()?.notes).toBe('quick'), { timeout: 500 })
   })
 
-  it('restores a v1 draft written by the pre-hook form', async () => {
+  it('restores a v1 draft written by the pre-hook form (old-scale rpe dropped)', async () => {
     localStorage.setItem(
       DRAFT_KEY,
       JSON.stringify({
@@ -265,7 +265,7 @@ describe('useStrengthSessionForm: draft', () => {
       date: new Date('2026-08-30T18:00').toISOString(),
       notes: null,
       wellbeing: null,
-      rpe: 5,
+      rpe: null,
       exercises: [
         { exercise_id: 2, order: 1, sets: [{ set_number: 1, reps: 10, weight: 50, notes: null, rpe: null }] },
       ],
@@ -364,6 +364,20 @@ describe('useStrengthSessionForm: draft', () => {
     expect(storedDraft()).toBeNull()
     act(() => result.current.setField('notes', 'fresh'))
     await waitFor(() => expect(storedDraft()).toMatchObject({ notes: 'fresh', title: 'Strength session' }))
+  })
+
+  it('a save refused for an invalid set RPE clears the previous save error', async () => {
+    mockPost.mockRejectedValueOnce(new Error('Request failed'))
+    const { result } = await setupWithTemplate()
+    await act(() => result.current.submit())
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(true))
+
+    // Not typeable (the field clamps), but a stored draft can hold it
+    act(() => result.current.updateSet(0, 1, { rpe: '7.5' }))
+    await act(() => result.current.submit())
+    expect(result.current.validationError).toBe('Squat, set 2: RPE "7.5" must be a whole number from 1 to 10.')
+    await waitFor(() => expect(result.current.saveMutation.isError).toBe(false))
+    expect(mockPost).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the draft on a failed save and clears it only after a 2xx', async () => {
