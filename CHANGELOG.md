@@ -14,7 +14,7 @@ All notable changes to Trainlytics are documented here.
 ### Changed
 
 - The device's stored rest length is now a cache of the profile value. A pick applies at once and stays on the device until the profile has it, so a failed save or a slow response never changes the length mid-workout; the profile always ends on the last pick. A length stored on a device before this release is uploaded once on first load
-- Logout and session expiry clear the stored rest length and the cached profile, so another account on the same browser doesn't inherit them
+- Logout and session expiry clear the stored rest length along with the query cache (#39), so another account on the same browser doesn't inherit them
 
 ---
 
