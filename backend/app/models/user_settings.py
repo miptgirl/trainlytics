@@ -38,3 +38,6 @@ class UserSettings(Base):
     health_metric_sleep: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     health_metric_vo2_max: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     health_metric_active_energy: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
+
+    # Workout mode rest timer length in seconds; null = never set (the client applies its default)
+    rest_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)

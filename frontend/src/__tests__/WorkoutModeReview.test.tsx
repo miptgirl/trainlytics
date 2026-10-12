@@ -131,7 +131,7 @@ beforeEach(() => {
   mockPatch.mockReset()
   mockGet.mockImplementation(async (path: string) => {
     if (slow[path]) return (await slow[path]()) as never
-    if (path === '/profile') return { ai_key_configured: false } as never
+    if (path === '/profile') return { ai_key_configured: false, rest_seconds: null } as never
     if (path === '/exercises') return exerciseList as never
     if (path === '/templates/strength') return [] as never
     if (templates[path]) return templates[path] as never

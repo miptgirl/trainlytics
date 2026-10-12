@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { api, setToken, setUnauthorizedHandler } from '../lib/api'
+import { resetRestLength } from '../lib/restLengthSync'
 
 interface AuthState {
   token: string | null
@@ -28,16 +30,26 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children, onAuthRequired }: AuthProviderProps) {
+  const qc = useQueryClient()
   const [state, setState] = useState<AuthState>({ token: null, username: null, isLoading: true })
+
+  // The rest length stored here and the cached profile belong to the account
+  // leaving; the next one on this browser must not inherit (or upload) them.
+  // An unsynced rest pick is lost when the session expires.
+  const forgetAccount = useCallback(() => {
+    resetRestLength()
+    qc.removeQueries({ queryKey: ['profile'] })
+  }, [qc])
 
   // Register 401 handler so the api module can trigger logout+redirect
   useEffect(() => {
     setUnauthorizedHandler(() => {
       setToken(null)
+      forgetAccount()
       setState({ token: null, username: null, isLoading: false })
       onAuthRequired()
     })
-  }, [onAuthRequired])
+  }, [onAuthRequired, forgetAccount])
 
   // Silent refresh on page load using the HttpOnly refresh cookie
   useEffect(() => {
@@ -63,9 +75,10 @@ export function AuthProvider({ children, onAuthRequired }: AuthProviderProps) {
   const logout = useCallback(async () => {
     await api.post('/auth/logout').catch(() => {})
     setToken(null)
+    forgetAccount()
     setState({ token: null, username: null, isLoading: false })
     onAuthRequired()
-  }, [onAuthRequired])
+  }, [onAuthRequired, forgetAccount])
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout }}>

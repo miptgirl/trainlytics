@@ -14,6 +14,7 @@ import { RestTimer } from '../components/workout/RestTimer'
 import { WorkoutSetList } from '../components/workout/WorkoutSetList'
 import { api } from '../lib/api'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
+import { useRestLength } from '../lib/hooks/useRestLength'
 import { useStrengthSessionForm } from '../lib/hooks/useStrengthSessionForm'
 import { useWakeLock } from '../lib/hooks/useWakeLock'
 import {
@@ -30,15 +31,15 @@ import {
   allExercisesDone,
   clampIndex,
   exerciseAfterCompletion,
+  formatClock,
   formatLastTime,
   isBlankEntry,
   isExerciseDone,
-  loadRestLength,
+  isPresetRestLength,
   newExerciseSets,
   nextUnfinishedIndex,
   exerciseProgress,
   saveErrorMessage,
-  saveRestLength,
   sessionProgress,
 } from '../lib/workoutMode'
 
@@ -92,7 +93,7 @@ export default function WorkoutModePage() {
   useWakeLock()
 
   const [sheet, setSheet] = useState<Sheet>(null)
-  const [restLength, setRestLength] = useState(loadRestLength)
+  const { restLength, chooseRestLength, saveError: restSaveError } = useRestLength()
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const [guardError, setGuardError] = useState<string | null>(null)
   // Bumped on every structural change (delete, undo, remove) so the set list
@@ -322,11 +323,6 @@ export default function WorkoutModePage() {
     if (resume) s.persistDraft()
     // replace: Back from the full form must not land on a stale workout-mode entry
     navigate(strengthViewUrl('log', s.params, { resume }), { replace: true })
-  }
-
-  function chooseRestLength(seconds: number) {
-    setRestLength(seconds)
-    saveRestLength(seconds)
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -598,7 +594,11 @@ export default function WorkoutModePage() {
               />
             )}
             <fieldset>
-              <legend className="text-sm font-medium text-text-muted-strong mb-2">Rest timer</legend>
+              <legend className="text-sm font-medium text-text-muted-strong mb-2">
+                Rest timer
+                {/* A custom length from Settings matches no chip */}
+                {!isPresetRestLength(restLength) && <span className="tabular-nums"> · {formatClock(restLength)}</span>}
+              </legend>
               <div className="grid grid-cols-4 gap-2">
                 {REST_LENGTHS.map((sec) => (
                   <button
@@ -616,6 +616,11 @@ export default function WorkoutModePage() {
                   </button>
                 ))}
               </div>
+              {restSaveError != null && (
+                <p role="status" className="mt-2 text-xs text-text-muted-strong">
+                  Not saved to your profile yet; this device uses {formatClock(restLength)} and will retry.
+                </p>
+              )}
             </fieldset>
           </div>
         </BottomSheet>

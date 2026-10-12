@@ -174,25 +174,91 @@ export function formatLastTime(defaults: LastSessionDefaults | null | undefined)
 // Rest timer
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Preset chips; any valid length (see isValidRestLength) can be set from Settings. */
 export const REST_LENGTHS = [60, 90, 120, 180] as const
 export const DEFAULT_REST_SECONDS = 90
+// Same bounds as the API (UserSettingsPatch.rest_seconds)
+export const MIN_REST_SECONDS = 15
+export const MAX_REST_SECONDS = 600
+export const REST_STEP_SECONDS = 5
+// This device's rest length (the profile's rest_seconds, or a pick not saved
+// there yet), so workout mode has a value at once and offline
 const REST_KEY = 'trainlytics_rest_seconds'
+// Set while the stored length is a pick the profile doesn't have yet
+const REST_UNSYNCED_KEY = 'trainlytics_rest_seconds_unsynced'
 
-export function loadRestLength(): number {
+/** Whole seconds, 15–600, a multiple of 5. */
+export function isValidRestLength(seconds: unknown): seconds is number {
+  return (
+    typeof seconds === 'number' &&
+    Number.isInteger(seconds) &&
+    seconds >= MIN_REST_SECONDS &&
+    seconds <= MAX_REST_SECONDS &&
+    seconds % REST_STEP_SECONDS === 0
+  )
+}
+
+export const isPresetRestLength = (seconds: number): boolean =>
+  (REST_LENGTHS as readonly number[]).includes(seconds)
+
+/** Typed rest length → seconds: "135" or "2:15" → 135; null when it isn't a whole-second time. */
+export function parseRestInput(raw: string): number | null {
+  const t = raw.trim()
+  const clock = /^(\d{1,2}):([0-5]\d)$/.exec(t)
+  if (clock) return Number(clock[1]) * 60 + Number(clock[2])
+  return /^\d{1,4}$/.test(t) ? Number(t) : null
+}
+
+/** True for the keys this device's rest length lives under (null: storage was cleared). */
+export const isRestStorageKey = (key: string | null): boolean =>
+  key === null || key === REST_KEY || key === REST_UNSYNCED_KEY
+
+// Keys whose last write failed (full or blocked storage): from then on memory
+// holds their value, since storage may still return an older one
+const memoryStore = new Map<string, string | null>()
+
+function readKey(key: string): string | null {
+  if (memoryStore.has(key)) return memoryStore.get(key) ?? null
   try {
-    const v = Number(localStorage.getItem(REST_KEY))
-    return (REST_LENGTHS as readonly number[]).includes(v) ? v : DEFAULT_REST_SECONDS
+    return localStorage.getItem(key)
   } catch {
-    return DEFAULT_REST_SECONDS
+    return null
   }
 }
 
-export function saveRestLength(seconds: number): void {
+function writeKey(key: string, value: string | null): void {
   try {
-    localStorage.setItem(REST_KEY, String(seconds))
+    if (value === null) localStorage.removeItem(key)
+    else localStorage.setItem(key, value)
+    memoryStore.delete(key)
   } catch {
-    // ignore
+    memoryStore.set(key, value)
   }
+}
+
+/** The stored length when valid, else null (nothing stored on this device). */
+export function storedRestLength(): number | null {
+  const raw = readKey(REST_KEY)
+  const v = raw === null ? NaN : Number(raw)
+  return isValidRestLength(v) ? v : null
+}
+
+export const loadRestLength = (): number => storedRestLength() ?? DEFAULT_REST_SECONDS
+
+export function saveRestLength(seconds: number): void {
+  writeKey(REST_KEY, String(seconds))
+}
+
+export const isRestLengthUnsynced = (): boolean => readKey(REST_UNSYNCED_KEY) === '1'
+
+export function setRestLengthUnsynced(unsynced: boolean): void {
+  writeKey(REST_UNSYNCED_KEY, unsynced ? '1' : null)
+}
+
+/** Forgets this device's rest length (on logout, so the next account starts clean). */
+export function clearStoredRestLength(): void {
+  writeKey(REST_KEY, null)
+  writeKey(REST_UNSYNCED_KEY, null)
 }
 
 /** Whole seconds left until `endsAt` (epoch ms), never negative. */
@@ -225,6 +291,14 @@ export function saveErrorMessage(err: unknown): string {
     return `The server couldn't save the workout (error ${status}). It's still kept on this device — try again.`
   }
   return "Couldn't reach the server. Your workout is still kept on this device — check your connection and retry."
+}
+
+/** Why saving the rest length to the profile failed. ApiError's message is the API `detail` as text. */
+export function restSaveErrorMessage(err: unknown): string {
+  const status = (err as { status?: unknown } | null)?.status
+  const message = err instanceof Error ? err.message : ''
+  if (typeof status === 'number') return `Couldn't save the rest timer: ${message || `error ${status}`}.`
+  return "Couldn't reach the server to save the rest timer. Check your connection and try again."
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

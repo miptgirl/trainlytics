@@ -6,20 +6,27 @@ import { useWakeLock } from '../lib/hooks/useWakeLock'
 import {
   DEFAULT_REST_SECONDS,
   allExercisesDone,
+  clearStoredRestLength,
   exerciseAfterCompletion,
   formatClock,
   formatLastTime,
   formatSet,
   isBlankEntry,
+  isRestLengthUnsynced,
+  isValidRestLength,
   loadRestLength,
   newExerciseSets,
   nextUnfinishedIndex,
+  parseRestInput,
   prefersWorkoutMode,
   restRemaining,
+  restSaveErrorMessage,
   sanitizeDecimal,
   saveErrorMessage,
   saveRestLength,
   sessionProgress,
+  setRestLengthUnsynced,
+  storedRestLength,
   stackWeight,
   stepValue,
   stepWeight,
@@ -153,12 +160,76 @@ describe('input sanitising and save errors', () => {
 describe('rest length setting', () => {
   beforeEach(() => localStorage.clear())
 
-  it('defaults to 90s and keeps a valid choice', () => {
+  it('defaults to 90s and keeps a valid choice, preset or not', () => {
     expect(loadRestLength()).toBe(DEFAULT_REST_SECONDS)
     saveRestLength(120)
     expect(loadRestLength()).toBe(120)
-    localStorage.setItem('trainlytics_rest_seconds', '45')
-    expect(loadRestLength()).toBe(DEFAULT_REST_SECONDS)
+    saveRestLength(45)
+    expect(loadRestLength()).toBe(45)
+  })
+
+  it('tells "nothing stored" apart from a stored 90, and clears both keys', () => {
+    expect(storedRestLength()).toBeNull()
+    saveRestLength(90)
+    expect(storedRestLength()).toBe(90)
+    expect(isRestLengthUnsynced()).toBe(false)
+    setRestLengthUnsynced(true)
+    expect(isRestLengthUnsynced()).toBe(true)
+    clearStoredRestLength()
+    expect(storedRestLength()).toBeNull()
+    expect(isRestLengthUnsynced()).toBe(false)
+    expect(localStorage.length).toBe(0)
+  })
+
+  it('once a write fails, reads come from memory, not the older value storage still holds', () => {
+    saveRestLength(90)
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+    try {
+      saveRestLength(180)
+      setRestLengthUnsynced(true)
+      expect(localStorage.getItem('trainlytics_rest_seconds')).toBe('90')
+      expect(loadRestLength()).toBe(180)
+      expect(isRestLengthUnsynced()).toBe(true)
+    } finally {
+      setItem.mockRestore()
+    }
+    // Writable again: storage is the source again
+    saveRestLength(120)
+    expect(localStorage.getItem('trainlytics_rest_seconds')).toBe('120')
+    expect(loadRestLength()).toBe(120)
+    clearStoredRestLength()
+    expect(isRestLengthUnsynced()).toBe(false)
+    expect(storedRestLength()).toBeNull()
+  })
+
+  it('falls back to 90s for a cached value the API would refuse', () => {
+    for (const bad of ['10', '605', '92', '90.5', 'abc', '']) {
+      localStorage.setItem('trainlytics_rest_seconds', bad)
+      expect(loadRestLength()).toBe(DEFAULT_REST_SECONDS)
+    }
+  })
+
+  it('accepts whole seconds from 15 to 600 in steps of 5', () => {
+    expect([15, 45, 135, 600].every(isValidRestLength)).toBe(true)
+    expect([0, 10, 92, 605, 90.5, NaN, '90', null].some(isValidRestLength)).toBe(false)
+  })
+
+  it('reads typed seconds or m:ss', () => {
+    expect(parseRestInput('135')).toBe(135)
+    expect(parseRestInput(' 2:15 ')).toBe(135)
+    expect(parseRestInput('10:00')).toBe(600)
+    expect(parseRestInput('2:5')).toBeNull()
+    expect(parseRestInput('1.5')).toBeNull()
+    expect(parseRestInput('')).toBeNull()
+    expect(parseRestInput('-30')).toBeNull()
+  })
+
+  it('explains a failed save: the API detail, or a connection problem', () => {
+    const e422 = Object.assign(new Error('rest_seconds: Value error, out of range'), { status: 422 })
+    expect(restSaveErrorMessage(e422)).toBe("Couldn't save the rest timer: rest_seconds: Value error, out of range.")
+    expect(restSaveErrorMessage(new TypeError('Failed to fetch'))).toMatch(/Check your connection/)
   })
 })
 

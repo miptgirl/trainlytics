@@ -1,8 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
+import { useRestLength } from '../lib/hooks/useRestLength'
+import {
+  MAX_REST_SECONDS,
+  MIN_REST_SECONDS,
+  REST_LENGTHS,
+  REST_STEP_SECONDS,
+  formatClock,
+  isValidRestLength,
+  parseRestInput,
+  restSaveErrorMessage,
+} from '../lib/workoutMode'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +54,117 @@ interface ExerciseFormValues {
   name: string
   notes: string
   type_ids: number[]
+}
+
+// ── Workout section ────────────────────────────────────────────────────────
+
+const REST_RANGE = `${MIN_REST_SECONDS}–${MAX_REST_SECONDS} seconds, in steps of ${REST_STEP_SECONDS}`
+
+function WorkoutSection() {
+  const { restLength, unsynced, saving, saveError, chooseRestLength, clearSaveError } = useRestLength()
+  // Text being typed into the custom field; null shows the current length
+  const [draft, setDraft] = useState<string | null>(null)
+  const [inputError, setInputError] = useState<string | null>(null)
+  // "Saved" only confirms a pick made here
+  const [picked, setPicked] = useState(false)
+  const typed = draft ?? String(restLength)
+  const typedSeconds = parseRestInput(typed)
+  // One message under the field at a time: what's wrong with the input, else
+  // why the last save failed, else the allowed range
+  const problem = inputError ?? (saveError != null ? restSaveErrorMessage(saveError) : null)
+
+  function choose(seconds: number) {
+    setDraft(null)
+    setInputError(null)
+    setPicked(true)
+    chooseRestLength(seconds)
+  }
+
+  function submitCustom(e: FormEvent) {
+    e.preventDefault()
+    if (!isValidRestLength(typedSeconds)) {
+      clearSaveError()
+      setInputError(`Enter ${REST_RANGE}.`)
+      return
+    }
+    choose(typedSeconds)
+  }
+
+  return (
+    <section aria-labelledby="settings-workout">
+      <h2 id="settings-workout" className="text-lg font-semibold text-text mb-3">
+        Workout
+      </h2>
+      <div className="bg-surface rounded-xl border border-border p-4 space-y-4">
+        <div>
+          <h3 id="settings-rest-timer" className="font-medium text-text">
+            Rest timer
+          </h3>
+          <p className="text-sm text-text-muted-strong">Counts down after each completed set in Workout Mode.</p>
+        </div>
+        <div role="group" aria-labelledby="settings-rest-timer" className="grid grid-cols-4 gap-2">
+          {REST_LENGTHS.map((sec) => (
+            <button
+              key={sec}
+              type="button"
+              aria-pressed={restLength === sec}
+              onClick={() => choose(sec)}
+              className={`min-h-11 rounded-lg border text-sm font-medium ${
+                restLength === sec
+                  ? 'border-primary-dark bg-primary-tint text-primary-dark'
+                  : 'border-border-strong bg-surface text-text'
+              }`}
+            >
+              {sec}s
+            </button>
+          ))}
+        </div>
+        <form onSubmit={submitCustom} noValidate className="space-y-1">
+          <label htmlFor="rest-custom" className="block text-sm font-medium text-text">
+            Custom length (seconds)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              id="rest-custom"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              value={typed}
+              onChange={(e) => {
+                setDraft(e.target.value)
+                setInputError(null)
+                clearSaveError()
+              }}
+              aria-invalid={inputError !== null}
+              aria-describedby="rest-custom-message"
+              className="w-24 min-h-11 border border-border-strong rounded-sm bg-surface px-3 text-base text-text tabular-nums focus:outline-none focus:ring-2 focus:ring-primary-dark"
+            />
+            <button
+              type="submit"
+              className="min-h-11 px-4 rounded-lg bg-primary-dark hover:brightness-95 text-white text-sm font-medium"
+            >
+              Save
+            </button>
+            {isValidRestLength(typedSeconds) && (
+              <span className="text-sm text-text-muted-strong tabular-nums">{formatClock(typedSeconds)}</span>
+            )}
+          </div>
+          {problem !== null ? (
+            <p id="rest-custom-message" role="alert" className="text-sm text-error-text">
+              {problem}
+            </p>
+          ) : (
+            <p id="rest-custom-message" className="text-xs text-text-muted-strong">
+              {REST_RANGE}.
+            </p>
+          )}
+        </form>
+        <p role="status" className={`text-sm empty:hidden ${saving ? 'text-text-muted-strong' : 'text-success-text'}`}>
+          {saving ? 'Saving…' : picked && !unsynced && problem === null && draft === null ? 'Saved' : ''}
+        </p>
+      </div>
+    </section>
+  )
 }
 
 // ── Activity Types section ─────────────────────────────────────────────────
@@ -842,9 +964,10 @@ export default function SettingsPage() {
     <Layout>
       <h1 className="text-2xl font-bold text-text mb-6">Settings</h1>
       <div className="space-y-10">
+        <WorkoutSection />
         <ActivityTypesSection />
         <ExerciseTypesSection />
-  <ExercisesSection />
+        <ExercisesSection />
       </div>
     </Layout>
   )

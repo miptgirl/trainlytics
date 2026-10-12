@@ -46,6 +46,7 @@ def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
         health_metric_sleep=row.health_metric_sleep,
         health_metric_vo2_max=row.health_metric_vo2_max,
         health_metric_active_energy=row.health_metric_active_energy,
+        rest_seconds=row.rest_seconds,
     )
 
 
@@ -108,6 +109,9 @@ async def patch_profile(
     ):
         if field in fields_set:
             setattr(row, field, getattr(body, field))
+
+    if "rest_seconds" in fields_set:
+        row.rest_seconds = body.rest_seconds
 
     await db.commit()
     await db.refresh(row)

@@ -1,7 +1,13 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, StrictInt, field_validator
+
+# Workout mode rest timer, in seconds. The default lives in the client, which
+# also needs it when null (never set) comes back
+REST_SECONDS_MIN = 15
+REST_SECONDS_MAX = 600
+REST_SECONDS_STEP = 5
 
 
 class GoalItem(BaseModel):
@@ -35,6 +41,9 @@ class UserSettingsOut(BaseModel):
     health_metric_vo2_max: bool = True
     health_metric_active_energy: bool = True
 
+    # null: never set, the client applies its default
+    rest_seconds: int | None = None
+
 
 class UserSettingsPatch(BaseModel):
     display_name: str | None = None
@@ -54,6 +63,21 @@ class UserSettingsPatch(BaseModel):
     health_metric_sleep: bool | None = None
     health_metric_vo2_max: bool | None = None
     health_metric_active_energy: bool | None = None
+
+    # null resets to "never set"; strict: true, "90" and 90.0 are refused
+    rest_seconds: StrictInt | None = None
+
+    @field_validator("rest_seconds")
+    @classmethod
+    def validate_rest_seconds(cls, v: int | None) -> int | None:
+        if v is not None and (
+            not REST_SECONDS_MIN <= v <= REST_SECONDS_MAX or v % REST_SECONDS_STEP != 0
+        ):
+            raise ValueError(
+                f"rest_seconds must be {REST_SECONDS_MIN}–{REST_SECONDS_MAX} seconds "
+                f"in steps of {REST_SECONDS_STEP}"
+            )
+        return v
 
     @field_validator("ai_provider")
     @classmethod

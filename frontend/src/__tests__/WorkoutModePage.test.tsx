@@ -13,6 +13,7 @@ vi.mock('../components/Layout', () => ({
 }))
 
 import { api } from '../lib/api'
+import { resetRestLength } from '../lib/restLengthSync'
 import LogWorkoutPage from '../pages/LogWorkoutPage'
 import WorkoutModePage from '../pages/WorkoutModePage'
 
@@ -79,13 +80,20 @@ function renderAt(url: string) {
 const exerciseHeading = () => screen.getByRole('heading', { level: 2 })
 const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 
+// The real API always includes rest_seconds; null = never set
+const PROFILE = { ai_key_configured: false, rest_seconds: null }
+// Server-side profile: GET returns it, PATCH merges into it
+let profile: Record<string, unknown> = { ...PROFILE }
+
 beforeEach(() => {
+  resetRestLength()
   localStorage.clear()
+  profile = { ...PROFILE }
   mockGet.mockReset()
   mockPost.mockReset()
   mockPatch.mockReset()
   mockGet.mockImplementation(async (path: string) => {
-    if (path === '/profile') return { ai_key_configured: false } as never
+    if (path === '/profile') return { ...profile } as never
     if (path === '/exercises') return exerciseList as never
     if (path === '/templates/strength') return [{ id: 3, name: 'Leg day' }, { id: 4, name: 'Full body' }] as never
     if (path === '/templates/strength/3') return legDay as never
@@ -100,7 +108,12 @@ beforeEach(() => {
     return [] as never
   })
   mockPost.mockResolvedValue({ id: 42 } as never)
-  mockPatch.mockResolvedValue({} as never)
+  // PATCH /profile answers with the whole profile, like the API
+  mockPatch.mockImplementation(async (path: string, body: unknown) => {
+    if (path !== '/profile') return {} as never
+    profile = { ...profile, ...(body as object) }
+    return { ...profile } as never
+  })
 })
 
 describe('Workout mode: payload parity with the full form', () => {
@@ -298,6 +311,125 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Exercise 1 has no exercise chosen')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Workout mode: rest length from the profile', () => {
+  /** The first GET /profile waits for `response`. */
+  function serveProfileOnce(response: Promise<unknown>) {
+    const base = mockGet.getMockImplementation()!
+    let first = true
+    mockGet.mockImplementation((path: string) => {
+      if (path === '/profile' && first) {
+        first = false
+        return response as never
+      }
+      return base(path)
+    })
+  }
+
+  it('the profile rest_seconds drives the timer and replaces the cached value', async () => {
+    localStorage.setItem('trainlytics_rest_seconds', '60')
+    profile.rest_seconds = 135
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await waitFor(() => expect(screen.getByTestId('rest-clock')).toHaveTextContent('2:15'))
+    expect(localStorage.getItem('trainlytics_rest_seconds')).toBe('135')
+
+    const before = Date.now()
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.workout?.restEndsAt).toBeGreaterThanOrEqual(before + 135_000))
+    expect(storedDraft().workout.restEndsAt).toBeLessThan(Date.now() + 136_000)
+
+    // Not a preset: the options sheet names it, and no chip is pressed
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    const sheet = screen.getByRole('dialog', { name: 'Workout options' })
+    expect(within(sheet).getByRole('group', { name: 'Rest timer · 2:15' })).toBeInTheDocument()
+    expect(within(sheet).queryByRole('button', { pressed: true })).not.toBeInTheDocument()
+  })
+
+  it('choosing a chip saves it to the profile', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    const sheet = screen.getByRole('dialog', { name: 'Workout options' })
+    expect(within(sheet).getByRole('button', { name: '90s' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(within(sheet).getByRole('button', { name: '120s' }))
+    expect(mockPatch).toHaveBeenCalledWith('/profile', { rest_seconds: 120 })
+    expect(within(sheet).getByRole('button', { name: '120s' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(sheet).getByRole('group', { name: 'Rest timer' })).toBeInTheDocument()
+    expect(localStorage.getItem('trainlytics_rest_seconds')).toBe('120')
+  })
+
+  it('a failed save keeps the chosen length for the workout', async () => {
+    mockPatch.mockImplementation(async (path: string) => {
+      if (path === '/profile') throw new TypeError('Failed to fetch')
+      return {} as never
+    })
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    const sheet = screen.getByRole('dialog', { name: 'Workout options' })
+    await user.click(within(sheet).getByRole('button', { name: '180s' }))
+    expect(await within(sheet).findByRole('status')).toHaveTextContent(
+      'Not saved to your profile yet; this device uses 3:00 and will retry.',
+    )
+    expect(within(sheet).getByRole('button', { name: '180s' })).toHaveAttribute('aria-pressed', 'true')
+    await user.click(within(sheet).getByRole('button', { name: 'Close' }))
+
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent('3:00')
+    const before = Date.now()
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.workout?.restEndsAt).toBeGreaterThanOrEqual(before + 180_000))
+    expect(exerciseHeading()).toHaveTextContent('Squat')
+  })
+
+  it('a length picked in another tab reaches the open workout', async () => {
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await waitFor(() => expect(mockGet).toHaveBeenCalledWith('/profile'))
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent('1:30')
+
+    // Settings in another tab stored 2:30; this tab only hears the storage event
+    localStorage.setItem('trainlytics_rest_seconds', '150')
+    act(() => window.dispatchEvent(new StorageEvent('storage', { key: 'trainlytics_rest_seconds', newValue: '150' })))
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent('2:30')
+  })
+
+  it('a new length never moves a running rest; the next rest uses it', async () => {
+    let releaseProfile!: (p: unknown) => void
+    serveProfileOnce(new Promise((r) => (releaseProfile = r)))
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.workout?.restEndsAt).toEqual(expect.any(Number)))
+    const endsAt = storedDraft().workout.restEndsAt
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent(/1:(30|29)/)
+
+    // The profile arrives mid-rest with another length
+    profile.rest_seconds = 135
+    await act(async () => releaseProfile({ ...profile }))
+    await waitFor(() => expect(localStorage.getItem('trainlytics_rest_seconds')).toBe('135'))
+    // A preset picked mid-rest
+    await user.click(screen.getByRole('button', { name: 'Workout options' }))
+    const sheet = screen.getByRole('dialog', { name: 'Workout options' })
+    await user.click(within(sheet).getByRole('button', { name: '180s' }))
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledWith('/profile', { rest_seconds: 180 }))
+    await user.click(within(sheet).getByRole('button', { name: 'Close' }))
+
+    await act(() => new Promise((r) => setTimeout(r, 400)))
+    expect(storedDraft().workout.restEndsAt).toBe(endsAt)
+    expect(screen.getByTestId('rest-clock')).toHaveTextContent(/1:(30|29|28|27)/)
+
+    // Reset starts a rest of the new length
+    const before = Date.now()
+    await user.click(screen.getByRole('button', { name: 'Restart rest timer' }))
+    await waitFor(() => expect(storedDraft().workout.restEndsAt).toBeGreaterThanOrEqual(before + 180_000))
   })
 })
 

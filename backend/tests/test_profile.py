@@ -153,3 +153,79 @@ async def test_migration_wipes_keys(db_session, auth_client: AsyncClient):
     assert "anthropic_api_key_encrypted" not in data
     assert "openai_api_key_encrypted" not in data
     assert "ai_key_encrypted" not in data
+
+
+# ── Rest timer length ────────────────────────────────────────────────────────
+
+
+@pytest.mark.anyio
+async def test_rest_seconds_null_until_set(db_session, auth_client: AsyncClient):
+    """Null (never set) rather than a default, so a client keeps a value it stored itself."""
+    # No row yet
+    resp = await auth_client.get("/api/profile")
+    assert resp.json()["rest_seconds"] is None
+
+    # A row that never set it
+    await auth_client.patch("/api/profile", json={"display_name": "Marie"})
+    resp = await auth_client.get("/api/profile")
+    assert resp.json()["rest_seconds"] is None
+
+
+@pytest.mark.anyio
+async def test_rest_seconds_round_trip(db_session, auth_client: AsyncClient):
+    resp = await auth_client.patch("/api/profile", json={"rest_seconds": 135})
+    assert resp.status_code == 200
+    assert resp.json()["rest_seconds"] == 135
+
+    resp = await auth_client.get("/api/profile")
+    assert resp.json()["rest_seconds"] == 135
+
+    # Patching another field leaves it alone
+    await auth_client.patch("/api/profile", json={"display_name": "Marie"})
+    resp = await auth_client.get("/api/profile")
+    assert resp.json()["rest_seconds"] == 135
+
+
+@pytest.mark.anyio
+async def test_patch_rest_seconds_leaves_other_fields(db_session, auth_client: AsyncClient):
+    before = (
+        await auth_client.patch(
+            "/api/profile",
+            json={"display_name": "Marie", "birth_year": 1990, "health_metric_hrv": False},
+        )
+    ).json()
+    after = (await auth_client.patch("/api/profile", json={"rest_seconds": 60})).json()
+    assert after["rest_seconds"] == 60
+    assert {k: v for k, v in after.items() if k != "rest_seconds"} == {
+        k: v for k, v in before.items() if k != "rest_seconds"
+    }
+
+
+@pytest.mark.anyio
+async def test_rest_seconds_null_resets(db_session, auth_client: AsyncClient):
+    await auth_client.patch("/api/profile", json={"rest_seconds": 120})
+    resp = await auth_client.patch("/api/profile", json={"rest_seconds": None})
+    assert resp.status_code == 200
+    assert resp.json()["rest_seconds"] is None
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("seconds", [15, 600])
+async def test_rest_seconds_accepts_bounds(db_session, auth_client: AsyncClient, seconds: int):
+    resp = await auth_client.patch("/api/profile", json={"rest_seconds": seconds})
+    assert resp.status_code == 200
+    assert resp.json()["rest_seconds"] == seconds
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "seconds",
+    [0, 10, -15, 605, 3600, 92, 137, 90.5, 90.0, "90", "abc", True, False, [], {}, [90]],
+)
+async def test_rest_seconds_rejects_invalid(db_session, auth_client: AsyncClient, seconds):
+    await auth_client.patch("/api/profile", json={"rest_seconds": 120})
+    resp = await auth_client.patch("/api/profile", json={"rest_seconds": seconds})
+    assert resp.status_code == 422
+    # The stored value is unchanged
+    resp = await auth_client.get("/api/profile")
+    assert resp.json()["rest_seconds"] == 120

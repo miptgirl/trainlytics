@@ -4,6 +4,20 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-12 — Rest timer length in Settings
+
+### Added
+
+- **Settings → Workout → Rest timer**: pick 60/90/120/180 s or a custom length (15–600 s in steps of 5, typed as seconds or `m:ss`). The length is stored on the profile (`user_settings.rest_seconds`, migration `7a33978e6e65`), so a value set on desktop reaches the phone in Workout Mode. Workout Mode's preset chips save to the profile too, and its options sheet shows a custom length (`Rest timer · 2:15`)
+- `GET /profile` returns `rest_seconds` (null = never set; the app uses 90). `PATCH /profile` accepts an integer 15–600 in steps of 5, or null to reset; anything else is 422
+
+### Changed
+
+- The device's stored rest length is now a cache of the profile value. A pick applies at once and stays on the device until the profile has it, so a failed save or a slow response never changes the length mid-workout; the profile always ends on the last pick. A length stored on a device before this release is uploaded once on first load
+- Logout and session expiry clear the stored rest length and the cached profile, so another account on the same browser doesn't inherit them
+
+---
+
 ## 2026-10-07 — Session RPE on 1–10
 
 ### Changed
