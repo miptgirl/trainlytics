@@ -115,6 +115,34 @@ export function stepValue(value: string, delta: number): string {
   return formatNumber(Math.max(0, (Number.isFinite(n) ? n : 0) + delta))
 }
 
+/** One 10 lb stack plate in kg. */
+const STACK_PLATE_KG = 4.5359237
+
+/** Kg printed on the n-th plate of a 10 lb weight stack: 4.5, 9, 14, 18, 23, 27, 32… (0 for n = 0). */
+export function stackWeight(n: number): number {
+  const kg = n * STACK_PLATE_KG
+  return kg < 10 ? Math.round(kg * 2) / 2 : Math.round(kg)
+}
+
+/**
+ * Moves a weight to the next (+1) or previous (−1) stack value; a weight between
+ * plates goes to the nearest one that way (30 → 32 / 27). Empty counts as 0; never below 0.
+ */
+export function stepWeight(value: string, direction: 1 | -1): string {
+  const w = parseFloat(value)
+  const current = Number.isFinite(w) ? w : 0
+  // Printed values sit within 0.5 kg of n × plate, so these starts bracket the answer
+  let n = Math.floor(current / STACK_PLATE_KG)
+  if (direction > 0) {
+    n = Math.max(1, n - 1)
+    while (stackWeight(n) <= current) n++
+  } else {
+    n += 2
+    while (n > 0 && stackWeight(n) >= current) n--
+  }
+  return formatNumber(stackWeight(n))
+}
+
 /** "6 × 100 kg", "8 reps", "– × 60 kg", "8 × 100 kg @8" — one set as a compact label. */
 export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { rpe?: string }): string {
   const reps = set.reps || '–'

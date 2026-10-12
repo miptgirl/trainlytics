@@ -20,7 +20,9 @@ import {
   saveErrorMessage,
   saveRestLength,
   sessionProgress,
+  stackWeight,
   stepValue,
+  stepWeight,
 } from '../lib/workoutMode'
 
 const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
@@ -91,12 +93,37 @@ describe('formatting and steppers', () => {
     expect(formatSet({ reps: '5', weight: '60' })).toBe('5 × 60 kg')
   })
 
-  it('steps reps by 1 and weight by 2.5 without going below zero or float noise', () => {
+  it('steps a value by delta without going below zero or float noise', () => {
     expect(stepValue('', 1)).toBe('1')
     expect(stepValue('0', -1)).toBe('0')
     expect(stepValue('55', 2.5)).toBe('57.5')
     expect(stepValue('0.1', 0.2)).toBe('0.3')
     expect(stepValue('1', -2.5)).toBe('0')
+  })
+
+  it('matches the kg printed on a 10 lb weight stack, 10–200 lb', () => {
+    const printed = [4.5, 9, 14, 18, 23, 27, 32, 36, 41, 45, 50, 54, 59, 64, 68, 73, 77, 82, 86, 91]
+    expect(printed.map((_, i) => stackWeight(i + 1))).toEqual(printed)
+  })
+
+  it('steps weight plate by plate on the stack', () => {
+    expect(stepWeight('', 1)).toBe('4.5')
+    expect(stepWeight('4.5', 1)).toBe('9')
+    expect(stepWeight('27', 1)).toBe('32')
+    expect(stepWeight('32', -1)).toBe('27')
+    expect(stepWeight('91', 1)).toBe('95')
+    expect(stepWeight('4.5', -1)).toBe('0')
+    expect(stepWeight('0', -1)).toBe('0')
+    expect(stepWeight('', -1)).toBe('0')
+  })
+
+  it('moves an off-stack weight to the nearest stack value in the step direction', () => {
+    expect(stepWeight('30', 1)).toBe('32')
+    expect(stepWeight('30', -1)).toBe('27')
+    expect(stepWeight('102.5', 1)).toBe('104')
+    expect(stepWeight('102.5', -1)).toBe('100')
+    expect(stepWeight('2', 1)).toBe('4.5')
+    expect(stepWeight('2', -1)).toBe('0')
   })
 
   it('formats the clock', () => {

@@ -228,9 +228,9 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' }))
     expect(screen.getByText('Edit set 1')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Increase reps by 1' }))
-    await user.click(screen.getByRole('button', { name: 'Increase weight by 2.5' }))
+    await user.click(screen.getByRole('button', { name: 'Increase weight' }))
     expect(screen.getByLabelText('Reps for set 1')).toHaveValue('6')
-    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('102.5')
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('104')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toBeInTheDocument()
 

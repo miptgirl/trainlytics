@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
-import { currentSetIndex, formatSet, sanitizeDecimal, stepValue } from '../../lib/workoutMode'
+import { currentSetIndex, formatSet, sanitizeDecimal, stepValue, stepWeight } from '../../lib/workoutMode'
 
-const REPS_STEP = 1
-const WEIGHT_STEP = 2.5
+const stepReps = (value: string, direction: 1 | -1) => stepValue(value, direction)
 
 const deleteBtn =
   'min-h-11 min-w-11 flex items-center justify-center rounded-lg text-text-muted hover:text-error-text shrink-0'
@@ -28,12 +27,13 @@ function DeleteButton({ setNumber, onClick }: { setNumber: number; onClick: () =
   )
 }
 
-/** One value row: label, then [−] value [+] with 52px buttons and a wide typed input. */
+/** One value row: label, then [−] value [+] with 52px buttons and a wide typed input. `stepLabel` names the step for screen readers ("by 1"). */
 function Stepper({
   label,
   unit,
   value,
   step,
+  stepLabel,
   inputMode,
   setNumber,
   onChange,
@@ -41,7 +41,8 @@ function Stepper({
   label: string
   unit?: string
   value: string
-  step: number
+  step: (value: string, direction: 1 | -1) => string
+  stepLabel?: string
   inputMode: 'numeric' | 'decimal'
   setNumber: number
   onChange: (value: string) => void
@@ -49,6 +50,7 @@ function Stepper({
   const stepBtn =
     'h-[52px] w-[52px] shrink-0 rounded-xl border border-border bg-surface text-2xl font-medium text-text active:bg-primary-tint'
   const name = label.toLowerCase()
+  const by = stepLabel ? ` ${stepLabel}` : ''
   const clean = (raw: string) => (inputMode === 'numeric' ? raw.replace(/\D/g, '') : sanitizeDecimal(raw))
   return (
     <div>
@@ -59,8 +61,8 @@ function Stepper({
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onChange(stepValue(value, -step))}
-          aria-label={`Decrease ${name} by ${step}`}
+          onClick={() => onChange(step(value, -1))}
+          aria-label={`Decrease ${name}${by}`}
           className={stepBtn}
         >
           −
@@ -77,8 +79,8 @@ function Stepper({
         />
         <button
           type="button"
-          onClick={() => onChange(stepValue(value, step))}
-          aria-label={`Increase ${name} by ${step}`}
+          onClick={() => onChange(step(value, 1))}
+          aria-label={`Increase ${name}${by}`}
           className={stepBtn}
         >
           +
@@ -186,7 +188,8 @@ function SetEditor({
         <Stepper
           label="Reps"
           value={set.reps}
-          step={REPS_STEP}
+          step={stepReps}
+          stepLabel="by 1"
           inputMode="numeric"
           setNumber={setNumber}
           onChange={(reps) => onChange({ reps })}
@@ -195,7 +198,7 @@ function SetEditor({
           label="Weight"
           unit="kg"
           value={set.weight}
-          step={WEIGHT_STEP}
+          step={stepWeight}
           inputMode="decimal"
           setNumber={setNumber}
           onChange={(weight) => onChange({ weight })}
