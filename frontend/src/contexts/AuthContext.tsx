@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { api, setToken, setUnauthorizedHandler } from '../lib/api'
 
 interface AuthState {
@@ -29,15 +30,18 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children, onAuthRequired }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>({ token: null, username: null, isLoading: true })
+  const queryClient = useQueryClient()
 
   // Register 401 handler so the api module can trigger logout+redirect
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      // Drop cached queries so the next account can't see this one's data.
+      queryClient.clear()
       setToken(null)
       setState({ token: null, username: null, isLoading: false })
       onAuthRequired()
     })
-  }, [onAuthRequired])
+  }, [onAuthRequired, queryClient])
 
   // Silent refresh on page load using the HttpOnly refresh cookie
   useEffect(() => {
@@ -62,10 +66,11 @@ export function AuthProvider({ children, onAuthRequired }: AuthProviderProps) {
 
   const logout = useCallback(async () => {
     await api.post('/auth/logout').catch(() => {})
+    queryClient.clear()
     setToken(null)
     setState({ token: null, username: null, isLoading: false })
     onAuthRequired()
-  }, [onAuthRequired])
+  }, [onAuthRequired, queryClient])
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout }}>
