@@ -30,16 +30,16 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children, onAuthRequired }: AuthProviderProps) {
-  const qc = useQueryClient()
   const [state, setState] = useState<AuthState>({ token: null, username: null, isLoading: true })
+  const queryClient = useQueryClient()
 
-  // The rest length stored here and the cached profile belong to the account
-  // leaving; the next one on this browser must not inherit (or upload) them.
-  // An unsynced rest pick is lost when the session expires.
+  // Cached queries and the stored rest length belong to the account leaving;
+  // the next one on this browser must not see (or upload) them. An unsynced
+  // rest pick is lost when the session expires.
   const forgetAccount = useCallback(() => {
     resetRestLength()
-    qc.removeQueries({ queryKey: ['profile'] })
-  }, [qc])
+    queryClient.clear()
+  }, [queryClient])
 
   // Register 401 handler so the api module can trigger logout+redirect
   useEffect(() => {
