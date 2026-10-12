@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { EraserIcon } from '../components/EraserIcon'
-import { useFieldArray, useForm, useWatch } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
   ExerciseEntryBlock,
@@ -17,7 +16,6 @@ import { api } from '../lib/api'
 interface TemplateSummary {
   id: number
   name: string
-  notes: string | null
   exercise_count: number
 }
 
@@ -26,7 +24,6 @@ interface TemplateSet {
   set_number: number
   reps: number | null
   weight_kg: number | null
-  notes: string | null
 }
 
 interface TemplateExercise {
@@ -40,7 +37,6 @@ interface TemplateExercise {
 interface TemplateDetail {
   id: number
   name: string
-  notes: string | null
   exercises: TemplateExercise[]
 }
 
@@ -48,20 +44,18 @@ interface TemplateDetail {
 
 interface TemplateFormValues {
   name: string
-  notes: string
   exercises: ExerciseEntryFormValues[]
 }
 
 function detailToFormValues(t: TemplateDetail): TemplateFormValues {
   return {
     name: t.name,
-    notes: t.notes ?? '',
     exercises: t.exercises.map((entry) => ({
       exercise_id: String(entry.exercise_id),
       sets: entry.sets.map((s) => ({
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
-        notes: s.notes ?? '',
+        notes: '',
         rpe: '',
         done: false,
       })),
@@ -72,7 +66,6 @@ function detailToFormValues(t: TemplateDetail): TemplateFormValues {
 function toApiPayload(data: TemplateFormValues) {
   return {
     name: data.name,
-    notes: data.notes || null,
     exercises: data.exercises.map((entry, i) => ({
       exercise_id: parseInt(entry.exercise_id, 10),
       order: i + 1,
@@ -80,7 +73,6 @@ function toApiPayload(data: TemplateFormValues) {
         set_number: si + 1,
         reps: s.reps ? parseInt(s.reps, 10) : null,
         weight_kg: s.weight ? parseFloat(s.weight) : null,
-        notes: s.notes || null,
       })),
     })),
   }
@@ -187,9 +179,6 @@ function TemplateList({
                     <p className="text-sm text-text-muted-strong mt-0.5">
                       {t.exercise_count} {t.exercise_count === 1 ? 'exercise' : 'exercises'}
                     </p>
-                    {t.notes && (
-                      <p className="text-sm text-text-muted-strong mt-0.5 line-clamp-1">{t.notes}</p>
-                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -264,7 +253,7 @@ function TemplateFormPage({
 
   const defaultValues: TemplateFormValues = existing
     ? detailToFormValues(existing)
-    : { name: '', notes: '', exercises: [emptyEntry()] }
+    : { name: '', exercises: [emptyEntry()] }
 
   return (
     <TemplateForm
@@ -299,11 +288,8 @@ function TemplateForm({
     register,
     handleSubmit,
     control,
-    setValue,
     formState: { errors },
   } = useForm<TemplateFormValues>({ defaultValues })
-
-  const templateNotes = useWatch({ control, name: 'notes' })
 
   const {
     fields: exerciseFields,
@@ -351,27 +337,6 @@ function TemplateForm({
             />
             {errors.name && <p className="mt-1 text-xs text-error-text">{errors.name.message}</p>}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-text mb-1">Notes</label>
-            <div className="relative">
-              <textarea
-                rows={2}
-                placeholder="Optional notes…"
-                className={`w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark resize-none ${templateNotes ? 'pr-8' : ''}`}
-                {...register('notes')}
-              />
-              {templateNotes && (
-                <button
-                  type="button"
-                  onClick={() => setValue('notes', '')}
-                  className="absolute right-1 top-1 p-1.5 text-text-muted-strong hover:text-text"
-                  aria-label="Clear notes"
-                >
-                  <EraserIcon />
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
         <div>
@@ -385,8 +350,8 @@ function TemplateForm({
                 exIndex={exIndex}
                 register={register}
                 control={control}
-                setValue={setValue}
                 exercises={exercises}
+                showNotes={false}
                 canRemove={exerciseFields.length > 1}
                 onRemove={() => {
                   removeExercise(exIndex)

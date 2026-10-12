@@ -10,6 +10,7 @@ import {
   computeDiff,
   findInvalidSetRpe,
   isValidSetRpe,
+  templateToFormValues,
   toTemplatePayload,
   parseSetRpe,
   parseStrengthDraft,
@@ -144,11 +145,25 @@ describe('per-set RPE', () => {
       id: 3,
       name: 'Leg day',
       exercises: [
-        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100, notes: null }] },
+        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100 }] },
       ],
     }
     const form = { ...values, exercises: [{ exercise_id: '1', sets: [set('5', '100', '', true, '9')] }] }
     expect(toTemplatePayload(form).exercises[0].sets[0]).not.toHaveProperty('rpe')
+    expect(computeDiff(snapshot, form, new Map([[1, 'Squat']]))).toEqual([])
+  })
+
+  it('keeps set notes out of templates: not prefilled, not saved, not a template change', () => {
+    // A response from before notes were dropped still carries them; they are ignored
+    const legacySet = { set_number: 1, reps: 5, weight_kg: 100, notes: 'go slow' }
+    const snapshot = {
+      id: 3,
+      name: 'Leg day',
+      exercises: [{ exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [legacySet] }],
+    }
+    expect(templateToFormValues(snapshot).exercises[0].sets[0].notes).toBe('')
+    const form = { ...values, exercises: [{ exercise_id: '1', sets: [set('5', '100', 'felt heavy')] }] }
+    expect(toTemplatePayload(form).exercises[0].sets[0]).not.toHaveProperty('notes')
     expect(computeDiff(snapshot, form, new Map([[1, 'Squat']]))).toEqual([])
   })
 

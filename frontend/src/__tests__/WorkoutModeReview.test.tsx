@@ -30,11 +30,10 @@ const storedDraft = () => {
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
-const tSet = (n: number, reps: number, weight_kg: number, notes: string | null = null) => ({
+const tSet = (n: number, reps: number, weight_kg: number) => ({
   set_number: n,
   reps,
   weight_kg,
-  notes,
 })
 
 const exerciseList = [
@@ -46,7 +45,7 @@ const legDay = {
   id: 3,
   name: 'Leg day',
   exercises: [
-    { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [tSet(1, 5, 100), tSet(2, 5, 102.5, 'tough')] },
+    { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [tSet(1, 5, 100), tSet(2, 5, 102.5)] },
   ],
 }
 const fullBody = {

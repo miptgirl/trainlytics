@@ -372,6 +372,7 @@ export function ExerciseEntryBlock({
   errors,
   showDone = false,
   showRpe = false,
+  showNotes = true,
   prefillFromLastSession = true,
   isCollapsed = false,
   onToggleCollapse,
@@ -391,6 +392,11 @@ export function ExerciseEntryBlock({
   showDone?: boolean
   /** Per-set RPE column (sessions only; templates have no RPE). Below sm it sits on line 2 after Note. */
   showRpe?: boolean
+  /**
+   * Per-set Notes column (sessions only; templates have no notes). Hiding it is
+   * only laid out for the template editor, i.e. without showDone and showRpe.
+   */
+  showNotes?: boolean
   /** When false, selecting/swapping an exercise never fetches last-session defaults or touches sets. */
   prefillFromLastSession?: boolean
   isCollapsed?: boolean
@@ -518,13 +524,16 @@ export function ExerciseEntryBlock({
   // moves RPE onto line 2 after Note, and from sm up `sm:order-*` puts Note back
   // before Done for the single-row layout, with RPE as a narrow column after Weight.
   // The action columns are 44px until md so they stay tappable.
-  const gridCols = showDone
-    ? showRpe
-      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2rem_1.5rem]'
-      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
-    : showRpe
-      ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_1.5rem]'
-      : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
+  // Without Note (template editor) it is one `# Reps Weight Delete` row at every width.
+  const gridCols = !showNotes
+    ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
+    : showDone
+      ? showRpe
+        ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2rem_1.5rem]'
+        : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2rem_1.5rem]'
+      : showRpe
+        ? 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_3rem_minmax(0,1fr)_1.5rem]'
+        : 'grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.75rem] sm:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem] md:grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_1.5rem]'
 
   return (
     <div className="bg-surface rounded-xl border border-border">
@@ -624,9 +633,11 @@ export function ExerciseEntryBlock({
             <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
               <span className="text-xs text-text-muted-strong">#</span>
               <span className="text-xs text-text-muted-strong">Reps</span>
-              <span className={`text-xs text-text-muted-strong ${showDone ? '' : 'max-sm:col-span-2'}`}>Weight (kg)</span>
+              <span className={`text-xs text-text-muted-strong ${showDone || !showNotes ? '' : 'max-sm:col-span-2'}`}>
+                Weight (kg)
+              </span>
               {showRpe && <span className="max-sm:hidden text-xs text-text-muted-strong">RPE</span>}
-              <span className="max-sm:hidden text-xs text-text-muted-strong">Notes</span>
+              {showNotes && <span className="max-sm:hidden text-xs text-text-muted-strong">Notes</span>}
               {showDone && <span className="text-xs text-text-muted-strong text-center">Done</span>}
               <span className="max-sm:hidden" />
             </div>
@@ -652,7 +663,7 @@ export function ExerciseEntryBlock({
                       type="text"
                       inputMode="decimal"
                       placeholder="kg"
-                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${showDone ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
+                      className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${showDone || !showNotes ? '' : 'max-sm:col-span-2'} ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
                       {...register(`exercises.${exIndex}.sets.${setIndex}.weight`)}
                     />
                     {rpeField && (
@@ -698,24 +709,26 @@ export function ExerciseEntryBlock({
                         </span>
                       </label>
                     )}
-                    <div className={`relative ${showRpe ? 'max-sm:col-span-2' : 'max-sm:col-span-3'} max-sm:order-1 sm:order-1`}>
-                      <input
-                        type="text"
-                        placeholder="note"
-                        className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
-                        {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
-                      />
-                      {setValue && setValues[setIndex]?.notes && (
-                        <button
-                          type="button"
-                          onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
-                          className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong hover:text-text"
-                          aria-label="Clear notes"
-                        >
-                          <EraserIcon />
-                        </button>
-                      )}
-                    </div>
+                    {showNotes && (
+                      <div className={`relative ${showRpe ? 'max-sm:col-span-2' : 'max-sm:col-span-3'} max-sm:order-1 sm:order-1`}>
+                        <input
+                          type="text"
+                          placeholder="note"
+                          className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${setValues[setIndex]?.notes ? 'pr-6' : ''} ${isDone ? 'border-success/40 text-success-text bg-surface' : 'border-border-strong'}`}
+                          {...register(`exercises.${exIndex}.sets.${setIndex}.notes`)}
+                        />
+                        {setValue && setValues[setIndex]?.notes && (
+                          <button
+                            type="button"
+                            onClick={() => setValue(`exercises.${exIndex}.sets.${setIndex}.notes`, '')}
+                            className="absolute right-0.5 top-1/2 -translate-y-1/2 p-1.5 text-text-muted-strong hover:text-text"
+                            aria-label="Clear notes"
+                          >
+                            <EraserIcon />
+                          </button>
+                        )}
+                      </div>
+                    )}
                     {setFields.length > 1 ? (
                       <button
                         type="button"

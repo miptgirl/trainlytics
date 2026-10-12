@@ -35,8 +35,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { set_number: 1, reps: 5, weight_kg: 100, notes: null },
-        { set_number: 2, reps: 5, weight_kg: 102.5, notes: 'tough' },
+        { set_number: 1, reps: 5, weight_kg: 100 },
+        { set_number: 2, reps: 5, weight_kg: 102.5 },
       ],
     },
   ],
@@ -91,6 +91,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
     await user.clear(reps[0])
     await user.type(reps[0], '6')
     await user.type(screen.getAllByPlaceholderText('note')[0], 'felt ok')
+    await user.type(screen.getAllByPlaceholderText('note')[1], 'tough')
     await user.click(screen.getByRole('button', { name: /Good/ }))
     await user.click(screen.getByRole('button', { name: /Moderate/ }))
     await user.type(screen.getByPlaceholderText('e.g. 500'), '320')
@@ -102,7 +103,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
     expect(await screen.findByText('Update template "Leg day"?')).toBeInTheDocument()
     expect(screen.getByText('Changed reps on Squat set 1')).toBeInTheDocument()
-    expect(screen.getByText('Changed notes on Squat set 1')).toBeInTheDocument()
+    // Set notes are not part of a template, so a session note is not a template change
+    expect(screen.queryByText(/Changed notes/)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'No, keep template as-is' }))
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
@@ -148,7 +150,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight_kg: 100, notes: null }],
+          sets: [{ set_number: 1, reps: 5, weight_kg: 100 }],
         },
       ],
     })

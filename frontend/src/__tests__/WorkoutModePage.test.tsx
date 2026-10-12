@@ -33,18 +33,17 @@ const exerciseList = [
   { id: 5, name: 'Pull-up', types: [{ id: 9, name: 'Back' }] },
 ]
 
-const tSet = (n: number, reps: number, weight_kg: number, notes: string | null = null) => ({
+const tSet = (n: number, reps: number, weight_kg: number) => ({
   set_number: n,
   reps,
   weight_kg,
-  notes,
 })
 
 const legDay = {
   id: 3,
   name: 'Leg day',
   exercises: [
-    { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [tSet(1, 5, 100), tSet(2, 5, 102.5, 'tough')] },
+    { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [tSet(1, 5, 100), tSet(2, 5, 102.5)] },
   ],
 }
 
@@ -129,6 +128,8 @@ describe('Workout mode: payload parity with the full form', () => {
     await user.click(screen.getByRole('button', { name: '+ Add note' }))
     await user.type(screen.getByLabelText('Note'), 'felt ok')
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: '+ Add note' }))
+    await user.type(screen.getByLabelText('Note'), 'tough')
 
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     const sheet = screen.getByRole('dialog', { name: 'Finish workout' })
@@ -144,6 +145,8 @@ describe('Workout mode: payload parity with the full form', () => {
     await user.click(within(sheet).getByRole('button', { name: 'Save workout' }))
 
     expect(await screen.findByText('Update template "Leg day"?')).toBeInTheDocument()
+    // Set notes are not part of a template, so they are not listed as template changes
+    expect(screen.queryByText(/Changed notes/)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'No, keep template as-is' }))
 
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
@@ -205,6 +208,8 @@ describe('Workout mode: logging', () => {
     renderAt('/workout?templateId=3')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: '+ Add note' }))
+    await user.type(screen.getByLabelText('Note'), 'tough')
     await user.click(screen.getByRole('button', { name: '+ Add set' }))
     // Sets: 1 done (5×100), 2 current (5×102.5 tough), 3 copy of set 2 (5×102.5)
     await user.click(screen.getByRole('button', { name: 'Delete set 2' }))
@@ -628,6 +633,7 @@ describe('Switching between the full form and workout mode', () => {
     await screen.findByText(/Pre-filled from/)
 
     await user.type(screen.getAllByPlaceholderText('note')[0], 'warm-up')
+    await user.type(screen.getAllByPlaceholderText('note')[1], 'tough')
     await user.click(screen.getAllByRole('checkbox')[0])
     await user.click(screen.getByRole('button', { name: 'Workout mode' }))
 

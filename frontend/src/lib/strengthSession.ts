@@ -23,7 +23,6 @@ export interface TemplateSet {
   set_number: number
   reps: number | null
   weight_kg: number | null
-  notes: string | null
 }
 
 export interface TemplateExercise {
@@ -159,7 +158,7 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
       sets: entry.sets.map((s) => ({
         reps: s.reps != null ? String(s.reps) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
-        notes: s.notes ?? '',
+        notes: '',
         rpe: '',
         done: false,
       })),
@@ -252,10 +251,8 @@ export function computeDiff(
       const fs = fSets[j]
       const fReps = fs.reps ? parseInt(fs.reps, 10) : null
       const fWeight = fs.weight ? parseFloat(fs.weight) : null
-      const fNotes = fs.notes || null
       if (fReps !== ts.reps) changes.push(`Changed reps on ${name} set ${j + 1}`)
       if (fWeight !== ts.weight_kg) changes.push(`Changed weight on ${name} set ${j + 1}`)
-      if (fNotes !== ts.notes) changes.push(`Changed notes on ${name} set ${j + 1}`)
     }
   }
 
@@ -272,7 +269,6 @@ export function toTemplatePayload(data: StrengthFormValues) {
         set_number: si + 1,
         reps: s.reps ? parseInt(s.reps, 10) : null,
         weight_kg: s.weight ? parseFloat(s.weight) : null,
-        notes: s.notes || null,
       })),
     })),
   }

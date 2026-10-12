@@ -4,6 +4,15 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-12 — Templates hold only exercises and sets
+
+### Changed
+
+- **Notes are no longer part of strength templates.** A template is its name plus exercises with sets (reps, weight). Set notes typed while logging from a template stay on the session, are not listed as a template change in "Update template?", and are not written back to the template. The template editor drops the Notes field and the per-set notes column
+- Migration `d4e5f6a7b8c9` drops `strength_templates.notes` and `strength_template_sets.notes`; existing template notes are deleted (downgrade restores the columns empty). Template endpoints no longer return `notes` and ignore it in POST/PATCH bodies
+
+---
+
 ## 2026-10-12 — Rest timer length in Settings
 
 ### Added

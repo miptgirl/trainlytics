@@ -430,7 +430,7 @@ async def seed_demo(
         body = {"name": name, "type_ids": [ids.ex_types[t] for t in tags]}
         ids.exercises[name] = (await api("POST", "/api/exercises", body))["id"]
     for tname, names in TEMPLATES.items():
-        body = {"name": tname, "notes": None, "exercises": [
+        body = {"name": tname, "exercises": [
             {"exercise_id": ids.exercises[e], "order": i, "sets": [
                 {"set_number": s, "reps": EXERCISES[e][3], "weight_kg": EXERCISES[e][1]}
                 for s in range(1, EXERCISES[e][2] + 1)

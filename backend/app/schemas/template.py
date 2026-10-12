@@ -7,7 +7,6 @@ class StrengthTemplateSetCreate(BaseModel):
     set_number: int
     reps: int | None = None
     weight_kg: float | None = None
-    notes: str | None = None
 
 
 class StrengthTemplateSetOut(BaseModel):
@@ -17,7 +16,6 @@ class StrengthTemplateSetOut(BaseModel):
     set_number: int
     reps: int | None
     weight_kg: float | None
-    notes: str | None
 
 
 class StrengthTemplateExerciseCreate(BaseModel):
@@ -38,13 +36,11 @@ class StrengthTemplateExerciseOut(BaseModel):
 
 class StrengthTemplateCreate(BaseModel):
     name: str
-    notes: str | None = None
     exercises: list[StrengthTemplateExerciseCreate]
 
 
 class StrengthTemplateUpdate(BaseModel):
     name: str | None = None
-    notes: str | None = None
     exercises: list[StrengthTemplateExerciseCreate] | None = None
 
 
@@ -53,7 +49,6 @@ class StrengthTemplateRead(BaseModel):
 
     id: int
     name: str
-    notes: str | None
     created_at: datetime
     updated_at: datetime
     exercises: list[StrengthTemplateExerciseOut]
@@ -62,7 +57,6 @@ class StrengthTemplateRead(BaseModel):
 class StrengthTemplateSummary(BaseModel):
     id: int
     name: str
-    notes: str | None
     exercise_count: int
     created_at: datetime
     updated_at: datetime

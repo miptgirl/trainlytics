@@ -57,7 +57,6 @@ def _build_template_out(tmpl: StrengthTemplate) -> StrengthTemplateRead:
                         set_number=s.set_number,
                         reps=s.reps,
                         weight_kg=s.weight_kg,
-                        notes=s.notes,
                     )
                     for s in entry.sets
                 ],
@@ -66,7 +65,6 @@ def _build_template_out(tmpl: StrengthTemplate) -> StrengthTemplateRead:
     return StrengthTemplateRead(
         id=tmpl.id,
         name=tmpl.name,
-        notes=tmpl.notes,
         created_at=tmpl.created_at,
         updated_at=tmpl.updated_at,
         exercises=exercises_out,
@@ -94,7 +92,7 @@ async def create_template(
 ) -> StrengthTemplateRead:
     await _validate_exercises(db, body.exercises, user)
 
-    tmpl = StrengthTemplate(user_id=user, name=body.name, notes=body.notes)
+    tmpl = StrengthTemplate(user_id=user, name=body.name)
     db.add(tmpl)
     await db.flush()
 
@@ -131,7 +129,6 @@ async def list_templates(
         StrengthTemplateSummary(
             id=t.id,
             name=t.name,
-            notes=t.notes,
             exercise_count=len(t.exercises),
             created_at=t.created_at,
             updated_at=t.updated_at,
@@ -160,8 +157,6 @@ async def update_template(
 
     if body.name is not None:
         tmpl.name = body.name
-    if body.notes is not None:
-        tmpl.notes = body.notes
 
     if body.exercises is not None:
         await _validate_exercises(db, body.exercises, user)

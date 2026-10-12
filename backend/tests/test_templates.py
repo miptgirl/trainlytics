@@ -19,7 +19,6 @@ async def _create_exercise(client: AsyncClient, name: str = "Squat") -> int:
 def _template_payload(ex_id: int, name: str = "Push Day") -> dict:
     return {
         "name": name,
-        "notes": "My template",
         "exercises": [
             {
                 "exercise_id": ex_id,
@@ -42,7 +41,7 @@ async def test_create_strength_template(db_session, auth_client: AsyncClient):
     assert resp.status_code == 201
     data = resp.json()
     assert data["name"] == "Push Day"
-    assert data["notes"] == "My template"
+    assert "notes" not in data
     assert len(data["exercises"]) == 1
     assert data["exercises"][0]["exercise_name"] == "Squat"
     assert len(data["exercises"][0]["sets"]) == 2
@@ -58,7 +57,6 @@ async def test_create_template_multiple_exercises(db_session, auth_client: Async
     ex2_id = await _create_exercise(auth_client, "Deadlift")
     payload = {
         "name": "Full Body",
-        "notes": None,
         "exercises": [
             {
                 "exercise_id": ex1_id,
@@ -394,3 +392,26 @@ async def test_update_template_version_1_history_unchanged(db_session, auth_clie
         v1_sets = result.scalars().all()
         weights = {s.weight_kg for s in v1_sets}
         assert weights == {100.0, 105.0}  # original weights unchanged
+
+
+@pytest.mark.asyncio
+async def test_template_ignores_notes(db_session, auth_client: AsyncClient):
+    """Templates hold only exercises and sets; notes from older clients are dropped."""
+    ex_id = await _create_exercise(auth_client)
+    payload = _template_payload(ex_id)
+    payload["notes"] = "Template notes"
+    payload["exercises"][0]["sets"][0]["notes"] = "Set notes"
+    resp = await auth_client.post("/api/templates/strength", json=payload)
+    assert resp.status_code == 201
+    data = resp.json()
+    assert "notes" not in data
+    assert "notes" not in data["exercises"][0]["sets"][0]
+
+    resp = await auth_client.patch(
+        f"/api/templates/strength/{data['id']}", json={"notes": "Changed"}
+    )
+    assert resp.status_code == 200
+    assert "notes" not in resp.json()
+
+    resp = await auth_client.get("/api/templates/strength")
+    assert "notes" not in resp.json()[0]

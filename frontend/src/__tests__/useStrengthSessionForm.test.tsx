@@ -36,8 +36,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { set_number: 1, reps: 5, weight_kg: 100, notes: null },
-        { set_number: 2, reps: 5, weight_kg: 102.5, notes: 'tough' },
+        { set_number: 1, reps: 5, weight_kg: 100 },
+        { set_number: 2, reps: 5, weight_kg: 102.5 },
       ],
     },
   ],
@@ -85,6 +85,7 @@ describe('useStrengthSessionForm: payload parity', () => {
 
     act(() => {
       result.current.updateSet(0, 0, { reps: '6', notes: 'felt ok' })
+      result.current.updateSet(0, 1, { notes: 'tough' })
       result.current.setSetDone(0, 0)
       result.current.setField('wellbeing', 4)
       result.current.setField('rpe', 6)
@@ -116,10 +117,8 @@ describe('useStrengthSessionForm: payload parity', () => {
     expect(result.current.buildPayload()).toEqual(expected)
 
     await act(() => result.current.submit())
-    expect(result.current.diffState?.changes).toEqual([
-      'Changed reps on Squat set 1',
-      'Changed notes on Squat set 1',
-    ])
+    // Set notes are not part of a template, so they never show up as a template change
+    expect(result.current.diffState?.changes).toEqual(['Changed reps on Squat set 1'])
     expect(mockPost).not.toHaveBeenCalled()
 
     act(() => result.current.keepTemplate())
@@ -142,6 +141,7 @@ describe('useStrengthSessionForm: actions', () => {
   it('deleteSet returns the removed set and insertSet restores it at its index', async () => {
     const { result } = await setupWithTemplate()
     let removed: ReturnType<typeof result.current.deleteSet> = null
+    act(() => result.current.updateSet(0, 1, { notes: 'tough' }))
     act(() => {
       removed = result.current.deleteSet(0, 0)
     })
@@ -167,6 +167,7 @@ describe('useStrengthSessionForm: actions', () => {
 
   it('addSet copies the last set; setSetDone toggles done', async () => {
     const { result } = await setupWithTemplate()
+    act(() => result.current.updateSet(0, 1, { notes: 'tough' }))
     act(() => result.current.setSetDone(0, 1))
     act(() => result.current.addSet(0))
     expect(result.current.values.exercises[0].sets).toEqual([
