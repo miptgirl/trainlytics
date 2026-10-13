@@ -13,6 +13,7 @@ import {
   isValidRestLength,
   parseRestInput,
   restSaveErrorMessage,
+  type WeightScale,
 } from '../lib/workoutMode'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ interface Exercise {
   name: string
   notes: string | null
   types: ExerciseType[]
+  weight_scale: WeightScale | null
   created_at: string
 }
 
@@ -54,6 +56,10 @@ interface ExerciseFormValues {
   name: string
   notes: string
   type_ids: number[]
+  weightSteps: string
+  topLb: string
+  plateLb: string
+  plates: string
 }
 
 // ── Workout section ────────────────────────────────────────────────────────
@@ -488,12 +494,12 @@ function ExercisesSection() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (body: { name: string; notes?: string; type_ids: number[] }) =>
+    mutationFn: (body: { name: string; notes?: string; type_ids: number[]; weight_scale: WeightScale | null }) =>
       api.post<Exercise>('/exercises', body),
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...body }: { id: number; name?: string; notes?: string; type_ids?: number[] }) =>
+    mutationFn: ({ id, ...body }: { id: number; name?: string; notes?: string; type_ids?: number[]; weight_scale: WeightScale | null }) =>
       api.patch<Exercise>(`/exercises/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['exercises'] })
@@ -508,16 +514,27 @@ function ExercisesSection() {
 
   function handleCreate(values: ExerciseFormValues) {
     createMutation.mutate(
-      { name: values.name, notes: values.notes || undefined, type_ids: values.type_ids },
+      {
+        name: values.name,
+        notes: values.notes || undefined,
+        type_ids: values.type_ids,
+        weight_scale: scaleFromForm(values),
+      },
       { onSuccess: () => { qc.invalidateQueries({ queryKey: ['exercises'] }); setEditingId(null) } }
     )
   }
 
   function handleCreateAndAddReplacement(values: ExerciseFormValues) {
     createMutation.mutate(
-      { name: values.name, notes: values.notes || undefined, type_ids: values.type_ids },
+      {
+        name: values.name,
+        notes: values.notes || undefined,
+        type_ids: values.type_ids,
+        weight_scale: scaleFromForm(values),
+      },
       {
         onSuccess: (created) => {
+          // The response carries weight_scale, so the cached row keeps the setting
           qc.setQueryData<Exercise[]>(['exercises'], (old = []) => [...old, created])
           setAutoOpenPicker(true)
           setEditingId(created.id)
@@ -564,13 +581,19 @@ function ExercisesSection() {
                   exerciseId={ex.id}
                   allTypes={allTypes}
                   allExercises={exercises}
-                  defaultValues={{ name: ex.name, notes: ex.notes ?? '', type_ids: ex.types.map((t) => t.id) }}
+                  defaultValues={{
+                    name: ex.name,
+                    notes: ex.notes ?? '',
+                    type_ids: ex.types.map((t) => t.id),
+                    ...weightStepFields(ex.weight_scale ?? null),
+                  }}
                   onSubmit={(values) =>
                     updateMutation.mutate({
                       id: ex.id,
                       name: values.name,
                       notes: values.notes || undefined,
                       type_ids: values.type_ids,
+                      weight_scale: scaleFromForm(values),
                     })
                   }
                   onCancel={() => { setAutoOpenPicker(false); setEditingId(null) }}
@@ -834,6 +857,68 @@ function ReplacementsSection({
   )
 }
 
+// ── Weight steps ───────────────────────────────────────────────────────────
+
+/** The "Weight steps" choices: `value` is the select's value, `scale` what it saves. */
+const WEIGHT_STEP_PRESETS: { value: string; label: string; scale: WeightScale | null }[] = [
+  { value: 'default', label: 'Default (10 lb stack)', scale: null },
+  { value: 'stack-10', label: 'Stack, 10 lb plates', scale: { kind: 'stack', top_lb: 10, plate_lb: 10, plates: null } },
+  { value: 'stack-15', label: 'Stack, 15 lb plates', scale: { kind: 'stack', top_lb: 10, plate_lb: 15, plates: null } },
+  { value: 'increment-2.5', label: 'Plates, ±2.5 kg', scale: { kind: 'increment', step_kg: 2.5 } },
+]
+
+/** Identity of a scale, to find the preset that equals a stored one. */
+function scaleKey(scale: WeightScale): string {
+  return scale.kind === 'stack'
+    ? `stack ${scale.top_lb} ${scale.plate_lb} ${scale.plates ?? ''}`
+    : `increment ${scale.step_kg}`
+}
+
+/** A plate weight in lb: 1 to 50 (the API's bounds). */
+const isValidLb = (raw: string): boolean => raw.trim() !== '' && Number(raw) >= 1 && Number(raw) <= 50
+
+/** Form fields for a stored setting: a matching preset, else custom stack fields, else its kg step. */
+function weightStepFields(scale: WeightScale | null): Pick<ExerciseFormValues, 'weightSteps' | 'topLb' | 'plateLb' | 'plates'> {
+  const blank = { topLb: '', plateLb: '', plates: '' }
+  if (scale === null) return { weightSteps: 'default', ...blank }
+  const preset = WEIGHT_STEP_PRESETS.find((p) => p.scale && scaleKey(p.scale) === scaleKey(scale))
+  if (preset) return { weightSteps: preset.value, ...blank }
+  if (scale.kind === 'stack') {
+    return {
+      weightSteps: 'custom',
+      topLb: String(scale.top_lb),
+      plateLb: String(scale.plate_lb),
+      plates: scale.plates == null ? '' : String(scale.plates),
+    }
+  }
+  return { weightSteps: `increment-${scale.step_kg}`, ...blank }
+}
+
+/** The setting a saved form describes. `increment-<kg>` without a preset is a kg step set through the API. */
+function scaleFromForm(values: ExerciseFormValues): WeightScale | null {
+  if (values.weightSteps === 'custom') {
+    return {
+      kind: 'stack',
+      top_lb: Number(values.topLb),
+      plate_lb: Number(values.plateLb),
+      plates: values.plates.trim() === '' ? null : Number(values.plates),
+    }
+  }
+  const preset = WEIGHT_STEP_PRESETS.find((p) => p.value === values.weightSteps)
+  if (preset) return preset.scale
+  return { kind: 'increment', step_kg: Number(values.weightSteps.slice('increment-'.length)) }
+}
+
+/**
+ * The stored kg step, when it has no preset: it keeps its own option, so the
+ * select still offers it after the user picks another choice.
+ */
+function storedIncrementOption(stored: ExerciseFormValues | undefined): string | null {
+  const value = stored?.weightSteps
+  if (!value?.startsWith('increment-') || WEIGHT_STEP_PRESETS.some((p) => p.value === value)) return null
+  return value
+}
+
 // ── Exercise form ──────────────────────────────────────────────────────────
 
 function ExerciseForm({
@@ -860,10 +945,13 @@ function ExerciseForm({
   onPickerOpened?: () => void
 }) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ExerciseFormValues>({
-    defaultValues: defaultValues ?? { name: '', notes: '', type_ids: [] },
+    defaultValues: defaultValues ?? { name: '', notes: '', type_ids: [], ...weightStepFields(null) },
   })
 
   const selectedTypeIds = watch('type_ids') ?? []
+  const weightSteps = watch('weightSteps')
+  const storedStep = storedIncrementOption(defaultValues)
+  const fieldClass = 'w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark'
 
   function toggleType(id: number) {
     const current = selectedTypeIds
@@ -899,6 +987,79 @@ function ExerciseForm({
           {...register('notes')}
         />
       </div>
+      <div>
+        <label htmlFor="exercise-weight-steps" className="block text-xs font-medium text-text-muted-strong mb-1">
+          Weight steps
+        </label>
+        <select id="exercise-weight-steps" className={`${fieldClass} bg-surface`} {...register('weightSteps')}>
+          {WEIGHT_STEP_PRESETS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+          {storedStep && <option value={storedStep}>{`Plates, ±${storedStep.slice('increment-'.length)} kg`}</option>}
+          <option value="custom">Custom stack</option>
+        </select>
+      </div>
+      {weightSteps === 'custom' && (
+        <div className="space-y-1">
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label htmlFor="exercise-top-lb" className="block text-xs font-medium text-text-muted-strong mb-1">
+                Top plate (lb)
+              </label>
+              <input
+                id="exercise-top-lb"
+                type="number"
+                inputMode="decimal"
+                step="any"
+                className={fieldClass}
+                {...register('topLb', {
+                  validate: (v, all) => all.weightSteps !== 'custom' || isValidLb(v) || 'Enter 1–50 lb',
+                })}
+              />
+            </div>
+            <div>
+              <label htmlFor="exercise-plate-lb" className="block text-xs font-medium text-text-muted-strong mb-1">
+                Plate (lb)
+              </label>
+              <input
+                id="exercise-plate-lb"
+                type="number"
+                inputMode="decimal"
+                step="any"
+                className={fieldClass}
+                {...register('plateLb', {
+                  validate: (v, all) => all.weightSteps !== 'custom' || isValidLb(v) || 'Enter 1–50 lb',
+                })}
+              />
+            </div>
+            <div>
+              <label htmlFor="exercise-plates" className="block text-xs font-medium text-text-muted-strong mb-1">
+                Plates (optional)
+              </label>
+              <input
+                id="exercise-plates"
+                type="number"
+                inputMode="numeric"
+                step={1}
+                className={fieldClass}
+                {...register('plates', {
+                  validate: (v, all) =>
+                    all.weightSteps !== 'custom' ||
+                    v.trim() === '' ||
+                    (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 100) ||
+                    'Enter 1–100 or leave blank',
+                })}
+              />
+            </div>
+          </div>
+          {errors.topLb && <p className="text-xs text-error-text">Top plate: {errors.topLb.message}</p>}
+          {errors.plateLb && <p className="text-xs text-error-text">Plate: {errors.plateLb.message}</p>}
+          {errors.plates && <p className="text-xs text-error-text">Plates: {errors.plates.message}</p>}
+          <p className="text-xs text-text-muted-strong">Plates counts the top plate. Blank means no limit.</p>
+        </div>
+      )}
       {allTypes.length > 0 && (
         <div>
           <p className="text-xs font-medium text-text-muted-strong mb-1.5">Types</p>

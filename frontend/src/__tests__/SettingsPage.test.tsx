@@ -201,3 +201,231 @@ describe('SettingsPage — Workout: rest timer', () => {
     expect(mockPatch).not.toHaveBeenCalled()
   })
 })
+
+describe('SettingsPage — Exercises: weight steps', () => {
+  const mockPost = vi.mocked(api.post)
+  const STACK_15 = { kind: 'stack', top_lb: 10, plate_lb: 15, plates: null }
+  // The exercises GET /exercises returns; POST appends what it creates, as the API does
+  let exercises: Record<string, unknown>[] = []
+
+  beforeEach(() => {
+    exercises = []
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/profile') return { ...profile } as never
+      if (path === '/exercises') return exercises as never
+      return [] as never
+    })
+    mockPost.mockReset()
+    mockPost.mockImplementation(async (_path: string, body: unknown) => {
+      const created = { id: 99, notes: null, types: [], created_at: '2026-10-13T10:00:00Z', ...(body as object) }
+      exercises = [...exercises, created]
+      return created as never
+    })
+    mockPatch.mockClear()
+  })
+
+  const section = () => screen.getByRole('heading', { name: 'Exercises', level: 2 }).closest('section') as HTMLElement
+  const weightSteps = () => screen.getByLabelText('Weight steps')
+  const saveButton = () => within(section()).getByRole('button', { name: 'Save' })
+
+  async function openNewForm(user: ReturnType<typeof userEvent.setup>, name: string) {
+    await user.click(within(section()).getByRole('button', { name: '+ Add' }))
+    await user.type(screen.getByPlaceholderText('Exercise name'), name)
+  }
+
+  async function openEditForm(user: ReturnType<typeof userEvent.setup>, name: string) {
+    const row = (await within(section()).findByText(name)).closest('li') as HTMLElement
+    await user.click(within(row).getByRole('button', { name: 'Edit' }))
+  }
+
+  describe('adding an exercise', () => {
+    it('defaults to the default 10 lb stack and sends null', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Row')
+
+      expect(weightSteps()).toHaveValue('default')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ name: 'Row', weight_scale: null }))
+    })
+
+    it.each([
+      ['Stack, 10 lb plates', { kind: 'stack', top_lb: 10, plate_lb: 10, plates: null }],
+      ['Stack, 15 lb plates', STACK_15],
+      ['Plates, ±2.5 kg', { kind: 'increment', step_kg: 2.5 }],
+    ])('"%s" saves its setting', async (label, scale) => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Leg press')
+      await user.selectOptions(weightSteps(), label)
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ name: 'Leg press', weight_scale: scale }))
+    })
+
+    it('custom stack shows its fields, and saves the typed plates', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Leg press')
+      expect(screen.queryByLabelText('Top plate (lb)')).not.toBeInTheDocument()
+
+      await user.selectOptions(weightSteps(), 'Custom stack')
+      await user.type(screen.getByLabelText('Top plate (lb)'), '10')
+      await user.type(screen.getByLabelText('Plate (lb)'), '12.5')
+      await user.type(screen.getByLabelText('Plates (optional)'), '20')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith(
+        '/exercises',
+        expect.objectContaining({ weight_scale: { kind: 'stack', top_lb: 10, plate_lb: 12.5, plates: 20 } }),
+      )
+    })
+
+    it('a blank plate count saves as no limit', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Leg press')
+      await user.selectOptions(weightSteps(), 'Custom stack')
+      await user.type(screen.getByLabelText('Top plate (lb)'), '10')
+      await user.type(screen.getByLabelText('Plate (lb)'), '15')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith(
+        '/exercises',
+        expect.objectContaining({ weight_scale: { kind: 'stack', top_lb: 10, plate_lb: 15, plates: null } }),
+      )
+    })
+
+    it('does not save a custom stack outside 1–50 lb or 1–100 plates', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Leg press')
+      await user.selectOptions(weightSteps(), 'Custom stack')
+      await user.type(screen.getByLabelText('Top plate (lb)'), '10')
+      await user.type(screen.getByLabelText('Plate (lb)'), '0.5')
+      await user.type(screen.getByLabelText('Plates (optional)'), '101')
+      await user.click(saveButton())
+
+      expect(await screen.findByText('Plate: Enter 1–50 lb')).toBeInTheDocument()
+      expect(screen.getByText('Plates: Enter 1–100 or leave blank')).toBeInTheDocument()
+      expect(mockPost).not.toHaveBeenCalled()
+    })
+
+    it('"Save & add replacement" keeps the setting on the row it opens', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Leg press')
+      await user.selectOptions(weightSteps(), 'Custom stack')
+      await user.type(screen.getByLabelText('Top plate (lb)'), '10')
+      await user.type(screen.getByLabelText('Plate (lb)'), '12.5')
+      await user.type(screen.getByLabelText('Plates (optional)'), '20')
+      await user.click(screen.getByRole('button', { name: 'Save & add replacement' }))
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith(
+        '/exercises',
+        expect.objectContaining({ weight_scale: { kind: 'stack', top_lb: 10, plate_lb: 12.5, plates: 20 } }),
+      )
+      // The edit form opened on the created row shows the saved custom stack
+      await waitFor(() => expect(weightSteps()).toHaveValue('custom'))
+      expect(screen.getByLabelText('Top plate (lb)')).toHaveValue(10)
+      expect(screen.getByLabelText('Plate (lb)')).toHaveValue(12.5)
+      expect(screen.getByLabelText('Plates (optional)')).toHaveValue(20)
+    })
+  })
+
+  describe('editing an exercise', () => {
+    it('shows a stored preset as its choice and saves it unchanged', async () => {
+      exercises = [{ id: 1, name: 'Leg press', notes: null, types: [], weight_scale: STACK_15 }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      expect(weightSteps()).toHaveValue('stack-15')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ weight_scale: STACK_15 }))
+    })
+
+    it('shows a stored custom stack as "Custom stack" with its fields filled, and saves it unchanged', async () => {
+      const custom = { kind: 'stack', top_lb: 10, plate_lb: 12.5, plates: 20 }
+      exercises = [{ id: 1, name: 'Leg press', notes: null, types: [], weight_scale: custom }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      expect(weightSteps()).toHaveValue('custom')
+      expect(screen.getByLabelText('Top plate (lb)')).toHaveValue(10)
+      expect(screen.getByLabelText('Plate (lb)')).toHaveValue(12.5)
+      expect(screen.getByLabelText('Plates (optional)')).toHaveValue(20)
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ weight_scale: custom }))
+    })
+
+    it('a stored custom stack without a plate count shows the count blank', async () => {
+      exercises = [
+        { id: 1, name: 'Leg press', notes: null, types: [], weight_scale: { kind: 'stack', top_lb: 10, plate_lb: 12.5, plates: null } },
+      ]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      expect(weightSteps()).toHaveValue('custom')
+      expect(screen.getByLabelText('Plates (optional)')).toHaveValue(null)
+    })
+
+    it('an exercise with no weight_scale in the response shows the default and saves null', async () => {
+      exercises = [{ id: 1, name: 'Leg press', notes: null, types: [] }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      expect(weightSteps()).toHaveValue('default')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ weight_scale: null }))
+    })
+
+    it('choosing the default clears a stored setting with null', async () => {
+      exercises = [{ id: 1, name: 'Leg press', notes: null, types: [], weight_scale: STACK_15 }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      await user.selectOptions(weightSteps(), 'Default (10 lb stack)')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ weight_scale: null }))
+    })
+
+    it('a stored kg step with no preset keeps its option after picking another choice', async () => {
+      exercises = [{ id: 1, name: 'Dumbbell row', notes: null, types: [], weight_scale: { kind: 'increment', step_kg: 5 } }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Dumbbell row')
+
+      expect(weightSteps()).toHaveValue('increment-5')
+      await user.selectOptions(weightSteps(), 'Default (10 lb stack)')
+      // Still offered after picking another choice
+      expect(within(weightSteps()).getByRole('option', { name: 'Plates, ±5 kg' })).toBeInTheDocument()
+      await user.selectOptions(weightSteps(), 'Plates, ±5 kg')
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith(
+        '/exercises/1',
+        expect.objectContaining({ weight_scale: { kind: 'increment', step_kg: 5 } }),
+      )
+    })
+  })
+})

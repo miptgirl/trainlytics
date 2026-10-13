@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
-import { currentSetIndex, formatSet, sanitizeDecimal, stepValue, stepWeight } from '../../lib/workoutMode'
+import { currentSetIndex, formatSet, sanitizeDecimal, stepValue, stepWeight, type WeightScale } from '../../lib/workoutMode'
 
 const stepReps = (value: string, direction: 1 | -1) => stepValue(value, direction)
 
@@ -153,6 +153,7 @@ function SetEditor({
   setNumber,
   editing,
   canDelete,
+  weightScale,
   onChange,
   onComplete,
   onCancel,
@@ -164,6 +165,7 @@ function SetEditor({
   /** Editing a done set (Cancel / Save) instead of logging the current one. */
   editing: boolean
   canDelete: boolean
+  weightScale?: WeightScale | null
   onChange: (patch: Partial<SetFormValues>) => void
   onComplete: () => void
   onCancel: () => void
@@ -198,7 +200,7 @@ function SetEditor({
           label="Weight"
           unit="kg"
           value={set.weight}
-          step={stepWeight}
+          step={(value, direction) => stepWeight(value, direction, weightScale)}
           inputMode="decimal"
           setNumber={setNumber}
           onChange={(weight) => onChange({ weight })}
@@ -256,12 +258,15 @@ function SetEditor({
  */
 export function WorkoutSetList({
   sets,
+  weightScale,
   onUpdateSet,
   onCompleteSet,
   onDeleteSet,
   onAddSet,
 }: {
   sets: SetFormValues[]
+  /** The exercise's weight steps; null or undefined for the default 10 lb stack. */
+  weightScale?: WeightScale | null
   onUpdateSet: (setIndex: number, patch: Partial<SetFormValues>) => void
   onCompleteSet: (setIndex: number) => void
   onDeleteSet: (setIndex: number) => void
@@ -291,6 +296,7 @@ export function WorkoutSetList({
               setNumber={n}
               editing={editing !== null}
               canDelete={canDelete}
+              weightScale={weightScale}
               onChange={(patch) => onUpdateSet(i, patch)}
               onComplete={() => onCompleteSet(i)}
               onCancel={() => {

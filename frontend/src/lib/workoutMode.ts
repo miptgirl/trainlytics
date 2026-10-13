@@ -115,32 +115,73 @@ export function stepValue(value: string, delta: number): string {
   return formatNumber(Math.max(0, (Number.isFinite(n) ? n : 0) + delta))
 }
 
-/** One 10 lb stack plate in kg. */
-const STACK_PLATE_KG = 4.5359237
+/** A machine weight stack: a top plate, then equal plates. `plates` counts every position, top plate included. */
+export type StackScale = { kind: 'stack'; top_lb: number; plate_lb: number; plates?: number | null }
 
-/** Kg printed on the n-th plate of a 10 lb weight stack: 4.5, 9, 14, 18, 23, 27, 32… (0 for n = 0). */
-export function stackWeight(n: number): number {
-  const kg = n * STACK_PLATE_KG
+/** Fixed kg steps for barbells and dumbbells. */
+export type IncrementScale = { kind: 'increment'; step_kg: number }
+
+/** An exercise's weight steps; null on the exercise means the default 10 lb stack. */
+export type WeightScale = StackScale | IncrementScale
+
+const LB_KG = 0.45359237
+const DEFAULT_STACK: StackScale = { kind: 'stack', top_lb: 10, plate_lb: 10, plates: null }
+// Far above any real load; keeps the stack's position search finite for absurd typed values
+const MAX_STACK_KG = 1_000_000
+
+/** Kg printed on the n-th position of a weight stack: 4.5, 9, 14, 18, 23, 27… for the default (0 for n = 0). */
+export function stackWeight(n: number, scale: StackScale = DEFAULT_STACK): number {
+  if (n <= 0) return 0
+  const kg = (scale.top_lb + (n - 1) * scale.plate_lb) * LB_KG
   return kg < 10 ? Math.round(kg * 2) / 2 : Math.round(kg)
 }
 
 /**
- * Moves a weight to the next (+1) or previous (−1) stack value; a weight between
- * plates goes to the nearest one that way (30 → 32 / 27). Empty counts as 0; never below 0.
+ * Highest position (0 = no plate, at most `max`) whose printed weight is at most `kg`.
+ * The estimate is the exact position; printed values sit within 0.5 kg of it, so with
+ * plates of at least 1 lb (≥ 0.45 kg) each correction loop runs at most about 3 times.
+ * `kg` is clamped to MAX_STACK_KG and `max` is `plates`, so the search is bounded either way.
  */
-export function stepWeight(value: string, direction: 1 | -1): string {
+function stackIndexAtOrBelow(kg: number, scale: StackScale, max: number): number {
+  const topKg = scale.top_lb * LB_KG
+  const plateKg = scale.plate_lb * LB_KG
+  let n = kg < topKg ? 0 : Math.min(Math.floor((kg - topKg) / plateKg) + 1, max)
+  while (n > 0 && stackWeight(n, scale) > kg) n--
+  while (n < max && stackWeight(n + 1, scale) <= kg) n++
+  return n
+}
+
+/** Next (+1) or previous (−1) printed value of a stack; with `plates` set, never past the last position. */
+function stepStack(current: number, direction: 1 | -1, scale: StackScale): number {
+  const kg = Math.min(current, MAX_STACK_KG)
+  const top = scale.plates ?? Infinity
+  const at = stackIndexAtOrBelow(kg, scale, top)
+  if (direction > 0) return stackWeight(Math.min(at + 1, top), scale)
+  let n = Math.min(at, top)
+  while (n > 0 && stackWeight(n, scale) >= kg) n--
+  return stackWeight(n, scale)
+}
+
+/** Next (+1) or previous (−1) multiple of `step`; an off-grid value snaps to the nearest multiple that way. */
+function stepIncrement(current: number, direction: 1 | -1, step: number): number {
+  const q = current / step
+  // Within float noise of a multiple, so 0.3 / 0.1 (2.9999999999999996) counts as on the grid
+  const grid = Math.round(q)
+  const exact = Math.abs(q - grid) < 1e-9 ? grid : q
+  const k = direction > 0 ? Math.floor(exact) + 1 : Math.ceil(exact) - 1
+  return Math.max(0, k * step)
+}
+
+/**
+ * Moves a weight to the next (+1) or previous (−1) step of the exercise's weight
+ * scale (default: the 10 lb stack). A weight between steps goes to the nearest one
+ * in that direction (30 → 32 / 27 on the default stack). Empty counts as 0; never below 0.
+ */
+export function stepWeight(value: string, direction: 1 | -1, scale?: WeightScale | null): string {
   const w = parseFloat(value)
   const current = Number.isFinite(w) ? w : 0
-  // Printed values sit within 0.5 kg of n × plate, so these starts bracket the answer
-  let n = Math.floor(current / STACK_PLATE_KG)
-  if (direction > 0) {
-    n = Math.max(1, n - 1)
-    while (stackWeight(n) <= current) n++
-  } else {
-    n += 2
-    while (n > 0 && stackWeight(n) >= current) n--
-  }
-  return formatNumber(stackWeight(n))
+  if (scale?.kind === 'increment') return formatNumber(stepIncrement(current, direction, scale.step_kg))
+  return formatNumber(stepStack(current, direction, scale ?? DEFAULT_STACK))
 }
 
 /** "6 × 100 kg", "8 reps", "– × 60 kg", "8 × 100 kg @8" — one set as a compact label. */

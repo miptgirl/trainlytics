@@ -49,7 +49,8 @@ async def create_exercise(
     db: AsyncSession = Depends(get_db),
 ) -> Exercise:
     types = await _resolve_types(body.type_ids, user, db)
-    exercise = Exercise(user_id=user, name=body.name, notes=body.notes)
+    scale = body.weight_scale.model_dump() if body.weight_scale else None
+    exercise = Exercise(user_id=user, name=body.name, notes=body.notes, weight_scale=scale)
     exercise.types = types
     db.add(exercise)
     await db.commit()

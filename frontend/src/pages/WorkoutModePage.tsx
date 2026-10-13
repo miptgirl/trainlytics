@@ -107,6 +107,7 @@ export default function WorkoutModePage() {
   const exIndex = clampIndex(s.workout.currentExerciseIndex, exercises.length)
   const entry = exercises[exIndex]
   const names = new Map(s.exerciseLibrary.map((e) => [String(e.id), e.name]))
+  const scaleOf = (id: string) => s.exerciseLibrary.find((e) => String(e.id) === id)?.weight_scale
   const lastByExercise = useLastSessionDefaults(exercises.map((e) => e.exercise_id))
   const progress = sessionProgress(exercises)
   const nextIndex = nextUnfinishedIndex(exercises, exIndex)
@@ -478,6 +479,7 @@ export default function WorkoutModePage() {
               <WorkoutSetList
                 key={`${exIndex}-${listVersion}`}
                 sets={entry.sets}
+                weightScale={scaleOf(entry.exercise_id)}
                 onUpdateSet={(setIndex, patch) => s.updateSet(exIndex, setIndex, patch)}
                 onCompleteSet={completeSet}
                 onDeleteSet={deleteSet}

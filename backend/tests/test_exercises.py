@@ -1,4 +1,7 @@
+import pytest
 from httpx import AsyncClient
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from tests.conftest import TEST_USERNAME
 
@@ -266,3 +269,154 @@ async def test_replacements_not_in_exercise_list_response(auth_client: AsyncClie
     assert list_resp.status_code == 200
     squat_in_list = next(e for e in list_resp.json() if e["id"] == squat["id"])
     assert "replacements" not in squat_in_list
+
+
+STACK_15 = {"kind": "stack", "top_lb": 10, "plate_lb": 15, "plates": 26}
+INCREMENT_2_5 = {"kind": "increment", "step_kg": 2.5}
+
+
+async def test_create_exercise_defaults_weight_scale_to_null(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    resp = await auth_client.post("/api/exercises", json={"name": "Squat"})
+    assert resp.status_code == 201
+    assert resp.json()["weight_scale"] is None
+
+
+async def test_create_exercise_with_stack_weight_scale(auth_client: AsyncClient, db_session: None) -> None:
+    resp = await auth_client.post("/api/exercises", json={"name": "Leg press", "weight_scale": STACK_15})
+    assert resp.status_code == 201
+    assert resp.json()["weight_scale"] == STACK_15
+    listed = next(e for e in (await auth_client.get("/api/exercises")).json() if e["name"] == "Leg press")
+    assert listed["weight_scale"] == STACK_15
+
+
+async def test_create_exercise_with_increment_weight_scale(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    resp = await auth_client.post(
+        "/api/exercises", json={"name": "Dumbbell curl", "weight_scale": INCREMENT_2_5}
+    )
+    assert resp.status_code == 201
+    assert resp.json()["weight_scale"] == INCREMENT_2_5
+
+
+async def test_create_stack_without_plate_count_is_unbounded(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    scale = {"kind": "stack", "top_lb": 10, "plate_lb": 10}
+    resp = await auth_client.post("/api/exercises", json={"name": "Row", "weight_scale": scale})
+    assert resp.status_code == 201
+    assert resp.json()["weight_scale"] == {**scale, "plates": None}
+
+
+async def test_patch_weight_scale_sets_it(auth_client: AsyncClient, db_session: None) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row"})).json()["id"]
+    resp = await auth_client.patch(f"/api/exercises/{eid}", json={"weight_scale": INCREMENT_2_5})
+    assert resp.status_code == 200
+    assert resp.json()["weight_scale"] == INCREMENT_2_5
+
+
+async def test_patch_without_weight_scale_keeps_it(auth_client: AsyncClient, db_session: None) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row", "weight_scale": STACK_15})).json()["id"]
+    resp = await auth_client.patch(f"/api/exercises/{eid}", json={"notes": "Slow negatives"})
+    assert resp.status_code == 200
+    assert resp.json()["weight_scale"] == STACK_15
+
+
+async def test_patch_null_weight_scale_clears_it(auth_client: AsyncClient, db_session: None) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row", "weight_scale": STACK_15})).json()["id"]
+    resp = await auth_client.patch(f"/api/exercises/{eid}", json={"weight_scale": None})
+    assert resp.status_code == 200
+    assert resp.json()["weight_scale"] is None
+    listed = next(e for e in (await auth_client.get("/api/exercises")).json() if e["name"] == "Row")
+    assert listed["weight_scale"] is None
+
+
+@pytest.mark.parametrize(
+    "scale",
+    [
+        {"kind": "barbell", "step_kg": 2.5},
+        {"top_lb": 10, "plate_lb": 10},
+        {"kind": "stack", "top_lb": 10},
+        {"kind": "stack", "top_lb": 0, "plate_lb": 10},
+        {"kind": "stack", "top_lb": 0.5, "plate_lb": 10},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 0},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 1e-20, "plates": 20},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 0.99},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 51},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 10, "plates": 0},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 10, "plates": 101},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 10, "plates": 2.5},
+        {"kind": "stack", "top_lb": "10", "plate_lb": 10},
+        {"kind": "increment", "step_kg": "2.5"},
+        {"kind": "increment", "step_kg": 0},
+        {"kind": "increment", "step_kg": 21},
+        {"kind": "increment", "step_kg": 0.125},
+        {"kind": "increment", "step_kg": 0.001},
+        {"kind": "increment"},
+        "stack",
+    ],
+)
+async def test_create_exercise_rejects_invalid_weight_scale(
+    auth_client: AsyncClient, db_session: None, scale: object
+) -> None:
+    resp = await auth_client.post("/api/exercises", json={"name": "Bad", "weight_scale": scale})
+    assert resp.status_code == 422
+
+
+async def test_patch_rejects_invalid_weight_scale(auth_client: AsyncClient, db_session: None) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row"})).json()["id"]
+    resp = await auth_client.patch(
+        f"/api/exercises/{eid}", json={"weight_scale": {"kind": "increment", "step_kg": -1}}
+    )
+    assert resp.status_code == 422
+    assert (await auth_client.get("/api/exercises")).json()[0]["weight_scale"] is None
+
+
+async def test_patch_rejects_off_grid_and_tiny_weight_scales(auth_client: AsyncClient, db_session: None) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row", "weight_scale": STACK_15})).json()["id"]
+    for scale in [
+        {"kind": "increment", "step_kg": 0.125},
+        {"kind": "increment", "step_kg": 0.001},
+        {"kind": "stack", "top_lb": 10, "plate_lb": 1e-20, "plates": 20},
+    ]:
+        resp = await auth_client.patch(f"/api/exercises/{eid}", json={"weight_scale": scale})
+        assert resp.status_code == 422, scale
+    assert (await auth_client.get("/api/exercises")).json()[0]["weight_scale"] == STACK_15
+
+
+async def test_create_accepts_the_smallest_steps(auth_client: AsyncClient, db_session: None) -> None:
+    resp = await auth_client.post(
+        "/api/exercises", json={"name": "Pin stack", "weight_scale": {"kind": "stack", "top_lb": 1, "plate_lb": 1}}
+    )
+    assert resp.status_code == 201
+    resp = await auth_client.post(
+        "/api/exercises", json={"name": "Micro", "weight_scale": {"kind": "increment", "step_kg": 0.25}}
+    )
+    assert resp.status_code == 201
+    assert resp.json()["weight_scale"] == {"kind": "increment", "step_kg": 0.25}
+
+
+async def _weight_scale_is_sql_null(db_session: async_sessionmaker, exercise_id: int) -> bool:
+    async with db_session() as session:
+        result = await session.execute(
+            text("SELECT weight_scale IS NULL FROM exercises WHERE id = :id"), {"id": exercise_id}
+        )
+        return bool(result.scalar_one())
+
+
+async def test_unset_weight_scale_is_stored_as_sql_null(
+    auth_client: AsyncClient, db_session: async_sessionmaker
+) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Squat"})).json()["id"]
+    assert await _weight_scale_is_sql_null(db_session, eid)
+
+
+async def test_cleared_weight_scale_is_stored_as_sql_null(
+    auth_client: AsyncClient, db_session: async_sessionmaker
+) -> None:
+    eid = (await auth_client.post("/api/exercises", json={"name": "Row", "weight_scale": STACK_15})).json()["id"]
+    assert not await _weight_scale_is_sql_null(db_session, eid)
+    await auth_client.patch(f"/api/exercises/{eid}", json={"weight_scale": None})
+    assert await _weight_scale_is_sql_null(db_session, eid)

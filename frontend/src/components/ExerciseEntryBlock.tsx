@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
 import { sanitizeRpeInput } from '../lib/strengthSession'
+import type { WeightScale } from '../lib/workoutMode'
 
 export interface SetFormValues {
   reps: string
@@ -30,6 +31,7 @@ export interface ExerciseOption {
   name: string
   notes?: string | null
   types?: ExerciseTypeTag[]
+  weight_scale?: WeightScale | null
 }
 
 /** Build a list of {label, exercises} groups for the exercise picker. */

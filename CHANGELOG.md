@@ -4,6 +4,15 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-13 — Weight steps per exercise
+
+### Added
+
+- **Settings → Exercises → Weight steps**: each exercise can step its weight differently in workout mode's −/+ buttons. Choices: the default 10 lb stack, a stack with 10 lb or 15 lb plates, ±2.5 kg (plates or barbells), or a custom stack (top plate and plate weight in lb, optional plate count). Stored as `exercises.weight_scale` (migration `e5f6a7b8c9d0`); null keeps the default stack
+- `GET /exercises` returns `weight_scale`; `POST /exercises` and `PATCH /exercises/{id}` accept it. PATCH leaves it unchanged when omitted and clears it on null. Bounds: top plate and plate 1–50 lb, plates 1–100 (blank = no limit), kg step above 0 up to 20 with at most 2 decimals. Anything else is 422
+
+---
+
 ## 2026-10-12 — Templates hold only exercises and sets
 
 ### Changed

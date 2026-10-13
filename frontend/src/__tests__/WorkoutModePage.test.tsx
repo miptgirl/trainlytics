@@ -83,17 +83,20 @@ const set = (reps: string, weight: string, done = false, notes = '', rpe = '') =
 const PROFILE = { ai_key_configured: false, rest_seconds: null }
 // Server-side profile: GET returns it, PATCH merges into it
 let profile: Record<string, unknown> = { ...PROFILE }
+// Weight steps of Squat (exercise 1), as GET /exercises returns them
+let squatScale: unknown = null
 
 beforeEach(() => {
   resetRestLength()
   localStorage.clear()
   profile = { ...PROFILE }
+  squatScale = null
   mockGet.mockReset()
   mockPost.mockReset()
   mockPatch.mockReset()
   mockGet.mockImplementation(async (path: string) => {
     if (path === '/profile') return { ...profile } as never
-    if (path === '/exercises') return exerciseList as never
+    if (path === '/exercises') return exerciseList.map((e) => (e.id === 1 ? { ...e, weight_scale: squatScale } : e)) as never
     if (path === '/templates/strength') return [{ id: 3, name: 'Leg day' }, { id: 4, name: 'Full body' }] as never
     if (path === '/templates/strength/3') return legDay as never
     if (path === '/templates/strength/4') return fullBody as never
@@ -172,6 +175,23 @@ describe('Workout mode: payload parity with the full form', () => {
     })
     expect(await screen.findByText('Session detail page')).toBeInTheDocument()
     expect(storedDraft()).toBeNull()
+  })
+})
+
+describe('Workout mode: weight steps', () => {
+  // Squat's first set is 100 kg in the Leg day template
+  it.each([
+    ['the default 10 lb stack', null, '104'],
+    ['a 2.5 kg increment', { kind: 'increment', step_kg: 2.5 }, '102.5'],
+    ['a 15 lb plate stack', { kind: 'stack', top_lb: 10, plate_lb: 15, plates: null }, '107'],
+  ])('the weight + button steps by %s', async (_, weightScale, next) => {
+    squatScale = weightScale
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Increase weight' }))
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue(next)
   })
 })
 

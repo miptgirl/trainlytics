@@ -133,6 +133,91 @@ describe('formatting and steppers', () => {
     expect(stepWeight('2', -1)).toBe('0')
   })
 
+  it('treats a missing or null weight scale as the default 10 lb stack', () => {
+    const stack10 = { kind: 'stack', top_lb: 10, plate_lb: 10, plates: null } as const
+    for (const value of ['', '4.5', '30', '102.5']) {
+      for (const direction of [1, -1] as const) {
+        expect(stepWeight(value, direction, null)).toBe(stepWeight(value, direction))
+        expect(stepWeight(value, direction, undefined)).toBe(stepWeight(value, direction))
+        expect(stepWeight(value, direction, stack10)).toBe(stepWeight(value, direction))
+      }
+    }
+  })
+
+  it('matches the printed kg of a 10 lb top plate with 15 lb plates', () => {
+    const stack15 = { kind: 'stack', top_lb: 10, plate_lb: 15 } as const
+    const printed = [4.5, 11, 18, 25, 32, 39, 45, 52, 59, 66, 73, 79, 86, 93, 100, 107, 113, 120, 127, 134, 141, 147, 154, 161, 168, 175]
+    expect(printed.map((_, i) => stackWeight(i + 1, stack15))).toEqual(printed)
+    expect(stackWeight(0, stack15)).toBe(0)
+  })
+
+  it('steps the 15 lb stack plate by plate, moving an off-stack weight to the nearest value', () => {
+    const stack15 = { kind: 'stack', top_lb: 10, plate_lb: 15, plates: null } as const
+    expect(stepWeight('', 1, stack15)).toBe('4.5')
+    expect(stepWeight('4.5', 1, stack15)).toBe('11')
+    expect(stepWeight('11', -1, stack15)).toBe('4.5')
+    expect(stepWeight('30', 1, stack15)).toBe('32')
+    expect(stepWeight('30', -1, stack15)).toBe('25')
+    expect(stepWeight('175', 1, stack15)).toBe('181')
+  })
+
+  it('stops a capped stack at its last position', () => {
+    const capped = { kind: 'stack', top_lb: 10, plate_lb: 15, plates: 26 } as const
+    expect(stepWeight('175', 1, capped)).toBe('175')
+    expect(stepWeight('170', 1, capped)).toBe('175')
+    // An off-stack value above the last position steps down to it, and down from it
+    expect(stepWeight('200', 1, capped)).toBe('175')
+    expect(stepWeight('200', -1, capped)).toBe('175')
+    expect(stepWeight('175', -1, capped)).toBe('168')
+    expect(stepWeight('', 1, { ...capped, plates: 1 })).toBe('4.5')
+    expect(stepWeight('50', 1, { ...capped, plates: 1 })).toBe('4.5')
+  })
+
+  it('caps the 10 lb stack at its 20th position (200 lb)', () => {
+    const capped = { kind: 'stack', top_lb: 10, plate_lb: 10, plates: 20 } as const
+    expect(stepWeight('91', 1, capped)).toBe('91')
+    expect(stepWeight('300', 1, capped)).toBe('91')
+    expect(stepWeight('91', -1, capped)).toBe('86')
+  })
+
+  it('returns promptly for an absurdly large typed weight', () => {
+    const big = '1000000000000000000000000'
+    expect(Number(stepWeight(big, -1))).toBeLessThanOrEqual(1_000_000)
+    expect(Number(stepWeight(big, 1))).toBeGreaterThan(1_000_000)
+  })
+
+  it('returns promptly for a huge typed weight on 1 lb plates, capped or not', () => {
+    const big = '1000000000000000000000000'
+    const oneLb = { kind: 'stack', top_lb: 1, plate_lb: 1, plates: null } as const
+    expect(Number(stepWeight(big, -1, oneLb))).toBeLessThanOrEqual(1_000_000)
+    expect(Number(stepWeight(big, 1, oneLb))).toBeGreaterThan(1_000_000)
+    // Capped at 20 positions: the last one is 1 + 19 × 1 = 20 lb, printed 9 kg
+    const capped = { ...oneLb, plates: 20 }
+    expect(stackWeight(20, capped)).toBe(9)
+    expect(stepWeight(big, 1, capped)).toBe(stepWeight(big, -1, capped))
+    expect(stepWeight(big, 1, capped)).toBe(String(stackWeight(20, capped)))
+  })
+
+  it('steps a fixed-increment scale to the next multiple, snapping off-grid values', () => {
+    const plates = { kind: 'increment', step_kg: 2.5 } as const
+    expect(stepWeight('100', 1, plates)).toBe('102.5')
+    expect(stepWeight('100', -1, plates)).toBe('97.5')
+    expect(stepWeight('102', 1, plates)).toBe('102.5')
+    expect(stepWeight('102', -1, plates)).toBe('100')
+    expect(stepWeight('', 1, plates)).toBe('2.5')
+    expect(stepWeight('2', -1, plates)).toBe('0')
+    expect(stepWeight('0', -1, plates)).toBe('0')
+    expect(stepWeight('12.5', 1, { kind: 'increment', step_kg: 5 })).toBe('15')
+  })
+
+  it('steps a fixed increment without float noise', () => {
+    const tenth = { kind: 'increment', step_kg: 0.1 } as const
+    expect(stepWeight('0.2', 1, tenth)).toBe('0.3')
+    expect(stepWeight('0.3', 1, tenth)).toBe('0.4')
+    expect(stepWeight('0.3', -1, tenth)).toBe('0.2')
+    expect(stepWeight('0.1', -1, tenth)).toBe('0')
+  })
+
   it('formats the clock', () => {
     expect(formatClock(90)).toBe('1:30')
     expect(formatClock(5)).toBe('0:05')
