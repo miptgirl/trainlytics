@@ -6,4 +6,4 @@ Local dev stack: pnpm runs via corepack, backend runs the working tree (restart 
 - Backend tests build the schema with `create_all` on SQLite, so they never execute migrations. Add a dedicated migration test (see `backend/tests/test_migration_*.py`) and do an upgrade/downgrade round-trip on the local Postgres.
 - Demo login for UI checks: `demo` / `demo` (seed with `scripts/seed-demo.sh`).
 - To round-trip a migration on Postgres without touching the shared dev DB, use a throwaway container: `docker run -d --rm --name pg-check -p 127.0.0.1:55432:5432 -e POSTGRES_USER=t -e POSTGRES_PASSWORD=t -e POSTGRES_DB=t postgres:16`, then in `backend/` run `DATABASE_URL=postgresql+asyncpg://t:t@127.0.0.1:55432/t uv run --frozen alembic upgrade head` (then `downgrade -1`, `upgrade head`), and `docker stop pg-check`. This runs the whole chain from an empty DB.
-- Exercises are managed in Settings (`SettingsPage.tsx` → `ExercisesSection`/`ExerciseForm`). `pages/ExercisesPage.tsx` is not routed anywhere; don't add features to it.
+- Exercises are managed in Settings (`SettingsPage.tsx` → `ExercisesSection`/`ExerciseForm`). There is no standalone exercises page.
