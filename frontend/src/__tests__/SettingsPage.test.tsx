@@ -408,6 +408,19 @@ describe('SettingsPage — Exercises: weight steps', () => {
       expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ weight_scale: null }))
     })
 
+    it('clearing the notes sends null so the server clears them', async () => {
+      exercises = [{ id: 1, name: 'Leg press', notes: 'Seat at 4', types: [], weight_scale: null }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Leg press')
+
+      await user.clear(screen.getByPlaceholderText('Notes (optional)'))
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ notes: null }))
+    })
+
     it('a stored kg step with no preset keeps its option after picking another choice', async () => {
       exercises = [{ id: 1, name: 'Dumbbell row', notes: null, types: [], weight_scale: { kind: 'increment', step_kg: 5 } }]
       const user = userEvent.setup()

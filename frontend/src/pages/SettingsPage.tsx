@@ -499,7 +499,7 @@ function ExercisesSection() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...body }: { id: number; name?: string; notes?: string; type_ids?: number[]; weight_scale: WeightScale | null }) =>
+    mutationFn: ({ id, ...body }: { id: number; name?: string; notes?: string | null; type_ids?: number[]; weight_scale: WeightScale | null }) =>
       api.patch<Exercise>(`/exercises/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['exercises'] })
@@ -591,7 +591,8 @@ function ExercisesSection() {
                     updateMutation.mutate({
                       id: ex.id,
                       name: values.name,
-                      notes: values.notes || undefined,
+                      // PATCH skips omitted fields, so an emptied field must send null to clear the notes
+                      notes: values.notes || null,
                       type_ids: values.type_ids,
                       weight_scale: scaleFromForm(values),
                     })

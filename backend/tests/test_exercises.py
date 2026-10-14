@@ -80,6 +80,16 @@ async def test_update_exercise_notes(auth_client: AsyncClient, db_session: None)
     assert body["notes"] == "Full range of motion"
 
 
+async def test_patch_null_notes_clears_them(auth_client: AsyncClient, db_session: None) -> None:
+    create = await auth_client.post("/api/exercises", json={"name": "Pull-up", "notes": "Full range of motion"})
+    eid = create.json()["id"]
+    resp = await auth_client.patch(f"/api/exercises/{eid}", json={"notes": None})
+    assert resp.status_code == 200
+    assert resp.json()["notes"] is None
+    listed = await auth_client.get("/api/exercises")
+    assert next(e for e in listed.json() if e["id"] == eid)["notes"] is None
+
+
 async def test_patch_exercise_type_ids(auth_client: AsyncClient, db_session: None) -> None:
     t1 = (await auth_client.post("/api/exercise-types", json={"name": "Push"})).json()
     t2 = (await auth_client.post("/api/exercise-types", json={"name": "Legs"})).json()
