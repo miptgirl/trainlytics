@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import logo from '../assets/logo.svg'
 import logoCompact from '../assets/logo-compact.svg'
 
-/** Routes where the bottom tab bar gives way to a full-screen workflow. */
-function isTabBarHidden(pathname: string): boolean {
+/** Logging routes: the phone tab bar hides, and the desktop rail marks Log Workout. */
+function isLogRoute(pathname: string): boolean {
   return (
     pathname === '/workout' ||
     pathname.startsWith('/workout/') ||
@@ -215,94 +214,130 @@ export function ProfileButton({
   )
 }
 
-export function Layout({ children }: { children: ReactNode }) {
+const sideLinkClass = (active: boolean) =>
+  `flex items-center min-h-10 px-3 rounded-lg text-sm transition-colors ${
+    active
+      ? 'text-primary-dark font-semibold bg-primary-tint'
+      : 'text-text-muted-strong hover:text-primary-dark hover:bg-primary-tint'
+  }`
+
+function DesktopSidebar() {
   const { username, logout } = useAuth()
   const { pathname } = useLocation()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const showTabBar = !isTabBarHidden(pathname)
   const current = activeTab(pathname)
-
-  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-    isActive
-      ? 'text-primary-dark font-semibold border-b-2 border-primary-dark pb-0.5'
-      : 'text-text-muted-strong hover:text-primary-dark transition-colors'
+  const logging = isLogRoute(pathname)
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg">
-      <header className="bg-surface border-b border-border shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-5xl mx-auto px-4 h-12 md:h-14 flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/today" className="flex items-center shrink-0">
-            <img src={logoCompact} alt="Trainlytics" className="h-9 w-auto md:hidden" />
-            <img src={logo} alt="Trainlytics" className="h-14 w-auto hidden md:block" />
+    <aside className="hidden md:flex w-56 shrink-0 sticky top-0 h-screen flex-col overflow-y-auto border-r border-border bg-surface px-3 py-4">
+      <Link to="/today" className="flex items-center px-2 mb-4">
+        <img src={logoCompact} alt="Trainlytics" className="h-8 w-auto" />
+      </Link>
+
+      <nav aria-label="Sidebar" className="flex flex-col gap-0.5">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            to={t.to}
+            aria-current={current === t.key ? 'page' : undefined}
+            className={sideLinkClass(current === t.key)}
+          >
+            {t.label}
           </Link>
-
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-5 text-sm">
-            <NavLink to="/today" className={navLinkClass}>Today</NavLink>
-            <NavLink to="/stats" className={navLinkClass}>Stats</NavLink>
-            <NavLink to="/log" className={navLinkClass}>Log Workout</NavLink>
-            <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
-            <NavLink to="/plan" className={navLinkClass}>Plan</NavLink>
-            <NavLink to="/steps" className={navLinkClass}>Steps</NavLink>
-            <NavLink to="/profile" className={navLinkClass}>Profile</NavLink>
-            <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
-          </nav>
-
-          {/* Desktop user / sign out */}
-          <div className="hidden md:flex items-center gap-3 text-sm">
-            <span className="text-text-muted-strong font-medium">{username}</span>
-            <button
-              onClick={logout}
-              className="text-text-muted-strong hover:text-primary-dark transition-colors"
-            >
-              Sign out
-            </button>
-          </div>
-
-          {/* Profile / menu button (mobile only) */}
-          <ProfileButton
-            onClick={() => setMenuOpen(true)}
-            expanded={menuOpen}
-            className={`md:hidden -mr-2 ${pathname === '/today' ? 'invisible' : ''}`}
-          />
-        </div>
-      </header>
-      <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <main
-        className={`flex-1 max-w-5xl w-full mx-auto px-4 py-6 ${
-          showTabBar ? 'max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''
-        }`}
-      >
-        {children}
-      </main>
-
-      {showTabBar && (
-        <nav
-          aria-label="Primary"
-          className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]"
+        ))}
+        <Link
+          to="/log"
+          aria-current={logging ? 'page' : undefined}
+          className="mt-3 flex items-center justify-center min-h-10 px-3 rounded-lg bg-primary-dark text-white text-sm font-medium hover:brightness-95"
         >
-          <ul className="flex h-16">
-            {TABS.map((t) => {
-              const active = current === t.key
-              return (
-                <li key={t.key} className="flex-1">
-                  <Link
-                    to={t.to}
-                    aria-current={active ? 'page' : undefined}
-                    className={`flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
-                      active ? 'text-primary-dark' : 'text-text-muted-strong'
-                    }`}
-                  >
-                    {t.icon}
-                    {t.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+          Log Workout
+        </Link>
+      </nav>
+
+      <div className="mt-auto border-t border-border pt-3">
+        <div className="px-3 pb-1 text-sm font-medium text-text-muted-strong">{username}</div>
+        <nav aria-label="Account" className="flex flex-col gap-0.5">
+          {MENU_LINKS.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end
+              className={({ isActive }) => sideLinkClass(isActive)}
+            >
+              {l.label}
+            </NavLink>
+          ))}
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center min-h-10 px-3 rounded-lg text-sm text-left text-text-muted-strong hover:text-primary-dark hover:bg-primary-tint transition-colors"
+          >
+            Sign out
+          </button>
         </nav>
-      )}
+      </div>
+    </aside>
+  )
+}
+
+export function Layout({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const showTabBar = !isLogRoute(pathname)
+  const current = activeTab(pathname)
+
+  return (
+    <div className="min-h-screen flex bg-bg">
+      <DesktopSidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="md:hidden bg-surface border-b border-border shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+          <div className="px-4 h-12 flex items-center justify-between">
+            <Link to="/today" className="flex items-center shrink-0">
+              <img src={logoCompact} alt="Trainlytics" className="h-9 w-auto" />
+            </Link>
+
+            <ProfileButton
+              onClick={() => setMenuOpen(true)}
+              expanded={menuOpen}
+              className={`-mr-2 ${pathname === '/today' ? 'invisible' : ''}`}
+            />
+          </div>
+        </header>
+        <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
+        <main
+          className={`flex-1 max-w-5xl w-full mx-auto px-4 py-6 ${
+            showTabBar ? 'max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''
+          }`}
+        >
+          {children}
+        </main>
+
+        {showTabBar && (
+          <nav
+            aria-label="Primary"
+            className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]"
+          >
+            <ul className="flex h-16">
+              {TABS.map((t) => {
+                const active = current === t.key
+                return (
+                  <li key={t.key} className="flex-1">
+                    <Link
+                      to={t.to}
+                      aria-current={active ? 'page' : undefined}
+                      className={`flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
+                        active ? 'text-primary-dark' : 'text-text-muted-strong'
+                      }`}
+                    >
+                      {t.icon}
+                      {t.label}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+        )}
+      </div>
     </div>
   )
 }
