@@ -271,7 +271,7 @@ export default function TodayPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-semibold text-text">{dateLabel}</h1>
-          <ProfileButton onClick={() => setMenuOpen(true)} expanded={menuOpen} className="md:hidden -mr-2" />
+          <ProfileButton onClick={() => setMenuOpen(true)} expanded={menuOpen} className="lg:hidden -mr-2" />
         </div>
 
         {drafts.map(({ type, href, detail, age }) => (

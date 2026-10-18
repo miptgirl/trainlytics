@@ -1,15 +1,19 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import logoCompact from '../assets/logo-compact.svg'
 
-/** Logging routes: the phone tab bar hides, and the desktop rail marks Log Workout. */
-function isLogRoute(pathname: string): boolean {
+/** The rail marks Log Workout on the log form. Workout mode has its own shell and does not render Layout. */
+function isLogForm(pathname: string): boolean {
+  return pathname === '/log' || pathname.startsWith('/log/')
+}
+
+/** Phone tab bar hides on the log form and on workout mode. */
+function hidesTabBar(pathname: string): boolean {
   return (
     pathname === '/workout' ||
     pathname.startsWith('/workout/') ||
-    pathname === '/log' ||
-    pathname.startsWith('/log/')
+    isLogForm(pathname)
   )
 }
 
@@ -131,7 +135,7 @@ export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => voi
   if (!open) return null
   return (
     <div
-      className="md:hidden fixed inset-0 z-50 flex items-end bg-text/40"
+      className="lg:hidden fixed inset-0 z-50 flex items-end bg-text/40"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -157,30 +161,19 @@ export function MenuSheet({ open, onClose }: { open: boolean; onClose: () => voi
           </button>
         </div>
         <nav className="flex flex-col py-1">
-          {MENU_LINKS.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center min-h-12 px-4 text-base ${
-                  isActive ? 'text-primary-dark font-semibold bg-primary-tint' : 'text-text'
-                }`
-              }
-            >
-              {l.label}
-            </NavLink>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
+          <AccountLinks
+            linkClass={(active) =>
+              `flex items-center min-h-12 px-4 text-base ${
+                active ? 'text-primary-dark font-semibold bg-primary-tint' : 'text-text'
+              }`
+            }
+            signOutClass="flex items-center min-h-12 px-4 text-base text-left text-error-text border-t border-border"
+            onNavigate={onClose}
+            onSignOut={() => {
               onClose()
               logout()
             }}
-            className="flex items-center min-h-12 px-4 text-base text-left text-error-text border-t border-border"
-          >
-            Sign out
-          </button>
+          />
         </nav>
       </div>
     </div>
@@ -221,33 +214,85 @@ const sideLinkClass = (active: boolean) =>
       : 'text-text-muted-strong hover:text-primary-dark hover:bg-primary-tint'
   }`
 
-function DesktopSidebar() {
+function PrimaryLinks({
+  current,
+  variant,
+}: {
+  current: TabKey | null
+  variant: 'rail' | 'tabs'
+}) {
+  return TABS.map((t) => {
+    const active = current === t.key
+    const className =
+      variant === 'rail'
+        ? sideLinkClass(active)
+        : `flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
+            active ? 'text-primary-dark' : 'text-text-muted-strong'
+          }`
+    const link = (
+      <Link to={t.to} aria-current={active ? 'page' : undefined} className={className}>
+        {variant === 'tabs' ? t.icon : null}
+        {t.label}
+      </Link>
+    )
+    return variant === 'tabs' ? (
+      <li key={t.key} className="flex-1">
+        {link}
+      </li>
+    ) : (
+      <Fragment key={t.key}>{link}</Fragment>
+    )
+  })
+}
+
+function AccountLinks({
+  linkClass,
+  signOutClass,
+  onNavigate,
+  onSignOut,
+}: {
+  linkClass: (active: boolean) => string
+  signOutClass: string
+  onNavigate?: () => void
+  onSignOut: () => void
+}) {
+  return (
+    <>
+      {MENU_LINKS.map((l) => (
+        <NavLink
+          key={l.to}
+          to={l.to}
+          end
+          onClick={onNavigate}
+          className={({ isActive }) => linkClass(isActive)}
+        >
+          {l.label}
+        </NavLink>
+      ))}
+      <button type="button" onClick={onSignOut} className={signOutClass}>
+        Sign out
+      </button>
+    </>
+  )
+}
+
+function DesktopSidebar({ current, logging }: { current: TabKey | null; logging: boolean }) {
   const { username, logout } = useAuth()
-  const { pathname } = useLocation()
-  const current = activeTab(pathname)
-  const logging = isLogRoute(pathname)
 
   return (
-    <aside className="hidden md:flex w-56 shrink-0 sticky top-0 h-screen flex-col overflow-y-auto border-r border-border bg-surface px-3 py-4">
+    <aside className="hidden lg:flex w-56 shrink-0 sticky top-0 h-dvh flex-col overflow-y-auto border-r border-border bg-surface pt-[calc(1rem+env(safe-area-inset-top))] pr-3 pb-[calc(1rem+env(safe-area-inset-bottom))] pl-[calc(0.75rem+env(safe-area-inset-left))]">
       <Link to="/today" className="flex items-center px-2 mb-4">
         <img src={logoCompact} alt="Trainlytics" className="h-8 w-auto" />
       </Link>
 
       <nav aria-label="Sidebar" className="flex flex-col gap-0.5">
-        {TABS.map((t) => (
-          <Link
-            key={t.key}
-            to={t.to}
-            aria-current={current === t.key ? 'page' : undefined}
-            className={sideLinkClass(current === t.key)}
-          >
-            {t.label}
-          </Link>
-        ))}
+        <PrimaryLinks current={current} variant="rail" />
         <Link
           to="/log"
           aria-current={logging ? 'page' : undefined}
-          className="mt-3 flex items-center justify-center min-h-10 px-3 rounded-lg bg-primary-dark text-white text-sm font-medium hover:brightness-95"
+          className={`mt-3 flex items-center justify-center min-h-10 px-3 rounded-lg bg-primary-dark text-white text-sm font-medium hover:brightness-95 ${
+            logging ? 'ring-2 ring-primary-light ring-offset-2 ring-offset-surface' : ''
+          }`}
         >
           Log Workout
         </Link>
@@ -256,23 +301,11 @@ function DesktopSidebar() {
       <div className="mt-auto border-t border-border pt-3">
         <div className="px-3 pb-1 text-sm font-medium text-text-muted-strong">{username}</div>
         <nav aria-label="Account" className="flex flex-col gap-0.5">
-          {MENU_LINKS.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end
-              className={({ isActive }) => sideLinkClass(isActive)}
-            >
-              {l.label}
-            </NavLink>
-          ))}
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center min-h-10 px-3 rounded-lg text-sm text-left text-text-muted-strong hover:text-primary-dark hover:bg-primary-tint transition-colors"
-          >
-            Sign out
-          </button>
+          <AccountLinks
+            linkClass={sideLinkClass}
+            signOutClass={`${sideLinkClass(false)} text-left`}
+            onSignOut={logout}
+          />
         </nav>
       </div>
     </aside>
@@ -282,14 +315,15 @@ function DesktopSidebar() {
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  const showTabBar = !isLogRoute(pathname)
+  const logging = isLogForm(pathname)
+  const showTabBar = !hidesTabBar(pathname)
   const current = activeTab(pathname)
 
   return (
     <div className="min-h-screen flex bg-bg">
-      <DesktopSidebar />
+      <DesktopSidebar current={current} logging={logging} />
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden bg-surface border-b border-border shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
+        <header className="lg:hidden bg-surface border-b border-border shadow-sm sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
           <div className="px-4 h-12 flex items-center justify-between">
             <Link to="/today" className="flex items-center shrink-0">
               <img src={logoCompact} alt="Trainlytics" className="h-9 w-auto" />
@@ -305,7 +339,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <MenuSheet open={menuOpen} onClose={() => setMenuOpen(false)} />
         <main
           className={`flex-1 max-w-5xl w-full mx-auto px-4 py-6 ${
-            showTabBar ? 'max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''
+            showTabBar ? 'max-lg:pb-[calc(5.5rem+env(safe-area-inset-bottom))]' : ''
           }`}
         >
           {children}
@@ -314,26 +348,10 @@ export function Layout({ children }: { children: ReactNode }) {
         {showTabBar && (
           <nav
             aria-label="Primary"
-            className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]"
+            className="lg:hidden fixed bottom-0 inset-x-0 z-20 bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]"
           >
             <ul className="flex h-16">
-              {TABS.map((t) => {
-                const active = current === t.key
-                return (
-                  <li key={t.key} className="flex-1">
-                    <Link
-                      to={t.to}
-                      aria-current={active ? 'page' : undefined}
-                      className={`flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
-                        active ? 'text-primary-dark' : 'text-text-muted-strong'
-                      }`}
-                    >
-                      {t.icon}
-                      {t.label}
-                    </Link>
-                  </li>
-                )
-              })}
+              <PrimaryLinks current={current} variant="tabs" />
             </ul>
           </nav>
         )}

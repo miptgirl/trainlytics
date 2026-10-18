@@ -106,9 +106,21 @@ describe('Layout mobile shell', () => {
     const links = within(nav).getAllByRole('link')
     expect(links.map((l) => l.textContent)).toEqual(['Today', 'Plan', 'Stats', 'Log Workout'])
     expect(links.find((l) => l.textContent === 'Plan')).toHaveAttribute('aria-current', 'page')
+    expect(links.find((l) => l.textContent === 'Log Workout')).not.toHaveClass('ring-2')
   })
 
-  it('marks Stats current on a session, and Log Workout current while logging', () => {
+  it('keeps the phone shell below lg and the rail from lg', () => {
+    renderAt('/plan')
+    const rail = screen.getByRole('complementary')
+    expect(rail).toHaveClass('hidden', 'lg:flex', 'h-dvh')
+    expect(rail.className).toContain('env(safe-area-inset-top)')
+    expect(rail.className).toContain('env(safe-area-inset-left)')
+    expect(rail.className).toContain('env(safe-area-inset-bottom)')
+    expect(screen.getByRole('banner')).toHaveClass('lg:hidden')
+    expect(screen.getByRole('navigation', { name: 'Primary' })).toHaveClass('lg:hidden')
+  })
+
+  it('marks Stats current on a session, and Log Workout current on the log form', () => {
     const { unmount } = renderAt('/sessions/12')
     const sidebar = screen.getByRole('navigation', { name: 'Sidebar' })
     expect(within(sidebar).getByRole('link', { name: 'Stats' })).toHaveAttribute('aria-current', 'page')
@@ -116,7 +128,9 @@ describe('Layout mobile shell', () => {
 
     renderAt('/log')
     const logging = screen.getByRole('navigation', { name: 'Sidebar' })
-    expect(within(logging).getByRole('link', { name: 'Log Workout' })).toHaveAttribute('aria-current', 'page')
+    const logLink = within(logging).getByRole('link', { name: 'Log Workout' })
+    expect(logLink).toHaveAttribute('aria-current', 'page')
+    expect(logLink).toHaveClass('ring-2')
     expect(within(logging).getByRole('link', { name: 'Today' })).not.toHaveAttribute('aria-current')
   })
 
