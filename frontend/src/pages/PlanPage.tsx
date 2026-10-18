@@ -190,9 +190,8 @@ export default function PlanPage() {
           </div>
         )}
 
-        {/* Toast notification */}
+        {/* Toast. 7rem is half the lg rail (w-56), so it centres in the content column. */}
         {toast && (
-          {/* 7rem is half the lg rail (w-56), so the toast centres in the content column. */}
           <div className="fixed bottom-6 max-lg:bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 lg:left-[calc(50%+7rem)] -translate-x-1/2 z-50 bg-text text-white text-sm px-4 py-2.5 rounded-lg shadow-md">
             {toast}
           </div>

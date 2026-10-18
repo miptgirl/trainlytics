@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import logoCompact from '../assets/logo-compact.svg'
@@ -223,24 +223,31 @@ function PrimaryLinks({
 }) {
   return TABS.map((t) => {
     const active = current === t.key
-    const className =
-      variant === 'rail'
-        ? sideLinkClass(active)
-        : `flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
-            active ? 'text-primary-dark' : 'text-text-muted-strong'
-          }`
-    const link = (
-      <Link to={t.to} aria-current={active ? 'page' : undefined} className={className}>
-        {variant === 'tabs' ? t.icon : null}
+    if (variant === 'tabs') {
+      return (
+        <li key={t.key} className="flex-1">
+          <Link
+            to={t.to}
+            aria-current={active ? 'page' : undefined}
+            className={`flex flex-col items-center justify-center gap-0.5 h-full text-xs font-medium ${
+              active ? 'text-primary-dark' : 'text-text-muted-strong'
+            }`}
+          >
+            {t.icon}
+            {t.label}
+          </Link>
+        </li>
+      )
+    }
+    return (
+      <Link
+        key={t.key}
+        to={t.to}
+        aria-current={active ? 'page' : undefined}
+        className={sideLinkClass(active)}
+      >
         {t.label}
       </Link>
-    )
-    return variant === 'tabs' ? (
-      <li key={t.key} className="flex-1">
-        {link}
-      </li>
-    ) : (
-      <Fragment key={t.key}>{link}</Fragment>
     )
   })
 }
