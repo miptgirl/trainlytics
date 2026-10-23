@@ -2,6 +2,11 @@
 // Generates the Trainlytics PWA icon set: a skeuomorphic sage tile with a
 // segmented progress ring around a heart holding a bar chart.
 //
+// The Apple icon is full-bleed and draws no corners of its own: iOS clips it
+// with its own squircle mask, and a drawn rounded rim (circular corners) gets
+// cut off-centre by it. The recessed plate and the standalone tile use a
+// superellipse (`squirclePath`) that stays concentric with that mask.
+//
 // The artwork is SVG (lighting filters give the matte clay look). Headless
 // Chromium renders a 2048px master per variant and macOS `sips` downsamples
 // it, so every PNG is supersampled.
@@ -34,7 +39,23 @@ const C = {
 // the reference artwork.
 const CX = 512
 const CY = 512
-const CORNER = 229 // ≈ Apple's 22.4% icon corner
+
+// iOS icon outline: a superellipse (|x|^n + |y|^n = 1, n = 5), inset by
+// `inset` from a `size` square. The favicon keeps a plain rounded rect.
+const CORNER = 229 // ≈ Apple's 22.4% icon corner, favicon only
+function squirclePath(size, inset = 0, n = 5, steps = 96) {
+  const a = size / 2 - inset
+  const pts = []
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * Math.PI * 2
+    const c = Math.cos(t)
+    const s = Math.sin(t)
+    const x = Math.sign(c) * Math.abs(c) ** (2 / n) * a
+    const y = Math.sign(s) * Math.abs(s) ** (2 / n) * a
+    pts.push([f(size / 2 + x), f(size / 2 + y)])
+  }
+  return 'M' + pts.map((p) => p.join(' ')).join('L') + 'Z'
+}
 
 // Ring of four flat-ended segments. Angles in degrees, clockwise from
 // 3 o'clock, at the visible ends.
@@ -104,18 +125,15 @@ function barRect(i) {
   return `<rect x="${x}" y="${BAR_BASE - h}" width="${BAR_W}" height="${h}" rx="${BAR_CORNER}"/>`
 }
 
-const smoothstep = (a, b, x) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
-  return t * t * (3 - 2 * t)
-}
 // Height profiles over blurred alpha (0.5 = the outline, `top` = deepest
-// point inside the shape). 'plateau' gives a rounded shoulder and a flat
-// top, used for the tile rim; 'round' rises like a quarter sine all the way
-// to the crest, so pieces read as rolled, well-rounded clay. Its ramp starts
-// just outside the outline so smoothing the light maps doesn't pull a flat-lit
-// halo onto the edge.
+// point inside the shape). 'slab' is a rounded shoulder that flattens well
+// before the crest, so pieces read as cut, sanded clay slabs rather than
+// pillows (a crest-high dome at 225px looks like wet soap). 'round' rises
+// like a quarter sine all the way to the crest; it rolls the heart's surface
+// down into the bar cut-outs. Both ramps start just outside the outline so
+// smoothing the light maps doesn't pull a flat-lit halo onto the edge.
 const PROFILES = {
-  plateau: (a, top) => smoothstep(0.5, top, a),
+  slab: (a, top) => 1 - (1 - Math.min(1, Math.max(0, (a - 0.35) / (top - 0.35)))) ** 2.2,
   round: (a, top) => Math.sin((Math.min(1, Math.max(0, (a - 0.3) / (top - 0.3))) * Math.PI) / 2),
 }
 const profileTable = (profile, top) =>
@@ -129,7 +147,7 @@ const profileTable = (profile, top) =>
 // `holes`: the element is painted light with black cut-outs. Black becomes
 // transparent, the outer outline drives a broad dome, and the solid shape
 // (with a `holes`-sized blur) rolls the surface down into each cut-out.
-function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, holes, azimuth = 235, elevation = 58, ambient = 0, sheen = 0.15, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
+function clayFilter(id, { bevel, depth, profile = 'slab', top = 0.97, holes, azimuth = 235, elevation = 58, ambient = 0, sheen = 0.15, specExp = 18, smooth = 2, ao, cast, drop, aoOpacity = 0.6, castOpacity = 0.35 }) {
   const shape = holes ? 'solid' : 'SourceAlpha'
   const heightMap = holes
     ? `<feColorMatrix in="SourceGraphic" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -4.2"/>
@@ -143,12 +161,12 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, holes, 
     <feComponentTransfer result="height"><feFuncA type="table" tableValues="${profileTable(profile, top)}"/></feComponentTransfer>`
   const shadows = cast
     ? `<feGaussianBlur in="${shape}" stdDeviation="${cast}"/>
-    <feOffset dx="${drop / 3}" dy="${drop}" result="castBlur"/>
+    <feOffset dx="${drop / 4}" dy="${drop}" result="castBlur"/>
     <feFlood flood-color="${C.shadow}" flood-opacity="${castOpacity}"/>
     <feComposite in2="castBlur" operator="in" result="cast"/>
     <feMorphology in="${shape}" operator="dilate" radius="${ao / 2}"/>
     <feGaussianBlur stdDeviation="${ao}"/>
-    <feOffset dx="${ao / 3}" dy="${ao / 1.5}" result="aoBlur"/>
+    <feOffset dx="0" dy="${ao}" result="aoBlur"/>
     <feFlood flood-color="${C.shadow}" flood-opacity="${aoOpacity}"/>
     <feComposite in2="aoBlur" operator="in" result="ao"/>
     <feMerge><feMergeNode in="cast"/><feMergeNode in="ao"/><feMergeNode in="body"/></feMerge>`
@@ -163,7 +181,7 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, holes, 
       <feDistantLight azimuth="${azimuth}" elevation="${elevation}"/>
     </feDiffuseLighting>
     <feGaussianBlur in="diffRaw" stdDeviation="${smooth}" result="diff"/>
-    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="18" lighting-color="#fff" result="specRaw">
+    <feSpecularLighting in="height" surfaceScale="${depth}" specularConstant="0.7" specularExponent="${specExp}" lighting-color="#fff" result="specRaw">
       <feDistantLight azimuth="${azimuth}" elevation="38"/>
     </feSpecularLighting>
     <feGaussianBlur in="specRaw" stdDeviation="${smooth}" result="spec"/>
@@ -175,25 +193,46 @@ function clayFilter(id, { bevel, depth, profile = 'plateau', top = 0.97, holes, 
   </filter>`
 }
 
-// variant: 'full' (opaque, full-bleed: Apple + maskable) or 'tile' (rounded
+// A recessed plate: an inner shadow along its top edge and a lit lip along
+// its bottom edge, both from the plate's own alpha.
+function recessFilter(id, { blur = 9, dy = 10, opacity = 0.5, lip = 0.3 }) {
+  return `
+  <filter id="${id}" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceAlpha" stdDeviation="${blur}"/>
+    <feOffset dy="${dy}" result="off"/>
+    <feComposite in="SourceAlpha" in2="off" operator="out" result="band"/>
+    <feFlood flood-color="${C.shadow}" flood-opacity="${opacity}"/>
+    <feComposite in2="band" operator="in" result="shadow"/>
+    <feGaussianBlur in="SourceAlpha" stdDeviation="1.5"/>
+    <feOffset dy="-3" result="offUp"/>
+    <feComposite in="SourceAlpha" in2="offUp" operator="out" result="lipBand"/>
+    <feFlood flood-color="#fff" flood-opacity="${lip}"/>
+    <feComposite in2="lipBand" operator="in" result="lipLight"/>
+    <feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="shadow"/><feMergeNode in="lipLight"/></feMerge>
+  </filter>`
+}
+
+// variant: 'full' (opaque, full-bleed: Apple + maskable) or 'tile' (squircle
 // tile with shadow on transparent canvas, macOS icon grid: 824px body).
-function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
+// plate: draw the recessed plate inside a darker frame (off for maskable,
+// whose outer 10% may be cropped to any shape).
+function iconSvg({ variant, artScale = 1, plate = true, size = MASTER }) {
   const tile = variant === 'tile'
   const grad = (id, a, b, x1, y1, x2, y2) =>
     `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
       <stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`
 
-  const PLATE = 50
+  const PLATE = 44
   const background = `
-    <rect width="1024" height="1024" fill="url(#bg)"/>
     ${
-      bevel
-        ? `<rect width="1024" height="1024" rx="${CORNER}" fill="url(#bg)" filter="url(#tileRim)"/>
-    <rect x="${PLATE}" y="${PLATE}" width="${1024 - 2 * PLATE}" height="${1024 - 2 * PLATE}" rx="${CORNER - PLATE}" fill="url(#plate)" filter="url(#plateStep)"/>`
-        : ''
+      plate
+        ? `<rect width="1024" height="1024" fill="url(#frame)"/>
+    <path d="${squirclePath(1024, PLATE)}" fill="url(#plate)" filter="url(#recess)"/>`
+        : `<rect width="1024" height="1024" fill="url(#plate)"/>`
     }
     <rect width="1024" height="1024" fill="url(#bgGlow)"/>
-    <rect width="1024" height="1024" filter="url(#grain)" opacity="0.2" style="mix-blend-mode:overlay"/>`
+    <rect width="1024" height="1024" fill="url(#vignette)"/>
+    <rect width="1024" height="1024" filter="url(#grain)" opacity="0.1" style="mix-blend-mode:overlay"/>`
 
   const segment = (s) =>
     `<path d="${segmentPath(s)}" fill="url(#${s.paint})" stroke="url(#${s.paint})" stroke-width="${2 * SEG_CORNER}" stroke-linejoin="round"/>`
@@ -210,25 +249,27 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
     </g>`
 
   // Felt-like grain sits on the tile; the clay pieces only get a whisper of it.
-  const grain = `<rect width="1024" height="1024" filter="url(#grain)" opacity="0.06" style="mix-blend-mode:overlay"/>`
+  const grain = `<rect width="1024" height="1024" filter="url(#grain)" opacity="0.05" style="mix-blend-mode:overlay"/>`
 
   const body = `${background}${art}${grain}`
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">
   <defs>
-    ${grad('bg', '#667D62', '#334231', 180, 80, 900, 960)}
-    ${grad('plate', '#62795E', '#314030', 180, 80, 900, 960)}
-    <radialGradient id="bgGlow" gradientUnits="userSpaceOnUse" cx="300" cy="180" r="700">
-      <stop offset="0" stop-color="#fff" stop-opacity="0.08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    ${grad('frame', '#4E6349', '#2C392B', 512, 0, 512, 1024)}
+    ${grad('plate', '#74906C', '#3B4C3A', 512, 40, 512, 990)}
+    <radialGradient id="bgGlow" gradientUnits="userSpaceOnUse" cx="512" cy="120" r="720">
+      <stop offset="0" stop-color="#fff" stop-opacity="0.10"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
     </radialGradient>
-    ${grad('cream', '#EFE8DC', '#D9D0BE', 512, 160, 512, 870)}
-    ${grad('heart', '#EFE9DD', '#DBD2C1', 400, 340, 600, 750)}
-    ${grad('rose', '#D6ACA4', '#BA8B84', 560, 160, 860, 500)}
-    ${grad('green', '#94A983', '#728863', 860, 400, 560, 870)}
-    ${clayFilter('ringClay', { profile: 'round', bevel: 22, top: 0.96, depth: 26, ambient: 0.5, sheen: 0, smooth: 3, ao: 3, cast: 14, drop: 16, aoOpacity: 0.3, castOpacity: 0.4 })}
-    ${clayFilter('heartClay', { profile: 'round', bevel: 50, top: 1, holes: 12, depth: 24, ambient: 0.5, sheen: 0, smooth: 4, ao: 3, cast: 16, drop: 18, aoOpacity: 0.3, castOpacity: 0.4 })}
-    ${clayFilter('tileRim', { bevel: 30, depth: 10, sheen: 0.6, smooth: 4 })}
-    ${clayFilter('plateStep', { bevel: 8, depth: 3, azimuth: 55, sheen: 0, smooth: 2 })}
+    <radialGradient id="vignette" gradientUnits="userSpaceOnUse" cx="512" cy="512" r="640">
+      <stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.16"/>
+    </radialGradient>
+    ${grad('cream', '#F2ECE1', '#DDD4C3', 512, 160, 512, 870)}
+    ${grad('heart', '#F2ECE1', '#DED5C4', 512, 340, 512, 750)}
+    ${grad('rose', '#D4A9A1', '#BB8D86', 560, 160, 860, 500)}
+    ${grad('green', '#97AC86', '#748A65', 860, 400, 560, 870)}
+    ${clayFilter('ringClay', { bevel: 15, top: 0.97, depth: 20, ambient: 0.52, sheen: 0.08, specExp: 26, smooth: 2.5, ao: 3, cast: 12, drop: 18, aoOpacity: 0.45, castOpacity: 0.38 })}
+    ${clayFilter('heartClay', { bevel: 22, top: 0.98, holes: 8, depth: 20, ambient: 0.52, sheen: 0.08, specExp: 26, smooth: 3, ao: 3, cast: 14, drop: 20, aoOpacity: 0.45, castOpacity: 0.38 })}
+    ${recessFilter('recess', {})}
     <filter id="grain" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
       <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" seed="7" stitchTiles="stitch"/>
       <feColorMatrix values="1 0 0 0 0  1 0 0 0 0  1 0 0 0 0  0 0 0 0 1"/>
@@ -237,12 +278,12 @@ function iconSvg({ variant, artScale = 1, bevel = true, size = MASTER }) {
       <feGaussianBlur in="SourceAlpha" stdDeviation="14"/><feOffset dy="12" result="b"/>
       <feFlood flood-color="#000" flood-opacity="0.3"/><feComposite in2="b" operator="in"/>
     </filter>
-    <clipPath id="tileClip"><rect width="1024" height="1024" rx="${CORNER}"/></clipPath>
+    <clipPath id="tileClip"><path d="${squirclePath(1024)}"/></clipPath>
   </defs>
   ${
     tile
       ? `<g transform="translate(100 100) scale(${824 / 1024})">
-    <rect width="1024" height="1024" rx="${CORNER}" fill="${C.deepSage}" filter="url(#tileShadow)"/>
+    <path d="${squirclePath(1024)}" fill="${C.deepSage}" filter="url(#tileShadow)"/>
     <g clip-path="url(#tileClip)">${body}</g>
   </g>`
       : body
@@ -305,7 +346,7 @@ function resize(master, size, out) {
 
 const full = render('full', iconSvg({ variant: 'full' }))
 const tile = render('tile', iconSvg({ variant: 'tile' }))
-const maskable = render('maskable', iconSvg({ variant: 'full', artScale: 0.86, bevel: false }))
+const maskable = render('maskable', iconSvg({ variant: 'full', artScale: 0.86, plate: false }))
 const favicon = faviconSvg()
 const flat = render('favicon', favicon.replace('<svg ', `<svg width="${MASTER}" height="${MASTER}" `))
 
