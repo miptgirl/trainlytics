@@ -4,6 +4,25 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-23 — Workout mode: set tabs, finish in place, easier removal
+
+### Added
+
+- **Set tabs**: the current exercise's sets sit in a row of tabs (`8×60`, the RPE under it, a check once done) over one editor with the reps and weight steppers, RPE chips and **Complete set**, so the button and the exercise stay in view however many sets there are. Tapping a done tab edits it (Cancel / Save); the dashed **+** tab adds a set
+- **Done card**: after an exercise's last set, workout mode stays on it and shows today's sets with **One more set** and **Next** (the next unfinished exercise), or **Finish workout** when nothing else is left. Rest still starts, except after the last set of the workout
+- **Exercise row in the dock**: beside the rest timer, the exercise name with ‹ › to step through the list and a bar with one segment per set. Tapping the name opens **Choose exercise**, which now shows the running rest and, per exercise, today's sets and how many are left (or last time)
+- **Delete any set, the only one included**, with Undo. An exercise left without sets offers **Add a set** (prefilled from last session) or **Remove**
+- **Remove an exercise that has no completed sets** from its row in Choose exercise or from its empty state, with Undo. The workout's only exercise can't be removed
+
+### Changed
+
+- Completing the last set of an exercise no longer jumps to the next exercise
+- "Last time" always lists the sets (`8×60, 8×60, 6×65 kg`, or `12, 10, 8 reps` without weights), also when every set was the same
+- **Finish** refuses an exercise with no sets and goes to it: saved empty, it would wipe that exercise's "Last time" and, from a template, offer to update the template to an exercise without sets
+- Removing an exercise moved out of the ⋯ options sheet
+
+---
+
 ## 2026-10-21 — Faster PWA launch
 
 ### Added

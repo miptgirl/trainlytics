@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { formatClock, restRemaining } from '../../lib/workoutMode'
+import { useEffect, useRef } from 'react'
+import { useRestRemaining } from '../../lib/hooks/useRestRemaining'
+import { formatClock } from '../../lib/workoutMode'
 
 /**
  * Rest countdown. The end time is the source of truth and the display is
@@ -19,17 +20,8 @@ export function RestTimer({
   onAddThirty: () => void
   onSkip: () => void
 }) {
-  // The interval only forces a re-render; the time is read fresh on every
-  // render, so a Reset or +30s after expiry never shows a stale value
-  const [, setTick] = useState(0)
-  const remaining = endsAt === null ? null : restRemaining(endsAt, Date.now())
+  const remaining = useRestRemaining(endsAt)
   const expired = remaining === 0
-
-  useEffect(() => {
-    if (endsAt === null || expired) return
-    const id = setInterval(() => setTick((t) => t + 1), 250)
-    return () => clearInterval(id)
-  }, [endsAt, expired])
 
   const previous = useRef(remaining)
   useEffect(() => {

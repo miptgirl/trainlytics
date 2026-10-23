@@ -6,11 +6,14 @@ import { useWakeLock } from '../lib/hooks/useWakeLock'
 import {
   DEFAULT_REST_SECONDS,
   allExercisesDone,
+  boldTextWidth,
   clearStoredRestLength,
-  exerciseAfterCompletion,
+  exerciseSummary,
   formatClock,
   formatLastTime,
   formatSet,
+  formatSetList,
+  formatSetShort,
   isBlankEntry,
   isRestLengthUnsynced,
   isValidRestLength,
@@ -26,6 +29,7 @@ import {
   saveRestLength,
   sessionProgress,
   setRestLengthUnsynced,
+  setTabLabel,
   storedRestLength,
   stackWeight,
   stepValue,
@@ -53,12 +57,11 @@ describe('progress and navigation', () => {
     expect(nextUnfinishedIndex([list[0], list[0]], 0)).toBe(-1)
   })
 
-  it('stays on an exercise with sets left and advances when it is finished', () => {
-    expect(exerciseAfterCompletion(list, 1)).toBe(1)
-    expect(exerciseAfterCompletion(list, 0)).toBe(1)
-    const finished = [list[0], ex('2', set('8', '60', true))]
-    expect(exerciseAfterCompletion(finished, 1)).toBe(1)
-    expect(allExercisesDone(finished)).toBe(true)
+  it('an exercise with no sets is never done, so it stays a Next target and keeps the workout unfinished', () => {
+    const withEmpty = [list[0], ex('4')]
+    expect(nextUnfinishedIndex(withEmpty, 0)).toBe(1)
+    expect(allExercisesDone(withEmpty)).toBe(false)
+    expect(allExercisesDone([list[0], ex('2', set('8', '60', true))])).toBe(true)
   })
 
   it('recognises an untouched placeholder entry', () => {
@@ -83,21 +86,78 @@ describe('progress and navigation', () => {
 })
 
 describe('formatting and steppers', () => {
-  it('summarises last session', () => {
+  it('summarises last session as the per-set list, even when every set is the same', () => {
     const s = (reps: number | null, weight: number | null) => ({ set_number: 1, reps, weight })
-    expect(formatLastTime({ sets: [s(8, 57.5), s(8, 57.5), s(8, 57.5), s(8, 57.5)] })).toBe('4 × 8 @ 57.5 kg')
-    expect(formatLastTime({ sets: [s(12, null), s(12, null)] })).toBe('2 × 12')
+    expect(formatLastTime({ sets: [s(8, 57.5), s(8, 57.5), s(8, 57.5)] })).toBe('8×57.5, 8×57.5, 8×57.5 kg')
+    expect(formatLastTime({ sets: [s(12, null), s(12, null)] })).toBe('12, 12 reps')
     expect(formatLastTime({ sets: [s(8, 60), s(6, 65)] })).toBe('8×60, 6×65 kg')
+    expect(formatLastTime({ sets: [s(8, 57.49999)] })).toBe('8×57.5 kg')
     expect(formatLastTime({ sets: [] })).toBeNull()
     expect(formatLastTime(undefined)).toBeNull()
+  })
+
+  it('lists sets from the API (numbers) or the form (strings) the same way', () => {
+    expect(formatSetList([{ reps: 8, weight: 60 }, { reps: 8, weight: 60 }, { reps: 6, weight: 65 }])).toBe(
+      '8×60, 8×60, 6×65 kg',
+    )
+    expect(formatSetList([set('12', ''), set('10', ''), set('8', '')])).toBe('12, 10, 8 reps')
+    expect(formatSetList([set('8', '102.5')])).toBe('8×102.5 kg')
+    // Missing reps show as a dash; a set without a weight in a weighted list never reads as kg
+    expect(formatSetList([set('', '60'), set('10', '')])).toBe('–×60, 10×– kg')
+    expect(formatSetList([{ reps: null, weight: null }])).toBe('– reps')
+    expect(formatSetList([])).toBeNull()
+  })
+
+  it('formats a set tab: reps×weight, reps alone, a dash for missing reps', () => {
+    expect(formatSetShort(set('8', '60'))).toBe('8×60')
+    expect(formatSetShort(set('12', ''))).toBe('12')
+    expect(formatSetShort(set('', '60'))).toBe('–×60')
+    expect(formatSetShort(set('', ''))).toBe('–')
+    expect(formatSetShort({ reps: 5, weight: 102.5 })).toBe('5×102.5')
+  })
+
+  it('names a set tab for screen readers', () => {
+    expect(setTabLabel(set('8', '60', true, '', '7'), 3, 4)).toBe('Set 3 of 4, 8 × 60 kg, RPE 7, done')
+    expect(setTabLabel(set('12', ''), 1, 2)).toBe('Set 1 of 2, 12 reps')
+  })
+
+  it('summarises a chooser row: today and what is left, else last time, else the set count', () => {
+    const last = { sets: [{ set_number: 1, reps: 10, weight: 40 }, { set_number: 2, reps: 8, weight: 40 }] }
+    const bench = ex('2', set('8', '60', true), set('8', '60', true), set('8', '60'), set('8', '60'))
+    expect(exerciseSummary(bench, last)).toBe('Today: 8×60, 8×60 kg · 2 sets left')
+    expect(exerciseSummary(ex('2', set('8', '60', true), set('8', '60')), last)).toBe('Today: 8×60 kg · 1 set left')
+    expect(exerciseSummary(ex('2', set('8', '60', true), set('6', '65', true)), last)).toBe('Today: 8×60, 6×65 kg')
+    expect(exerciseSummary(ex('3', set('10', '40'), set('10', '40')), last)).toBe('Last time: 10×40, 8×40 kg')
+    expect(exerciseSummary(ex('3', set('10', '40'), set('10', '40')), undefined)).toBe('2 sets')
+    expect(exerciseSummary(ex('3', set('10', '40')), { sets: [] })).toBe('1 set')
+    // All sets deleted: the same words as the dock, history or not
+    expect(exerciseSummary(ex('3'), undefined)).toBe('No sets')
+    expect(exerciseSummary(ex('3'), last)).toBe('No sets')
   })
 
   it('formats one set', () => {
     expect(formatSet(set('6', '100'))).toBe('6 × 100 kg')
     expect(formatSet(set('12', ''))).toBe('12 reps')
-    expect(formatSet(set('8', '100', true, '', '8'))).toBe('8 × 100 kg @8')
-    expect(formatSet(set('12', '', true, '', '10'))).toBe('12 reps @10')
     expect(formatSet({ reps: '5', weight: '60' })).toBe('5 × 60 kg')
+  })
+
+  it('bounds a set value\'s width in Montserrat Bold from above, closely', () => {
+    // Widths measured with canvas measureText in Chromium; the dotted ones include kerning
+    const measured: [string, number, number][] = [
+      ['102.5', 24, 60.576],
+      ['102.75', 24, 74.664],
+      ['57.5', 24, 48.264],
+      ['8888', 24, 63.36],
+      ['10×102.5', 12, 50.328],
+      ['12×102.75', 11, 51.612],
+      ['88×888.88', 24, 132.024],
+      ['8.8.8.8', 24, 83.664],
+      ['–×60', 14, 33.81],
+    ]
+    for (const [text, px, width] of measured) {
+      expect(boldTextWidth(text, px)).toBeGreaterThanOrEqual(width)
+      expect(boldTextWidth(text, px)).toBeLessThan(width * 1.06)
+    }
   })
 
   it('steps a value by delta without going below zero or float noise', () => {

@@ -62,17 +62,6 @@ export const allExercisesDone = (exercises: Exercises): boolean =>
 export const clampIndex = (index: number, length: number): number =>
   Math.max(0, Math.min(index, Math.max(0, length - 1)))
 
-/**
- * Exercise to show after a set of `exIndex` was completed (`exercises`
- * already has it marked done): the same one while it has sets left,
- * otherwise the next unfinished one, or the same one when nothing is left.
- */
-export function exerciseAfterCompletion(exercises: Exercises, exIndex: number): number {
-  if (!isExerciseDone(exercises[exIndex])) return exIndex
-  const next = nextUnfinishedIndex(exercises, exIndex)
-  return next === -1 ? exIndex : next
-}
-
 /** True for an untouched placeholder entry (no exercise, no values). */
 export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
   return (
@@ -184,31 +173,94 @@ export function stepWeight(value: string, direction: 1 | -1, scale?: WeightScale
   return formatNumber(stepStack(current, direction, scale ?? DEFAULT_STACK))
 }
 
-/** "6 × 100 kg", "8 reps", "– × 60 kg", "8 × 100 kg @8" — one set as a compact label. */
-export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { rpe?: string }): string {
+/** "6 × 100 kg", "8 reps", "– × 60 kg" — one set as a compact label. */
+export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'>): string {
   const reps = set.reps || '–'
-  const label = set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
-  return set.rpe ? `${label} @${set.rpe}` : label
+  return set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
+}
+
+// Advance widths (em) of Montserrat Bold, the widest weight the set values use,
+// measured with canvas measureText in Chromium and rounded up. The dot also
+// carries its worst kerning, 0.01em on each side ("8.8" is 0.02em wider than
+// its glyphs). Anything else counts as the widest digit.
+const BOLD_ADVANCE_EM: Record<string, number> = {
+  '0': 0.68, '1': 0.4, '2': 0.59, '3': 0.6, '4': 0.69, '5': 0.6, '6': 0.64, '7': 0.62, '8': 0.66, '9': 0.64,
+  '.': 0.29, '×': 0.6, '–': 0.5,
+}
+const WIDEST_EM = 0.69
+
+/** Upper bound of the rendered width (px) of a set value ("102.5", "8×60") in Montserrat Bold at `px`. */
+export function boldTextWidth(text: string, px: number): number {
+  let em = 0
+  for (const ch of text) em += BOLD_ADVANCE_EM[ch] ?? WIDEST_EM
+  return em * px
+}
+
+/** One set's reps and weight, as typed in the form (strings) or as the API returns them (numbers). */
+export interface SetValues {
+  reps: number | string | null
+  weight: number | string | null
+}
+
+/** A value as shown: numbers without float noise, typed text as typed, '' when missing. */
+function shown(value: number | string | null): string {
+  if (value === null) return ''
+  if (typeof value === 'number') return Number.isFinite(value) ? formatNumber(value) : ''
+  return value.trim()
+}
+
+/** A set tab's value: "8×60", "12" without a weight, "–" for missing reps ("–×60"). */
+export function formatSetShort(set: SetValues): string {
+  const reps = shown(set.reps) || '–'
+  const weight = shown(set.weight)
+  return weight ? `${reps}×${weight}` : reps
 }
 
 /**
- * Last session's sets: "4 × 8 @ 57.5 kg" when every set is the same,
- * otherwise "8×60, 6×65 kg". Null when there is no history.
+ * Sets in order, for "Last time" and "Today": "8×60, 8×60, 6×65 kg", or
+ * "12, 10, 8 reps" when no set has a weight. In a weighted list a set without
+ * one shows "10×–", so it never reads as 10 kg. Null for no sets.
  */
-export function formatLastTime(defaults: LastSessionDefaults | null | undefined): string | null {
-  const sets = defaults?.sets ?? []
+export function formatSetList(sets: readonly SetValues[]): string | null {
   if (sets.length === 0) return null
-  const uniform = sets.every((s) => s.reps === sets[0].reps && s.weight === sets[0].weight)
-  const hasWeight = sets.some((s) => s.weight != null)
-  if (uniform) {
-    const { reps, weight } = sets[0]
-    const base = `${sets.length} × ${reps ?? '–'}`
-    return weight != null ? `${base} @ ${formatNumber(weight)} kg` : base
+  const weighted = sets.some((s) => shown(s.weight) !== '')
+  const parts = sets.map((s) => (weighted && !shown(s.weight) ? `${shown(s.reps) || '–'}×–` : formatSetShort(s)))
+  return `${parts.join(', ')} ${weighted ? 'kg' : 'reps'}`
+}
+
+/** Last session's sets ("8×60, 8×60, 6×65 kg"); null when there is no history. */
+export function formatLastTime(defaults: LastSessionDefaults | null | undefined): string | null {
+  return formatSetList(defaults?.sets ?? [])
+}
+
+/** Screen-reader name of a set tab: "Set 2 of 4, 8 × 60 kg, RPE 7, done". */
+export function setTabLabel(set: SetFormValues, setNumber: number, total: number): string {
+  const parts = [`Set ${setNumber} of ${total}`, formatSet({ reps: set.reps, weight: set.weight })]
+  if (set.rpe) parts.push(`RPE ${set.rpe}`)
+  if (set.done) parts.push('done')
+  return parts.join(', ')
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/**
+ * Second line of a "Choose exercise" row: today's sets and what is left once
+ * a set is done ("Today: 8×60, 8×60 kg · 2 sets left"), otherwise last
+ * session ("Last time: …"), otherwise the planned count ("3 sets"). An
+ * exercise whose sets were all deleted says "No sets", as the dock does.
+ */
+export function exerciseSummary(
+  entry: ExerciseEntryFormValues,
+  last: LastSessionDefaults | null | undefined,
+): string {
+  if (entry.sets.length === 0) return 'No sets'
+  const done = entry.sets.filter((s) => s.done)
+  if (done.length > 0) {
+    const left = entry.sets.length - done.length
+    return `Today: ${formatSetList(done)}${left > 0 ? ` · ${plural(left, 'set left', 'sets left')}` : ''}`
   }
-  const parts = sets.map((s) =>
-    s.weight != null ? `${s.reps ?? '–'}×${formatNumber(s.weight)}` : `${s.reps ?? '–'}`,
-  )
-  return hasWeight ? `${parts.join(', ')} kg` : `${parts.join(', ')} reps`
+  const lastTime = formatLastTime(last)
+  return lastTime ? `Last time: ${lastTime}` : plural(entry.sets.length, 'set', 'sets')
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

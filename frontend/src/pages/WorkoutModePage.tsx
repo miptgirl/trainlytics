@@ -1,9 +1,10 @@
 /**
  * Workout mode (`/workout`): a full-screen logger for one set at a time.
  * Uses the same useStrengthSessionForm as the full form, so both views share
- * the draft and build the same POST body.
+ * the draft and build the same POST body. The current exercise and the rest
+ * timer live in a dock at the bottom, so neither scrolls out of reach.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DiffModal } from '../components/DiffModal'
@@ -11,7 +12,9 @@ import { BottomSheet } from '../components/workout/BottomSheet'
 import { ChooseExerciseSheet } from '../components/workout/ChooseExerciseSheet'
 import { FinishSheet } from '../components/workout/FinishSheet'
 import { RestTimer } from '../components/workout/RestTimer'
-import { WorkoutSetList } from '../components/workout/WorkoutSetList'
+import { SetTabs } from '../components/workout/SetTabs'
+import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from '../components/workout/icons'
+import type { SetFormValues } from '../components/ExerciseEntryBlock'
 import { api } from '../lib/api'
 import { fetchLastSessionDefaults, useLastSessionDefaults } from '../lib/hooks/useLastSessionDefaults'
 import { useRestLength } from '../lib/hooks/useRestLength'
@@ -30,7 +33,6 @@ import {
   REST_LENGTHS,
   allExercisesDone,
   clampIndex,
-  exerciseAfterCompletion,
   formatClock,
   formatLastTime,
   isBlankEntry,
@@ -38,7 +40,6 @@ import {
   isPresetRestLength,
   newExerciseSets,
   nextUnfinishedIndex,
-  exerciseProgress,
   saveErrorMessage,
   sessionProgress,
 } from '../lib/workoutMode'
@@ -53,38 +54,6 @@ interface UndoAction {
 
 const UNDO_MS = 5000
 
-/** Remove the current exercise; asks first when it has completed sets (Undo still follows). */
-function RemoveExerciseButton({ name, doneSets, onRemove }: { name: string; doneSets: number; onRemove: () => void }) {
-  const [confirming, setConfirming] = useState(false)
-  const btn = 'flex-1 min-h-12 rounded-xl border border-border bg-surface text-base font-medium'
-  if (confirming) {
-    return (
-      <div className="space-y-2" role="group" aria-label={`Remove ${name}?`}>
-        <p className="text-sm text-text">
-          Remove {name} and its {doneSets} completed {doneSets === 1 ? 'set' : 'sets'}?
-        </p>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setConfirming(false)} className={`${btn} text-text`}>
-            Keep
-          </button>
-          <button type="button" onClick={onRemove} className={`${btn} text-error-text`}>
-            Remove
-          </button>
-        </div>
-      </div>
-    )
-  }
-  return (
-    <button
-      type="button"
-      onClick={() => (doneSets > 0 ? setConfirming(true) : onRemove())}
-      className={`w-full ${btn} text-error-text`}
-    >
-      Remove {name}
-    </button>
-  )
-}
-
 export default function WorkoutModePage() {
   const s = useStrengthSessionForm()
   const navigate = useNavigate()
@@ -96,12 +65,19 @@ export default function WorkoutModePage() {
   const { restLength, chooseRestLength, saveError: restSaveError } = useRestLength()
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null)
   const [guardError, setGuardError] = useState<string | null>(null)
-  // Bumped on every structural change (delete, undo, remove) so the set list
-  // remounts and drops an in-progress "Edit set" that now points elsewhere
+  // Bumped on every structural change (delete, undo, remove) so the set tabs
+  // remount and drop an open tab that now points elsewhere
   const [listVersion, setListVersion] = useState(0)
   // Index of an entry without an exercise that "Choose an exercise" fills
   const [fillIndex, setFillIndex] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
+  // Where focus goes after an action that removed the focused button and
+  // remounted the set tabs: deleting the only set (→ Add a set), removing the
+  // exercise from its empty state (→ the dock's exercise button). Set by those
+  // actions only, used once, so a mount or a draft restore never moves focus
+  const focusAfter = useRef<'add-set' | 'exercise' | null>(null)
+  const addSetRef = useRef<HTMLButtonElement>(null)
+  const exerciseButtonRef = useRef<HTMLButtonElement>(null)
 
   const exercises = s.values.exercises ?? []
   const exIndex = clampIndex(s.workout.currentExerciseIndex, exercises.length)
@@ -170,25 +146,43 @@ export default function WorkoutModePage() {
     return () => clearTimeout(t)
   }, [undoAction])
 
+  // After every render, but it only acts on the render that commits the action's result
+  useEffect(() => {
+    const target = focusAfter.current
+    if (!target) return
+    focusAfter.current = null
+    ;(target === 'add-set' ? addSetRef : exerciseButtonRef).current?.focus()
+  })
+
   // ── Actions ───────────────────────────────────────────────────────────────
 
   function completeSet(setIndex: number) {
     const after = setSetDone(exercises, exIndex, setIndex, true)
     s.setSetDone(exIndex, setIndex)
-    s.updateWorkout({
-      // No rest after the very last set of the workout
-      restEndsAt: allExercisesDone(after) ? null : Date.now() + restLength * 1000,
-      currentExerciseIndex: exerciseAfterCompletion(after, exIndex),
-    })
+    // Stays on this exercise even after its last set: the done card offers
+    // One more set or Next. No rest after the very last set of the workout.
+    s.updateWorkout({ restEndsAt: allExercisesDone(after) ? null : Date.now() + restLength * 1000 })
   }
 
   function deleteSet(setIndex: number) {
     const at = exIndex
-    const set = s.deleteSet(at, setIndex)
+    // From the form, not this render: deleting an edited done set first wrote its saved values back
+    const sets = s.form.getValues('exercises')?.[at]?.sets ?? []
+    let set: SetFormValues | null
+    if (sets.length === 1 && setIndex === 0) {
+      // s.deleteSet keeps an exercise's last set (the full form never empties
+      // one). Here the only set may go too, leaving the empty state with Add a
+      // set and Remove, so the list is cleared directly
+      set = sets[0]
+      s.replaceExercise(at, exercises[at].exercise_id, [])
+      focusAfter.current = 'add-set'
+    } else {
+      set = s.deleteSet(at, setIndex)
+    }
     if (!set) return
     setListVersion((v) => v + 1)
     setUndoAction({
-      label: `Set ${setIndex + 1} deleted`,
+      label: 'Set deleted',
       undo: () => {
         s.insertSet(at, setIndex, set)
         s.updateWorkout({ currentExerciseIndex: at })
@@ -196,18 +190,33 @@ export default function WorkoutModePage() {
     })
   }
 
-  function removeCurrentExercise() {
-    const at = exIndex
-    const removed = s.removeExercise(at)
+  function addSet() {
+    if (!entry) return
+    if (entry.sets.length === 0) {
+      // Nothing to copy: start from last session's first set, as a newly added exercise does (blank without history)
+      s.insertSet(exIndex, 0, newExerciseSets(lastByExercise.get(entry.exercise_id))[0])
+    } else {
+      s.addSet(exIndex)
+    }
+  }
+
+  /** Removes an exercise with Undo; the current one stays current, or its neighbour takes over when it was removed. */
+  function removeExercise(index: number) {
+    const before = exIndex
+    const removed = s.removeExercise(index)
     if (!removed) return
     setListVersion((v) => v + 1)
-    s.updateWorkout({ currentExerciseIndex: Math.min(at, exercises.length - 2) })
+    // `exercises` is still the list from before the removal
+    const current = index < before ? before - 1 : index === before ? Math.min(index, exercises.length - 2) : before
+    s.updateWorkout({ currentExerciseIndex: current })
+    // Indices after `index` moved; a pending fill target would point at the wrong entry
+    setFillIndex(null)
     setSheet(null)
     setUndoAction({
-      label: `${nameOf(removed.exercise_id)} removed`,
+      label: `${removed.exercise_id ? nameOf(removed.exercise_id) : 'Exercise'} removed`,
       undo: () => {
-        s.insertExercise(at, removed)
-        s.updateWorkout({ currentExerciseIndex: at })
+        s.insertExercise(index, removed)
+        s.updateWorkout({ currentExerciseIndex: before })
       },
     })
   }
@@ -291,6 +300,16 @@ export default function WorkoutModePage() {
       s.updateWorkout({ currentExerciseIndex: missing })
       return
     }
+    // Saved with no sets, it would wipe the exercise's "Last time" and, from a
+    // template, offer to update the template to an exercise without sets
+    const empty = exercises.findIndex((e) => e.sets.length === 0)
+    if (empty !== -1) {
+      // Before the library loads, the position names it, as the RPE check below does
+      const name = names.get(exercises[empty].exercise_id) ?? `Exercise ${empty + 1}`
+      setGuardError(`${name} has no sets. Add a set or remove it before finishing.`)
+      s.updateWorkout({ currentExerciseIndex: empty })
+      return
+    }
     const badRpe = findInvalidSetRpe(exercises, (id) => names.get(id))
     if (badRpe) {
       setGuardError(badRpe.message)
@@ -329,7 +348,20 @@ export default function WorkoutModePage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   const iconBtn = 'min-h-11 min-w-11 flex items-center justify-center rounded-lg text-text-muted-strong'
-  const barBtn = 'min-h-12 rounded-xl text-base font-medium px-3'
+  const stepBtn =
+    'h-14 w-11 shrink-0 flex items-center justify-center rounded-xl border border-border bg-surface text-primary-dark disabled:opacity-40'
+  const prevEntry = exIndex > 0 ? exercises[exIndex - 1] : undefined
+  const nextEntry = exercises[exIndex + 1]
+  const lastTime = entry ? formatLastTime(lastByExercise.get(entry.exercise_id)) : null
+  const sets = entry?.sets ?? []
+  const setsDone = sets.filter((set) => set.done).length
+  const dockName = entry ? nameOf(entry.exercise_id) : 'No exercises'
+  // Names what a tap opens: the chooser, or the exercise search for an entry without an exercise
+  const dockLabel = entry
+    ? `Exercise ${exIndex + 1} of ${exercises.length}, ${dockName}, ${
+        sets.length === 0 ? 'no sets' : `${setsDone} of ${sets.length} sets done`
+      }. ${entry.exercise_id ? 'Choose exercise' : 'Add exercise'}`
+    : 'No exercises. Add exercise'
 
   return (
     <div className="min-h-dvh bg-bg text-text flex flex-col">
@@ -368,7 +400,8 @@ export default function WorkoutModePage() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-4 pb-[calc(9.5rem+env(safe-area-inset-bottom))] space-y-4">
+      {/* Bottom padding clears the dock (125px) and the undo toast above it (to 184px), so scrolling reveals everything */}
+      <main className="flex-1 w-full max-w-xl mx-auto px-4 pt-3 pb-[calc(12rem+env(safe-area-inset-bottom))] space-y-3">
         {guardError && (
           <p role="alert" className="rounded-xl bg-error/10 text-error-text text-sm px-3 py-2">
             {guardError}
@@ -419,19 +452,6 @@ export default function WorkoutModePage() {
           <p className="text-sm text-text-muted-strong">Loading…</p>
         ) : (
           <>
-            {allDone && (
-              <div className="rounded-[20px] bg-primary-tint p-4 space-y-3">
-                <p className="text-base font-semibold text-primary-dark">All exercises done</p>
-                <button
-                  type="button"
-                  onClick={openFinish}
-                  className="w-full min-h-12 rounded-xl bg-primary-dark text-white font-semibold"
-                >
-                  Finish workout
-                </button>
-              </div>
-            )}
-
             {canPickTemplate && (
               <button
                 type="button"
@@ -443,28 +463,45 @@ export default function WorkoutModePage() {
             )}
 
             {entry ? (
-              <section aria-labelledby="current-exercise" className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-text-muted-strong">
-                  Exercise {exIndex + 1} of {exercises.length}
-                </p>
-                <h2 id="current-exercise" className="text-xl font-semibold break-words">
-                  {nameOf(entry.exercise_id)}
-                </h2>
+              <>
                 {!entry.exercise_id && (
                   <button
                     type="button"
                     onClick={() => openAddExercise(exIndex)}
-                    className="min-h-11 text-sm font-medium text-primary-dark"
+                    className="w-full min-h-12 rounded-xl border border-border bg-surface font-medium text-primary-dark"
                   >
                     Choose an exercise
                   </button>
                 )}
-                {formatLastTime(lastByExercise.get(entry.exercise_id)) && (
-                  <p className="text-sm text-text-muted-strong">
-                    Last time: {formatLastTime(lastByExercise.get(entry.exercise_id))}
-                  </p>
-                )}
-              </section>
+                {lastTime && <p className="text-sm text-text-muted-strong">Last time: {lastTime}</p>}
+                <SetTabs
+                  key={`${exIndex}-${listVersion}`}
+                  sets={entry.sets}
+                  weightScale={scaleOf(entry.exercise_id)}
+                  exerciseName={entry.exercise_id ? nameOf(entry.exercise_id) : null}
+                  next={
+                    nextIndex === -1
+                      ? null
+                      : {
+                          name: nameOf(exercises[nextIndex].exercise_id),
+                          position: nextIndex + 1,
+                          total: exercises.length,
+                        }
+                  }
+                  canRemoveExercise={exercises.length > 1}
+                  addSetRef={addSetRef}
+                  onUpdateSet={(setIndex, patch) => s.updateSet(exIndex, setIndex, patch)}
+                  onCompleteSet={completeSet}
+                  onDeleteSet={deleteSet}
+                  onAddSet={addSet}
+                  onNext={() => selectExercise(nextIndex)}
+                  onFinish={openFinish}
+                  onRemoveExercise={() => {
+                    focusAfter.current = 'exercise'
+                    removeExercise(exIndex)
+                  }}
+                />
+              </>
             ) : (
               <button
                 type="button"
@@ -474,26 +511,15 @@ export default function WorkoutModePage() {
                 + Add exercise
               </button>
             )}
-
-            {entry && (
-              <WorkoutSetList
-                key={`${exIndex}-${listVersion}`}
-                sets={entry.sets}
-                weightScale={scaleOf(entry.exercise_id)}
-                onUpdateSet={(setIndex, patch) => s.updateSet(exIndex, setIndex, patch)}
-                onCompleteSet={completeSet}
-                onDeleteSet={deleteSet}
-                onAddSet={() => s.addSet(exIndex)}
-              />
-            )}
           </>
         )}
       </main>
 
       {undoAction && (
-        <div className="fixed inset-x-0 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-30 flex justify-center px-4">
-          <div role="status" className="flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-md">
-            <span className="text-sm">{undoAction.label}</span>
+        // 15px above the dock: 125px tall (8 + 44 rest row + 8 + 56 exercise row + 8, plus its border)
+        <div className="fixed inset-x-0 bottom-[calc(8.75rem+env(safe-area-inset-bottom))] z-30 px-4">
+          <div role="status" className="max-w-xl mx-auto flex items-center gap-3 rounded-xl bg-text text-surface pl-4 pr-1 shadow-md">
+            <span className="flex-1 min-w-0 text-sm break-words">{undoAction.label}</span>
             <button type="button" onClick={runUndo} className="min-h-11 px-3 text-sm font-semibold text-primary-light">
               Undo
             </button>
@@ -513,31 +539,47 @@ export default function WorkoutModePage() {
               }
               onSkip={() => s.updateWorkout({ restEndsAt: null })}
             />
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setSheet('exercises')}
-                className={`${barBtn} border border-border bg-surface text-text`}
+                onClick={() => selectExercise(exIndex - 1)}
+                disabled={!prevEntry}
+                aria-label={prevEntry ? `Previous exercise: ${nameOf(prevEntry.exercise_id)}` : 'Previous exercise'}
+                className={stepBtn}
               >
-                Choose exercise
+                <ChevronLeftIcon />
               </button>
-              {/* Secondary: "Complete set" stays the one primary action on screen */}
-              {nextIndex !== -1 ? (
-                <button
-                  type="button"
-                  onClick={() => selectExercise(nextIndex)}
-                  className={`${barBtn} flex-1 min-w-0 border border-primary-dark bg-surface text-primary-dark flex items-center justify-between gap-2`}
-                >
-                  <span className="truncate">Next: {nameOf(exercises[nextIndex].exercise_id)}</span>
-                  <span aria-hidden="true">›</span>
-                </button>
-              ) : allDone ? (
-                <button type="button" onClick={openFinish} className={`${barBtn} flex-1 bg-primary-dark text-white`}>
-                  Finish ›
-                </button>
-              ) : (
-                <span className={`${barBtn} flex-1 flex items-center justify-center text-text-muted-strong`}>Last exercise</span>
-              )}
+              <button
+                ref={exerciseButtonRef}
+                type="button"
+                // A placeholder has nothing to switch from yet: go straight to picking its exercise
+                onClick={() => (entry && entry.exercise_id ? setSheet('exercises') : openAddExercise(entry ? exIndex : null))}
+                aria-label={dockLabel}
+                className="flex-1 min-w-0 h-14 rounded-xl border border-border bg-surface px-3 flex flex-col items-stretch justify-center gap-1.5 text-text"
+              >
+                <span className="flex items-center justify-center gap-1.5 min-w-0">
+                  <span className="min-w-0 truncate text-[17px] font-bold leading-tight">{dockName}</span>
+                  <ChevronDownIcon className="text-text-muted-strong" />
+                </span>
+                {sets.length > 0 ? (
+                  <span aria-hidden="true" className="flex gap-0.5 px-4">
+                    {sets.map((set, i) => (
+                      <span key={i} className={`h-[3px] flex-1 rounded-full ${set.done ? 'bg-primary' : 'bg-border'}`} />
+                    ))}
+                  </span>
+                ) : (
+                  <span className="text-xs text-text-muted-strong text-center">No sets</span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => selectExercise(exIndex + 1)}
+                disabled={!nextEntry}
+                aria-label={nextEntry ? `Next exercise: ${nameOf(nextEntry.exercise_id)}` : 'Next exercise'}
+                className={stepBtn}
+              >
+                <ChevronRightIcon />
+              </button>
             </div>
           </div>
         </div>
@@ -547,12 +589,14 @@ export default function WorkoutModePage() {
         <ChooseExerciseSheet
           entries={exercises}
           currentIndex={exIndex}
-          exerciseNames={names}
+          nameOf={nameOf}
           lastByExercise={lastByExercise}
           library={s.exerciseLibrary}
+          restEndsAt={s.workout.restEndsAt}
           startInAddMode={sheet === 'add-exercise'}
           busy={adding}
           onSelect={selectExercise}
+          onRemove={removeExercise}
           onAdd={(id) => void addExercise(id)}
           onClose={() => {
             setFillIndex(null)
@@ -588,13 +632,6 @@ export default function WorkoutModePage() {
             >
               Full form
             </button>
-            {exercises.length > 1 && entry && (
-              <RemoveExerciseButton
-                name={entry.exercise_id ? nameOf(entry.exercise_id) : 'this exercise'}
-                doneSets={exerciseProgress(entry).done}
-                onRemove={removeCurrentExercise}
-              />
-            )}
             <fieldset>
               <legend className="text-sm font-medium text-text-muted-strong mb-2">
                 Rest timer

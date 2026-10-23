@@ -13,11 +13,14 @@ export function BottomSheet({
   onClose,
   children,
   footer,
+  aside,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  /** Shown at the end of the title row, before the close button. */
+  aside?: ReactNode
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -79,6 +82,7 @@ export function BottomSheet({
           <h2 id={titleId} className="text-base font-semibold">
             {title}
           </h2>
+          {aside && <div className="ml-auto min-w-0">{aside}</div>}
           <button
             type="button"
             onClick={onClose}

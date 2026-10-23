@@ -76,7 +76,12 @@ function renderAt(url: string) {
   )
 }
 
-const exerciseHeading = () => screen.getByRole('heading', { level: 2 })
+// The dock's exercise button names the current exercise ("Exercise 1 of 2, Squat, 0 of 2 sets done. Choose exercise";
+// "… No exercise chosen, … Add exercise" for an entry without one, where a tap opens the exercise search)
+const DOCK_NAME = /\. (Choose|Add) exercise$/
+const exerciseHeading = () => screen.getByRole('button', { name: DOCK_NAME })
+const expectPosition = (k: number, m: number) =>
+  expect(exerciseHeading()).toHaveAccessibleName(new RegExp(`^Exercise ${k} of ${m}, `))
 const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
 
 // The real API always includes rest_seconds; null = never set
@@ -124,7 +129,7 @@ describe('Workout mode: payload parity with the full form', () => {
     renderAt('/workout?templateId=3&date=2026-09-01T10:00')
 
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    expect(await screen.findByText('Last time: 4 × 8 @ 57.5 kg')).toBeInTheDocument()
+    expect(await screen.findByText('Last time: 8×57.5, 8×57.5, 8×57.5, 8×57.5 kg')).toBeInTheDocument()
     const reps = screen.getByLabelText('Reps for set 1')
     await user.clear(reps)
     await user.type(reps, '6')
@@ -196,12 +201,11 @@ describe('Workout mode: weight steps', () => {
 })
 
 describe('Workout mode: logging', () => {
-  it('completing a set starts the rest timer; finishing an exercise moves to the next one', async () => {
+  it('completing the last set of an exercise stays on it: done card, rest, then Next and Finish workout', async () => {
     const user = userEvent.setup()
     renderAt('/workout?templateId=4')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     expect(screen.getByText('0 of 4 sets · 0 of 2 exercises')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Next: Bench/ })).toBeInTheDocument()
 
     const before = Date.now()
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
@@ -209,18 +213,99 @@ describe('Workout mode: logging', () => {
     await waitFor(() => expect(storedDraft()?.workout?.restEndsAt).toBeGreaterThanOrEqual(before + 90_000))
     expect(exerciseHeading()).toHaveTextContent('Squat')
 
+    // The last set of Squat: no auto-advance, and rest still starts
+    const beforeLast = Date.now()
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
-    expect(exerciseHeading()).toHaveTextContent('Bench')
-    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+    expect(exerciseHeading()).toHaveTextContent('Squat')
+    expectPosition(1, 2)
+    expect(screen.getByRole('heading', { name: 'Squat done' })).toBeInTheDocument()
+    expect(screen.getByText('Today: 5×100, 5×100 kg')).toBeInTheDocument()
     expect(screen.getByText('2 of 4 sets · 1 of 2 exercises')).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.workout?.restEndsAt).toBeGreaterThanOrEqual(beforeLast + 90_000))
+    expect(screen.getByRole('button', { name: 'Skip rest' })).toBeEnabled()
+    // No tab is joined to an editor; focus moved to the likely next tap
+    expect(screen.queryByRole('button', { name: 'Complete set' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { pressed: true, name: /^Set / })).not.toBeInTheDocument()
+    const next = screen.getByRole('button', { name: 'Next: Bench, 2 of 2' })
+    expect(next).toHaveTextContent('Next, 2 of 2')
+    expect(next).toHaveFocus()
+
+    await user.click(next)
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expectPosition(2, 2)
+    expect(screen.getByLabelText('Reps for set 1')).toHaveValue('8')
 
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
-    expect(screen.getByText('All exercises done')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Finish ›' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Skip rest' }))
+    // The last set of the workout: no rest, and the card finishes instead
+    expect(screen.getByRole('heading', { name: 'Bench done' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Skip rest' })).toBeDisabled()
     expect(screen.getByText('Rest')).toBeInTheDocument()
+    const finish = screen.getByRole('button', { name: 'Finish workout' })
+    expect(finish).toHaveFocus()
+    await user.click(finish)
+    expect(screen.getByRole('dialog', { name: 'Finish workout' })).toBeInTheDocument()
+  })
+
+  it('One more set adds a set and opens the editor on it', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    expect(screen.getByRole('heading', { name: 'Squat done' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'One more set' }))
+    expect(screen.queryByRole('heading', { name: 'Squat done' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Set 3 of 3, 5 × 102.5 kg' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Reps for set 3')).toHaveValue('5')
+    // The button that was tapped is gone; focus lands on what comes next, not on the page
+    expect(screen.getByLabelText('Reps for set 3')).toHaveFocus()
+    expect(screen.getByRole('button', { name: 'Complete set' })).toBeInTheDocument()
+    expect(screen.getByText('2 of 3 sets · 0 of 1 exercises')).toBeInTheDocument()
+  })
+
+  it('Next skips exercises that are already done, wrapping to the next unfinished one', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Mixed', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '5', sets: [set('6', '')] },
+          { exercise_id: '1', sets: [set('5', '100', true), set('5', '100')] },
+          { exercise_id: '2', sets: [set('8', '60', true)] },
+        ],
+        workout: { currentExerciseIndex: 1, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    // Bench (3 of 3) is done already, so Next wraps to Pull-up
+    await user.click(screen.getByRole('button', { name: 'Next: Pull-up, 1 of 3' }))
+    expect(exerciseHeading()).toHaveTextContent('Pull-up')
+    expectPosition(1, 3)
+  })
+
+  it('reopening on a finished exercise shows the done card without moving focus', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Full body', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true)] },
+          { exercise_id: '2', sets: [set('8', '60')] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.getByRole('heading', { name: 'Squat done' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Next: Bench, 2 of 2' })).not.toHaveFocus()
   })
 
   it('delete + undo puts the set back at the same position', async () => {
@@ -230,15 +315,15 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     await user.click(screen.getByRole('button', { name: '+ Add note' }))
     await user.type(screen.getByLabelText('Note'), 'tough')
-    await user.click(screen.getByRole('button', { name: '+ Add set' }))
+    await user.click(screen.getByRole('button', { name: 'Add set' }))
     // Sets: 1 done (5×100), 2 current (5×102.5 tough), 3 copy of set 2 (5×102.5)
     await user.click(screen.getByRole('button', { name: 'Delete set 2' }))
 
-    expect(await screen.findByText('Set 2 deleted')).toBeInTheDocument()
+    expect(await screen.findByText('Set deleted')).toBeInTheDocument()
     expect(screen.queryByLabelText('Note')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Undo' }))
 
-    expect(screen.queryByText('Set 2 deleted')).not.toBeInTheDocument()
+    expect(screen.queryByText('Set deleted')).not.toBeInTheDocument()
     expect(screen.getByLabelText('Note')).toHaveValue('tough')
     await waitFor(() =>
       expect(storedDraft().exercises[0].sets).toEqual([
@@ -249,44 +334,60 @@ describe('Workout mode: logging', () => {
     )
   })
 
-  it('the last remaining set has no delete button', async () => {
-    const user = userEvent.setup()
-    renderAt('/workout?templateId=3')
-    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Delete set 2' }))
-    expect(screen.queryByRole('button', { name: /Delete set/ })).not.toBeInTheDocument()
-  })
-
-  it('editing a done set then Cancel restores its values; Save keeps it done', async () => {
+  it('tapping a done tab opens it with Cancel / Save: Cancel restores its values, Save keeps it done', async () => {
     const user = userEvent.setup()
     renderAt('/workout?templateId=3')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
 
-    await user.click(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' }))
-    expect(screen.getByText('Edit set 1')).toBeInTheDocument()
+    const doneTab = () => screen.getByRole('button', { name: /^Set 1 of 2, .*, done$/ })
+    await user.click(doneTab())
+    expect(doneTab()).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByRole('button', { name: 'Complete set' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Increase reps by 1' }))
     await user.click(screen.getByRole('button', { name: 'Increase weight' }))
     expect(screen.getByLabelText('Reps for set 1')).toHaveValue('6')
     expect(screen.getByLabelText('Weight for set 1')).toHaveValue('104')
+    // The tab shows the values as they are typed
+    expect(doneTab()).toHaveTextContent('6×104')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toBeInTheDocument()
+    expect(doneTab()).toHaveAccessibleName('Set 1 of 2, 5 × 100 kg, done')
+    expect(doneTab()).toHaveAttribute('aria-pressed', 'false')
 
-    await user.click(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' }))
+    await user.click(doneTab())
     const weight = screen.getByLabelText('Weight for set 1')
     await user.clear(weight)
     await user.type(weight, '97,5')
-    await user.click(screen.getByRole('button', { name: 'Save set 1' }))
-    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 97.5 kg, done' })).toBeInTheDocument()
-    // The current set editor is back on set 2
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(doneTab()).toHaveAccessibleName('Set 1 of 2, 5 × 97.5 kg, done')
+    // The editor is back on the first set not done
+    expect(screen.getByRole('button', { name: 'Set 2 of 2, 5 × 102.5 kg' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByLabelText('Reps for set 2')).toHaveValue('5')
+  })
+
+  it('tapping a later pending tab logs that set; no "Set N" label is shown anywhere', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.queryByText(/^Set \d/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg' })).toHaveAttribute('aria-pressed', 'true')
+    // Opening the page moves no focus
+    expect(screen.getByLabelText('Reps for set 1')).not.toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Set 2 of 2, 5 × 102.5 kg' }))
+    expect(screen.getByLabelText('Reps for set 2')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets.map((x: { done: boolean }) => x.done)).toEqual([false, true]))
+    // Back to the default: the first set not done
+    expect(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Set 2 of 2, 5 × 102.5 kg, done' })).toHaveTextContent('5×102.5')
   })
 
   it('Add set copies the last set', async () => {
     const user = userEvent.setup()
     renderAt('/workout?templateId=3')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: '+ Add set' }))
+    await user.click(screen.getByRole('button', { name: 'Add set' }))
     await waitFor(() => expect(storedDraft()?.exercises[0].sets[2]).toEqual(set('5', '102.5')))
     expect(screen.getByText('0 of 3 sets · 0 of 1 exercises')).toBeInTheDocument()
   })
@@ -296,10 +397,10 @@ describe('Workout mode: logging', () => {
     renderAt('/workout?templateId=3')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
 
-    await user.click(screen.getByRole('button', { name: 'Choose exercise' }))
+    await user.click(exerciseHeading())
     const sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
     expect(within(sheet).getByText('Current')).toBeInTheDocument()
-    expect(within(sheet).getByText('0 of 2 sets · last 4 × 8 @ 57.5 kg')).toBeInTheDocument()
+    expect(within(sheet).getByText('Last time: 8×57.5, 8×57.5, 8×57.5, 8×57.5 kg')).toBeInTheDocument()
     await user.click(within(sheet).getByRole('button', { name: '+ Add exercise' }))
 
     const add = screen.getByRole('dialog', { name: 'Add exercise' })
@@ -307,7 +408,7 @@ describe('Workout mode: logging', () => {
     await user.click(within(add).getByRole('button', { name: 'Pull-up' }))
 
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Pull-up'))
-    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+    expectPosition(2, 2)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     await waitFor(() =>
       expect(storedDraft()?.exercises[1]).toEqual({
@@ -321,7 +422,7 @@ describe('Workout mode: logging', () => {
     const user = userEvent.setup()
     renderAt('/workout?templateId=3')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    const opener = screen.getByRole('button', { name: 'Choose exercise' })
+    const opener = exerciseHeading()
     await user.click(opener)
     expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement)
     await user.keyboard('{Escape}')
@@ -336,6 +437,275 @@ describe('Workout mode: logging', () => {
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Exercise 1 has no exercise chosen')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Workout mode: empty exercises, removal and the dock', () => {
+  const dock = () => exerciseHeading()
+  const segments = () => Array.from(dock().querySelectorAll('[aria-hidden="true"] > span'))
+
+  it('deleting the only set shows the empty state; Undo puts the set back', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+
+    expect(screen.getByRole('heading', { name: 'No sets left' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add a set' })).toHaveFocus()
+    expect(screen.getByText('Add a set to keep Squat, or take it out of this workout.')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Sets' })).not.toBeInTheDocument()
+    expect(dock()).toHaveAccessibleName('Exercise 1 of 2, Squat, no sets. Choose exercise')
+    expect(dock()).toHaveTextContent('No sets')
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets).toEqual([]))
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(screen.queryByRole('heading', { name: 'No sets left' })).not.toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets).toEqual([set('5', '100')]))
+    expect(screen.getByLabelText('Reps for set 1')).toHaveValue('5')
+  })
+
+  it('the empty state adds a set from last session, or removes the exercise with Undo', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+
+    // Nothing left to copy, so last session's first set (8 × 57.5) fills it, not 0 / 0
+    await user.click(screen.getByRole('button', { name: 'Add a set' }))
+    expect(screen.getByRole('button', { name: 'Set 1 of 1, 8 × 57.5 kg' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Reps for set 1')).toHaveValue('8')
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('57.5')
+    expect(screen.getByLabelText('Reps for set 1')).toHaveFocus()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets).toEqual([set('8', '57.5')]))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    expect(screen.getByRole('button', { name: 'Add a set' })).toHaveFocus()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Squat' }))
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expectPosition(1, 1)
+    // The Remove button is gone with the exercise; the dock's exercise button takes focus
+    expect(exerciseHeading()).toHaveFocus()
+    expect(screen.getByText('Squat removed')).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises.map((e: { exercise_id: string }) => e.exercise_id)).toEqual(['2']))
+
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(exerciseHeading()).toHaveTextContent('Squat')
+    expectPosition(1, 2)
+    expect(screen.getByRole('heading', { name: 'No sets left' })).toBeInTheDocument()
+  })
+
+  it('an entry without an exercise says "this exercise" when it is empty', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    expect(screen.getByText('Add a set to keep this exercise.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Choose an exercise' })).toBeInTheDocument()
+    // A tap on the dock opens the exercise search, so its name says Add exercise
+    expect(exerciseHeading()).toHaveAccessibleName('Exercise 1 of 1, No exercise chosen, no sets. Add exercise')
+    await user.click(exerciseHeading())
+    expect(screen.getByRole('dialog', { name: 'Add exercise' })).toBeInTheDocument()
+  })
+
+  it('Add a set on an exercise without history starts blank', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Next exercise: Bench' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Add a set' }))
+    expect(screen.getByRole('button', { name: 'Set 1 of 1, – reps' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Reps for set 1')).toHaveValue('')
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('')
+  })
+
+  it('Finish refuses an exercise with no sets and goes to it', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Next exercise: Bench' }))
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+
+    await user.click(screen.getByRole('button', { name: 'Finish' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('Squat has no sets. Add a set or remove it before finishing.')
+    expect(screen.queryByRole('dialog', { name: 'Finish workout' })).not.toBeInTheDocument()
+    expectPosition(1, 2)
+    expect(screen.getByRole('heading', { name: 'No sets left' })).toBeInTheDocument()
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+
+  it('a restored draft on an empty exercise moves no focus', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Full body', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [] },
+          { exercise_id: '2', sets: [set('8', '60')] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.getByRole('heading', { name: 'No sets left' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add a set' })).not.toHaveFocus()
+    expect(document.body).toHaveFocus()
+  })
+
+  it('Undo after deleting a done set that was open for editing brings back its saved values', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg, done' }))
+    await user.click(screen.getByRole('button', { name: 'Increase reps by 1' }))
+    expect(screen.getByLabelText('Reps for set 1')).toHaveValue('6')
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg, done' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(storedDraft()?.exercises[0].sets).toEqual([set('5', '100', true), set('5', '102.5')]),
+    )
+  })
+
+  it('Undo after deleting the only set while editing it brings back its saved values', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Full body', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true)] },
+          { exercise_id: '2', sets: [set('8', '60')] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Set 1 of 1, 5 × 100 kg, done' }))
+    await user.click(screen.getByRole('button', { name: 'Increase weight' }))
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('104')
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    expect(screen.getByRole('heading', { name: 'No sets left' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(screen.getByRole('heading', { name: 'Squat done' })).toBeInTheDocument()
+    // The tab names the live values (the stored draft may not have caught up yet)
+    expect(screen.getByRole('button', { name: 'Set 1 of 1, 5 × 100 kg, done' })).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets).toEqual([set('5', '100', true)]))
+  })
+
+  it('removes an exercise from the chooser with Undo; no trash on rows with done sets or on the only exercise', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Mixed', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true), set('5', '100')] },
+          { exercise_id: '2', sets: [set('8', '60')] },
+          { exercise_id: '5', sets: [set('6', '')] },
+        ],
+        workout: { currentExerciseIndex: 2, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Pull-up'))
+    await user.click(dock())
+    let sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    expect(within(sheet).queryByRole('button', { name: 'Remove Squat from this workout' })).not.toBeInTheDocument()
+    await user.click(within(sheet).getByRole('button', { name: 'Remove Bench from this workout' }))
+
+    // The sheet closes; Pull-up stays current (now 2 of 2)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(exerciseHeading()).toHaveTextContent('Pull-up')
+    expectPosition(2, 2)
+    expect(screen.getByRole('status')).toHaveTextContent('Bench removed')
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expectPosition(3, 3)
+    await waitFor(() =>
+      expect(storedDraft()?.exercises.map((e: { exercise_id: string }) => e.exercise_id)).toEqual(['1', '2', '5']),
+    )
+
+    // Removing the current exercise selects its neighbour
+    await user.click(dock())
+    sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    await user.click(within(sheet).getByRole('button', { name: 'Remove Pull-up from this workout' }))
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expectPosition(2, 2)
+  })
+
+  it('the only exercise has no trash in the chooser', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(dock())
+    const sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    expect(within(sheet).queryByRole('button', { name: /^Remove / })).not.toBeInTheDocument()
+  })
+
+  it('‹ and › step through the list in order and are disabled at the ends', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(screen.getByRole('button', { name: 'Previous exercise' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Next exercise: Bench' }))
+    expect(exerciseHeading()).toHaveTextContent('Bench')
+    expect(screen.getByRole('button', { name: 'Next exercise' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Previous exercise: Squat' }))
+    expect(exerciseHeading()).toHaveTextContent('Squat')
+  })
+
+  it('the dock shows one bar segment per set, filled for done sets', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=3')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expect(dock()).toHaveAccessibleName('Exercise 1 of 1, Squat, 0 of 2 sets done. Choose exercise')
+    expect(segments()).toHaveLength(2)
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(screen.getByRole('button', { name: 'Add set' }))
+    expect(dock()).toHaveAccessibleName('Exercise 1 of 1, Squat, 1 of 3 sets done. Choose exercise')
+    expect(segments().map((el) => el.classList.contains('bg-primary'))).toEqual([true, false, false])
+  })
+
+  it('chooser rows say what was done today, what is left, or last time; the header shows the running rest', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=4')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(dock())
+    let sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    expect(within(sheet).getByText('Last time: 8×57.5, 8×57.5, 8×57.5, 8×57.5 kg')).toBeInTheDocument()
+    // Bench has no history
+    expect(within(sheet).getByText('2 sets')).toBeInTheDocument()
+    expect(within(sheet).queryByText(/^Resting/)).not.toBeInTheDocument()
+    await user.click(within(sheet).getByRole('button', { name: 'Close' }))
+
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(dock())
+    sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    const squat = within(sheet).getByRole('button', { name: 'Squat, current, 1 of 2 sets done' })
+    expect(squat).toHaveAccessibleDescription('Today: 5×100 kg · 1 set left')
+    expect(within(sheet).getByText(/^Resting/)).toHaveTextContent(/Resting 1:(30|29)/)
+    await user.click(within(sheet).getByRole('button', { name: 'Close' }))
+
+    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await user.click(dock())
+    sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
+    const done = within(sheet).getByRole('button', { name: 'Squat, current, all 2 sets done' })
+    expect(done).toHaveAccessibleDescription('Today: 5×100, 5×100 kg')
+    expect(done).toHaveClass('opacity-60')
+    expect(within(sheet).getByRole('heading', { name: 'Done' })).toBeInTheDocument()
   })
 })
 
@@ -470,21 +840,22 @@ describe('Workout mode: per-set RPE', () => {
     expect(chip8).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
 
-    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8, done' })).toBeInTheDocument()
-    expect(screen.getByText('5 × 100 kg @8')).toBeInTheDocument()
+    const doneTab = screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg, RPE 8, done' })
+    expect(within(doneTab).getByText('5×100')).toBeInTheDocument()
+    expect(within(doneTab).getByText('RPE 8')).toBeInTheDocument()
     // Never prefilled: the next set starts unrated
     for (const n of [5, 6, 7, 8, 9, 10]) {
       expect(screen.getByRole('button', { name: `RPE ${n} for set 2` })).toHaveAttribute('aria-pressed', 'false')
     }
     await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe('8'))
 
-    await user.click(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg @8, done' }))
+    await user.click(doneTab)
     const again = screen.getByRole('button', { name: 'RPE 8 for set 1' })
     expect(again).toHaveAttribute('aria-pressed', 'true')
     await user.click(again)
     expect(again).toHaveAttribute('aria-pressed', 'false')
-    await user.click(screen.getByRole('button', { name: 'Save set 1' }))
-    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    expect(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg, done' })).not.toHaveTextContent('RPE')
     await waitFor(() => expect(storedDraft()?.exercises[0].sets[0].rpe).toBe(''))
   })
 
@@ -504,7 +875,8 @@ describe('Workout mode: per-set RPE', () => {
     )
     renderAt('/workout?resume=1')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Finish ›' }))
+    // Every exercise is done, so the done card finishes the workout
+    await user.click(screen.getByRole('button', { name: 'Finish workout' }))
 
     expect(screen.getByRole('alert')).toHaveTextContent('Bench, set 2: RPE "85" must be a whole number from 1 to 10.')
     // Jumps to the exercise with the bad value; no finish sheet, nothing sent
@@ -599,11 +971,12 @@ describe('Workout mode: draft', () => {
 
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Bench'))
     expect(screen.queryByText('You have an unsaved Strength draft.')).not.toBeInTheDocument()
-    expect(screen.getByText('Exercise 2 of 2')).toBeInTheDocument()
+    expectPosition(2, 2)
     expect(screen.getByText('3 of 4 sets · 1 of 2 exercises')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit set 1, 8 × 60 kg, done' })).toHaveTextContent('easy')
     expect(screen.getByLabelText('Reps for set 2')).toHaveValue('8')
     expect(screen.getByTestId('rest-clock')).toHaveTextContent(/0:4[45]/)
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Set 1 of 2, 8 × 60 kg, done' }))
+    expect(screen.getByLabelText('Note')).toHaveValue('easy')
   })
 
   it('opening fresh with a stored draft asks Restore or Discard', async () => {
@@ -612,7 +985,7 @@ describe('Workout mode: draft', () => {
     renderAt('/workout?templateId=3')
 
     expect(await screen.findByText('You have an unsaved Strength draft.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Choose exercise' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: DOCK_NAME })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Restore' }))
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Bench'))
   })
@@ -659,7 +1032,7 @@ describe('Switching between the full form and workout mode', () => {
 
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     expect(screen.queryByText('You have an unsaved Strength draft.')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit set 1, 5 × 100 kg, done' })).toHaveTextContent('warm-up')
+    expect(screen.getByRole('button', { name: 'Set 1 of 2, 5 × 100 kg, done' })).toBeInTheDocument()
     expect(screen.getByLabelText('Note')).toHaveValue('tough')
 
     const reps = screen.getByLabelText('Reps for set 2')
@@ -709,7 +1082,7 @@ describe('Workout mode: starting from a template', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
 
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
+    expectPosition(1, 2)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(entryButton()).not.toBeInTheDocument()
   })
@@ -727,7 +1100,7 @@ describe('Workout mode: starting from a template', () => {
     view.unmount()
     renderAt('/workout?type=strength&resume=1')
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    expect(screen.getByText('Exercise 1 of 2')).toBeInTheDocument()
+    expectPosition(1, 2)
     expect(entryButton()).not.toBeInTheDocument()
   })
 
@@ -756,11 +1129,11 @@ describe('Workout mode: starting from a template', () => {
       ),
     )
     renderAt('/workout?type=strength&resume=1')
-    expect(await screen.findByText('Exercise 2 of 2')).toBeInTheDocument()
+    await waitFor(() => expectPosition(2, 2))
     const dialog = await openSheet(user)
     await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
-    expect(await screen.findByText('Exercise 1 of 2')).toBeInTheDocument()
-    expect(exerciseHeading()).toHaveTextContent('Squat')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    expectPosition(1, 2)
   })
 
   it('the chosen template carries to the full form and into the update-template prompt', async () => {
@@ -868,7 +1241,7 @@ describe('Workout mode: starting from a template', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Leg day' }))
 
     expect(await screen.findByText('Loading…')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Choose exercise' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: DOCK_NAME })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Workout options' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Finish' })).toBeDisabled()
 
@@ -876,7 +1249,6 @@ describe('Workout mode: starting from a template', () => {
       release(legDay)
     })
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    expect(screen.getByRole('button', { name: 'Choose exercise' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Workout options' })).toBeEnabled()
   })
 
@@ -897,14 +1269,15 @@ describe('Workout mode: starting from a template', () => {
     const user = userEvent.setup()
     renderAt('/workout?type=strength')
     await screen.findByRole('button', { name: 'Start from template' })
-    await user.click(screen.getByRole('button', { name: '+ Add set' }))
-    await user.click(screen.getByRole('button', { name: 'Delete set 2' }))
-    expect(await screen.findByText('Set 2 deleted')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add set' }))
+    // Only the open set (the first not done) has a delete button
+    await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
+    expect(await screen.findByText('Set deleted')).toBeInTheDocument()
 
     const dialog = await openSheet(user)
     await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    expect(screen.queryByText('Set 2 deleted')).not.toBeInTheDocument()
+    expect(screen.queryByText('Set deleted')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument()
   })
 
@@ -929,13 +1302,13 @@ describe('Workout mode: starting from a template', () => {
       return base(path)
     })
     renderAt('/workout?type=strength&resume=1')
-    expect(await screen.findByText('Exercise 2 of 2')).toBeInTheDocument()
+    await waitFor(() => expectPosition(2, 2))
     const dialog = await openSheet(user)
     await user.click(within(dialog).getByRole('button', { name: 'Full body' }))
     await screen.findByRole('alert')
     fail = false
     await user.click(screen.getByRole('button', { name: 'Retry' }))
-    expect(await screen.findByText('Exercise 1 of 2')).toBeInTheDocument()
+    await waitFor(() => expectPosition(1, 2))
     await waitFor(() => expect(storedDraft()?.templateId).toBe(4))
   })
 
