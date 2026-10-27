@@ -4,6 +4,20 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-27 — Workout mode: move on after an exercise's last set
+
+### Changed
+
+- **Completing an exercise's last set moves straight on** to the next unfinished exercise (the one the done card's **Next** named, wrapping to earlier ones), which opens as usual. Rest still starts. After the last exercise of the workout nothing changes: the done card stays, with **One more set** and **Finish workout**, and no rest
+- **Done strip**: under the new exercise's editor, "✓ Squat done" with today's sets and **One more set**, which goes back to that exercise with a new set open. Tapping the strip itself goes back to its done card, where done sets can be edited. It stays until a set of the new exercise is completed or another exercise is opened
+- **Complete set names where it goes**: on an exercise's last set left, a second line says "next: Bench"; not when editing a done set or when the set finishes the workout
+
+### Fixed
+
+- **A double tap on Complete set no longer logs two sets**: for 0.5 s after Complete set appears (a new set, exercise or editor), taps on it are ignored. It doesn't look or act disabled meanwhile
+
+---
+
 ## 2026-10-23 — Workout mode: set tabs, finish in place, easier removal
 
 ### Added

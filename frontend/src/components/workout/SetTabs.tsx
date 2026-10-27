@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type Ref } from 'react'
+import { useEffect, useId, useRef, useState, type Ref, type RefObject } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
 import {
   boldTextWidth,
@@ -159,6 +159,12 @@ function RpeChips({
   )
 }
 
+/**
+ * Complete set ignores taps this long after it appears (a new set, exercise or
+ * editor), so the second tap of a double tap can't log the next set too.
+ */
+export const COMPLETE_SET_GUARD_MS = 500
+
 const primaryBtn = 'min-h-14 rounded-xl bg-primary-dark text-white text-[17px] font-semibold active:opacity-90'
 const outlinedBtn =
   'min-h-[52px] rounded-xl border border-primary-dark bg-surface text-primary-dark text-base font-semibold flex items-center justify-center gap-2'
@@ -169,6 +175,8 @@ function SetEditor({
   setNumber,
   editing,
   focusReps,
+  repsRef,
+  nextName,
   weightScale,
   onChange,
   onComplete,
@@ -182,6 +190,10 @@ function SetEditor({
   editing: boolean
   /** The set was just added (One more set, Add a set): move focus to its Reps. */
   focusReps: boolean
+  /** The page's handle on the Reps input, for focus it moves after a remount. */
+  repsRef?: RefObject<HTMLInputElement | null>
+  /** Completing this set finishes the exercise and moves on to this one: Complete set says so. */
+  nextName: string | null
   weightScale?: WeightScale | null
   onChange: (patch: Partial<SetFormValues>) => void
   onComplete: () => void
@@ -191,11 +203,18 @@ function SetEditor({
 }) {
   const [noteOpen, setNoteOpen] = useState(false)
   const showNote = noteOpen || set.notes !== ''
-  const repsRef = useRef<HTMLInputElement>(null)
+  const ownRepsRef = useRef<HTMLInputElement>(null)
+  const reps = repsRef ?? ownRepsRef
   // The button that added this set is gone; Reps is the next thing to type
   useEffect(() => {
-    if (focusReps) repsRef.current?.focus()
-  }, [focusReps])
+    if (focusReps) reps.current?.focus()
+  }, [focusReps, reps])
+  // When Complete set appeared; Infinity until then, so a tap before the effect runs is dropped too.
+  // Not disabled meanwhile: it keeps its look and its focus
+  const completeShownAt = useRef(Infinity)
+  useEffect(() => {
+    if (!editing) completeShownAt.current = performance.now()
+  }, [editing])
   return (
     <section
       aria-label={`Set ${setNumber} editor`}
@@ -240,8 +259,8 @@ function SetEditor({
           stepLabel="by 1"
           inputMode="numeric"
           setNumber={setNumber}
-          inputRef={repsRef}
-          onChange={(reps) => onChange({ reps })}
+          inputRef={reps}
+          onChange={(value) => onChange({ reps: value })}
         />
         <Stepper
           label="Weight"
@@ -270,11 +289,18 @@ function SetEditor({
       ) : (
         <button
           type="button"
-          onClick={onComplete}
-          className={`mt-0.5 w-full flex items-center justify-center gap-2 ${primaryBtn}`}
+          onClick={() => {
+            if (performance.now() - completeShownAt.current < COMPLETE_SET_GUARD_MS) return
+            onComplete()
+          }}
+          aria-label={nextName ? `Complete set, next: ${nextName}` : undefined}
+          className={`mt-0.5 w-full px-4 flex flex-col items-center justify-center ${primaryBtn}`}
         >
-          <CheckIcon />
-          Complete set
+          <span className="flex items-center gap-2">
+            <CheckIcon />
+            Complete set
+          </span>
+          {nextName && <span className="max-w-full truncate text-xs font-medium text-white/90">next: {nextName}</span>}
         </button>
       )}
     </section>
@@ -347,7 +373,7 @@ function SetTab({
   )
 }
 
-/** Where "Next" on the done card goes. */
+/** The next unfinished exercise: where finishing this one moves on to, and the done card's Next. */
 export interface NextExercise {
   name: string
   /** 1-based position in the workout, and the workout's exercise count. */
@@ -482,9 +508,11 @@ function EmptyState({
  * The current exercise's sets as a row of tabs over one editor. The editor
  * opens on the first set not done; tapping a tab opens that set instead (a
  * done one with Cancel / Save). With every set done, a card offers One more
- * set or Next; with no sets, Add a set or Remove. The page remounts this on
- * every structural change (delete, undo, exercise switch), which drops a tab
- * that now points elsewhere; focus after a remount is the page's to move.
+ * set or Next; with no sets, Add a set or Remove. Complete set on the last set
+ * left names the next exercise, which the page then switches to. The page
+ * remounts this on every structural change (delete, undo, exercise switch),
+ * which drops a tab that now points elsewhere; focus after a remount is the
+ * page's to move.
  */
 export function SetTabs({
   sets,
@@ -493,6 +521,7 @@ export function SetTabs({
   next,
   canRemoveExercise,
   addSetRef,
+  repsRef,
   onUpdateSet,
   onCompleteSet,
   onDeleteSet,
@@ -512,6 +541,8 @@ export function SetTabs({
   canRemoveExercise: boolean
   /** The empty state's Add a set button. */
   addSetRef?: Ref<HTMLButtonElement>
+  /** The open editor's Reps input. */
+  repsRef?: RefObject<HTMLInputElement | null>
   onUpdateSet: (setIndex: number, patch: Partial<SetFormValues>) => void
   onCompleteSet: (setIndex: number) => void
   onDeleteSet: (setIndex: number) => void
@@ -573,6 +604,8 @@ export function SetTabs({
   }
 
   const joined = selected !== -1
+  // Completing the only set left finishes the exercise, and the page moves on to `next`
+  const finishesExercise = joined && !sets[selected].done && sets.filter((s) => !s.done).length === 1
   return (
     <div>
       <div
@@ -617,6 +650,8 @@ export function SetTabs({
           setNumber={selected + 1}
           editing={open?.snapshot != null}
           focusReps={handoff === 'added'}
+          repsRef={repsRef}
+          nextName={finishesExercise && next ? next.name : null}
           weightScale={weightScale}
           onChange={(patch) => onUpdateSet(selected, patch)}
           onComplete={() => {
