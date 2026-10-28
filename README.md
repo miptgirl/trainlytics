@@ -72,6 +72,15 @@ bash scripts/seed-demo.sh   # then log in at http://localhost:5173 as demo / dem
 
 The demo user exists only in local dev; it is disabled in production.
 
+Frontend checks run on the host (Node with corepack enabled; corepack picks the pnpm version pinned in `frontend/package.json`):
+
+```bash
+cd frontend
+corepack pnpm test    # also: lint, build, dev
+```
+
+There is no need to run `pnpm install` by hand after pulling: `frontend/.npmrc` makes every `pnpm` script install first when `node_modules` no longer matches `pnpm-lock.yaml`.
+
 ---
 
 ## Deployment
