@@ -21,7 +21,6 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://trainlytics:trainlytics@db:5432/trainlytics
-      DEBUG_SQL_ENABLED: "true"
       # Never enable the demo login in production. Set here (not via .env) because
       # `environment:` overrides `env_file:`, so a stray .env line can't turn it on.
       DEMO_USER_ENABLED: "false"
