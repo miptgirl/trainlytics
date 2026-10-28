@@ -165,6 +165,12 @@ function RpeChips({
  */
 export const COMPLETE_SET_GUARD_MS = 500
 
+/**
+ * Logged (dev and tests only) when the guard drops a tap. The test setup fails any test that drops one it
+ * didn't expect, so a test can't silently click Complete set too soon; see src/test-tap-guard.ts.
+ */
+export const COMPLETE_SET_TAP_DROPPED = 'Complete set ignored a tap: it appeared less than 500 ms ago'
+
 const primaryBtn = 'min-h-14 rounded-xl bg-primary-dark text-white text-[17px] font-semibold active:opacity-90'
 const outlinedBtn =
   'min-h-[52px] rounded-xl border border-primary-dark bg-surface text-primary-dark text-base font-semibold flex items-center justify-center gap-2'
@@ -290,7 +296,10 @@ function SetEditor({
         <button
           type="button"
           onClick={() => {
-            if (performance.now() - completeShownAt.current < COMPLETE_SET_GUARD_MS) return
+            if (performance.now() - completeShownAt.current < COMPLETE_SET_GUARD_MS) {
+              if (import.meta.env.DEV) console.warn(COMPLETE_SET_TAP_DROPPED)
+              return
+            }
             onComplete()
           }}
           aria-label={nextName ? `Complete set, next: ${nextName}` : undefined}

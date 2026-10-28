@@ -13,6 +13,7 @@ vi.mock('../components/Layout', () => ({
 }))
 
 import { COMPLETE_SET_GUARD_MS } from '../components/workout/SetTabs'
+import { takeDroppedTaps } from '../test-tap-guard'
 import { api } from '../lib/api'
 import { resetRestLength } from '../lib/restLengthSync'
 import LogWorkoutPage from '../pages/LogWorkoutPage'
@@ -688,13 +689,16 @@ describe('Workout mode: Complete set tap guard', () => {
     perfNow += 499
     await user.click(complete)
     expect(doneFlags()).toEqual([false, false, false])
+    expect(takeDroppedTaps()).toBe(2)
     perfNow += 1
     await user.click(complete)
     expect(doneFlags()).toEqual([true, false, false])
+    expect(takeDroppedTaps()).toBe(0)
 
     // Set 2's Complete set takes the spot: a double tap stops there
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(doneFlags()).toEqual([true, false, false])
+    expect(takeDroppedTaps()).toBe(1)
   })
 
   it("a double tap on an exercise's last set logs nothing on the exercise it moves on to", async () => {
@@ -708,6 +712,7 @@ describe('Workout mode: Complete set tap guard', () => {
     perfNow += 100
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(doneFlags()).toEqual([false, false])
+    expect(takeDroppedTaps()).toBe(1)
     await waitFor(() =>
       expect(storedDraft()?.exercises[1].sets.map((x: { done: boolean }) => x.done)).toEqual([false, false]),
     )
@@ -727,6 +732,7 @@ describe('Workout mode: Complete set tap guard', () => {
     perfNow += 499
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(doneFlags()).toEqual([true, false, false])
+    expect(takeDroppedTaps()).toBe(1)
     perfNow += 1
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(doneFlags()).toEqual([true, true, false])
@@ -736,6 +742,7 @@ describe('Workout mode: Complete set tap guard', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     await user.click(screen.getByRole('button', { name: 'Complete set' }))
     expect(doneFlags()).toEqual([true, true, false])
+    expect(takeDroppedTaps()).toBe(1)
   })
 })
 
