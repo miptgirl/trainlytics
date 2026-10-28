@@ -2,7 +2,7 @@
  * Regression tests for the workout-mode review (blockers B1–B3 and should-fixes).
  */
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import userEvent, { type UserEvent } from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -15,6 +15,7 @@ vi.mock('../components/Layout', () => ({
   Layout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+import { COMPLETE_SET_GUARD_MS } from '../components/workout/SetTabs'
 import { api } from '../lib/api'
 import LogWorkoutPage from '../pages/LogWorkoutPage'
 import WorkoutModePage from '../pages/WorkoutModePage'
@@ -30,6 +31,15 @@ const storedDraft = () => {
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
+
+// Complete set ignores taps for COMPLETE_SET_GUARD_MS after it appears (the double-tap guard, timed with
+// performance.now). Here performance.now is a clock only the tests move, never back: completeSet moves it past
+// the guard first, as a person's next deliberate tap would be
+let perfNow = 0
+async function completeSet(user: UserEvent) {
+  perfNow += COMPLETE_SET_GUARD_MS
+  await user.click(screen.getByRole('button', { name: /^Complete set/ }))
+}
 const tSet = (n: number, reps: number, weight_kg: number) => ({
   set_number: n,
   reps,
@@ -128,6 +138,7 @@ const fullBodyDraft = {
 }
 
 beforeEach(() => {
+  vi.spyOn(performance, 'now').mockImplementation(() => perfNow)
   localStorage.clear()
   slow = {}
   mockGet.mockReset()
@@ -176,7 +187,7 @@ describe('B1: a pending draft is never overwritten and Back never lands on a sta
     await user.type(screen.getAllByPlaceholderText('note')[0], 'warm-up')
     await user.click(screen.getByRole('button', { name: 'Workout mode' }))
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
 
     // Back from workout mode: the replaced /log entry is gone
     await user.click(screen.getByRole('button', { name: 'history back' }))
@@ -189,7 +200,7 @@ describe('B1: a pending draft is never overwritten and Back never lands on a sta
     const user = userEvent.setup()
     renderAt(['/plan', '/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await user.click(screen.getByRole('button', { name: 'Workout options' }))
     await user.click(screen.getByRole('button', { name: 'Full form' }))
     await screen.findByText(/Pre-filled from/)
@@ -202,8 +213,8 @@ describe('B1: a pending draft is never overwritten and Back never lands on a sta
     const user = userEvent.setup()
     renderAt(['/plan', '/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
+    await completeSet(user)
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     await user.click(screen.getByRole('button', { name: 'Save workout' }))
     await screen.findByText('Session detail page')
@@ -244,7 +255,7 @@ describe('B3: undo while editing a done set cannot corrupt another set', () => {
     const user = userEvent.setup()
     renderAt(['/workout?type=strength&templateId=6'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    for (let i = 0; i < 3; i++) await completeSet(user)
 
     await user.click(screen.getByRole('button', { name: 'Set 1 of 3, 5 × 100 kg, done' }))
     await user.click(screen.getByRole('button', { name: 'Delete set 1' }))
@@ -283,7 +294,7 @@ describe('Set editor layout and input (1, nit)', () => {
     const user = userEvent.setup()
     renderAt(['/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     const weight = screen.getByLabelText('Weight for set 2')
     expect(weight).toHaveValue('102.5')
     // Sized for the 56px input of a 375px phone: "102.5" fits at 1.25rem in proportional figures
@@ -445,7 +456,7 @@ describe('Draft creation and prompt (4)', () => {
     await act(() => sleep(400))
     expect(storedDraft()).toBeNull()
 
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBeGreaterThanOrEqual(before))
   })
 
@@ -534,9 +545,9 @@ describe('Finish and save (6, 7, 10, 11, nit)', () => {
     renderAt(['/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     expect(screen.queryByRole('button', { name: 'Finish workout' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     expect(screen.getByRole('button', { name: 'Skip rest' })).toBeEnabled()
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     expect(screen.getByRole('button', { name: 'Skip rest' })).toBeDisabled()
     expect(screen.getByRole('button', { name: 'Finish workout' })).toHaveFocus()
   })
@@ -616,7 +627,7 @@ describe('Second review', () => {
     )
     renderAt(['/workout?type=strength&templateId=4&resume=1'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Bench'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(startedAt))
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByLabelText('Duration')).toHaveValue('37:00')
@@ -664,7 +675,7 @@ describe('Second review', () => {
     const user = userEvent.setup()
     renderAt(['/workout?type=strength&templateId=4'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await user.click(exerciseHeading())
     const sheet = screen.getByRole('dialog', { name: 'Choose exercise' })
     expect(within(sheet).queryByRole('button', { name: 'Remove Squat from this workout' })).not.toBeInTheDocument()
@@ -691,8 +702,8 @@ describe('Second review', () => {
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     const finish = () => screen.getByRole('button', { name: 'Finish' })
     expect(finish().className).not.toMatch(/bg-primary-dark/)
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
+    await completeSet(user)
     expect(finish().className).toMatch(/bg-primary-dark/)
   })
 })
@@ -712,9 +723,9 @@ describe('Duration prefill on a fresh workout', () => {
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     expect(location()).toMatch(/resume=1/)
     c.at(60_000)
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     c.at(120_000)
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     c.at(180_000)
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByLabelText('Duration')).toHaveValue('3:00')
@@ -725,7 +736,7 @@ describe('Duration prefill on a fresh workout', () => {
     const c = clock()
     renderAt(['/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     c.at(20_000)
     await user.click(screen.getByRole('button', { name: 'Finish' }))
     expect(screen.getByLabelText('Duration')).toHaveValue('1:00')
@@ -737,14 +748,14 @@ describe('Duration prefill on a fresh workout', () => {
     renderAt(['/workout?type=strength&templateId=3'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
     c.at(60_000)
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await waitFor(() => expect(storedDraft()?.workout?.startedAt).toBe(c.t0))
     cleanup()
 
     c.at(4 * 60_000)
     renderAt(['/workout?type=strength&templateId=3&resume=1'])
     await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
-    await user.click(screen.getByRole('button', { name: 'Complete set' }))
+    await completeSet(user)
     await waitFor(() => expect(storedDraft()?.exercises[0].sets[1].done).toBe(true))
     expect(storedDraft()?.workout?.startedAt).toBe(c.t0)
     await user.click(screen.getByRole('button', { name: 'Finish' }))

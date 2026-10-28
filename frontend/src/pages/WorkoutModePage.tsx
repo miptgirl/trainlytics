@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { DiffModal } from '../components/DiffModal'
 import { BottomSheet } from '../components/workout/BottomSheet'
 import { ChooseExerciseSheet } from '../components/workout/ChooseExerciseSheet'
+import { DoneStrip } from '../components/workout/DoneStrip'
 import { FinishSheet } from '../components/workout/FinishSheet'
 import { RestTimer } from '../components/workout/RestTimer'
 import { SetTabs } from '../components/workout/SetTabs'
@@ -35,6 +36,7 @@ import {
   clampIndex,
   formatClock,
   formatLastTime,
+  formatSetList,
   isBlankEntry,
   isExerciseDone,
   isPresetRestLength,
@@ -49,7 +51,20 @@ type Sheet = 'exercises' | 'add-exercise' | 'finish' | 'options' | 'templates' |
 /** Undo toast: what was removed and how to put it back. */
 interface UndoAction {
   label: string
-  undo: () => void
+  /** `current`: the current exercise's index when Undo is tapped. */
+  undo: (current: number) => void
+}
+
+/**
+ * The done strip: the exercise whose last set just moved workout mode on
+ * (`from`, checked against its exercise id) while the one it moved to (`to`)
+ * is current. Entries have no stable key, so both are indices, shifted when an
+ * entry before them is removed or put back.
+ */
+interface DoneStripState {
+  from: number
+  exerciseId: string
+  to: number
 }
 
 const UNDO_MS = 5000
@@ -71,13 +86,17 @@ export default function WorkoutModePage() {
   // Index of an entry without an exercise that "Choose an exercise" fills
   const [fillIndex, setFillIndex] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
+  const [doneStrip, setDoneStrip] = useState<DoneStripState | null>(null)
   // Where focus goes after an action that removed the focused button and
   // remounted the set tabs: deleting the only set (→ Add a set), removing the
-  // exercise from its empty state (→ the dock's exercise button). Set by those
-  // actions only, used once, so a mount or a draft restore never moves focus
-  const focusAfter = useRef<'add-set' | 'exercise' | null>(null)
+  // exercise from its empty state or moving on after an exercise's last set
+  // (→ the dock's exercise button), the done strip's One more set (→ the new
+  // set's Reps). Set by those actions only, used once, so a mount or a draft
+  // restore never moves focus
+  const focusAfter = useRef<'add-set' | 'exercise' | 'reps' | null>(null)
   const addSetRef = useRef<HTMLButtonElement>(null)
   const exerciseButtonRef = useRef<HTMLButtonElement>(null)
+  const repsRef = useRef<HTMLInputElement>(null)
 
   const exercises = s.values.exercises ?? []
   const exIndex = clampIndex(s.workout.currentExerciseIndex, exercises.length)
@@ -112,6 +131,14 @@ export default function WorkoutModePage() {
   // Rendered only in the branch without a draft question, loading or error
   const canPickTemplate = templateOffered && pristine && templates.length > 0
   const nameOf = (id: string) => names.get(id) ?? (id ? '…' : 'No exercise chosen')
+
+  // The strip shows only on the exercise it was made for, for the same finished exercise;
+  // anything else (another exercise opened, that one removed, replaced or reopened) ends it
+  const stripFrom =
+    doneStrip && doneStrip.to === exIndex && doneStrip.from !== exIndex ? exercises[doneStrip.from] : undefined
+  const stripEntry =
+    stripFrom && stripFrom.exercise_id === doneStrip?.exerciseId && isExerciseDone(stripFrom) ? stripFrom : undefined
+  if (doneStrip && !stripEntry) setDoneStrip(null)
 
   // Once the draft question is settled: stamp the start time and make a reload
   // of this URL resume the draft instead of asking again.
@@ -151,7 +178,7 @@ export default function WorkoutModePage() {
     const target = focusAfter.current
     if (!target) return
     focusAfter.current = null
-    ;(target === 'add-set' ? addSetRef : exerciseButtonRef).current?.focus()
+    ;({ 'add-set': addSetRef, exercise: exerciseButtonRef, reps: repsRef })[target].current?.focus()
   })
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -159,9 +186,22 @@ export default function WorkoutModePage() {
   function completeSet(setIndex: number) {
     const after = setSetDone(exercises, exIndex, setIndex, true)
     s.setSetDone(exIndex, setIndex)
-    // Stays on this exercise even after its last set: the done card offers
-    // One more set or Next. No rest after the very last set of the workout.
-    s.updateWorkout({ restEndsAt: allExercisesDone(after) ? null : Date.now() + restLength * 1000 })
+    // No rest after the very last set of the workout
+    const patch: Partial<WorkoutModeState> = {
+      restEndsAt: allExercisesDone(after) ? null : Date.now() + restLength * 1000,
+    }
+    // The exercise's last set moves on to the next unfinished one (where the done card's Next goes),
+    // with the done strip for this one under its editor. With nothing else left it stays on the done card
+    if (isExerciseDone(after[exIndex]) && nextIndex !== -1) {
+      patch.currentExerciseIndex = nextIndex
+      setDoneStrip({ from: exIndex, exerciseId: entry.exercise_id, to: nextIndex })
+      // The Complete set button that had focus is gone with the exercise
+      focusAfter.current = 'exercise'
+    } else {
+      // A set completed on the exercise the strip was shown for ends it
+      setDoneStrip(null)
+    }
+    s.updateWorkout(patch)
   }
 
   function deleteSet(setIndex: number) {
@@ -190,48 +230,73 @@ export default function WorkoutModePage() {
     })
   }
 
-  function addSet() {
-    if (!entry) return
-    if (entry.sets.length === 0) {
+  function addSet(at: number) {
+    const target = exercises[at]
+    if (!target) return
+    if (target.sets.length === 0) {
       // Nothing to copy: start from last session's first set, as a newly added exercise does (blank without history)
-      s.insertSet(exIndex, 0, newExerciseSets(lastByExercise.get(entry.exercise_id))[0])
+      s.insertSet(at, 0, newExerciseSets(lastByExercise.get(target.exercise_id))[0])
     } else {
-      s.addSet(exIndex)
+      s.addSet(at)
     }
   }
 
-  /** Removes an exercise with Undo; the current one stays current, or its neighbour takes over when it was removed. */
-  function removeExercise(index: number) {
+  /** The done strip's One more set: back to that exercise with a new set open, as its done card's One more set does. */
+  function oneMoreSetOn(at: number) {
+    addSet(at)
+    focusAfter.current = 'reps'
+    selectExercise(at)
+  }
+
+  /** Keeps the done strip on the same two exercises when the entry at `at` is removed (-1) or put back (+1). */
+  function shiftDoneStrip(at: number, by: 1 | -1) {
+    const move = (i: number) => (by === -1 ? (i > at ? i - 1 : i) : i >= at ? i + 1 : i)
+    setDoneStrip((st) =>
+      st && !(by === -1 && (st.from === at || st.to === at)) ? { ...st, from: move(st.from), to: move(st.to) } : null,
+    )
+  }
+
+  /**
+   * Removes an exercise with Undo; the current one stays current, or its neighbour takes over when it was removed.
+   * False when nothing was removed (the workout's only exercise).
+   */
+  function removeExercise(index: number): boolean {
     const before = exIndex
     const removed = s.removeExercise(index)
-    if (!removed) return
+    if (!removed) return false
     setListVersion((v) => v + 1)
     // `exercises` is still the list from before the removal
     const current = index < before ? before - 1 : index === before ? Math.min(index, exercises.length - 2) : before
     s.updateWorkout({ currentExerciseIndex: current })
     // Indices after `index` moved; a pending fill target would point at the wrong entry
     setFillIndex(null)
+    shiftDoneStrip(index, -1)
     setSheet(null)
     setUndoAction({
       label: `${removed.exercise_id ? nameOf(removed.exercise_id) : 'Exercise'} removed`,
-      undo: () => {
+      undo: (current) => {
         s.insertExercise(index, removed)
-        s.updateWorkout({ currentExerciseIndex: before })
+        // The removed exercise comes back as current if it was; otherwise whatever is current by now stays
+        // current, one place on when it sits after the one put back
+        s.updateWorkout({ currentExerciseIndex: index === before ? index : current >= index ? current + 1 : current })
+        shiftDoneStrip(index, 1)
       },
     })
+    return true
   }
 
   function runUndo() {
     if (!undoAction) return
-    undoAction.undo()
+    undoAction.undo(exIndex)
     setListVersion((v) => v + 1)
     setUndoAction(null)
   }
 
   async function startFromTemplate(id: number) {
     setSheet(null)
-    // The undo targets the old list; the pick replaces it
+    // The undo and the done strip point into the old list; the pick replaces it
     setUndoAction(null)
+    setDoneStrip(null)
     await s.selectTemplate(id, { claimDraft: true })
   }
 
@@ -280,6 +345,7 @@ export default function WorkoutModePage() {
       if (target !== null) {
         // Keep sets the user already filled in; replace an untouched placeholder's
         s.replaceExercise(target, exerciseId, isBlankEntry(list[target]) ? sets : undefined)
+        setDoneStrip((st) => (st && (st.from === target || st.to === target) ? null : st))
         s.updateWorkout({ currentExerciseIndex: target })
       } else {
         s.addExercise({ exercise_id: exerciseId, sets })
@@ -356,6 +422,8 @@ export default function WorkoutModePage() {
   const sets = entry?.sets ?? []
   const setsDone = sets.filter((set) => set.done).length
   const dockName = entry ? nameOf(entry.exercise_id) : 'No exercises'
+  const stripName =
+    doneStrip && stripEntry && (stripEntry.exercise_id ? nameOf(stripEntry.exercise_id) : `Exercise ${doneStrip.from + 1}`)
   // Names what a tap opens: the chooser, or the exercise search for an entry without an exercise
   const dockLabel = entry
     ? `Exercise ${exIndex + 1} of ${exercises.length}, ${dockName}, ${
@@ -407,6 +475,10 @@ export default function WorkoutModePage() {
             {guardError}
           </p>
         )}
+        {/* Always rendered, so the move to the next exercise is announced; focus goes to the dock's exercise button */}
+        <p className="sr-only" aria-live="polite">
+          {stripName ? `${stripName} done. Now ${dockName}.` : ''}
+        </p>
 
         {s.pendingDraft !== null ? (
           <div className="rounded-xl border border-border bg-surface p-4 space-y-3">
@@ -416,14 +488,20 @@ export default function WorkoutModePage() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => void s.restoreDraft()}
+                onClick={() => {
+                  setDoneStrip(null)
+                  void s.restoreDraft()
+                }}
                 className="flex-1 min-h-12 rounded-xl bg-primary-dark text-white font-semibold"
               >
                 Restore
               </button>
               <button
                 type="button"
-                onClick={s.discardDraft}
+                onClick={() => {
+                  setDoneStrip(null)
+                  s.discardDraft()
+                }}
                 className="flex-1 min-h-12 rounded-xl border border-border bg-surface font-medium"
               >
                 Discard
@@ -490,17 +568,29 @@ export default function WorkoutModePage() {
                   }
                   canRemoveExercise={exercises.length > 1}
                   addSetRef={addSetRef}
+                  repsRef={repsRef}
                   onUpdateSet={(setIndex, patch) => s.updateSet(exIndex, setIndex, patch)}
                   onCompleteSet={completeSet}
                   onDeleteSet={deleteSet}
-                  onAddSet={addSet}
+                  onAddSet={() => addSet(exIndex)}
                   onNext={() => selectExercise(nextIndex)}
                   onFinish={openFinish}
                   onRemoveExercise={() => {
-                    focusAfter.current = 'exercise'
-                    removeExercise(exIndex)
+                    // Only once it's gone: a refused removal must not move focus on some later render
+                    if (removeExercise(exIndex)) focusAfter.current = 'exercise'
                   }}
                 />
+                {doneStrip && stripEntry && stripName && (
+                  <DoneStrip
+                    name={stripName}
+                    today={formatSetList(stripEntry.sets.filter((set) => set.done))}
+                    onOpen={() => {
+                      focusAfter.current = 'exercise'
+                      selectExercise(doneStrip.from)
+                    }}
+                    onOneMore={() => oneMoreSetOn(doneStrip.from)}
+                  />
+                )}
               </>
             ) : (
               <button
