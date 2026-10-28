@@ -195,7 +195,7 @@ interface SqlResult {
   rowcount: number
 }
 
-function SqlExecutor() {
+function SqlExecutor({ hidden }: { hidden: boolean }) {
   const [sql, setSql] = useState('')
   const [sqlResult, setSqlResult] = useState<SqlResult | null>(null)
   const [sqlError, setSqlError] = useState<string | null>(null)
@@ -216,7 +216,7 @@ function SqlExecutor() {
   }
 
   return (
-    <div className="border-t border-border px-5 py-4 flex flex-col gap-3">
+    <div hidden={hidden} className="bg-surface border-t border-border px-5 py-4 flex flex-col gap-3">
       <p className="text-xs font-mono font-semibold text-text-muted-strong uppercase tracking-widest">
         SQL
       </p>
@@ -379,10 +379,11 @@ function DebugLogsSection({ sqlAvailable }: { sqlAvailable: boolean }) {
               })}
             </div>
           </div>
-
-          {sqlAvailable && <SqlExecutor />}
         </div>
       )}
+
+      {/* Stays mounted while collapsed, so the query and its result survive */}
+      {sqlAvailable && <SqlExecutor hidden={!open} />}
     </div>
   )
 }

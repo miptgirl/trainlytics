@@ -9,6 +9,11 @@ All notable changes to Trainlytics are documented here.
 ### Security
 
 - **The Profile page's SQL executor is no longer offered outside local dev.** `POST /api/debug/sql` runs any SQL, writes included. The backend now mounts it only when both `DEBUG_SQL_ENABLED` and `DEMO_USER_ENABLED` are `true`; `docker-compose.prod.yml` forces `DEMO_USER_ENABLED` to `false`, so a `DEBUG_SQL_ENABLED=true` that reaches production is ignored, with a warning in the backend log. The Debug panel shows the SQL part only when `GET /profile` reports `debug_sql_available`; the AI request logs are unchanged
+- **Backend settings read only the upper-case environment names** (`DEMO_USER_ENABLED`, never `demo_user_enabled`), from the environment and from `.env`. Matching used to ignore case, so a lower-case line in `.env` overrode the values the compose files pin under `environment:`, `DEMO_USER_ENABLED: "false"` in production included
+
+### Deploy notes
+
+- Check that the server's `.env` uses upper-case keys, as `.env.example` does. A lower-case key (`secret_key=…`) is now ignored and the setting falls back to its default; a default `SECRET_KEY` shows up as a warning in the backend log
 
 ---
 

@@ -78,4 +78,24 @@ describe('ProfilePage — Debug panel SQL executor', () => {
     await waitFor(() => expect(mockPost).toHaveBeenCalledWith('/debug/sql', { sql: 'SELECT 1 AS n' }))
     expect(await screen.findByRole('columnheader', { name: 'n' })).toBeInTheDocument()
   })
+
+  it('keeps the query and its result when Debug is collapsed and reopened', async () => {
+    profile.debug_sql_available = true
+    await openDebugPanel()
+    await userEvent.type(screen.getByPlaceholderText(/select \* from/i), 'SELECT 1 AS n')
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+    await screen.findByRole('columnheader', { name: 'n' })
+
+    const toggle = screen.getByRole('button', { name: /debug/i })
+    await userEvent.click(toggle)
+    expect(screen.queryByText(/ai request logs/i)).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/select \* from/i)).not.toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Run' })).not.toBeInTheDocument()
+
+    await userEvent.click(toggle)
+    expect(screen.getByPlaceholderText(/select \* from/i)).toBeVisible()
+    expect(screen.getByPlaceholderText(/select \* from/i)).toHaveValue('SELECT 1 AS n')
+    expect(screen.getByRole('columnheader', { name: 'n' })).toBeVisible()
+    expect(mockPost).toHaveBeenCalledTimes(1)
+  })
 })

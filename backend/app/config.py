@@ -1,3 +1,4 @@
+from pydantic import AliasGenerator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,7 +27,18 @@ class Settings(BaseSettings):
     strava_client_secret: str | None = None
     strava_redirect_uri: str | None = None
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Only the exact upper-case names are read, from the environment and from .env
+    # (DEMO_USER_ENABLED, never demo_user_enabled). Case-insensitive matching let a
+    # lower-case .env line, which compose's env_file passes in, beat the values compose
+    # pins with `environment:`. Don't add populate_by_name or validate_by_name: they make
+    # pydantic-settings read the lower-case field names from the environment again. For
+    # the same reason, constructor kwargs use the env names: Settings(DEMO_USER_ENABLED=True).
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+        case_sensitive=True,
+        alias_generator=AliasGenerator(validation_alias=str.upper),
+    )
 
     @property
     def debug_sql_available(self) -> bool:
@@ -34,8 +46,8 @@ class Settings(BaseSettings):
 
         There is no production flag. DEMO_USER_ENABLED=true is what marks the local dev
         stack: docker-compose.yml sets it, docker-compose.prod.yml forces it to "false"
-        through `environment:`, which a .env line can't override. Requiring it here means
-        a DEBUG_SQL_ENABLED=true that reaches production does nothing.
+        through `environment:`, which a .env line can't override (see model_config).
+        Requiring it here means a DEBUG_SQL_ENABLED=true that reaches production does nothing.
         """
         return self.debug_sql_enabled and self.demo_user_enabled
 
