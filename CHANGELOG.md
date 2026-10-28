@@ -4,6 +4,14 @@ All notable changes to Trainlytics are documented here.
 
 ---
 
+## 2026-10-28 — SQL executor only in local dev
+
+### Security
+
+- **The Profile page's SQL executor is no longer offered outside local dev.** `POST /api/debug/sql` runs any SQL, writes included. The backend now mounts it only when both `DEBUG_SQL_ENABLED` and `DEMO_USER_ENABLED` are `true`; `docker-compose.prod.yml` forces `DEMO_USER_ENABLED` to `false`, so a `DEBUG_SQL_ENABLED=true` that reaches production is ignored, with a warning in the backend log. The Debug panel shows the SQL part only when `GET /profile` reports `debug_sql_available`; the AI request logs are unchanged
+
+---
+
 ## 2026-10-27 — Workout mode: move on after an exercise's last set
 
 ### Changed
