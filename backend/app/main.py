@@ -1,5 +1,4 @@
 import logging
-import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,9 +58,21 @@ app.include_router(imports_module.router, prefix="/api")
 app.include_router(strava_module.router, prefix="/api")
 app.include_router(ai_module.router, prefix="/api")
 
-if os.environ.get("DEBUG_SQL_ENABLED") == "true":
-    from app.api import debug as debug_module
-    app.include_router(debug_module.router, prefix="/api")
+
+def mount_debug_sql(target: FastAPI) -> None:
+    """Mount POST /api/debug/sql only where settings.debug_sql_available allows it."""
+    if settings.debug_sql_available:
+        from app.api import debug as debug_module
+
+        target.include_router(debug_module.router, prefix="/api")
+    elif settings.debug_sql_enabled:
+        logger.warning(
+            "DEBUG_SQL_ENABLED is ignored: the SQL executor runs only on the local dev "
+            "stack (DEMO_USER_ENABLED=true)."
+        )
+
+
+mount_debug_sql(app)
 
 
 @app.get("/api/health")

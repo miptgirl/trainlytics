@@ -55,6 +55,8 @@ interface UserProfile {
   health_metric_sleep: boolean
   health_metric_vo2_max: boolean
   health_metric_active_energy: boolean
+  // The backend mounts POST /debug/sql (local dev only); absent from older responses
+  debug_sql_available?: boolean
 }
 
 const PRIORITY_ORDER: Priority[] = ['high', 'medium', 'low']
@@ -193,22 +195,11 @@ interface SqlResult {
   rowcount: number
 }
 
-function DebugLogsSection() {
-  const [open, setOpen] = useState(false)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-
-  // SQL executor state
+function SqlExecutor({ hidden }: { hidden: boolean }) {
   const [sql, setSql] = useState('')
   const [sqlResult, setSqlResult] = useState<SqlResult | null>(null)
   const [sqlError, setSqlError] = useState<string | null>(null)
   const [sqlRunning, setSqlRunning] = useState(false)
-
-  const { data: logs, isLoading, refetch } = useQuery<AiLog[]>({
-    queryKey: ['ai-logs'],
-    queryFn: () => api.get<AiLog[]>('/ai/logs?limit=20'),
-    enabled: open,
-    staleTime: 0,
-  })
 
   async function runSql() {
     setSqlRunning(true)
@@ -223,6 +214,87 @@ function DebugLogsSection() {
       setSqlRunning(false)
     }
   }
+
+  return (
+    <div hidden={hidden} className="bg-surface border-t border-border px-5 py-4 flex flex-col gap-3">
+      <p className="text-xs font-mono font-semibold text-text-muted-strong uppercase tracking-widest">
+        SQL
+      </p>
+      <p className="text-xs text-warning-text">
+        ⚠ Direct DB access — changes are permanent.
+      </p>
+      <textarea
+        value={sql}
+        onChange={(e) => setSql(e.target.value)}
+        rows={6}
+        placeholder="SELECT * FROM workout_sessions LIMIT 5"
+        className="w-full border border-border-strong rounded-sm px-3 py-2 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary-dark"
+      />
+      <button
+        type="button"
+        disabled={!sql.trim() || sqlRunning}
+        onClick={runSql}
+        className="self-start bg-text hover:opacity-90 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+      >
+        {sqlRunning ? 'Running…' : 'Run'}
+      </button>
+      {sqlError && (
+        <p className="text-xs text-error-text font-mono">{sqlError}</p>
+      )}
+      {sqlResult && (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          {sqlResult.columns.length === 0 ? (
+            <p className="px-4 py-3 text-xs text-text-muted-strong">
+              Query OK — {sqlResult.rowcount} row{sqlResult.rowcount !== 1 ? 's' : ''} affected.
+            </p>
+          ) : (
+            <table className="text-xs w-full">
+              <thead className="bg-bg">
+                <tr>
+                  {sqlResult.columns.map((col) => (
+                    <th
+                      key={col}
+                      className="px-3 py-2 text-left font-semibold text-text border-b border-border whitespace-nowrap"
+                    >
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border font-mono">
+                {sqlResult.rows.map((row, i) => (
+                  <tr key={i} className="hover:bg-bg">
+                    {row.map((cell, j) => (
+                      <td
+                        key={j}
+                        className="px-3 py-2 text-text-muted-strong whitespace-nowrap max-w-xs overflow-hidden text-ellipsis"
+                        title={String(cell ?? '')}
+                      >
+                        {cell === null ? <span className="text-text-muted-strong">null</span> : String(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// sqlAvailable: the backend serves POST /debug/sql (local dev only)
+function DebugLogsSection({ sqlAvailable }: { sqlAvailable: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+
+  const { data: logs, isLoading, refetch } = useQuery<AiLog[]>({
+    queryKey: ['ai-logs'],
+    queryFn: () => api.get<AiLog[]>('/ai/logs?limit=20'),
+    enabled: open,
+    staleTime: 0,
+  })
 
   return (
     <div className="border border-border rounded-xl overflow-hidden">
@@ -240,7 +312,7 @@ function DebugLogsSection() {
       {open && (
         <div className="bg-surface">
           {/* AI request logs */}
-          <div className="border-b border-border">
+          <div>
             <p className="px-5 pt-4 pb-2 text-xs font-mono font-semibold text-text-muted-strong uppercase tracking-widest">
               AI request logs
             </p>
@@ -307,75 +379,11 @@ function DebugLogsSection() {
               })}
             </div>
           </div>
-
-          {/* SQL executor */}
-          <div className="px-5 py-4 flex flex-col gap-3">
-            <p className="text-xs font-mono font-semibold text-text-muted-strong uppercase tracking-widest">
-              SQL
-            </p>
-            <p className="text-xs text-warning-text">
-              ⚠ Direct DB access — changes are permanent.
-            </p>
-            <textarea
-              value={sql}
-              onChange={(e) => setSql(e.target.value)}
-              rows={6}
-              placeholder="SELECT * FROM workout_sessions LIMIT 5"
-              className="w-full border border-border-strong rounded-sm px-3 py-2 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary-dark"
-            />
-            <button
-              type="button"
-              disabled={!sql.trim() || sqlRunning}
-              onClick={runSql}
-              className="self-start bg-text hover:opacity-90 disabled:opacity-40 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              {sqlRunning ? 'Running…' : 'Run'}
-            </button>
-            {sqlError && (
-              <p className="text-xs text-error-text font-mono">{sqlError}</p>
-            )}
-            {sqlResult && (
-              <div className="overflow-x-auto rounded-lg border border-border">
-                {sqlResult.columns.length === 0 ? (
-                  <p className="px-4 py-3 text-xs text-text-muted-strong">
-                    Query OK — {sqlResult.rowcount} row{sqlResult.rowcount !== 1 ? 's' : ''} affected.
-                  </p>
-                ) : (
-                  <table className="text-xs w-full">
-                    <thead className="bg-bg">
-                      <tr>
-                        {sqlResult.columns.map((col) => (
-                          <th
-                            key={col}
-                            className="px-3 py-2 text-left font-semibold text-text border-b border-border whitespace-nowrap"
-                          >
-                            {col}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border font-mono">
-                      {sqlResult.rows.map((row, i) => (
-                        <tr key={i} className="hover:bg-bg">
-                          {row.map((cell, j) => (
-                            <td
-                              key={j}
-                              className="px-3 py-2 text-text-muted-strong whitespace-nowrap max-w-xs overflow-hidden text-ellipsis"
-                              title={String(cell ?? '')}
-                            >
-                              {cell === null ? <span className="text-text-muted-strong">null</span> : String(cell)}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       )}
+
+      {/* Stays mounted while collapsed, so the query and its result survive */}
+      {sqlAvailable && <SqlExecutor hidden={!open} />}
     </div>
   )
 }
@@ -755,7 +763,7 @@ export default function ProfilePage() {
             </SectionCard>
 
             {/* ── Debug: AI Request Logs ── */}
-            <DebugLogsSection />
+            <DebugLogsSection sqlAvailable={profile?.debug_sql_available ?? false} />
           </>
         )}
       </div>

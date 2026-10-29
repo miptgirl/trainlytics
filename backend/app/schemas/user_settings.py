@@ -44,6 +44,9 @@ class UserSettingsOut(BaseModel):
     # null: never set, the client applies its default
     rest_seconds: int | None = None
 
+    # Server capability: POST /debug/sql is mounted (local dev only), so Profile offers it
+    debug_sql_available: bool = False
+
 
 class UserSettingsPatch(BaseModel):
     display_name: str | None = None

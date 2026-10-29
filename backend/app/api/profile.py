@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user_settings import UserSettings
@@ -14,7 +15,10 @@ router = APIRouter(prefix="/profile", tags=["profile"])
 
 def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
     if row is None:
-        return UserSettingsOut(strava_configured=strava_service.is_configured())
+        return UserSettingsOut(
+            strava_configured=strava_service.is_configured(),
+            debug_sql_available=settings.debug_sql_available,
+        )
     from app.schemas.user_settings import GoalItem
 
     goals: list[GoalItem] = []
@@ -47,6 +51,7 @@ def _row_to_out(row: UserSettings | None) -> UserSettingsOut:
         health_metric_vo2_max=row.health_metric_vo2_max,
         health_metric_active_energy=row.health_metric_active_energy,
         rest_seconds=row.rest_seconds,
+        debug_sql_available=settings.debug_sql_available,
     )
 
 
