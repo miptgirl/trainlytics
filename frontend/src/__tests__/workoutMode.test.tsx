@@ -114,8 +114,24 @@ describe('formatting and steppers', () => {
     expect(formatSetList([set('8', '102.5')])).toBe('8×102.5 kg')
     // Missing reps show as a dash; a set without a weight in a weighted list never reads as kg
     expect(formatSetList([set('', '60'), set('10', '')])).toBe('–×60, 10×– kg')
-    expect(formatSetList([{ reps: null, weight: null }])).toBe('– reps')
     expect(formatSetList([])).toBeNull()
+  })
+
+  it('has no list when no set holds reps or a time, so "Last time" is left out', () => {
+    // Last session logged the other kind: the server drops it and keeps the weights
+    const blanked = {
+      sets: [
+        { set_number: 1, reps: null, weight: 10, duration_seconds: null },
+        { set_number: 2, reps: null, weight: 10, duration_seconds: null },
+      ],
+    }
+    expect(formatSetList([{ reps: null, weight: null }])).toBeNull()
+    expect(formatLastTime(blanked)).toBeNull()
+    expect(exerciseSummary(ex('7', set('', '10'), set('', '10'), set('', '10')), blanked)).toBe('3 sets')
+    // Done sets without an amount still say what is done
+    expect(exerciseSummary(ex('7', set('', '10', true), set('', '10', true), set('', '10')), blanked)).toBe(
+      '2 sets done · 1 set left',
+    )
   })
 
   it('formats a set tab: reps×weight, reps alone, a dash for missing reps', () => {
@@ -379,7 +395,20 @@ describe('timed sets', () => {
     // Not turned into another number (455, 5, 45)
     expect(sanitizeDurationInput('45.5', '45')).toBe('45')
     expect(sanitizeDurationInput('-5', '')).toBe('')
-    expect(sanitizeDurationInput('45 s', '4')).toBe('4')
+    expect(sanitizeDurationInput('4x', '4')).toBe('4')
+    // Pasted from a read-only view: the unit and spaces go
+    expect(sanitizeDurationInput('45 s', '')).toBe('45')
+    expect(sanitizeDurationInput('45s', '4')).toBe('45')
+    expect(sanitizeDurationInput('1:30 ', '')).toBe('1:30')
+    // Full-width digits are not digits here
+    expect(sanitizeDurationInput('４５', '4')).toBe('4')
+  })
+
+  it('new exercise sets drop the amount the exercise\'s measure does not use, even from a stale cache', () => {
+    const stale = { sets: [{ set_number: 1, reps: 60, weight: 10, duration_seconds: null }] }
+    expect(newExerciseSets(stale, 'time')).toEqual([hold('', '10'), hold('', '10'), hold('', '10')])
+    expect(newExerciseSets(stale, 'reps')[0]).toEqual(set('60', '10'))
+    expect(newExerciseSets(stale)[0]).toEqual(set('60', '10'))
   })
 })
 

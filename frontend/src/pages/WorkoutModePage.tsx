@@ -236,7 +236,7 @@ export default function WorkoutModePage() {
     if (!target) return
     if (target.sets.length === 0) {
       // Nothing to copy: start from last session's first set, as a newly added exercise does (blank without history)
-      s.insertSet(at, 0, newExerciseSets(lastByExercise.get(target.exercise_id))[0])
+      s.insertSet(at, 0, newExerciseSets(lastByExercise.get(target.exercise_id), measureOf(target.exercise_id))[0])
     } else {
       s.addSet(at)
     }
@@ -332,7 +332,7 @@ export default function WorkoutModePage() {
     if (adding) return
     setAdding(true)
     try {
-      const sets = newExerciseSets(await fetchLastSessionDefaults(qc, exerciseId))
+      const sets = newExerciseSets(await fetchLastSessionDefaults(qc, exerciseId), measureOf(exerciseId))
       const list = s.form.getValues('exercises') ?? []
       const current = clampIndex(s.workout.currentExerciseIndex, list.length)
       // An entry without an exercise is filled rather than left behind: the one

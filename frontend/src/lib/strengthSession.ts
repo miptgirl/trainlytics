@@ -15,13 +15,14 @@ import {
   parseDuration,
   setKind,
   setRepsOrDuration,
+  setsForMeasure,
   type Measure,
   type SetKind,
 } from './workoutMode'
 
 // The pure reps-or-time helpers live in workoutMode (SetTabs needs them, and must not import this module:
 // it imports ./api, and the test setup loads SetTabs before tests mock ../lib/api)
-export { inputKind, parseDuration, setKind, setRepsOrDuration, type SetKind }
+export { inputKind, parseDuration, setKind, setRepsOrDuration, setsForMeasure, type SetKind }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -210,18 +211,6 @@ export function findInvalidSet(
   return findInvalidSetRpe(exercises, nameOf) ?? findInvalidSetDuration(exercises, nameOf)
 }
 
-/**
- * Sets kept by an entry that now points at an exercise measured in `measure`:
- * the mismatched value is cleared on every set (reps for a timed exercise, a
- * duration for a reps one); weight, notes, RPE and done stay. Returns `sets`
- * itself when nothing changes (unknown measure, or nothing to clear).
- */
-export function setsForMeasure(sets: SetFormValues[], measure?: Measure | null): SetFormValues[] {
-  if (!measure) return sets
-  const field = measure === 'time' ? 'reps' : 'duration'
-  return sets.some((s) => s[field]) ? sets.map((s) => (s[field] ? { ...s, [field]: '' } : s)) : sets
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Defaults and template prefill
 // ─────────────────────────────────────────────────────────────────────────────
@@ -311,6 +300,16 @@ export async function fetchLastSessionSets(exerciseId: string | number): Promise
 // Template diff and payloads
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A template exercise's sets as `templateToFormValues` reads them: the amount the
+ * exercise's current measure doesn't use is dropped (no measure: as stored).
+ */
+function plannedSets(entry: TemplateExercise): TemplateSet[] {
+  if (!entry.measure) return entry.sets
+  const drop = entry.measure === 'time' ? 'reps' : 'duration_seconds'
+  return entry.sets.map((s) => (s[drop] != null ? { ...s, [drop]: null } : s))
+}
+
 export function computeDiff(
   snapshot: TemplateSnapshot,
   formData: StrengthFormValues,
@@ -343,7 +342,9 @@ export function computeDiff(
     }
 
     const name = te!.exercise_name
-    const tSets = te!.sets
+    // Compared as the form was prefilled from them, so a template entered in the exercise's old measure
+    // is no change by itself, and an update writes only what the user actually entered
+    const tSets = plannedSets(te!)
     const fSets = fe!.sets
 
     if (fSets.length !== tSets.length) {

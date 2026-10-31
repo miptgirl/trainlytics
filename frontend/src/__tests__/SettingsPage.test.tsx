@@ -490,6 +490,35 @@ describe('SettingsPage — Exercises: weight steps', () => {
       expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ measure: 'reps' }))
     })
 
+    it('saving an exercise marks cached last-session defaults stale, so workout mode refetches them', async () => {
+      exercises = [{ id: 1, name: 'Wall sit', notes: null, types: [], weight_scale: null, measure: 'reps' }]
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+      const key = ['last-session-defaults', '1']
+      qc.setQueryData(key, { sets: [{ set_number: 1, reps: 60, weight: null, duration_seconds: null }] })
+      const user = userEvent.setup()
+      render(
+        <QueryClientProvider client={qc}>
+          <MemoryRouter>
+            <SettingsPage />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      )
+      await openEditForm(user, 'Wall sit')
+      expect(qc.getQueryState(key)?.isInvalidated).toBe(false)
+      await user.click(measure('Time'))
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(qc.getQueryState(key)?.isInvalidated).toBe(true))
+
+      // Creating one does too
+      qc.setQueryData(key, { sets: [] })
+      expect(qc.getQueryState(key)?.isInvalidated).toBe(false)
+      await openNewForm(user, 'Plank')
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(qc.getQueryState(key)?.isInvalidated).toBe(true))
+    })
+
     it('an exercise with no measure in the response edits as Reps', async () => {
       exercises = [{ id: 1, name: 'Row', notes: null, types: [], weight_scale: null }]
       const user = userEvent.setup()

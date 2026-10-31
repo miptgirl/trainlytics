@@ -1303,6 +1303,27 @@ describe('Workout mode: timed sets', () => {
     ])
   })
 
+  it('a newly added timed exercise never prefills reps, even from defaults cached before its measure changed', async () => {
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      // As cached before Plank was switched to time
+      if (path === '/exercises/7/last-session-defaults') {
+        return { sets: [{ set_number: 1, reps: 60, weight: 10, duration_seconds: null }] } as never
+      }
+      return base(path)
+    })
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    await user.click(screen.getByRole('button', { name: 'Choose an exercise' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Add exercise' })).getByRole('button', { name: 'Plank' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Plank'))
+    expect(screen.getByLabelText('Time for set 1')).toHaveValue('')
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('10')
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets).toEqual([hold('', '10'), hold('', '10'), hold('', '10')]))
+  })
+
   it('Finish is refused while a set has a time that would not be saved', async () => {
     const user = userEvent.setup()
     localStorage.setItem(

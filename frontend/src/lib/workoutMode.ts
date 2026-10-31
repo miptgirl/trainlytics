@@ -73,18 +73,28 @@ export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
   )
 }
 
-/** Three sets for a newly added exercise, reps (or time) and weight from last session when known. */
-export function newExerciseSets(defaults: LastSessionDefaults | null | undefined): SetFormValues[] {
+/**
+ * Three sets for a newly added exercise, reps (or time) and weight from last session when known.
+ * With the exercise's `measure`, the mismatched amount is dropped: the server already matches the
+ * defaults to it, but a cached response from before a measure change may not.
+ */
+export function newExerciseSets(
+  defaults: LastSessionDefaults | null | undefined,
+  measure?: Measure | null,
+): SetFormValues[] {
   const sets = defaults?.sets ?? []
-  return [0, 1, 2].map((i) => {
-    const src = sets[i] ?? sets[sets.length - 1]
-    return {
-      ...emptySet(),
-      reps: src?.reps != null ? String(src.reps) : '',
-      duration: src?.duration_seconds != null ? String(src.duration_seconds) : '',
-      weight: src?.weight != null ? formatNumber(src.weight) : '',
-    }
-  })
+  return setsForMeasure(
+    [0, 1, 2].map((i) => {
+      const src = sets[i] ?? sets[sets.length - 1]
+      return {
+        ...emptySet(),
+        reps: src?.reps != null ? String(src.reps) : '',
+        duration: src?.duration_seconds != null ? String(src.duration_seconds) : '',
+        weight: src?.weight != null ? formatNumber(src.weight) : '',
+      }
+    }),
+    measure,
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,6 +148,18 @@ export function setRepsOrDuration(kind: SetKind, value: string): Pick<SetFormVal
   return kind === 'time' ? { duration: value, reps: '' } : { reps: value, duration: '' }
 }
 
+/**
+ * Sets kept by an entry that now points at an exercise measured in `measure`:
+ * the mismatched value is cleared on every set (reps for a timed exercise, a
+ * duration for a reps one); weight, notes, RPE and done stay. Returns `sets`
+ * itself when nothing changes (unknown measure, or nothing to clear).
+ */
+export function setsForMeasure(sets: SetFormValues[], measure?: Measure | null): SetFormValues[] {
+  if (!measure) return sets
+  const field = measure === 'time' ? 'reps' : 'duration'
+  return sets.some((s) => s[field]) ? sets.map((s) => (s[field] ? { ...s, [field]: '' } : s)) : sets
+}
+
 /** A timed set's longest hold, as the API accepts it (a day). */
 export const MAX_SET_DURATION_SECONDS = 86400
 export const DURATION_STEP_SECONDS = 5
@@ -154,13 +176,16 @@ export function parseDuration(raw: string | null | undefined): number | null {
 }
 
 /**
- * A typed hold: `next` when it is only digits and ":" ("90", "1:30"), else
- * `previous`, so a keystroke or paste with anything else ("45.5", "-5", "45 s")
+ * A typed hold: `next` when it is only digits and ":" ("90", "1:30"), after
+ * trimming spaces and a trailing "s" or " s" (pasted from a read-only view),
+ * else `previous`, so a keystroke or paste with anything else ("45.5", "-5")
  * is ignored rather than turned into another number. Malformed holds ("1:3")
  * are caught on save.
  */
 export function sanitizeDurationInput(next: string, previous: string): string {
-  return /^[\d:]*$/.test(next) ? next : previous
+  // As the read-only views show it ("45 s", copied with a trailing space): the unit and spaces go
+  const t = next.trim().replace(/\s?s$/, '')
+  return /^[\d:]*$/.test(t) ? t : previous
 }
 
 /** Seconds a typed hold stands for, leniently ("0" → 0, "1:30" → 90); null when it isn't one. */
@@ -333,12 +358,14 @@ export function formatSetShort(set: SetValues): string {
  * one shows "10×–", so it never reads as 10 kg. Timed sets put the hold in
  * place of the reps ("45s, 1:00", "40s×24, 40s×24 kg"); a list mixing both
  * kinds drops the trailing unit, since each item carries its own: "8×60, 45s",
- * or "8 reps, 45s" without weights. Null for no sets.
+ * or "8 reps, 45s" without weights. Null for no sets, and when no set holds
+ * reps or a time (last session's sets were the other kind, which the server
+ * drops; weights alone would read "–, –, – reps").
  */
 export function formatSetList(sets: readonly SetValues[]): string | null {
-  if (sets.length === 0) return null
-  const weighted = sets.some((s) => shown(s.weight) !== '')
   const isTimed = (s: SetValues) => holdOf(s, String) !== null
+  if (!sets.some((s) => shown(s.reps) !== '' || isTimed(s))) return null
+  const weighted = sets.some((s) => shown(s.weight) !== '')
   const timed = sets.filter(isTimed).length
   const mixed = timed > 0 && timed < sets.length
   const parts = sets.map((s) => {
@@ -369,9 +396,10 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 /**
  * Second line of a "Choose exercise" row: today's sets and what is left once
- * a set is done ("Today: 8×60, 8×60 kg · 2 sets left"), otherwise last
- * session ("Last time: …"), otherwise the planned count ("3 sets"). An
- * exercise whose sets were all deleted says "No sets", as the dock does.
+ * a set is done ("Today: 8×60, 8×60 kg · 2 sets left"; "2 sets done · …" when
+ * none holds reps or a time), otherwise last session ("Last time: …"),
+ * otherwise the planned count ("3 sets"). An exercise whose sets were all
+ * deleted says "No sets", as the dock does.
  */
 export function exerciseSummary(
   entry: ExerciseEntryFormValues,
@@ -381,7 +409,9 @@ export function exerciseSummary(
   const done = entry.sets.filter((s) => s.done)
   if (done.length > 0) {
     const left = entry.sets.length - done.length
-    return `Today: ${formatSetList(done)}${left > 0 ? ` · ${plural(left, 'set left', 'sets left')}` : ''}`
+    const today = formatSetList(done)
+    const head = today ? `Today: ${today}` : `${plural(done.length, 'set', 'sets')} done`
+    return `${head}${left > 0 ? ` · ${plural(left, 'set left', 'sets left')}` : ''}`
   }
   const lastTime = formatLastTime(last)
   return lastTime ? `Last time: ${lastTime}` : plural(entry.sets.length, 'set', 'sets')

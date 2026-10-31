@@ -497,9 +497,14 @@ function ExercisesSection() {
     queryFn: () => api.get<ExerciseType[]>('/exercise-types'),
   })
 
+  // Last-session defaults come back matched to the exercise's measure and are cached with staleTime
+  // Infinity: after a save, refetch them so workout mode doesn't keep prefilling the old kind
+  const invalidateDefaults = () => qc.invalidateQueries({ queryKey: ['last-session-defaults'] })
+
   const createMutation = useMutation({
     mutationFn: (body: { name: string; notes?: string; type_ids: number[]; weight_scale: WeightScale | null; measure: Measure }) =>
       api.post<Exercise>('/exercises', body),
+    onSuccess: invalidateDefaults,
   })
 
   const updateMutation = useMutation({
@@ -516,6 +521,7 @@ function ExercisesSection() {
     }) => api.patch<Exercise>(`/exercises/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['exercises'] })
+      invalidateDefaults()
       setEditingId(null)
     },
   })

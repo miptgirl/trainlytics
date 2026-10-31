@@ -349,6 +349,28 @@ describe('timed sets', () => {
     expect(sets).toEqual([[set('', '10')], [set('', '')], [set('5', '100')]])
   })
 
+  it('a template entered in the exercise\'s old measure is no change until a time is entered', () => {
+    const stale = {
+      id: 3,
+      name: 'Grip',
+      exercises: [
+        {
+          exercise_id: 7, exercise_name: 'Dead hang', measure: 'time' as const, order: 1,
+          sets: [{ set_number: 1, reps: 40, weight_kg: null, duration_seconds: null }],
+        },
+      ],
+    }
+    const map = new Map([[7, 'Dead hang']])
+    const untouched = templateToFormValues(stale)
+    expect(computeDiff(stale, untouched, map)).toEqual([])
+    const timed = { ...untouched, exercises: [{ exercise_id: '7', sets: [hold('45')] }] }
+    expect(computeDiff(stale, timed, map)).toEqual(['Changed time on Dead hang set 1'])
+    // The update then writes the time the user entered
+    expect(toTemplatePayload(timed).exercises[0].sets[0]).toEqual({
+      set_number: 1, reps: null, duration_seconds: 45, weight_kg: null,
+    })
+  })
+
   it('last-session defaults the server matched to a timed exercise prefill times and no reps', () => {
     const sets = lastSessionToFormSets({
       sets: [
