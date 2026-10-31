@@ -1201,6 +1201,129 @@ describe('Workout mode: per-set RPE', () => {
   })
 })
 
+describe('Workout mode: timed sets', () => {
+  const plank = { id: 7, name: 'Plank', types: [{ id: 10, name: 'Core' }], measure: 'time' }
+  const core = {
+    id: 8,
+    name: 'Core',
+    exercises: [
+      {
+        exercise_id: 7,
+        exercise_name: 'Plank',
+        order: 1,
+        sets: [
+          { set_number: 1, reps: null, weight_kg: null, duration_seconds: 45 },
+          { set_number: 2, reps: null, weight_kg: null, duration_seconds: 45 },
+        ],
+      },
+    ],
+  }
+  const hold = (duration: string, weight = '', done = false) => set('', weight, done, '', '', duration)
+
+  beforeEach(() => {
+    const base = mockGet.getMockImplementation()!
+    mockGet.mockImplementation(async (path: string) => {
+      if (path === '/exercises') return [...exerciseList, plank] as never
+      if (path === '/templates/strength/8') return core as never
+      if (path === '/exercises/7/last-session-defaults') {
+        return {
+          sets: [
+            { set_number: 1, reps: null, weight: null, duration_seconds: 45 },
+            { set_number: 2, reps: null, weight: null, duration_seconds: 60 },
+          ],
+        } as never
+      }
+      return base(path)
+    })
+  })
+
+  it('shows a Time stepper that moves by 5 s; the done tab and Last time read the hold', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?templateId=8')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Plank'))
+    expect(await screen.findByText('Last time: 45s, 1:00')).toBeInTheDocument()
+
+    const time = await screen.findByLabelText('Time for set 1')
+    expect(time).toHaveValue('45')
+    expect(time).toHaveAttribute('inputmode', 'numeric')
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Reps for set 1')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Increase time by 5 s' }))
+    expect(time).toHaveValue('50')
+    await user.click(screen.getByRole('button', { name: 'Decrease time by 5 s' }))
+    await user.click(screen.getByRole('button', { name: 'Decrease time by 5 s' }))
+    expect(time).toHaveValue('40')
+    // m:ss typed as the views show it is kept, not turned into 130 s
+    await user.clear(time)
+    await user.type(time, '1:30')
+    expect(time).toHaveValue('1:30')
+    await user.clear(time)
+    await user.type(time, '45')
+
+    await completeSet(user)
+    const doneTab = screen.getByRole('button', { name: 'Set 1 of 2, 45 s, done' })
+    expect(within(doneTab).getByText('45s')).toBeInTheDocument()
+    await waitFor(() => expect(storedDraft()?.exercises[0].sets[0]).toEqual(hold('45', '', true)))
+    // Set 2 opens on its own time
+    expect(screen.getByLabelText('Time for set 2')).toHaveValue('45')
+  })
+
+  it('choosing Plank for an entry with reps typed clears them: an empty Time stepper, and reps: null in the saved body', async () => {
+    const user = userEvent.setup()
+    renderAt('/workout?type=strength&date=2026-09-01T10:00')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('No exercise chosen'))
+    await user.type(screen.getByLabelText('Reps for set 1'), '8')
+    await user.click(screen.getByRole('button', { name: 'Increase weight' }))
+    await user.click(screen.getByRole('button', { name: 'Choose an exercise' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Add exercise' })).getByRole('button', { name: 'Plank' }))
+
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Plank'))
+    const time = screen.getByLabelText('Time for set 1')
+    expect(time).toHaveValue('')
+    // Weight is kept
+    expect(screen.getByLabelText('Weight for set 1')).toHaveValue('4.5')
+    await user.type(time, '30')
+    await completeSet(user)
+
+    await user.click(screen.getByRole('button', { name: 'Finish workout' }))
+    await user.click(within(screen.getByRole('dialog', { name: 'Finish workout' })).getByRole('button', { name: 'Save workout' }))
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+    const [, body] = mockPost.mock.calls[0] as [string, { exercises: unknown[] }]
+    expect(body.exercises).toEqual([
+      {
+        exercise_id: 7,
+        order: 1,
+        sets: [{ set_number: 1, reps: null, duration_seconds: 30, weight: 4.5, notes: null, rpe: null }],
+      },
+    ])
+  })
+
+  it('Finish is refused while a set has a time that would not be saved', async () => {
+    const user = userEvent.setup()
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Core', duration_seconds: null, calories: '', date: '2026-09-01T10:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [
+          { exercise_id: '1', sets: [set('5', '100', true)] },
+          { exercise_id: '7', sets: [hold('45', '', true), hold('0', '', true)] },
+        ],
+        workout: { currentExerciseIndex: 0, restEndsAt: null, startedAt: Date.now() },
+      }),
+    )
+    renderAt('/workout?resume=1')
+    await waitFor(() => expect(exerciseHeading()).toHaveTextContent('Squat'))
+    await user.click(screen.getByRole('button', { name: 'Finish workout' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Plank, set 2: time "0" must be 1–86400 seconds (or m:ss).')
+    expect(exerciseHeading()).toHaveTextContent('Plank')
+    expect(screen.queryByRole('dialog', { name: 'Finish workout' })).not.toBeInTheDocument()
+    expect(mockPost).not.toHaveBeenCalled()
+  })
+})
+
 describe('Workout mode: RPE chips', () => {
   const draftWithRpe = (rpe: string) => ({
     version: 2,

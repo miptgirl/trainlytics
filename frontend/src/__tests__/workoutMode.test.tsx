@@ -10,6 +10,7 @@ import {
   clearStoredRestLength,
   exerciseSummary,
   formatClock,
+  formatHold,
   formatLastTime,
   formatSet,
   formatSetList,
@@ -25,6 +26,7 @@ import {
   restRemaining,
   restSaveErrorMessage,
   sanitizeDecimal,
+  sanitizeDurationInput,
   saveErrorMessage,
   saveRestLength,
   sessionProgress,
@@ -32,6 +34,7 @@ import {
   setTabLabel,
   storedRestLength,
   stackWeight,
+  stepDuration,
   stepValue,
   stepWeight,
 } from '../lib/workoutMode'
@@ -290,6 +293,82 @@ describe('formatting and steppers', () => {
     expect(formatClock(5)).toBe('0:05')
     expect(restRemaining(10_500, 10_000)).toBe(1)
     expect(restRemaining(9_000, 10_000)).toBe(0)
+  })
+})
+
+describe('timed sets', () => {
+  const hold = (duration: string, weight = '', done = false, rpe = '') => set('', weight, done, '', rpe, duration)
+
+  it('formats a hold: seconds under a minute, m:ss from a minute up', () => {
+    expect(formatHold(45)).toBe('45 s')
+    expect(formatHold(59)).toBe('59 s')
+    expect(formatHold(60)).toBe('1:00')
+    expect(formatHold(90)).toBe('1:30')
+  })
+
+  it('formats one timed set and names its tab', () => {
+    expect(formatSet(hold('45'))).toBe('45 s')
+    expect(formatSet(hold('45', '20'))).toBe('45 s × 20 kg')
+    expect(formatSet(hold('90'))).toBe('1:30')
+    // Typed as m:ss, shown the same way
+    expect(formatSet(hold('1:30', '10'))).toBe('1:30 × 10 kg')
+    expect(setTabLabel(hold('45', '20', true, '8'), 2, 3)).toBe('Set 2 of 3, 45 s × 20 kg, RPE 8, done')
+  })
+
+  it('formats a timed set tab: 45s, 45s×20, 1:30', () => {
+    expect(formatSetShort(hold('45'))).toBe('45s')
+    expect(formatSetShort(hold('45', '20'))).toBe('45s×20')
+    expect(formatSetShort(hold('90'))).toBe('1:30')
+    expect(formatSetShort({ reps: null, weight: 24, duration_seconds: 40 })).toBe('40s×24')
+  })
+
+  it('shows a typed hold that is not valid yet as typed, so the tab never hides it', () => {
+    expect(formatSetShort(hold('0'))).toBe('0s')
+    expect(formatSetShort(hold('1:3'))).toBe('1:3')
+  })
+
+  it('lists timed sets with the hold in place of reps, and keeps the unit per item when mixed', () => {
+    expect(formatSetList([hold('45'), hold('60')])).toBe('45s, 1:00')
+    expect(formatSetList([hold('40', '24'), hold('40', '24')])).toBe('40s×24, 40s×24 kg')
+    expect(formatSetList([set('8', '60'), hold('45')])).toBe('8×60, 45s')
+    expect(formatSetList([set('8', ''), hold('45')])).toBe('8, 45s')
+    // From the API ("Last time")
+    expect(
+      formatLastTime({
+        sets: [
+          { set_number: 1, reps: null, weight: null, duration_seconds: 45 },
+          { set_number: 2, reps: null, weight: null, duration_seconds: 75 },
+        ],
+      }),
+    ).toBe('45s, 1:15')
+  })
+
+  it('counts a typed time as a touched placeholder', () => {
+    expect(isBlankEntry({ exercise_id: '', sets: [hold('45')] })).toBe(false)
+    expect(isBlankEntry({ exercise_id: '', sets: [hold('')] })).toBe(true)
+  })
+
+  it('new exercises get last session\'s times', () => {
+    const sets = newExerciseSets({ sets: [{ set_number: 1, reps: null, weight: 24, duration_seconds: 40 }] })
+    expect(sets).toEqual([hold('40', '24'), hold('40', '24'), hold('40', '24')])
+  })
+
+  it('steps time by 5 s on the 5 s grid, never below 0', () => {
+    expect(stepDuration('45', 1)).toBe('50')
+    expect(stepDuration('45', -1)).toBe('40')
+    expect(stepDuration('47', 1)).toBe('50')
+    expect(stepDuration('47', -1)).toBe('45')
+    expect(stepDuration('', 1)).toBe('5')
+    expect(stepDuration('', -1)).toBe('0')
+    expect(stepDuration('0', -1)).toBe('0')
+    expect(stepDuration('1:30', 1)).toBe('95')
+  })
+
+  it('keeps a typed time to digits and one colon', () => {
+    expect(sanitizeDurationInput('1:30')).toBe('1:30')
+    expect(sanitizeDurationInput('45s')).toBe('45')
+    expect(sanitizeDurationInput('1:3:0')).toBe('1:30')
+    expect(sanitizeDurationInput('1.5')).toBe('15')
   })
 })
 

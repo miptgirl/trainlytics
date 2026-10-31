@@ -164,3 +164,103 @@ describe('ExerciseEntryBlock set rows', () => {
     expect(rows()).toHaveLength(4)
   })
 })
+
+// ── Timed sets ───────────────────────────────────────────────────────────────
+
+const library = [
+  { id: 1, name: 'Squat', measure: 'reps' as const },
+  { id: 7, name: 'Plank', measure: 'time' as const },
+]
+
+type TimedSet = { reps: string; duration: string; weight: string; notes: string; rpe: string; done: boolean }
+const tset = (reps: string, duration: string, weight = '', done = false): TimedSet => ({
+  reps,
+  duration,
+  weight,
+  notes: '',
+  rpe: '',
+  done,
+})
+
+function TimedHarness({ exerciseId, sets }: { exerciseId: string; sets: TimedSet[] }) {
+  const { register, control, setValue, formState } = useForm<{ exercises: ExerciseEntryFormValues[] }>({
+    defaultValues: { exercises: [{ exercise_id: exerciseId, sets }] },
+  })
+  const watched = useWatch({ control, name: 'exercises.0.sets' })
+  return (
+    <>
+      <ExerciseEntryBlock
+        exIndex={0}
+        register={register}
+        control={control}
+        setValue={setValue as never}
+        exercises={library}
+        canRemove={false}
+        onRemove={() => {}}
+        errors={formState.errors}
+        showDone
+        showRpe
+        prefillFromLastSession={false}
+      />
+      <output data-testid="values">{JSON.stringify(watched)}</output>
+    </>
+  )
+}
+
+async function renderTimed(exerciseId: string, sets: TimedSet[]) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  await act(async () => {
+    render(
+      <QueryClientProvider client={qc}>
+        <TimedHarness exerciseId={exerciseId} sets={sets} />
+      </QueryClientProvider>,
+    )
+  })
+}
+
+const timedValues = () => JSON.parse(screen.getByTestId('values').textContent!) as TimedSet[]
+
+describe('ExerciseEntryBlock timed sets', () => {
+  it('a timed exercise shows a Time (s) column with a numeric text input instead of Reps', async () => {
+    const user = userEvent.setup()
+    await renderTimed('7', [tset('', '45'), tset('', '')])
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    expect(screen.queryByText('Reps')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('reps')).not.toBeInTheDocument()
+    const first = screen.getByLabelText('Time in seconds for set 1')
+    expect(first).toHaveValue('45')
+    expect(first).toHaveAttribute('inputmode', 'numeric')
+    const second = screen.getByLabelText('Time in seconds for set 2')
+    await user.type(second, '1:30')
+    expect(timedValues()[1]).toEqual(tset('', '1:30'))
+  })
+
+  it('a reps exercise keeps the Reps column', async () => {
+    await renderTimed('1', [tset('5', '', '100')])
+    expect(screen.getByText('Reps')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Time in seconds/)).not.toBeInTheDocument()
+  })
+
+  it('a set logged as timed keeps its Time input after the exercise went back to reps, also when cleared', async () => {
+    const user = userEvent.setup()
+    await renderTimed('1', [tset('', '45'), tset('8', '', '60')])
+    expect(screen.getByText('Reps / time')).toBeInTheDocument()
+    const time = screen.getByLabelText('Time in seconds for set 1')
+    await user.clear(time)
+    // Still the Time input, not swapped to Reps while it is being edited
+    await user.type(screen.getByLabelText('Time in seconds for set 1'), '50')
+    expect(timedValues()[0]).toEqual(tset('', '50'))
+    expect(within(rows()[1]).getByPlaceholderText('reps')).toHaveValue(8)
+  })
+
+  it('picking an exercise of the other measure clears reps and keeps weight and done', async () => {
+    const user = userEvent.setup()
+    await renderTimed('1', [tset('5', '', '100', true), tset('6', '', '100')])
+    // The picker opens on the current exercise's group
+    await user.click(screen.getByRole('button', { name: 'Squat' }))
+    await user.click(screen.getByRole('button', { name: 'Plank' }))
+    expect(timedValues()).toEqual([tset('', '', '100', true), tset('', '', '100')])
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Time in seconds for set 1')).toHaveValue('')
+  })
+})

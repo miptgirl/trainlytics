@@ -441,4 +441,56 @@ describe('SettingsPage — Exercises: weight steps', () => {
       )
     })
   })
+
+  describe('measured in', () => {
+    const measure = (name: 'Reps' | 'Time') =>
+      within(screen.getByRole('group', { name: 'Measured in' })).getByRole('radio', { name })
+
+    it('defaults to Reps on a new exercise and saves Time when chosen', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Plank')
+
+      expect(measure('Reps')).toBeChecked()
+      await user.click(measure('Time'))
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ name: 'Plank', measure: 'time' }))
+      // The row tags a timed exercise
+      const row = (await within(section()).findByText('Plank')).closest('li') as HTMLElement
+      expect(within(row).getByText('time')).toBeInTheDocument()
+    })
+
+    it('a new exercise left on Reps saves reps', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Row')
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ measure: 'reps' }))
+    })
+
+    it('editing shows the stored measure and saves a switch back to reps', async () => {
+      exercises = [{ id: 1, name: 'Wall sit', notes: null, types: [], weight_scale: null, measure: 'time' }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Wall sit')
+
+      expect(measure('Time')).toBeChecked()
+      await user.click(measure('Reps'))
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ measure: 'reps' }))
+    })
+
+    it('an exercise with no measure in the response edits as Reps', async () => {
+      exercises = [{ id: 1, name: 'Row', notes: null, types: [], weight_scale: null }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Row')
+      expect(measure('Reps')).toBeChecked()
+    })
+  })
 })

@@ -181,4 +181,73 @@ describe('Strength session edit form', () => {
       { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null, duration_seconds: null }] },
     ])
   })
+
+  describe('timed sets', () => {
+    const plankSession = {
+      ...session,
+      exercises: [
+        {
+          id: 2,
+          exercise_id: 7,
+          exercise_name: 'Plank',
+          order: 1,
+          sets: [
+            { id: 3, set_number: 1, reps: null, weight: null, notes: null, rpe: null, duration_seconds: 45 },
+            { id: 4, set_number: 2, reps: null, weight: 10, notes: null, rpe: 8, duration_seconds: 90 },
+          ],
+        },
+      ],
+    }
+
+    beforeEach(() => {
+      mockGet.mockImplementation(async (path: string) => {
+        if (path === '/sessions/5') return plankSession as never
+        if (path === '/exercises') return [...exerciseList, { id: 7, name: 'Plank', measure: 'time' }] as never
+        if (path.endsWith('/replacements')) return [] as never
+        return { sets: [] } as never
+      })
+    })
+
+    it('shows holds in the table: 45 s, then m:ss from a minute up', async () => {
+      renderPage()
+      expect(await screen.findByText('45 s')).toBeInTheDocument()
+      expect(screen.getByText('1:30')).toBeInTheDocument()
+      expect(screen.getByText('Time')).toBeInTheDocument()
+    })
+
+    it('keeps duration_seconds in the PATCH body, edited or not', async () => {
+      const user = await openEdit()
+      const second = await screen.findByLabelText('Time in seconds for set 2')
+      expect(screen.getByLabelText('Time in seconds for set 1')).toHaveValue('45')
+      expect(second).toHaveValue('90')
+      await user.clear(second)
+      await user.type(second, '1:45')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+      const [, payload] = mockPatch.mock.calls[0] as [string, Record<string, unknown>]
+      expect(payload.exercises).toEqual([
+        {
+          exercise_id: 7,
+          order: 1,
+          sets: [
+            { set_number: 1, reps: null, duration_seconds: 45, weight: null, notes: null, rpe: null },
+            { set_number: 2, reps: null, duration_seconds: 105, weight: 10, notes: null, rpe: 8 },
+          ],
+        },
+      ])
+    })
+
+    it('refuses a time of 0, naming the set, instead of saving the set empty', async () => {
+      const user = await openEdit()
+      const first = await screen.findByLabelText('Time in seconds for set 1')
+      await user.clear(first)
+      await user.type(first, '0')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Plank, set 1: time "0" must be 1–86400 seconds (or m:ss).',
+      )
+      expect(mockPatch).not.toHaveBeenCalled()
+    })
+  })
 })
