@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
-import { useSetInputKind } from '../lib/hooks/useSetInputKind'
+
 import { lastSessionToFormSets, sanitizeRpeInput, setsForMeasure, type LastSessionDefaults } from '../lib/strengthSession'
 import { inputKind, sanitizeDurationInput, type Measure, type WeightScale } from '../lib/workoutMode'
 
@@ -339,9 +339,11 @@ function amountHeader(sets: SetFormValues[], measure: Measure | undefined): stri
 }
 
 /**
- * A set's Reps or Time input, whichever `useSetInputKind` picks. Typing in one
- * clears the other, so a set never holds both. Time takes whole seconds (or
- * m:ss, as the read-only views show it) and is checked on save.
+ * A set's Reps or Time input, as `inputKind` picks from the set's values and the
+ * exercise's measure, like the header. Typing in one clears the other, so a set
+ * never holds both. Time takes whole seconds (or m:ss, as the read-only views
+ * show it) and is checked on save. One element whose binding switches, so
+ * clearing a legacy time (the set flips to Reps) keeps focus.
  */
 function SetAmountInput({
   control,
@@ -360,41 +362,32 @@ function SetAmountInput({
   const base = `exercises.${exIndex}.sets.${setIndex}`
   const { field: reps } = useController({ control, name: `${base}.reps` })
   const { field: duration } = useController({ control, name: `${base}.duration` })
-  const kind = useSetInputKind({ reps: reps.value, duration: duration.value }, measure)
-  if (kind === 'time') {
-    return (
-      <input
-        key="time"
-        type="text"
-        inputMode="numeric"
-        placeholder="sec"
-        aria-label={`Time in seconds for set ${setIndex + 1}`}
-        className={className}
-        name={duration.name}
-        ref={duration.ref}
-        onBlur={duration.onBlur}
-        value={duration.value ?? ''}
-        onChange={(e) => {
-          duration.onChange(sanitizeDurationInput(e.target.value))
-          if (reps.value) reps.onChange('')
-        }}
-      />
-    )
-  }
+  const timed = inputKind({ reps: reps.value, duration: duration.value }, measure) === 'time'
+  const field = timed ? duration : reps
+  const time: string = duration.value ?? ''
   return (
     <input
-      key="reps"
-      type="number"
-      min="0"
-      placeholder="reps"
+      type={timed ? 'text' : 'number'}
+      inputMode={timed ? 'numeric' : undefined}
+      min={timed ? undefined : '0'}
+      placeholder={timed ? 'sec' : 'reps'}
+      aria-label={timed ? `Time in seconds for set ${setIndex + 1}` : undefined}
       className={className}
-      name={reps.name}
-      ref={reps.ref}
-      onBlur={reps.onBlur}
-      value={reps.value ?? ''}
+      name={field.name}
+      ref={field.ref}
+      onBlur={field.onBlur}
+      value={field.value ?? ''}
       onChange={(e) => {
-        reps.onChange(e.target.value)
-        if (duration.value) duration.onChange('')
+        if (timed) {
+          // A keystroke or paste with anything but digits and ":" is ignored
+          const next = sanitizeDurationInput(e.target.value, time)
+          if (next === time) return
+          duration.onChange(next)
+          if (reps.value) reps.onChange('')
+        } else {
+          reps.onChange(e.target.value)
+          if (duration.value) duration.onChange('')
+        }
       }}
     />
   )

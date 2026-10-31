@@ -1254,11 +1254,15 @@ describe('Workout mode: timed sets', () => {
     await user.click(screen.getByRole('button', { name: 'Decrease time by 5 s' }))
     await user.click(screen.getByRole('button', { name: 'Decrease time by 5 s' }))
     expect(time).toHaveValue('40')
-    // m:ss typed as the views show it is kept, not turned into 130 s
+    // m:ss typed as the views show it is kept, not turned into 130 s; a "." is ignored
     await user.clear(time)
-    await user.type(time, '1:30')
+    await user.type(time, '1:30.')
     expect(time).toHaveValue('1:30')
+    // − on a blank time leaves it blank (an empty set), never "0"
     await user.clear(time)
+    await user.click(screen.getByRole('button', { name: 'Decrease time by 5 s' }))
+    expect(time).toHaveValue('')
+    expect(screen.getByLabelText('Time for set 1')).toBe(time)
     await user.type(time, '45')
 
     await completeSet(user)

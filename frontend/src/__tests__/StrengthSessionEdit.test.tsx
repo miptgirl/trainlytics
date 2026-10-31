@@ -238,6 +238,44 @@ describe('Strength session edit form', () => {
       ])
     })
 
+    it('a set emptied on Plank and switched to Squat shows Reps and saves the typed reps', async () => {
+      const onePlankSet = {
+        ...plankSession,
+        exercises: [{ ...plankSession.exercises[0], sets: [plankSession.exercises[0].sets[0]] }],
+      }
+      mockGet.mockImplementation(async (path: string) => {
+        if (path === '/sessions/5') return onePlankSet as never
+        if (path === '/exercises') return [...exerciseList, { id: 7, name: 'Plank', measure: 'time' }] as never
+        if (path.endsWith('/replacements')) return [] as never
+        return { sets: [] } as never
+      })
+      const user = await openEdit()
+      const time = await screen.findByLabelText('Time in seconds for set 1')
+      await user.clear(time)
+      await user.type(time, '45')
+      await user.clear(time)
+      // Nothing to convert, so the sets stay as they are: the input follows the new exercise alone
+      await user.click(screen.getByRole('button', { name: 'Plank' }))
+      await user.click(await screen.findByRole('button', { name: /all categories/i }))
+      await user.click(await screen.findByText('Legs'))
+      await user.click(screen.getByRole('button', { name: 'Squat' }))
+
+      await waitFor(() => expect(screen.getByText(/Exercise 1 — Squat/)).toBeInTheDocument())
+      expect(screen.queryByLabelText('Time in seconds for set 1')).not.toBeInTheDocument()
+      await user.type(screen.getByPlaceholderText('reps'), '8')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+      const [, payload] = mockPatch.mock.calls[0] as [string, { exercises: unknown[] }]
+      expect(payload.exercises).toEqual([
+        {
+          exercise_id: 1,
+          order: 1,
+          sets: [{ set_number: 1, reps: 8, duration_seconds: null, weight: null, notes: null, rpe: null }],
+        },
+      ])
+    })
+
     it('refuses a time of 0, naming the set, instead of saving the set empty', async () => {
       const user = await openEdit()
       const first = await screen.findByLabelText('Time in seconds for set 1')

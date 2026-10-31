@@ -353,22 +353,29 @@ describe('timed sets', () => {
     expect(sets).toEqual([hold('40', '24'), hold('40', '24'), hold('40', '24')])
   })
 
-  it('steps time by 5 s on the 5 s grid, never below 0', () => {
+  it('steps time by 5 s on the 5 s grid; stepping down to 0 gives blank, never "0"', () => {
     expect(stepDuration('45', 1)).toBe('50')
     expect(stepDuration('45', -1)).toBe('40')
     expect(stepDuration('47', 1)).toBe('50')
     expect(stepDuration('47', -1)).toBe('45')
     expect(stepDuration('', 1)).toBe('5')
-    expect(stepDuration('', -1)).toBe('0')
-    expect(stepDuration('0', -1)).toBe('0')
+    expect(stepDuration('0', 1)).toBe('5')
     expect(stepDuration('1:30', 1)).toBe('95')
+    // A stray − on a blank or 5 s set leaves an empty set, which saves; "0" would block Finish
+    expect(stepDuration('', -1)).toBe('')
+    expect(stepDuration('5', -1)).toBe('')
+    expect(stepDuration('3', -1)).toBe('')
+    expect(stepDuration('0', -1)).toBe('')
   })
 
-  it('keeps a typed time to digits and one colon', () => {
-    expect(sanitizeDurationInput('1:30')).toBe('1:30')
-    expect(sanitizeDurationInput('45s')).toBe('45')
-    expect(sanitizeDurationInput('1:3:0')).toBe('1:30')
-    expect(sanitizeDurationInput('1.5')).toBe('15')
+  it('takes a typed time only when it is digits and ":", otherwise keeps the previous value', () => {
+    expect(sanitizeDurationInput('90', '9')).toBe('90')
+    expect(sanitizeDurationInput('1:30', '1:3')).toBe('1:30')
+    expect(sanitizeDurationInput('', '4')).toBe('')
+    // Not turned into another number (455, 5, 45)
+    expect(sanitizeDurationInput('45.5', '45')).toBe('45')
+    expect(sanitizeDurationInput('-5', '')).toBe('')
+    expect(sanitizeDurationInput('45 s', '4')).toBe('4')
   })
 })
 

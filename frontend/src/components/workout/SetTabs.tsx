@@ -2,12 +2,12 @@ import { useEffect, useId, useRef, useState, type Ref, type RefObject } from 're
 import type { SetFormValues } from '../ExerciseEntryBlock'
 // Nothing here may import lib/strengthSession or lib/api at runtime: the test setup imports this file
 // (COMPLETE_SET_TAP_DROPPED), which would load the real api module before a test can mock it
-import { useSetInputKind } from '../../lib/hooks/useSetInputKind'
 import {
   boldTextWidth,
   currentSetIndex,
   formatSetList,
   formatSetShort,
+  inputKind,
   sanitizeDecimal,
   sanitizeDurationInput,
   setRepsOrDuration,
@@ -59,8 +59,11 @@ function Stepper({
   /** Names the step for screen readers ("by 1"). */
   stepLabel?: string
   inputMode: 'numeric' | 'decimal'
-  /** Cleans typed text; by default digits only (numeric) or a decimal. */
-  sanitize?: (raw: string) => string
+  /**
+   * Cleans typed text, given the value before it; by default digits only
+   * (numeric) or a decimal. Returning `previous` ignores the keystroke.
+   */
+  sanitize?: (raw: string, previous: string) => string
   setNumber: number
   inputRef?: Ref<HTMLInputElement>
   onChange: (value: string) => void
@@ -70,6 +73,11 @@ function Stepper({
   const name = label.toLowerCase()
   const by = stepLabel ? ` ${stepLabel}` : ''
   const clean = sanitize ?? ((raw: string) => (inputMode === 'numeric' ? raw.replace(/\D/g, '') : sanitizeDecimal(raw)))
+  const type = (raw: string) => {
+    const next = clean(raw, value)
+    // An ignored keystroke changes nothing (the controlled input shows `value` again)
+    if (next !== value) onChange(next)
+  }
   // A value too long even at 1rem (seven digits and more) scrolls inside the input, as any text field does
   const font = (STEPPER_FONTS.find(([px]) => boldTextWidth(value, px) <= STEPPER_INPUT_PX) ?? STEPPER_FONTS[2])[1]
   return (
@@ -92,7 +100,7 @@ function Stepper({
           type="text"
           inputMode={inputMode}
           value={value}
-          onChange={(e) => onChange(clean(e.target.value))}
+          onChange={(e) => type(e.target.value)}
           onFocus={(e) => e.currentTarget.select()}
           placeholder="0"
           aria-label={`${label} for set ${setNumber}`}
@@ -224,7 +232,9 @@ function SetEditor({
   const showNote = noteOpen || set.notes !== ''
   const ownRepsRef = useRef<HTMLInputElement>(null)
   const reps = repsRef ?? ownRepsRef
-  const kind = useSetInputKind(set, measure)
+  // From the set's values and the measure alone, so clearing a legacy time flips it to the exercise's kind
+  const kind = inputKind(set, measure)
+  const timed = kind === 'time'
   // The button that added this set is gone; Reps is the next thing to type
   useEffect(() => {
     if (focusReps) reps.current?.focus()
@@ -272,34 +282,22 @@ function SetEditor({
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        {/* Typing either one clears the other, so a set never holds both. Keyed, so switching remounts the input */}
-        {kind === 'time' ? (
-          <Stepper
-            key="time"
-            label="Time"
-            unit="s"
-            value={set.duration}
-            step={stepDuration}
-            stepLabel="by 5 s"
-            inputMode="numeric"
-            sanitize={sanitizeDurationInput}
-            setNumber={setNumber}
-            inputRef={reps}
-            onChange={(value) => onChange(setRepsOrDuration('time', value))}
-          />
-        ) : (
-          <Stepper
-            key="reps"
-            label="Reps"
-            value={set.reps}
-            step={stepReps}
-            stepLabel="by 1"
-            inputMode="numeric"
-            setNumber={setNumber}
-            inputRef={reps}
-            onChange={(value) => onChange(setRepsOrDuration('reps', value))}
-          />
-        )}
+        {/*
+          Reps, or Time for a timed set. Typing either one clears the other, so a set never holds both.
+          One Stepper whose binding switches, so the input keeps focus when clearing a value flips the kind
+        */}
+        <Stepper
+          label={timed ? 'Time' : 'Reps'}
+          unit={timed ? 's' : undefined}
+          value={timed ? set.duration : set.reps}
+          step={timed ? stepDuration : stepReps}
+          stepLabel={timed ? 'by 5 s' : 'by 1'}
+          inputMode="numeric"
+          sanitize={timed ? sanitizeDurationInput : undefined}
+          setNumber={setNumber}
+          inputRef={reps}
+          onChange={(value) => onChange(setRepsOrDuration(kind, value))}
+        />
         <Stepper
           label="Weight"
           unit="kg"

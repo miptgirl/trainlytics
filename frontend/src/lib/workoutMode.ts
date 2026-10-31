@@ -153,10 +153,14 @@ export function parseDuration(raw: string | null | undefined): number | null {
   return n !== null && n >= 1 && n <= MAX_SET_DURATION_SECONDS ? n : null
 }
 
-/** Keeps a typed hold to digits and one colon, so "1:30" survives and stays m:ss. */
-export function sanitizeDurationInput(raw: string): string {
-  const [head, ...rest] = raw.replace(/[^\d:]/g, '').split(':')
-  return rest.length > 0 ? `${head}:${rest.join('')}` : head
+/**
+ * A typed hold: `next` when it is only digits and ":" ("90", "1:30"), else
+ * `previous`, so a keystroke or paste with anything else ("45.5", "-5", "45 s")
+ * is ignored rather than turned into another number. Malformed holds ("1:3")
+ * are caught on save.
+ */
+export function sanitizeDurationInput(next: string, previous: string): string {
+  return /^[\d:]*$/.test(next) ? next : previous
 }
 
 /** Seconds a typed hold stands for, leniently ("0" → 0, "1:30" → 90); null when it isn't one. */
@@ -165,12 +169,16 @@ function durationValue(raw: string): number | null {
   return parseDuration(t) ?? (/^\d+$/.test(t) ? Number(t) : null)
 }
 
-/** The Time stepper: the previous or next multiple of 5 s ("47" → 50 / 45); empty counts as 0; never below 0. */
+/**
+ * The Time stepper: the previous or next multiple of 5 s ("47" → 50 / 45);
+ * empty counts as 0. Stepping down to 0 or below gives blank (an empty set),
+ * never "0", which the save would refuse.
+ */
 export function stepDuration(value: string, direction: 1 | -1): string {
   const n = durationValue(value) ?? 0
   const step = DURATION_STEP_SECONDS
   const k = direction > 0 ? Math.floor(n / step) + 1 : Math.ceil(n / step) - 1
-  return String(Math.max(0, k * step))
+  return k > 0 ? String(k * step) : ''
 }
 
 /** A hold as the read-only views show it: "45 s" under a minute, "1:30" from a minute up. */

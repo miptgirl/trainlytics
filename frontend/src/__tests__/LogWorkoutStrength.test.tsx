@@ -232,10 +232,10 @@ describe('LogWorkoutPage strength path: POST body', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Bench, set 1: time "0" must be 1–86400 seconds (or m:ss).')
     expect(mockPost).not.toHaveBeenCalled()
 
-    // A set holding a time keeps its Time input on a reps exercise
+    // A set holding a time shows its Time input on a reps exercise; type over the value (clearing it
+    // would leave an empty set, which follows Bench's measure: Reps)
     const time = screen.getByLabelText('Time in seconds for set 1')
-    await user.clear(time)
-    await user.type(time, '1:30')
+    await user.type(time, '1:30', { initialSelectionStart: 0, initialSelectionEnd: 1 })
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
     await user.click(screen.getByRole('button', { name: 'Save Session' }))
     await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
