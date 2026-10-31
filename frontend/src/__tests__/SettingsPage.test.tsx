@@ -452,14 +452,19 @@ describe('SettingsPage — Exercises: weight steps', () => {
       await openNewForm(user, 'Plank')
 
       expect(measure('Reps')).toBeChecked()
+      // Options are full-height tap targets
+      expect(measure('Time').closest('label')).toHaveClass('min-h-11')
       await user.click(measure('Time'))
       await user.click(saveButton())
 
       await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
       expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ name: 'Plank', measure: 'time' }))
-      // The row tags a timed exercise
-      const row = (await within(section()).findByText('Plank')).closest('li') as HTMLElement
-      expect(within(row).getByText('time')).toBeInTheDocument()
+      // The row tags a timed exercise, outside the truncated name so a long name can't clip it
+      const name = await within(section()).findByText('Plank')
+      const row = name.closest('li') as HTMLElement
+      const tag = within(row).getByText('time')
+      expect(name).toHaveClass('truncate')
+      expect(name).not.toContainElement(tag)
     })
 
     it('a new exercise left on Reps saves reps', async () => {

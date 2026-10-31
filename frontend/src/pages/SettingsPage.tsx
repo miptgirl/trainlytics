@@ -626,14 +626,15 @@ function ExercisesSection() {
                 className="bg-surface rounded-xl border border-border px-4 py-3 flex items-start justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-text truncate">
-                    {ex.name}
+                  {/* The tag sits outside the truncated name, so a long name can't clip it */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-medium text-text truncate">{ex.name}</p>
                     {ex.measure === 'time' && (
-                      <span className="ml-2 align-middle inline-block border border-border-strong text-text-muted-strong text-xs font-medium px-1.5 py-px rounded-sm">
+                      <span className="shrink-0 border border-border-strong text-text-muted-strong text-xs font-medium px-1.5 py-px rounded-sm">
                         time
                       </span>
                     )}
-                  </p>
+                  </div>
                   {ex.notes && (
                     <p className="text-sm text-text-muted-strong mt-0.5 line-clamp-2">{ex.notes}</p>
                   )}
@@ -1098,7 +1099,7 @@ function ExerciseForm({
           {MEASURE_OPTIONS.map((o) => (
             <label
               key={o.value}
-              className={`px-3 py-1.5 text-sm font-medium cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-dark has-[:focus-visible]:ring-inset ${
+              className={`min-h-11 px-3 flex items-center text-sm font-medium cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-dark has-[:focus-visible]:ring-inset ${
                 measure === o.value ? 'bg-primary-dark text-white' : 'bg-surface text-text-muted-strong hover:bg-bg'
               }`}
             >

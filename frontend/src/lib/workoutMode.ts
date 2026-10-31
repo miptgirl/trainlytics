@@ -332,8 +332,8 @@ export function formatSetShort(set: SetValues): string {
  * "12, 10, 8 reps" when no set has a weight. In a weighted list a set without
  * one shows "10×–", so it never reads as 10 kg. Timed sets put the hold in
  * place of the reps ("45s, 1:00", "40s×24, 40s×24 kg"); a list mixing both
- * kinds drops the trailing unit, since each item carries its own ("8×60, 45s").
- * Null for no sets.
+ * kinds drops the trailing unit, since each item carries its own: "8×60, 45s",
+ * or "8 reps, 45s" without weights. Null for no sets.
  */
 export function formatSetList(sets: readonly SetValues[]): string | null {
   if (sets.length === 0) return null
@@ -341,10 +341,12 @@ export function formatSetList(sets: readonly SetValues[]): string | null {
   const isTimed = (s: SetValues) => holdOf(s, String) !== null
   const timed = sets.filter(isTimed).length
   const mixed = timed > 0 && timed < sets.length
-  // In a mixed list a hold can't be misread as kg, so it needs no "×–"
-  const parts = sets.map((s) =>
-    weighted && !shown(s.weight) && !(mixed && isTimed(s)) ? `${amountShort(s)}×–` : formatSetShort(s),
-  )
+  const parts = sets.map((s) => {
+    // In a mixed list a hold can't be misread as kg, so it needs no "×–"; a bare count needs "reps"
+    if (mixed && isTimed(s)) return formatSetShort(s)
+    if (weighted && !shown(s.weight)) return `${amountShort(s)}×–`
+    return mixed && !weighted ? `${amountShort(s)} reps` : formatSetShort(s)
+  })
   if (mixed) return parts.join(', ')
   if (timed > 0) return weighted ? `${parts.join(', ')} kg` : parts.join(', ')
   return `${parts.join(', ')} ${weighted ? 'kg' : 'reps'}`

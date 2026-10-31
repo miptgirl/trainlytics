@@ -331,7 +331,11 @@ describe('timed sets', () => {
     expect(formatSetList([hold('45'), hold('60')])).toBe('45s, 1:00')
     expect(formatSetList([hold('40', '24'), hold('40', '24')])).toBe('40s×24, 40s×24 kg')
     expect(formatSetList([set('8', '60'), hold('45')])).toBe('8×60, 45s')
-    expect(formatSetList([set('8', ''), hold('45')])).toBe('8, 45s')
+    // A bare count keeps its unit beside a hold
+    expect(formatSetList([set('8', ''), hold('45')])).toBe('8 reps, 45s')
+    expect(formatSetList([set('8', '60'), set('10', ''), hold('45')])).toBe('8×60, 10×–, 45s')
+    // Lists of one kind read as before
+    expect(formatSetList([set('12', ''), set('10', '')])).toBe('12, 10 reps')
     // From the API ("Last time")
     expect(
       formatLastTime({
