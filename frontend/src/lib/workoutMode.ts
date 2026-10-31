@@ -9,6 +9,9 @@ import type { LastSessionDefaults } from './strengthSession'
 
 type Exercises = ExerciseEntryFormValues[]
 
+/** How an exercise's sets are entered: counted reps, or a hold in seconds (plank, carry). */
+export type Measure = 'reps' | 'time'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Progress
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,11 +69,11 @@ export const clampIndex = (index: number, length: number): number =>
 export function isBlankEntry(entry: ExerciseEntryFormValues): boolean {
   return (
     !entry.exercise_id &&
-    entry.sets.every((s) => !s.reps && !s.weight && !s.notes && !s.rpe && !s.done)
+    entry.sets.every((s) => !s.reps && !s.duration && !s.weight && !s.notes && !s.rpe && !s.done)
   )
 }
 
-/** Three sets for a newly added exercise, reps and weight from last session when known. */
+/** Three sets for a newly added exercise, reps (or time) and weight from last session when known. */
 export function newExerciseSets(defaults: LastSessionDefaults | null | undefined): SetFormValues[] {
   const sets = defaults?.sets ?? []
   return [0, 1, 2].map((i) => {
@@ -78,6 +81,7 @@ export function newExerciseSets(defaults: LastSessionDefaults | null | undefined
     return {
       ...emptySet(),
       reps: src?.reps != null ? String(src.reps) : '',
+      duration: src?.duration_seconds != null ? String(src.duration_seconds) : '',
       weight: src?.weight != null ? formatNumber(src.weight) : '',
     }
   })
@@ -103,6 +107,79 @@ export function stepValue(value: string, delta: number): string {
   const n = parseFloat(value)
   return formatNumber(Math.max(0, (Number.isFinite(n) ? n : 0) + delta))
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Timed sets
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Which value a set holds by itself: a duration, reps, or neither yet (null). */
+export type SetKind = Measure
+
+export function setKind(set: Partial<Pick<SetFormValues, 'reps' | 'duration'>>): SetKind | null {
+  // A set never holds both (typing one clears the other); a hand-edited draft
+  // that does reads as timed, and only the duration is sent
+  if (set.duration?.trim()) return 'time'
+  if (set.reps?.trim()) return 'reps'
+  return null
+}
+
+/**
+ * The input a set shows: Time for a set with a duration, Reps for one with
+ * reps, otherwise the exercise's measure (reps when unknown). A set logged
+ * while its exercise was timed keeps showing its duration after the exercise
+ * went back to reps.
+ */
+export function inputKind(set: Partial<Pick<SetFormValues, 'reps' | 'duration'>>, measure?: Measure | null): SetKind {
+  return setKind(set) ?? measure ?? 'reps'
+}
+
+/** The patch for typing `value` into a set's Reps or Time: the other is cleared, so a set never holds both. */
+export function setRepsOrDuration(kind: SetKind, value: string): Pick<SetFormValues, 'reps' | 'duration'> {
+  return kind === 'time' ? { duration: value, reps: '' } : { reps: value, duration: '' }
+}
+
+/** A timed set's longest hold, as the API accepts it (a day). */
+export const MAX_SET_DURATION_SECONDS = 86400
+export const DURATION_STEP_SECONDS = 5
+
+/**
+ * Typed hold → seconds, 1–86400: "90" or "1:30" (m:ss, as the read-only views
+ * show it) → 90. Null for blank, 0, more than a day, or anything else ("1:3").
+ */
+export function parseDuration(raw: string | null | undefined): number | null {
+  const t = typeof raw === 'string' ? raw.trim() : ''
+  const clock = /^(\d{1,4}):([0-5]\d)$/.exec(t)
+  const n = clock ? Number(clock[1]) * 60 + Number(clock[2]) : /^\d{1,5}$/.test(t) ? Number(t) : null
+  return n !== null && n >= 1 && n <= MAX_SET_DURATION_SECONDS ? n : null
+}
+
+/** Keeps a typed hold to digits and one colon, so "1:30" survives and stays m:ss. */
+export function sanitizeDurationInput(raw: string): string {
+  const [head, ...rest] = raw.replace(/[^\d:]/g, '').split(':')
+  return rest.length > 0 ? `${head}:${rest.join('')}` : head
+}
+
+/** Seconds a typed hold stands for, leniently ("0" → 0, "1:30" → 90); null when it isn't one. */
+function durationValue(raw: string): number | null {
+  const t = raw.trim()
+  return parseDuration(t) ?? (/^\d+$/.test(t) ? Number(t) : null)
+}
+
+/** The Time stepper: the previous or next multiple of 5 s ("47" → 50 / 45); empty counts as 0; never below 0. */
+export function stepDuration(value: string, direction: 1 | -1): string {
+  const n = durationValue(value) ?? 0
+  const step = DURATION_STEP_SECONDS
+  const k = direction > 0 ? Math.floor(n / step) + 1 : Math.ceil(n / step) - 1
+  return String(Math.max(0, k * step))
+}
+
+/** A hold as the read-only views show it: "45 s" under a minute, "1:30" from a minute up. */
+export function formatHold(seconds: number): string {
+  return seconds < 60 ? `${seconds} s` : formatClock(seconds)
+}
+
+/** Compact hold for tabs and lists: "45s", "1:30". */
+const formatHoldShort = (seconds: number): string => (seconds < 60 ? `${seconds}s` : formatClock(seconds))
 
 /** A machine weight stack: a top plate, then equal plates. `plates` counts every position, top plate included. */
 export type StackScale = { kind: 'stack'; top_lb: number; plate_lb: number; plates?: number | null }
@@ -173,8 +250,13 @@ export function stepWeight(value: string, direction: 1 | -1, scale?: WeightScale
   return formatNumber(stepStack(current, direction, scale ?? DEFAULT_STACK))
 }
 
-/** "6 × 100 kg", "8 reps", "– × 60 kg" — one set as a compact label. */
-export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'>): string {
+/**
+ * "6 × 100 kg", "8 reps", "– × 60 kg" — one set as a compact label. A timed
+ * set reads "45 s × 20 kg" or "1:30"; a typed hold that isn't valid yet shows as typed.
+ */
+export function formatSet(set: Pick<SetFormValues, 'reps' | 'weight'> & { duration?: string }): string {
+  const hold = holdOf(set, formatHold)
+  if (hold !== null) return set.weight ? `${hold} × ${set.weight} kg` : hold
   const reps = set.reps || '–'
   return set.weight ? `${reps} × ${set.weight} kg` : `${reps} reps`
 }
@@ -200,6 +282,25 @@ export function boldTextWidth(text: string, px: number): number {
 export interface SetValues {
   reps: number | string | null
   weight: number | string | null
+  /** A timed set's hold as typed in the form ("45", "1:30"). */
+  duration?: string | null
+  /** A timed set's hold as the API returns it. */
+  duration_seconds?: number | null
+}
+
+/**
+ * A timed set's hold formatted with `format`, or null for a set without one. A
+ * typed value that isn't a valid hold yet ("1:3") shows as typed, with "s" when
+ * it is all digits ("0 s"), so the label never hides what will be checked on save.
+ */
+function holdOf(set: Pick<SetValues, 'duration' | 'duration_seconds'>, format: (seconds: number) => string): string | null {
+  if (typeof set.duration_seconds === 'number' && Number.isFinite(set.duration_seconds)) {
+    return format(set.duration_seconds)
+  }
+  const typed = typeof set.duration === 'string' ? set.duration.trim() : ''
+  if (!typed) return null
+  const seconds = durationValue(typed)
+  return seconds !== null ? format(seconds) : typed
 }
 
 /** A value as shown: numbers without float noise, typed text as typed, '' when missing. */
@@ -209,22 +310,35 @@ function shown(value: number | string | null): string {
   return value.trim()
 }
 
-/** A set tab's value: "8×60", "12" without a weight, "–" for missing reps ("–×60"). */
+/** A set's count as a tab shows it: the hold ("45s", "1:30") for a timed set, else the reps ("–" when missing). */
+const amountShort = (set: SetValues): string => holdOf(set, formatHoldShort) ?? (shown(set.reps) || '–')
+
+/** A set tab's value: "8×60", "12" without a weight, "–" for missing reps ("–×60"); timed "45s", "45s×20", "1:30". */
 export function formatSetShort(set: SetValues): string {
-  const reps = shown(set.reps) || '–'
   const weight = shown(set.weight)
-  return weight ? `${reps}×${weight}` : reps
+  return weight ? `${amountShort(set)}×${weight}` : amountShort(set)
 }
 
 /**
  * Sets in order, for "Last time" and "Today": "8×60, 8×60, 6×65 kg", or
  * "12, 10, 8 reps" when no set has a weight. In a weighted list a set without
- * one shows "10×–", so it never reads as 10 kg. Null for no sets.
+ * one shows "10×–", so it never reads as 10 kg. Timed sets put the hold in
+ * place of the reps ("45s, 1:00", "40s×24, 40s×24 kg"); a list mixing both
+ * kinds drops the trailing unit, since each item carries its own ("8×60, 45s").
+ * Null for no sets.
  */
 export function formatSetList(sets: readonly SetValues[]): string | null {
   if (sets.length === 0) return null
   const weighted = sets.some((s) => shown(s.weight) !== '')
-  const parts = sets.map((s) => (weighted && !shown(s.weight) ? `${shown(s.reps) || '–'}×–` : formatSetShort(s)))
+  const isTimed = (s: SetValues) => holdOf(s, String) !== null
+  const timed = sets.filter(isTimed).length
+  const mixed = timed > 0 && timed < sets.length
+  // In a mixed list a hold can't be misread as kg, so it needs no "×–"
+  const parts = sets.map((s) =>
+    weighted && !shown(s.weight) && !(mixed && isTimed(s)) ? `${amountShort(s)}×–` : formatSetShort(s),
+  )
+  if (mixed) return parts.join(', ')
+  if (timed > 0) return weighted ? `${parts.join(', ')} kg` : parts.join(', ')
   return `${parts.join(', ')} ${weighted ? 'kg' : 'reps'}`
 }
 
@@ -233,9 +347,9 @@ export function formatLastTime(defaults: LastSessionDefaults | null | undefined)
   return formatSetList(defaults?.sets ?? [])
 }
 
-/** Screen-reader name of a set tab: "Set 2 of 4, 8 × 60 kg, RPE 7, done". */
+/** Screen-reader name of a set tab: "Set 2 of 4, 8 × 60 kg, RPE 7, done" ("45 s × 20 kg" for a timed set). */
 export function setTabLabel(set: SetFormValues, setNumber: number, total: number): string {
-  const parts = [`Set ${setNumber} of ${total}`, formatSet({ reps: set.reps, weight: set.weight })]
+  const parts = [`Set ${setNumber} of ${total}`, formatSet({ reps: set.reps, weight: set.weight, duration: set.duration })]
   if (set.rpe) parts.push(`RPE ${set.rpe}`)
   if (set.done) parts.push('done')
   return parts.join(', ')

@@ -35,8 +35,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { set_number: 1, reps: 5, weight_kg: 100 },
-        { set_number: 2, reps: 5, weight_kg: 102.5 },
+        { set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null },
+        { set_number: 2, reps: 5, weight_kg: 102.5, duration_seconds: null },
       ],
     },
   ],
@@ -122,8 +122,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -150,7 +150,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight_kg: 100 }],
+          sets: [{ set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null }],
         },
       ],
     })
@@ -166,7 +166,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9 }],
+          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9, duration_seconds: null }],
         },
       ],
     })
@@ -244,8 +244,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 8, weight: 60, notes: null, rpe: null },
-            { set_number: 2, reps: 7, weight: 62.5, notes: null, rpe: null },
+            { set_number: 1, reps: 8, weight: 60, notes: null, rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 7, weight: 62.5, notes: null, rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -300,8 +300,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 10, weight: 50, notes: null, rpe: null },
-            { set_number: 2, reps: null, weight: 55, notes: 'last', rpe: null },
+            { set_number: 1, reps: 10, weight: 50, notes: null, rpe: null, duration_seconds: null },
+            { set_number: 2, reps: null, weight: 55, notes: 'last', rpe: null, duration_seconds: null },
           ],
         },
       ],

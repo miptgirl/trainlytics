@@ -6,7 +6,8 @@ import { Layout } from '../components/Layout'
 import { api } from '../lib/api'
 import { datetimeLocalToUTC, formatSessionDateTime, toDatetimeLocal } from '../lib/dateUtils'
 import { formatStrengthSession } from '../lib/exportUtils'
-import { findInvalidSetRpe, parseSetRpe } from '../lib/strengthSession'
+import { findInvalidSet, parseSetRpe, setAmounts } from '../lib/strengthSession'
+import { formatHold } from '../lib/workoutMode'
 import { EmojiRating, EmojiRatingDisplay } from '../components/EmojiRating'
 import { WELLBEING_OPTIONS, RPE_OPTIONS } from '../components/emojiRatingOptions'
 import { StrengthExerciseList } from '../components/StrengthExerciseList'
@@ -19,6 +20,8 @@ interface StrengthSet {
   weight: number | null
   notes: string | null
   rpe: number | null
+  /** A timed set's hold; absent in sessions fetched before timed sets. */
+  duration_seconds?: number | null
 }
 
 interface StrengthExerciseEntry {
@@ -41,6 +44,14 @@ interface StrengthSession {
   rpe: number | null
   created_at: string
   exercises: StrengthExerciseEntry[]
+}
+
+/** The Reps column's header: "Time" when every set with a value is timed, "Reps / time" when they mix. */
+function amountHeader(sets: StrengthSet[]): string {
+  const timed = sets.filter((s) => s.duration_seconds != null).length
+  const reps = sets.filter((s) => s.reps != null).length
+  if (timed === 0) return 'Reps'
+  return reps === 0 ? 'Time' : 'Reps / time'
 }
 
 // ── Edit form types ──────────────────────────────────────────────────────────
@@ -69,6 +80,7 @@ function toForm(session: StrengthSession): EditFormValues {
       exercise_id: entry.exercise_id.toString(),
       sets: entry.sets.map((s) => ({
         reps: s.reps?.toString() ?? '',
+        duration: s.duration_seconds?.toString() ?? '',
         weight: s.weight?.toString() ?? '',
         notes: s.notes ?? '',
         rpe: s.rpe?.toString() ?? '',
@@ -99,17 +111,17 @@ function EditForm({
   const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<EditFormValues>({
     defaultValues: toForm(session),
   })
-  // Checks values, not inputs: a collapsed exercise has no mounted RPE input.
+  // Checks values, not inputs: a collapsed exercise has no mounted RPE or time input.
   // After a refused save the message follows the live values, so it clears once fixed.
-  const [showRpeError, setShowRpeError] = useState(false)
+  const [showSetError, setShowSetError] = useState(false)
   const watchedExercises = useWatch({ control, name: 'exercises' })
   const names = new Map(exercises.map((e) => [String(e.id), e.name]))
-  const invalidRpe = (list: ExerciseEntryFormValues[] | undefined) => findInvalidSetRpe(list, (id) => names.get(id))
-  const rpeError = showRpeError ? (invalidRpe(watchedExercises)?.message ?? null) : null
+  const invalidSet = (list: ExerciseEntryFormValues[] | undefined) => findInvalidSet(list, (id) => names.get(id))
+  const setError = showSetError ? (invalidSet(watchedExercises)?.message ?? null) : null
 
   function save(data: EditFormValues) {
-    const ok = invalidRpe(data.exercises) === null
-    setShowRpeError(!ok)
+    const ok = invalidSet(data.exercises) === null
+    setShowSetError(!ok)
     if (ok) onSave(data)
   }
 
@@ -199,9 +211,9 @@ function EditForm({
         prefillFromLastSession={false}
       />
 
-      {(rpeError ?? errorMessage) && (
+      {(setError ?? errorMessage) && (
         <p role="alert" className="text-sm text-error-text">
-          {rpeError ?? `Couldn't save the changes: ${errorMessage}`}
+          {setError ?? `Couldn't save the changes: ${errorMessage}`}
         </p>
       )}
       <div className="flex gap-3">
@@ -257,9 +269,10 @@ export default function StrengthSessionDetailPage() {
         exercises: data.exercises.map((entry, i) => ({
           exercise_id: parseInt(entry.exercise_id, 10),
           order: i + 1,
+          // The API rebuilds every set from this body: a timed set must send its duration back
           sets: entry.sets.map((s, si) => ({
             set_number: si + 1,
-            reps: s.reps ? parseInt(s.reps, 10) : null,
+            ...setAmounts(s),
             weight: s.weight ? parseFloat(s.weight) : null,
             notes: s.notes || null,
             rpe: parseSetRpe(s.rpe),
@@ -396,7 +409,7 @@ export default function StrengthSessionDetailPage() {
 
               <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 mb-2 px-1">
                 <span className="text-xs text-text-muted-strong">#</span>
-                <span className="text-xs font-medium text-text-muted-strong">Reps</span>
+                <span className="text-xs font-medium text-text-muted-strong">{amountHeader(entry.sets)}</span>
                 <span className="text-xs font-medium text-text-muted-strong">Weight</span>
                 <span className="text-xs font-medium text-text-muted-strong">RPE</span>
                 <span className="text-xs font-medium text-text-muted-strong">Notes</span>
@@ -406,7 +419,9 @@ export default function StrengthSessionDetailPage() {
                 {entry.sets.map((s) => (
                   <div key={s.id} className="grid grid-cols-[1.5rem_minmax(0,1fr)_minmax(0,1fr)_2.5rem_minmax(0,1fr)] gap-1.5 items-center py-1 border-t border-border">
                     <span className="text-xs text-text-muted-strong text-center">{s.set_number}</span>
-                    <span className="text-sm text-text">{s.reps ?? '—'}</span>
+                    <span className="text-sm text-text">
+                      {s.duration_seconds != null ? formatHold(s.duration_seconds) : (s.reps ?? '—')}
+                    </span>
                     <span className="text-sm text-text">{s.weight != null ? `${s.weight} kg` : '—'}</span>
                     <span className="text-sm text-text tabular-nums">{s.rpe ?? '—'}</span>
                     <span className="text-sm text-text-muted-strong overflow-hidden truncate">{s.notes ?? ''}</span>

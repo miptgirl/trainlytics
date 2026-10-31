@@ -36,7 +36,14 @@ import {
   stepWeight,
 } from '../lib/workoutMode'
 
-const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 const ex = (id: string, ...sets: ReturnType<typeof set>[]) => ({ exercise_id: id, sets })
 
 describe('progress and navigation', () => {

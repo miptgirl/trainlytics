@@ -25,7 +25,14 @@ const storedDraft = () => {
   return raw === null ? null : JSON.parse(raw)
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-const set = (reps: string, weight: string, notes = '', done = false, rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, notes = '', done = false, rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 
 const legDay = {
   id: 3,
@@ -36,8 +43,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { set_number: 1, reps: 5, weight_kg: 100 },
-        { set_number: 2, reps: 5, weight_kg: 102.5 },
+        { set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null },
+        { set_number: 2, reps: 5, weight_kg: 102.5, duration_seconds: null },
       ],
     },
   ],
@@ -108,8 +115,8 @@ describe('useStrengthSessionForm: payload parity', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -268,7 +275,7 @@ describe('useStrengthSessionForm: draft', () => {
       wellbeing: null,
       rpe: null,
       exercises: [
-        { exercise_id: 2, order: 1, sets: [{ set_number: 1, reps: 10, weight: 50, notes: null, rpe: null }] },
+        { exercise_id: 2, order: 1, sets: [{ set_number: 1, reps: 10, weight: 50, notes: null, rpe: null, duration_seconds: null }] },
       ],
     })
   })

@@ -28,7 +28,14 @@ import {
 } from '../lib/strengthSession'
 import type { ExerciseEntryFormValues } from '../components/ExerciseEntryBlock'
 
-const set = (reps: string, weight: string, notes = '', done = false, rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, notes = '', done = false, rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 
 const values: StrengthFormValues = {
   title: 'Leg day',
@@ -59,8 +66,8 @@ describe('buildStrengthPayload', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -83,9 +90,9 @@ describe('buildStrengthPayload', () => {
     })
     expect(body).toMatchObject({ title: null, calories: null, notes: null, duration_seconds: null })
     expect(body.exercises).toEqual([
-      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null, rpe: null }] },
+      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null, rpe: null, duration_seconds: null }] },
       // '0' is a non-empty string, so weight 0 is kept
-      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null, rpe: null }] },
+      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null, rpe: null, duration_seconds: null }] },
     ])
   })
 })
@@ -145,7 +152,7 @@ describe('per-set RPE', () => {
       id: 3,
       name: 'Leg day',
       exercises: [
-        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100 }] },
+        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null }] },
       ],
     }
     const form = { ...values, exercises: [{ exercise_id: '1', sets: [set('5', '100', '', true, '9')] }] }
@@ -302,8 +309,8 @@ describe('strength draft schema', () => {
       notes: 'from yesterday',
       wellbeing: 2,
       rpe: null,
-      // Drafts written before per-set RPE load with the field empty
-      exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', rpe: '', done: true }] }],
+      // Drafts written before per-set RPE and timed sets load with those fields empty
+      exercises: [{ exercise_id: '2', sets: [{ reps: '10', duration: '', weight: '50', notes: '', rpe: '', done: true }] }],
     })
     expect(parsed.templateId).toBeNull()
     expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })

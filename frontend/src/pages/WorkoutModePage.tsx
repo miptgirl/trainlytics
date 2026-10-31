@@ -24,7 +24,7 @@ import { useWakeLock } from '../lib/hooks/useWakeLock'
 import {
   describeDraft,
   emptyStrengthDefaults,
-  findInvalidSetRpe,
+  findInvalidSet,
   setSetDone,
   strengthViewUrl,
   type TemplateSummary,
@@ -103,6 +103,7 @@ export default function WorkoutModePage() {
   const entry = exercises[exIndex]
   const names = new Map(s.exerciseLibrary.map((e) => [String(e.id), e.name]))
   const scaleOf = (id: string) => s.exerciseLibrary.find((e) => String(e.id) === id)?.weight_scale
+  const measureOf = (id: string) => s.exerciseLibrary.find((e) => String(e.id) === id)?.measure
   const lastByExercise = useLastSessionDefaults(exercises.map((e) => e.exercise_id))
   const progress = sessionProgress(exercises)
   const nextIndex = nextUnfinishedIndex(exercises, exIndex)
@@ -343,7 +344,8 @@ export default function WorkoutModePage() {
             ? current
             : null
       if (target !== null) {
-        // Keep sets the user already filled in; replace an untouched placeholder's
+        // Keep sets the user already filled in (minus reps for a timed exercise, or the reverse);
+        // replace an untouched placeholder's
         s.replaceExercise(target, exerciseId, isBlankEntry(list[target]) ? sets : undefined)
         setDoneStrip((st) => (st && (st.from === target || st.to === target) ? null : st))
         s.updateWorkout({ currentExerciseIndex: target })
@@ -370,16 +372,17 @@ export default function WorkoutModePage() {
     // template, offer to update the template to an exercise without sets
     const empty = exercises.findIndex((e) => e.sets.length === 0)
     if (empty !== -1) {
-      // Before the library loads, the position names it, as the RPE check below does
+      // Before the library loads, the position names it, as the set check below does
       const name = names.get(exercises[empty].exercise_id) ?? `Exercise ${empty + 1}`
       setGuardError(`${name} has no sets. Add a set or remove it before finishing.`)
       s.updateWorkout({ currentExerciseIndex: empty })
       return
     }
-    const badRpe = findInvalidSetRpe(exercises, (id) => names.get(id))
-    if (badRpe) {
-      setGuardError(badRpe.message)
-      s.updateWorkout({ currentExerciseIndex: badRpe.exerciseIndex })
+    // An invalid RPE or time would be dropped (saved empty) rather than refused by the API
+    const badSet = findInvalidSet(exercises, (id) => names.get(id))
+    if (badSet) {
+      setGuardError(badSet.message)
+      s.updateWorkout({ currentExerciseIndex: badSet.exerciseIndex })
       return
     }
     setGuardError(null)
@@ -556,6 +559,7 @@ export default function WorkoutModePage() {
                   key={`${exIndex}-${listVersion}`}
                   sets={entry.sets}
                   weightScale={scaleOf(entry.exercise_id)}
+                  measure={measureOf(entry.exercise_id)}
                   exerciseName={entry.exercise_id ? nameOf(entry.exercise_id) : null}
                   next={
                     nextIndex === -1

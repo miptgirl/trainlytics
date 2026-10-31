@@ -9,6 +9,19 @@ import { emptyEntry, emptySet } from '../components/exerciseEntryDefaults'
 import { api } from './api'
 import { datetimeLocalToUTC, localDateTimeNow } from './dateUtils'
 import { draftSessionRpe } from './draftUtils'
+import {
+  MAX_SET_DURATION_SECONDS,
+  inputKind,
+  parseDuration,
+  setKind,
+  setRepsOrDuration,
+  type Measure,
+  type SetKind,
+} from './workoutMode'
+
+// The pure reps-or-time helpers live in workoutMode (SetTabs needs them, and must not import this module:
+// it imports ./api, and the test setup loads SetTabs before tests mock ../lib/api)
+export { inputKind, parseDuration, setKind, setRepsOrDuration, type SetKind }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -23,6 +36,8 @@ export interface TemplateSet {
   set_number: number
   reps: number | null
   weight_kg: number | null
+  /** A timed set's planned hold; absent in responses cached before timed sets. */
+  duration_seconds?: number | null
 }
 
 export interface TemplateExercise {
@@ -71,6 +86,7 @@ export interface StrengthSessionPayload {
       weight: number | null
       notes: string | null
       rpe: number | null
+      duration_seconds: number | null
     }[]
   }[]
 }
@@ -130,6 +146,78 @@ export function sanitizeRpeInput(value: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Timed sets: reps or a duration
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** A set's reps and duration as sent to the API: only the kind it holds, the other null. */
+export function setAmounts(s: Partial<Pick<SetFormValues, 'reps' | 'duration'>>): {
+  reps: number | null
+  duration_seconds: number | null
+} {
+  const kind = setKind(s)
+  return {
+    reps: kind === 'reps' && s.reps ? parseInt(s.reps, 10) : null,
+    duration_seconds: kind === 'time' ? parseDuration(s.duration) : null,
+  }
+}
+
+/** True for a blank hold or one the API accepts (1–86400 s, typed as seconds or m:ss). */
+export function isValidSetDuration(value: string | null | undefined): boolean {
+  return !value?.trim() || parseDuration(value) !== null
+}
+
+export interface InvalidSetDuration {
+  exerciseIndex: number
+  setIndex: number
+  /** 'Plank, set 2: time "0" must be 1–86400 seconds (or m:ss).' */
+  message: string
+}
+
+/**
+ * The first set whose time would not be saved, or null when all are valid.
+ * `parseDuration` turns an invalid value ("0", "1:3") into null, so without
+ * this check the set would be saved empty. Checks values, like findInvalidSetRpe.
+ */
+export function findInvalidSetDuration(
+  exercises: ExerciseEntryFormValues[] | undefined,
+  nameOf: (exerciseId: string) => string | undefined,
+): InvalidSetDuration | null {
+  const list = exercises ?? []
+  for (let i = 0; i < list.length; i++) {
+    const sets = list[i].sets ?? []
+    const j = sets.findIndex((s) => !isValidSetDuration(s.duration))
+    if (j === -1) continue
+    const name = nameOf(list[i].exercise_id) ?? `Exercise ${i + 1}`
+    return {
+      exerciseIndex: i,
+      setIndex: j,
+      message: `${name}, set ${j + 1}: time "${sets[j].duration.trim()}" must be 1–${MAX_SET_DURATION_SECONDS} seconds (or m:ss).`,
+    }
+  }
+  return null
+}
+
+/** The first invalid set RPE or time, RPE first: what a save refuses before sending. */
+export function findInvalidSet(
+  exercises: ExerciseEntryFormValues[] | undefined,
+  nameOf: (exerciseId: string) => string | undefined,
+): InvalidSetRpe | InvalidSetDuration | null {
+  return findInvalidSetRpe(exercises, nameOf) ?? findInvalidSetDuration(exercises, nameOf)
+}
+
+/**
+ * Sets kept by an entry that now points at an exercise measured in `measure`:
+ * the mismatched value is cleared on every set (reps for a timed exercise, a
+ * duration for a reps one); weight, notes, RPE and done stay. Unknown measure:
+ * unchanged.
+ */
+export function setsForMeasure(sets: SetFormValues[], measure?: Measure | null): SetFormValues[] {
+  if (!measure) return sets
+  const field = measure === 'time' ? 'reps' : 'duration'
+  return sets.map((s) => (s[field] ? { ...s, [field]: '' } : s))
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Defaults and template prefill
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -157,6 +245,7 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
       exercise_id: String(entry.exercise_id),
       sets: entry.sets.map((s) => ({
         reps: s.reps != null ? String(s.reps) : '',
+        duration: s.duration_seconds != null ? String(s.duration_seconds) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: '',
         rpe: '',
@@ -171,12 +260,19 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface LastSessionDefaults {
-  sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
+  sets: Array<{
+    set_number: number
+    reps: number | null
+    weight: number | null
+    /** Absent in responses cached before timed sets. */
+    duration_seconds?: number | null
+  }>
 }
 
 export function lastSessionToFormSets(data: LastSessionDefaults): SetFormValues[] {
   return data.sets.map((s) => ({
     reps: s.reps !== null ? String(s.reps) : '',
+    duration: s.duration_seconds != null ? String(s.duration_seconds) : '',
     weight: s.weight !== null ? String(s.weight) : '',
     notes: '',
     rpe: '',
@@ -249,9 +345,10 @@ export function computeDiff(
     for (let j = 0; j < minSets; j++) {
       const ts = tSets[j]
       const fs = fSets[j]
-      const fReps = fs.reps ? parseInt(fs.reps, 10) : null
+      const { reps: fReps, duration_seconds: fDuration } = setAmounts(fs)
       const fWeight = fs.weight ? parseFloat(fs.weight) : null
       if (fReps !== ts.reps) changes.push(`Changed reps on ${name} set ${j + 1}`)
+      if (fDuration !== (ts.duration_seconds ?? null)) changes.push(`Changed time on ${name} set ${j + 1}`)
       if (fWeight !== ts.weight_kg) changes.push(`Changed weight on ${name} set ${j + 1}`)
     }
   }
@@ -267,7 +364,7 @@ export function toTemplatePayload(data: StrengthFormValues) {
       order: i + 1,
       sets: entry.sets.map((s, si) => ({
         set_number: si + 1,
-        reps: s.reps ? parseInt(s.reps, 10) : null,
+        ...setAmounts(s),
         weight_kg: s.weight ? parseFloat(s.weight) : null,
       })),
     })),
@@ -305,7 +402,7 @@ export function buildStrengthPayload(data: StrengthFormValues): StrengthSessionP
       order: i + 1,
       sets: entry.sets.map((s, si) => ({
         set_number: si + 1,
-        reps: s.reps ? parseInt(s.reps, 10) : null,
+        ...setAmounts(s),
         weight: s.weight ? parseFloat(s.weight) : null,
         notes: s.notes || null,
         rpe: parseSetRpe(s.rpe),
@@ -329,7 +426,7 @@ export function buildAdaptSnapshot(
         exercise_id: parseInt(e.exercise_id, 10),
         exercise_name: exerciseMap.get(parseInt(e.exercise_id, 10)) ?? 'Unknown',
         sets: (e.sets ?? []).map((s) => ({
-          reps: s.reps ? parseInt(s.reps, 10) : null,
+          ...setAmounts(s),
           weight_kg: s.weight ? parseFloat(s.weight) : null,
         })),
       })),
@@ -355,11 +452,13 @@ export function updateSet(
   return mapSets(exercises, exIndex, (sets) => sets.map((s, i) => (i === setIndex ? { ...s, ...patch } : s)))
 }
 
-/** Appends a set with the last set's reps and weight (empty note, not done). */
+/** Appends a set with the last set's reps or time, and weight (empty note, not done). */
 export function addSet(exercises: Exercises, exIndex: number): Exercises {
   return mapSets(exercises, exIndex, (sets) => {
     const last = sets[sets.length - 1]
-    const next = last ? { ...emptySet(), reps: last.reps, weight: last.weight } : emptySet()
+    const next = last
+      ? { ...emptySet(), reps: last.reps, duration: last.duration ?? '', weight: last.weight }
+      : emptySet()
     return [...sets, next]
   })
 }
@@ -404,15 +503,20 @@ export function removeExercise(exercises: Exercises, exIndex: number): Exercises
   return exercises.filter((_, i) => i !== exIndex)
 }
 
-/** Points an entry at another exercise; keeps its sets unless `sets` is given. */
+/**
+ * Points an entry at another exercise; keeps its sets unless `sets` is given.
+ * Kept sets follow the new exercise's `measure` (see setsForMeasure); given
+ * sets are already the new exercise's and stay as they are.
+ */
 export function replaceExercise(
   exercises: Exercises,
   exIndex: number,
   exerciseId: string,
   sets?: SetFormValues[],
+  measure?: Measure | null,
 ): Exercises {
   return exercises.map((entry, i) =>
-    i === exIndex ? { exercise_id: exerciseId, sets: sets ?? entry.sets } : entry,
+    i === exIndex ? { exercise_id: exerciseId, sets: sets ?? setsForMeasure(entry.sets, measure) } : entry,
   )
 }
 
@@ -475,6 +579,8 @@ function parseSet(raw: unknown): SetFormValues {
   const s = isRecord(raw) ? raw : {}
   return {
     reps: str(s.reps),
+    // Drafts written before timed sets have none: '' (no version bump needed)
+    duration: str(s.duration),
     weight: str(s.weight),
     notes: str(s.notes),
     rpe: str(s.rpe),

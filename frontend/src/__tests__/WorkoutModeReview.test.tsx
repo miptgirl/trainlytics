@@ -30,7 +30,14 @@ const storedDraft = () => {
   return raw === null ? null : JSON.parse(raw)
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 
 // Complete set ignores taps for COMPLETE_SET_GUARD_MS after it appears (the double-tap guard, timed with
 // performance.now). Here performance.now is a clock only the tests move, never back: completeSet moves it past

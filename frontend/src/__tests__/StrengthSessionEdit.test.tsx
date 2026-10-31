@@ -35,7 +35,7 @@ const session = {
       exercise_id: 1,
       exercise_name: 'Squat',
       order: 1,
-      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
+      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: null, duration_seconds: null }],
     },
   ],
 }
@@ -178,7 +178,7 @@ describe('Strength session edit form', () => {
     expect(path).toBe('/sessions/5')
     expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
-      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }] },
+      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null, duration_seconds: null }] },
     ])
   })
 })

@@ -34,8 +34,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { id: 300, set_number: 1, reps: 5, weight_kg: 100 },
-        { id: 301, set_number: 2, reps: 5, weight_kg: 102.5 },
+        { id: 300, set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null },
+        { id: 301, set_number: 2, reps: 5, weight_kg: 102.5, duration_seconds: null },
       ],
     },
   ],
@@ -83,8 +83,8 @@ describe('TemplatesPage: templates are exercises and sets only', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 5, weight_kg: 100 },
-            { set_number: 2, reps: 5, weight_kg: 102.5 },
+            { set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null },
+            { set_number: 2, reps: 5, weight_kg: 102.5, duration_seconds: null },
           ],
         },
       ],

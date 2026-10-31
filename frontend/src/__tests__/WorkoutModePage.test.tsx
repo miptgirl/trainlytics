@@ -92,7 +92,14 @@ const DOCK_NAME = /\. (Choose|Add) exercise$/
 const exerciseHeading = () => screen.getByRole('button', { name: DOCK_NAME })
 const expectPosition = (k: number, m: number) =>
   expect(exerciseHeading()).toHaveAccessibleName(new RegExp(`^Exercise ${k} of ${m}, `))
-const set = (reps: string, weight: string, done = false, notes = '', rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, done = false, notes = '', rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 
 // Complete set ignores taps for COMPLETE_SET_GUARD_MS after it appears (the double-tap guard, timed with
 // performance.now). Here performance.now is a clock only the tests move, never back: completeSet moves it past
@@ -193,8 +200,8 @@ describe('Workout mode: payload parity with the full form', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
