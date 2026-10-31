@@ -13,6 +13,7 @@ import {
   isValidRestLength,
   parseRestInput,
   restSaveErrorMessage,
+  type Measure,
   type WeightScale,
 } from '../lib/workoutMode'
 
@@ -44,6 +45,8 @@ interface Exercise {
   notes: string | null
   types: ExerciseType[]
   weight_scale: WeightScale | null
+  /** Absent in responses cached before timed sets: reps. */
+  measure?: Measure
   created_at: string
 }
 
@@ -60,6 +63,7 @@ interface ExerciseFormValues {
   topLb: string
   plateLb: string
   plates: string
+  measure: Measure
 }
 
 // ── Workout section ────────────────────────────────────────────────────────
@@ -493,16 +497,31 @@ function ExercisesSection() {
     queryFn: () => api.get<ExerciseType[]>('/exercise-types'),
   })
 
+  // Last-session defaults come back matched to the exercise's measure and are cached with staleTime
+  // Infinity: after a save, refetch them so workout mode doesn't keep prefilling the old kind
+  const invalidateDefaults = () => qc.invalidateQueries({ queryKey: ['last-session-defaults'] })
+
   const createMutation = useMutation({
-    mutationFn: (body: { name: string; notes?: string; type_ids: number[]; weight_scale: WeightScale | null }) =>
+    mutationFn: (body: { name: string; notes?: string; type_ids: number[]; weight_scale: WeightScale | null; measure: Measure }) =>
       api.post<Exercise>('/exercises', body),
+    onSuccess: invalidateDefaults,
   })
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...body }: { id: number; name?: string; notes?: string | null; type_ids?: number[]; weight_scale: WeightScale | null }) =>
-      api.patch<Exercise>(`/exercises/${id}`, body),
+    mutationFn: ({
+      id,
+      ...body
+    }: {
+      id: number
+      name?: string
+      notes?: string | null
+      type_ids?: number[]
+      weight_scale: WeightScale | null
+      measure: Measure
+    }) => api.patch<Exercise>(`/exercises/${id}`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['exercises'] })
+      invalidateDefaults()
       setEditingId(null)
     },
   })
@@ -519,6 +538,7 @@ function ExercisesSection() {
         notes: values.notes || undefined,
         type_ids: values.type_ids,
         weight_scale: scaleFromForm(values),
+        measure: values.measure,
       },
       { onSuccess: () => { qc.invalidateQueries({ queryKey: ['exercises'] }); setEditingId(null) } }
     )
@@ -531,6 +551,7 @@ function ExercisesSection() {
         notes: values.notes || undefined,
         type_ids: values.type_ids,
         weight_scale: scaleFromForm(values),
+        measure: values.measure,
       },
       {
         onSuccess: (created) => {
@@ -586,6 +607,7 @@ function ExercisesSection() {
                     notes: ex.notes ?? '',
                     type_ids: ex.types.map((t) => t.id),
                     ...weightStepFields(ex.weight_scale ?? null),
+                    measure: ex.measure ?? 'reps',
                   }}
                   onSubmit={(values) =>
                     updateMutation.mutate({
@@ -595,6 +617,7 @@ function ExercisesSection() {
                       notes: values.notes || null,
                       type_ids: values.type_ids,
                       weight_scale: scaleFromForm(values),
+                      measure: values.measure,
                     })
                   }
                   onCancel={() => { setAutoOpenPicker(false); setEditingId(null) }}
@@ -609,7 +632,15 @@ function ExercisesSection() {
                 className="bg-surface rounded-xl border border-border px-4 py-3 flex items-start justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-text truncate">{ex.name}</p>
+                  {/* The tag sits outside the truncated name, so a long name can't clip it */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="font-medium text-text truncate">{ex.name}</p>
+                    {ex.measure === 'time' && (
+                      <span className="shrink-0 border border-border-strong text-text-muted-strong text-xs font-medium px-1.5 py-px rounded-sm">
+                        time
+                      </span>
+                    )}
+                  </div>
                   {ex.notes && (
                     <p className="text-sm text-text-muted-strong mt-0.5 line-clamp-2">{ex.notes}</p>
                   )}
@@ -920,6 +951,11 @@ function storedIncrementOption(stored: ExerciseFormValues | undefined): string |
   return value
 }
 
+const MEASURE_OPTIONS: { value: Measure; label: string }[] = [
+  { value: 'reps', label: 'Reps' },
+  { value: 'time', label: 'Time' },
+]
+
 // ── Exercise form ──────────────────────────────────────────────────────────
 
 function ExerciseForm({
@@ -946,11 +982,12 @@ function ExerciseForm({
   onPickerOpened?: () => void
 }) {
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<ExerciseFormValues>({
-    defaultValues: defaultValues ?? { name: '', notes: '', type_ids: [], ...weightStepFields(null) },
+    defaultValues: defaultValues ?? { name: '', notes: '', type_ids: [], ...weightStepFields(null), measure: 'reps' },
   })
 
   const selectedTypeIds = watch('type_ids') ?? []
   const weightSteps = watch('weightSteps')
+  const measure = watch('measure')
   const storedStep = storedIncrementOption(defaultValues)
   const fieldClass = 'w-full border border-border-strong rounded-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark'
 
@@ -1061,6 +1098,26 @@ function ExerciseForm({
           <p className="text-xs text-text-muted-strong">Plates counts the top plate. Blank means no limit.</p>
         </div>
       )}
+      <fieldset>
+        <legend className="block text-xs font-medium text-text-muted-strong mb-1">Measured in</legend>
+        {/* Two-option segmented control; radios underneath, so arrow keys and screen readers work as usual */}
+        <div className="inline-flex rounded-sm border border-border-strong overflow-hidden">
+          {MEASURE_OPTIONS.map((o) => (
+            <label
+              key={o.value}
+              className={`min-h-11 px-3 flex items-center text-sm font-medium cursor-pointer has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-dark has-[:focus-visible]:ring-inset ${
+                measure === o.value ? 'bg-primary-dark text-white' : 'bg-surface text-text-muted-strong hover:bg-bg'
+              }`}
+            >
+              <input type="radio" value={o.value} className="sr-only" {...register('measure')} />
+              {o.label}
+            </label>
+          ))}
+        </div>
+        <p className="mt-1 text-xs text-text-muted-strong">
+          Time: sets log a hold in seconds (plank, carry) instead of reps.
+        </p>
+      </fieldset>
       {allTypes.length > 0 && (
         <div>
           <p className="text-xs font-medium text-text-muted-strong mb-1.5">Types</p>

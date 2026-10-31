@@ -4,11 +4,17 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { EraserIcon } from './EraserIcon'
 import { emptySet } from './exerciseEntryDefaults'
-import { sanitizeRpeInput } from '../lib/strengthSession'
-import type { WeightScale } from '../lib/workoutMode'
+
+import { lastSessionToFormSets, sanitizeRpeInput, setsForMeasure, type LastSessionDefaults } from '../lib/strengthSession'
+import { inputKind, sanitizeDurationInput, type Measure, type WeightScale } from '../lib/workoutMode'
 
 export interface SetFormValues {
   reps: string
+  /**
+   * A timed set's hold in seconds as typed ("45", or "1:30" as m:ss); '' when
+   * unset. A set holds reps or a duration, never both: typing one clears the other.
+   */
+  duration: string
   weight: string
   notes: string
   /** Per-set RPE 1–10 as typed; '' when not rated. Never prefilled. */
@@ -32,6 +38,8 @@ export interface ExerciseOption {
   notes?: string | null
   types?: ExerciseTypeTag[]
   weight_scale?: WeightScale | null
+  /** How new sets are entered: counted reps (the default) or a held time. */
+  measure?: Measure
 }
 
 /** Build a list of {label, exercises} groups for the exercise picker. */
@@ -317,13 +325,72 @@ function ExercisePickerDropdown({
   )
 }
 
-interface ExerciseDefaults {
-  sets: Array<{ set_number: number; reps: number | null; weight: number | null }>
-}
 
 interface ExerciseRef {
   id: number
   name: string
+}
+
+/** The Reps column's header: "Time (s)" when every set shows Time, "Reps / time" when they mix. */
+function amountHeader(sets: SetFormValues[], measure: Measure | undefined): string {
+  const kinds = new Set(sets.map((s) => inputKind(s, measure)))
+  if (kinds.size > 1) return 'Reps / time'
+  return kinds.has('time') || (kinds.size === 0 && measure === 'time') ? 'Time (s)' : 'Reps'
+}
+
+/**
+ * A set's Reps or Time input, as `inputKind` picks from the set's values and the
+ * exercise's measure, like the header. Typing in one clears the other, so a set
+ * never holds both. Time takes whole seconds (or m:ss, as the read-only views
+ * show it) and is checked on save. One element whose binding switches, so
+ * clearing a legacy time (the set flips to Reps) keeps focus.
+ */
+function SetAmountInput({
+  control,
+  exIndex,
+  setIndex,
+  measure,
+  className,
+}: {
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any -- shared by forms with different value types */
+  control: any
+  exIndex: number
+  setIndex: number
+  measure: Measure | undefined
+  className: string
+}) {
+  const base = `exercises.${exIndex}.sets.${setIndex}`
+  const { field: reps } = useController({ control, name: `${base}.reps` })
+  const { field: duration } = useController({ control, name: `${base}.duration` })
+  const timed = inputKind({ reps: reps.value, duration: duration.value }, measure) === 'time'
+  const field = timed ? duration : reps
+  const time: string = duration.value ?? ''
+  return (
+    <input
+      type={timed ? 'text' : 'number'}
+      inputMode={timed ? 'numeric' : undefined}
+      min={timed ? undefined : '0'}
+      placeholder={timed ? 'sec' : 'reps'}
+      aria-label={timed ? `Time in seconds for set ${setIndex + 1}` : undefined}
+      className={className}
+      name={field.name}
+      ref={field.ref}
+      onBlur={field.onBlur}
+      value={field.value ?? ''}
+      onChange={(e) => {
+        if (timed) {
+          // A keystroke or paste with anything but digits and ":" is ignored
+          const next = sanitizeDurationInput(e.target.value, time)
+          if (next === time) return
+          duration.onChange(next)
+          if (reps.value) reps.onChange('')
+        } else {
+          reps.onChange(e.target.value)
+          if (duration.value) duration.onChange('')
+        }
+      }}
+    />
+  )
 }
 
 function SwapModal({
@@ -418,6 +485,7 @@ export function ExerciseEntryBlock({
   })
   const selectedId = exerciseField.value
   const selectedExercise = exercises.find((e) => e.id === parseInt(selectedId, 10))
+  const measure = selectedExercise?.measure
 
   const setValues = (useWatch({ control, name: `exercises.${exIndex}.sets` }) ?? []) as SetFormValues[]
 
@@ -449,17 +517,12 @@ export function ExerciseEntryBlock({
     let cancelled = false
     setFilledFromSession(false)
 
-    api.get<ExerciseDefaults>(`/exercises/${selectedId}/last-session-defaults`)
+    api.get<LastSessionDefaults>(`/exercises/${selectedId}/last-session-defaults`)
       .then((data) => {
         if (cancelled) return
         if (data.sets.length > 0) {
-          replaceSets(data.sets.map((s) => ({
-            reps: s.reps !== null ? String(s.reps) : '',
-            weight: s.weight !== null ? String(s.weight) : '',
-            notes: '',
-            rpe: '',
-            done: false,
-          })))
+          // The shared mapper, so a timed set's duration is prefilled like reps
+          replaceSets(lastSessionToFormSets(data))
           setFilledFromSession(true)
         } else {
           replaceSets([emptySet()])
@@ -484,22 +547,28 @@ export function ExerciseEntryBlock({
     return () => { cancelled = true }
   }, [selectedId])  
 
+  /**
+   * Points the entry at another exercise. Sets it keeps (no prefill, or until the
+   * prefill arrives) lose the value the new exercise doesn't measure: reps for a
+   * timed exercise, a duration for a reps one. Weight, notes, RPE and done stay.
+   */
+  function changeExercise(id: string) {
+    const nextMeasure = exercises.find((e) => String(e.id) === id)?.measure
+    const converted = setsForMeasure(setValues, nextMeasure)
+    if (converted !== setValues) replaceSets(converted)
+    exerciseField.onChange(id)
+  }
+
   async function swapExercise(replacement: ExerciseRef) {
     setSwapOpen(false)
     isSwappingRef.current = prefillFromLastSession
-    exerciseField.onChange(String(replacement.id))
+    changeExercise(String(replacement.id))
     setFilledFromSession(false)
     if (!prefillFromLastSession) return
     try {
-      const data = await api.get<ExerciseDefaults>(`/exercises/${replacement.id}/last-session-defaults`)
+      const data = await api.get<LastSessionDefaults>(`/exercises/${replacement.id}/last-session-defaults`)
       if (data.sets.length > 0) {
-        replaceSets(data.sets.map((s) => ({
-          reps: s.reps !== null ? String(s.reps) : '',
-          weight: s.weight !== null ? String(s.weight) : '',
-          notes: '',
-          rpe: '',
-          done: false,
-        })))
+        replaceSets(lastSessionToFormSets(data))
         setFilledFromSession(true)
       } else {
         replaceSets([emptySet()])
@@ -603,7 +672,7 @@ export function ExerciseEntryBlock({
             <ExercisePickerDropdown
               exercises={exercises}
               value={exerciseField.value}
-              onChange={exerciseField.onChange}
+              onChange={changeExercise}
               hasError={!!errors.exercises?.[exIndex]?.exercise_id}
             />
             {errors.exercises?.[exIndex]?.exercise_id && (
@@ -634,7 +703,7 @@ export function ExerciseEntryBlock({
 
             <div className={`grid ${gridCols} gap-1.5 mb-1 px-1`}>
               <span className="text-xs text-text-muted-strong">#</span>
-              <span className="text-xs text-text-muted-strong">Reps</span>
+              <span className="text-xs text-text-muted-strong">{amountHeader(setValues, measure)}</span>
               <span className={`text-xs text-text-muted-strong ${showDone || !showNotes ? '' : 'max-sm:col-span-2'}`}>
                 Weight (kg)
               </span>
@@ -654,12 +723,12 @@ export function ExerciseEntryBlock({
                     className={`grid ${gridCols} gap-1.5 items-center max-sm:gap-y-2 max-sm:py-1.5 ${isDone ? 'bg-success/10 rounded-lg px-1' : ''}`}
                   >
                     <span className={`text-xs text-center ${isDone ? 'text-success-text' : 'text-text-muted-strong'}`}>{setIndex + 1}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="reps"
+                    <SetAmountInput
+                      control={control}
+                      exIndex={exIndex}
+                      setIndex={setIndex}
+                      measure={measure}
                       className={`border rounded-sm px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark w-full ${isDone ? 'border-success/40 text-success-text sm:line-through bg-surface' : 'border-border-strong'}`}
-                      {...register(`exercises.${exIndex}.sets.${setIndex}.reps`)}
                     />
                     <input
                       type="text"

@@ -441,4 +441,90 @@ describe('SettingsPage — Exercises: weight steps', () => {
       )
     })
   })
+
+  describe('measured in', () => {
+    const measure = (name: 'Reps' | 'Time') =>
+      within(screen.getByRole('group', { name: 'Measured in' })).getByRole('radio', { name })
+
+    it('defaults to Reps on a new exercise and saves Time when chosen', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Plank')
+
+      expect(measure('Reps')).toBeChecked()
+      // Options are full-height tap targets
+      expect(measure('Time').closest('label')).toHaveClass('min-h-11')
+      await user.click(measure('Time'))
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ name: 'Plank', measure: 'time' }))
+      // The row tags a timed exercise, outside the truncated name so a long name can't clip it
+      const name = await within(section()).findByText('Plank')
+      const row = name.closest('li') as HTMLElement
+      const tag = within(row).getByText('time')
+      expect(name).toHaveClass('truncate')
+      expect(name).not.toContainElement(tag)
+    })
+
+    it('a new exercise left on Reps saves reps', async () => {
+      const user = userEvent.setup()
+      renderPage()
+      await openNewForm(user, 'Row')
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      expect(mockPost).toHaveBeenCalledWith('/exercises', expect.objectContaining({ measure: 'reps' }))
+    })
+
+    it('editing shows the stored measure and saves a switch back to reps', async () => {
+      exercises = [{ id: 1, name: 'Wall sit', notes: null, types: [], weight_scale: null, measure: 'time' }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Wall sit')
+
+      expect(measure('Time')).toBeChecked()
+      await user.click(measure('Reps'))
+      await user.click(saveButton())
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      expect(mockPatch).toHaveBeenCalledWith('/exercises/1', expect.objectContaining({ measure: 'reps' }))
+    })
+
+    it('saving an exercise marks cached last-session defaults stale, so workout mode refetches them', async () => {
+      exercises = [{ id: 1, name: 'Wall sit', notes: null, types: [], weight_scale: null, measure: 'reps' }]
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+      const key = ['last-session-defaults', '1']
+      qc.setQueryData(key, { sets: [{ set_number: 1, reps: 60, weight: null, duration_seconds: null }] })
+      const user = userEvent.setup()
+      render(
+        <QueryClientProvider client={qc}>
+          <MemoryRouter>
+            <SettingsPage />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      )
+      await openEditForm(user, 'Wall sit')
+      expect(qc.getQueryState(key)?.isInvalidated).toBe(false)
+      await user.click(measure('Time'))
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPatch).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(qc.getQueryState(key)?.isInvalidated).toBe(true))
+
+      // Creating one does too
+      qc.setQueryData(key, { sets: [] })
+      expect(qc.getQueryState(key)?.isInvalidated).toBe(false)
+      await openNewForm(user, 'Plank')
+      await user.click(saveButton())
+      await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+      await waitFor(() => expect(qc.getQueryState(key)?.isInvalidated).toBe(true))
+    })
+
+    it('an exercise with no measure in the response edits as Reps', async () => {
+      exercises = [{ id: 1, name: 'Row', notes: null, types: [], weight_scale: null }]
+      const user = userEvent.setup()
+      renderPage()
+      await openEditForm(user, 'Row')
+      expect(measure('Reps')).toBeChecked()
+    })
+  })
 })

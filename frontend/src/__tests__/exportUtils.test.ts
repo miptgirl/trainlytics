@@ -102,6 +102,25 @@ describe('formatStrengthSession', () => {
     expect(result).toContain('- Set 2: 100 kg × 5\n')
   })
 
+  it('renders a timed set as its seconds, with the load when there is one', () => {
+    const result = formatStrengthSession({
+      ...baseStrength,
+      exercises: [
+        {
+          exercise_name: 'Plank',
+          sets: [
+            { set_number: 1, reps: null, weight: null, duration_seconds: 45 },
+            { set_number: 2, reps: null, weight: 10, duration_seconds: 60, rpe: 8 },
+          ],
+        },
+        ...baseStrength.exercises,
+      ],
+    })
+    expect(result).toContain('### Plank\n- Set 1: 45 s\n- Set 2: 60 s × 10 kg @RPE 8')
+    // Reps lines are unchanged
+    expect(result).toContain('- Set 1: 80 kg × 8')
+  })
+
   it('renders — for null set weight', () => {
     const session: StrengthSession = {
       ...baseStrength,

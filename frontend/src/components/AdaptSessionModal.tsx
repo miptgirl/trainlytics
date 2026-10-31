@@ -9,7 +9,7 @@ interface SessionSnapshot {
   exercises: {
     exercise_id: number
     exercise_name: string
-    sets: { reps: number | null; weight_kg: number | null }[]
+    sets: { reps: number | null; weight_kg: number | null; duration_seconds: number | null }[]
   }[]
 }
 

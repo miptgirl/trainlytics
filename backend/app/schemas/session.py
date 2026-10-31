@@ -2,7 +2,7 @@ from datetime import date as DateType
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class CardioSegmentCreate(BaseModel):
@@ -94,12 +94,31 @@ class CardioSessionOut(BaseModel):
 
 # ── Strength ──────────────────────────────────────────────────────────────────
 
-class StrengthSetCreate(BaseModel):
+# A timed set's hold, in whole seconds (up to a day)
+MAX_SET_DURATION_SECONDS = 86400
+
+
+class RepsOrDuration:
+    """Mixin for set schemas: a set counts reps or holds a duration, never both.
+
+    Both null stays allowed (an empty set), so every weight × reps computation can
+    keep ignoring sets without reps.
+    """
+
+    @model_validator(mode="after")
+    def validate_reps_or_duration(self):
+        if self.reps is not None and self.duration_seconds is not None:
+            raise ValueError("a set has reps or duration_seconds, not both")
+        return self
+
+
+class StrengthSetCreate(RepsOrDuration, BaseModel):
     set_number: int
     reps: int | None = None
     weight: float | None = None
     notes: str | None = None
     rpe: int | None = Field(default=None, ge=1, le=10)
+    duration_seconds: int | None = Field(default=None, ge=1, le=MAX_SET_DURATION_SECONDS)
 
 
 class StrengthSetOut(BaseModel):
@@ -111,6 +130,7 @@ class StrengthSetOut(BaseModel):
     weight: float | None
     notes: str | None
     rpe: int | None = None
+    duration_seconds: int | None = None
 
 
 class StrengthExerciseEntryCreate(BaseModel):

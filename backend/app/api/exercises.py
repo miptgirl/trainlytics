@@ -50,7 +50,9 @@ async def create_exercise(
 ) -> Exercise:
     types = await _resolve_types(body.type_ids, user, db)
     scale = body.weight_scale.model_dump() if body.weight_scale else None
-    exercise = Exercise(user_id=user, name=body.name, notes=body.notes, weight_scale=scale)
+    exercise = Exercise(
+        user_id=user, name=body.name, notes=body.notes, weight_scale=scale, measure=body.measure
+    )
     exercise.types = types
     db.add(exercise)
     await db.commit()
@@ -105,8 +107,19 @@ async def get_last_session_defaults(
     if not entry:
         return ExerciseDefaultsOut(sets=[])
 
+    # Defaults follow the exercise's current measure: an exercise switched from (fake)
+    # reps to time must not keep prefilling reps, nor a reps one old holds. Weight stays.
+    timed = exercise.measure == "time"
     return ExerciseDefaultsOut(
-        sets=[SetDefault(set_number=s.set_number, reps=s.reps, weight=s.weight) for s in entry.sets]
+        sets=[
+            SetDefault(
+                set_number=s.set_number,
+                reps=None if timed else s.reps,
+                weight=s.weight,
+                duration_seconds=s.duration_seconds if timed else None,
+            )
+            for s in entry.sets
+        ]
     )
 
 

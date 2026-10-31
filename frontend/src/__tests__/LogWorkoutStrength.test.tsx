@@ -35,8 +35,8 @@ const legDay = {
       exercise_name: 'Squat',
       order: 1,
       sets: [
-        { set_number: 1, reps: 5, weight_kg: 100 },
-        { set_number: 2, reps: 5, weight_kg: 102.5 },
+        { set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null },
+        { set_number: 2, reps: 5, weight_kg: 102.5, duration_seconds: null },
       ],
     },
   ],
@@ -122,8 +122,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -150,7 +150,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight_kg: 100 }],
+          sets: [{ set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null }],
         },
       ],
     })
@@ -166,7 +166,7 @@ describe('LogWorkoutPage strength path: POST body', () => {
         {
           exercise_id: 1,
           order: 1,
-          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9 }],
+          sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: 9, duration_seconds: null }],
         },
       ],
     })
@@ -214,6 +214,37 @@ describe('LogWorkoutPage strength path: POST body', () => {
     expect(mockPost).not.toHaveBeenCalled()
   })
 
+  it('a time that would not be saved blocks the save; a valid m:ss time is sent as seconds', async () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        version: 3, title: 'Core', duration_seconds: null, calories: '', date: '2026-08-30T18:00',
+        notes: '', wellbeing: null, rpe: null, templateId: null,
+        exercises: [{ exercise_id: '2', sets: [{ reps: '', duration: '0', weight: '', notes: '', rpe: '', done: false }] }],
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage('/log?type=strength')
+    await user.click(await screen.findByRole('button', { name: 'Restore' }))
+    await waitFor(() => expect(screen.getByDisplayValue('Core')).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bench, set 1: time "0" must be 1–86400 seconds (or m:ss).')
+    expect(mockPost).not.toHaveBeenCalled()
+
+    // A set holding a time shows its Time input on a reps exercise; type over the value (clearing it
+    // would leave an empty set, which follows Bench's measure: Reps)
+    const time = screen.getByLabelText('Time in seconds for set 1')
+    await user.type(time, '1:30', { initialSelectionStart: 0, initialSelectionEnd: 1 })
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Save Session' }))
+    await waitFor(() => expect(mockPost).toHaveBeenCalledTimes(1))
+    const body = mockPost.mock.calls[0][1] as { exercises: { sets: unknown[] }[] }
+    expect(body.exercises[0].sets).toEqual([
+      { set_number: 1, reps: null, duration_seconds: 90, weight: null, notes: null, rpe: null },
+    ])
+  })
+
   it('no template: picker + last-session defaults posts directly without a diff prompt', async () => {
     const user = userEvent.setup()
     renderPage('/log?type=strength&date=2026-09-02T07:30')
@@ -244,8 +275,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 8, weight: 60, notes: null, rpe: null },
-            { set_number: 2, reps: 7, weight: 62.5, notes: null, rpe: null },
+            { set_number: 1, reps: 8, weight: 60, notes: null, rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 7, weight: 62.5, notes: null, rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -300,8 +331,8 @@ describe('LogWorkoutPage strength path: POST body', () => {
           exercise_id: 2,
           order: 1,
           sets: [
-            { set_number: 1, reps: 10, weight: 50, notes: null, rpe: null },
-            { set_number: 2, reps: null, weight: 55, notes: 'last', rpe: null },
+            { set_number: 1, reps: 10, weight: 50, notes: null, rpe: null, duration_seconds: null },
+            { set_number: 2, reps: null, weight: 55, notes: 'last', rpe: null, duration_seconds: null },
           ],
         },
       ],

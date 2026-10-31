@@ -27,7 +27,7 @@ import {
   buildAdaptSnapshot,
   buildStrengthPayload,
   computeDiff,
-  findInvalidSetRpe,
+  findInvalidSet,
   deleteSet as deleteSetFrom,
   emptyStrengthDefaults,
   fetchLastSessionSets,
@@ -139,7 +139,7 @@ export interface StrengthSessionForm {
   // Field actions
   setField: <K extends StrengthScalarField>(name: K, value: StrengthFormValues[K]) => void
   updateSet: (exIndex: number, setIndex: number, patch: Partial<SetFormValues>) => void
-  /** Appends a copy of the last set's reps and weight. */
+  /** Appends a copy of the last set's reps (or time) and weight. */
   addSet: (exIndex: number) => void
   insertSet: (exIndex: number, setIndex: number, set?: SetFormValues) => void
   /** Returns the removed set (for undo), or null when it was the last one. */
@@ -149,7 +149,10 @@ export interface StrengthSessionForm {
   /** Returns the removed entry (for undo), or null on the last remaining exercise. */
   removeExercise: (exIndex: number) => ExerciseEntryFormValues | null
   insertExercise: (exIndex: number, entry: ExerciseEntryFormValues) => void
-  /** Keeps the current sets unless `sets` is given. */
+  /**
+   * Keeps the current sets unless `sets` is given; kept sets lose the value the
+   * new exercise doesn't measure (reps for a timed exercise, or the reverse).
+   */
   replaceExercise: (exIndex: number, exerciseId: string, sets?: SetFormValues[]) => void
   /** Replaces an exercise's sets with its last-session defaults (one empty set if none). */
   prefillFromLastSession: (exIndex: number) => Promise<void>
@@ -164,7 +167,7 @@ export interface StrengthSessionForm {
    * the prompt is open; once the prompt was answered it isn't asked again.
    */
   requestSave: (data: StrengthFormValues) => Promise<void>
-  /** Why the last save attempt was refused before sending (e.g. an invalid set RPE), or null. */
+  /** Why the last save attempt was refused before sending (e.g. an invalid set RPE or time), or null. */
   validationError: string | null
   saveMutation: UseMutationResult<{ id: number }, Error, StrengthFormValues>
   /** Waiting for the template snapshot before the diff prompt (part of `isSaving`). */
@@ -517,7 +520,8 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
 
   function replaceExercise(exIndex: number, exerciseId: string, sets?: SetFormValues[]) {
     if (!getValues(`exercises.${exIndex}` as const)) return
-    setValue('exercises', replaceExerciseIn(getValues('exercises'), exIndex, exerciseId, sets), dirty)
+    const measure = exerciseLibrary.find((e) => String(e.id) === exerciseId)?.measure
+    setValue('exercises', replaceExerciseIn(getValues('exercises'), exIndex, exerciseId, sets, measure), dirty)
   }
 
   async function prefillFromLastSession(exIndex: number) {
@@ -558,13 +562,13 @@ export function useStrengthSessionForm(options: UseStrengthSessionFormOptions = 
   // After a refused save the message tracks the live values, so it clears once fixed
   const [showValidation, setShowValidation] = useState(false)
   const exerciseNames = new Map(exerciseLibrary.map((e) => [String(e.id), e.name]))
-  const invalidRpe = (exercises: ExerciseEntryFormValues[] | undefined) =>
-    findInvalidSetRpe(exercises, (id) => exerciseNames.get(id))
-  const validationError = showValidation ? (invalidRpe(values.exercises)?.message ?? null) : null
+  const invalidSet = (exercises: ExerciseEntryFormValues[] | undefined) =>
+    findInvalidSet(exercises, (id) => exerciseNames.get(id))
+  const validationError = showValidation ? (invalidSet(values.exercises)?.message ?? null) : null
 
   /** Returns false (and shows why) when `data` would be rejected by the API. */
   function validateForSave(data: StrengthFormValues): boolean {
-    const ok = invalidRpe(data.exercises) === null
+    const ok = invalidSet(data.exercises) === null
     setShowValidation(!ok)
     // A refused save replaces the last failed one; two alerts would contradict each other
     if (!ok) saveMutation.reset()

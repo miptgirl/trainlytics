@@ -154,6 +154,9 @@ interface SetComparisonRow {
   planned_weight_kg: number | null
   actual_reps: number | null
   actual_weight_kg: number | null
+  /** Timed sets: the hold in seconds instead of reps (absent in responses cached before timed sets). */
+  planned_duration_seconds?: number | null
+  actual_duration_seconds?: number | null
 }
 
 interface ExerciseComparison {

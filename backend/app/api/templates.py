@@ -50,6 +50,7 @@ def _build_template_out(tmpl: StrengthTemplate) -> StrengthTemplateRead:
                 id=entry.id,
                 exercise_id=entry.exercise_id,
                 exercise_name=entry.exercise.name,
+                measure=entry.exercise.measure,
                 order=entry.order,
                 sets=[
                     StrengthTemplateSetOut(
@@ -57,6 +58,7 @@ def _build_template_out(tmpl: StrengthTemplate) -> StrengthTemplateRead:
                         set_number=s.set_number,
                         reps=s.reps,
                         weight_kg=s.weight_kg,
+                        duration_seconds=s.duration_seconds,
                     )
                     for s in entry.sets
                 ],

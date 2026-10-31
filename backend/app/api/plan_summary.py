@@ -394,6 +394,8 @@ async def session_comparison(
                 planned_weight_kg=p.weight_kg if p else None,
                 actual_reps=a.reps if a else None,
                 actual_weight_kg=a.weight if a else None,
+                planned_duration_seconds=p.duration_seconds if p else None,
+                actual_duration_seconds=a.duration_seconds if a else None,
             ))
 
         planned_vol = sum((s.reps or 0) * (s.weight_kg or 0) for s in planned_sets)
@@ -421,6 +423,7 @@ async def session_comparison(
                 planned_weight_kg=None,
                 actual_reps=s.reps,
                 actual_weight_kg=s.weight,
+                actual_duration_seconds=s.duration_seconds,
             )
             for s in actual_sets
         ]

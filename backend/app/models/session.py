@@ -146,6 +146,8 @@ class StrengthSet(Base):
     weight: Mapped[float | None] = mapped_column(nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     rpe: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # A timed set (plank, carry): seconds instead of reps; never both
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     exercise_entry: Mapped["StrengthExerciseEntry"] = relationship(
         "StrengthExerciseEntry", back_populates="sets"

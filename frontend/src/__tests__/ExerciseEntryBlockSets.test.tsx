@@ -9,6 +9,7 @@ vi.mock('../lib/api', () => ({
   api: { get: vi.fn().mockResolvedValue([]), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }))
 
+import { api } from '../lib/api'
 import { ExerciseEntryBlock, type ExerciseEntryFormValues } from '../components/ExerciseEntryBlock'
 
 const exercises = [{ id: 1, name: 'Squat' }]
@@ -162,5 +163,168 @@ describe('ExerciseEntryBlock set rows', () => {
     expect(follows(rows().at(-1)!, addBelow)).toBe(true)
     await userEvent.click(addBelow)
     expect(rows()).toHaveLength(4)
+  })
+})
+
+// ── Timed sets ───────────────────────────────────────────────────────────────
+
+const library = [
+  { id: 1, name: 'Squat', measure: 'reps' as const },
+  { id: 7, name: 'Plank', measure: 'time' as const },
+]
+
+type TimedSet = { reps: string; duration: string; weight: string; notes: string; rpe: string; done: boolean }
+const tset = (reps: string, duration: string, weight = '', done = false): TimedSet => ({
+  reps,
+  duration,
+  weight,
+  notes: '',
+  rpe: '',
+  done,
+})
+
+function TimedHarness({ exerciseId, sets, prefill }: { exerciseId: string; sets: TimedSet[]; prefill: boolean }) {
+  const { register, control, setValue, formState } = useForm<{ exercises: ExerciseEntryFormValues[] }>({
+    defaultValues: { exercises: [{ exercise_id: exerciseId, sets }] },
+  })
+  const watched = useWatch({ control, name: 'exercises.0.sets' })
+  return (
+    <>
+      <ExerciseEntryBlock
+        exIndex={0}
+        register={register}
+        control={control}
+        setValue={setValue as never}
+        exercises={library}
+        canRemove={false}
+        onRemove={() => {}}
+        errors={formState.errors}
+        showDone
+        showRpe
+        prefillFromLastSession={prefill}
+      />
+      <output data-testid="values">{JSON.stringify(watched)}</output>
+    </>
+  )
+}
+
+async function renderTimed(exerciseId: string, sets: TimedSet[], prefill = false) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  await act(async () => {
+    render(
+      <QueryClientProvider client={qc}>
+        <TimedHarness exerciseId={exerciseId} sets={sets} prefill={prefill} />
+      </QueryClientProvider>,
+    )
+  })
+}
+
+const timedValues = () => JSON.parse(screen.getByTestId('values').textContent!) as TimedSet[]
+
+describe('ExerciseEntryBlock timed sets', () => {
+  it('a timed exercise shows a Time (s) column with a numeric text input instead of Reps', async () => {
+    const user = userEvent.setup()
+    await renderTimed('7', [tset('', '45'), tset('', '')])
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    expect(screen.queryByText('Reps')).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText('reps')).not.toBeInTheDocument()
+    const first = screen.getByLabelText('Time in seconds for set 1')
+    expect(first).toHaveValue('45')
+    expect(first).toHaveAttribute('inputmode', 'numeric')
+    const second = screen.getByLabelText('Time in seconds for set 2')
+    await user.type(second, '1:30')
+    expect(timedValues()[1]).toEqual(tset('', '1:30'))
+  })
+
+  it('a reps exercise keeps the Reps column', async () => {
+    await renderTimed('1', [tset('5', '', '100')])
+    expect(screen.getByText('Reps')).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Time in seconds/)).not.toBeInTheDocument()
+  })
+
+  it('a set logged as timed shows its time after the exercise went back to reps; cleared, it follows the exercise', async () => {
+    const user = userEvent.setup()
+    await renderTimed('1', [tset('', '45'), tset('8', '', '60')])
+    expect(screen.getByText('Reps / time')).toBeInTheDocument()
+    const time = screen.getByLabelText('Time in seconds for set 1')
+    expect(time).toHaveValue('45')
+    // Replacing the value keeps it a time
+    await user.type(time, '50', { initialSelectionStart: 0, initialSelectionEnd: 2 })
+    expect(timedValues()[0]).toEqual(tset('', '50'))
+    // Cleared, the set has no value and takes the exercise's kind: Reps, in the same (still focused) input
+    await user.clear(time)
+    const reps = within(rows()[0]).getByPlaceholderText('reps')
+    expect(reps).toBe(time)
+    expect(reps).toHaveFocus()
+    expect(screen.getByText('Reps')).toBeInTheDocument()
+    await user.type(reps, '8')
+    expect(timedValues()[0]).toEqual(tset('8', ''))
+  })
+
+  it('a timed exercise\'s set holding reps shows Reps; cleared, it flips to Time with the header', async () => {
+    const user = userEvent.setup()
+    await renderTimed('7', [tset('60', '')])
+    expect(screen.getByText('Reps')).toBeInTheDocument()
+    const reps = screen.getByPlaceholderText('reps')
+    await user.clear(reps)
+    const time = screen.getByLabelText('Time in seconds for set 1')
+    expect(time).toBe(reps)
+    expect(time).toHaveFocus()
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    await user.type(time, '45')
+    expect(timedValues()[0]).toEqual(tset('', '45'))
+  })
+
+  it('ignores a keystroke or paste that is not digits and ":"', async () => {
+    const user = userEvent.setup()
+    await renderTimed('7', [tset('', '45')])
+    const time = screen.getByLabelText('Time in seconds for set 1')
+    await user.type(time, '.')
+    expect(time).toHaveValue('45')
+    expect(timedValues()[0]).toEqual(tset('', '45'))
+    await user.clear(time)
+    await user.paste('-5')
+    expect(time).toHaveValue('')
+    await user.paste('45.5')
+    expect(time).toHaveValue('')
+    await user.paste('1:30')
+    expect(timedValues()[0]).toEqual(tset('', '1:30'))
+  })
+
+  it('prefills a timed exercise\'s times from last session when it is picked', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.get).mockImplementation(async (path: string) => {
+      if (path === '/exercises/7/last-session-defaults') {
+        return {
+          sets: [
+            { set_number: 1, reps: null, weight: null, duration_seconds: 45 },
+            { set_number: 2, reps: null, weight: 10, duration_seconds: 60 },
+          ],
+        } as never
+      }
+      return [] as never
+    })
+    try {
+      await renderTimed('1', [tset('5', '', '100')], true)
+      await user.click(screen.getByRole('button', { name: 'Squat' }))
+      await user.click(screen.getByRole('button', { name: 'Plank' }))
+      expect(await screen.findByLabelText('Time in seconds for set 2')).toHaveValue('60')
+      expect(screen.getByLabelText('Time in seconds for set 1')).toHaveValue('45')
+      expect(screen.getByText('Filled from last session')).toBeInTheDocument()
+      expect(timedValues()).toEqual([tset('', '45'), tset('', '60', '10')])
+    } finally {
+      vi.mocked(api.get).mockResolvedValue([] as never)
+    }
+  })
+
+  it('picking an exercise of the other measure clears reps and keeps weight and done', async () => {
+    const user = userEvent.setup()
+    await renderTimed('1', [tset('5', '', '100', true), tset('6', '', '100')])
+    // The picker opens on the current exercise's group
+    await user.click(screen.getByRole('button', { name: 'Squat' }))
+    await user.click(screen.getByRole('button', { name: 'Plank' }))
+    expect(timedValues()).toEqual([tset('', '', '100', true), tset('', '', '100')])
+    expect(screen.getByText('Time (s)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Time in seconds for set 1')).toHaveValue('')
   })
 })

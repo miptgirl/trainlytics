@@ -162,7 +162,7 @@ PROFILE = {
 }
 
 CARDIO_TYPES = ["Running", "Walking", "Cycling"]
-EXERCISE_TYPES = ["Chest", "Back", "Shoulders", "Arms", "Legs", "Glutes"]
+EXERCISE_TYPES = ["Chest", "Back", "Shoulders", "Arms", "Legs", "Glutes", "Core"]
 
 # name: (types, base kg, sets, reps, rounding step)
 EXERCISES: dict[str, tuple[list[str], float, int, int, float]] = {
@@ -186,13 +186,21 @@ EXERCISES: dict[str, tuple[list[str], float, int, int, float]] = {
     "Standing calf raise": (["Legs"], 60, 4, 15, 2.5),
 }
 
+# Measured in time: name: (types, kg or None for bodyweight, sets, (shortest, longest) hold in s).
+# Holds grow from the shortest to the longest over the block.
+TIMED_EXERCISES: dict[str, tuple[list[str], float | None, int, tuple[int, int]]] = {
+    "Plank": (["Core"], None, 3, (45, 75)),
+    "Farmer's carry": (["Core", "Arms"], 24, 3, (30, 45)),
+}
+TIMED_NOTES = {"Farmer's carry": "Two kettlebells; weight is per hand."}
+
 TEMPLATES = {
     "Upper body A": ["Barbell bench press", "Barbell row", "Overhead press", "Lat pulldown",
                      "Dumbbell biceps curl", "Triceps pushdown"],
     "Upper body B": ["Incline dumbbell press", "Seated cable row", "Dumbbell lateral raise",
                      "Face pull", "Hammer curl", "Overhead triceps extension"],
     "Lower body": ["Back squat", "Romanian deadlift", "Leg press", "Walking lunge", "Hip thrust",
-                   "Standing calf raise"],
+                   "Standing calf raise", "Plank", "Farmer's carry"],
 }
 
 SET_NOTES = ["Felt heavy", "Last rep slow", "Easy, add weight next time", "Form check ok"]
@@ -242,9 +250,32 @@ class _Ids:
         self.templates: dict[str, int] = {}
 
 
+def _timed_sets(name: str, d: date, w: int) -> list[dict]:
+    """A timed exercise's sets: duration_seconds and no reps.
+
+    Own RNG per exercise and day, so adding timed exercises left every other value unchanged.
+    """
+    _, kg, nsets, (lo, hi) = TIMED_EXERCISES[name]
+    rng = _rng("hold", name, d.isoformat())
+    target = lo + (hi - lo) * min(1.0, w / 11)
+    sets = []
+    for s in range(1, nsets + 1):
+        sec = _round(5, target + rng.choice([-5, 0, 0, 5]) - (5 if s == nsets else 0))
+        rpe = None
+        if rng.random() < 0.33:  # as for reps sets: about a third rated, the last set harder
+            rpe = min(9, rng.choice([6, 7, 7, 8]) + (1 if s == nsets else 0))
+        sets.append({"set_number": s, "reps": None, "duration_seconds": int(min(hi, max(lo, sec))),
+                     "weight": kg, "notes": None, "rpe": rpe})
+    return sets
+
+
 def _strength_payload(ids: _Ids, rng: random.Random, tname: str, d: date, w: int) -> dict:
     entries = []
     for i, name in enumerate(TEMPLATES[tname], 1):
+        if name in TIMED_EXERCISES:
+            entries.append({"exercise_id": ids.exercises[name], "order": i,
+                            "sets": _timed_sets(name, d, w)})
+            continue
         _, base, nsets, reps, step = EXERCISES[name]
         weight = max(step, _round(step, base * (1 + 0.018 * w) + rng.choice([-1, 0, 0, 1]) * step))
         sets = []
@@ -429,12 +460,22 @@ async def seed_demo(
     for name, (tags, *_rest) in EXERCISES.items():
         body = {"name": name, "type_ids": [ids.ex_types[t] for t in tags]}
         ids.exercises[name] = (await api("POST", "/api/exercises", body))["id"]
+    for name, (tags, *_rest) in TIMED_EXERCISES.items():
+        body = {"name": name, "type_ids": [ids.ex_types[t] for t in tags], "measure": "time",
+                "notes": TIMED_NOTES.get(name)}
+        ids.exercises[name] = (await api("POST", "/api/exercises", body))["id"]
+
+    def template_sets(e: str) -> list[dict]:
+        if e in TIMED_EXERCISES:
+            _, kg, nsets, (lo, _hi) = TIMED_EXERCISES[e]
+            return [{"set_number": s, "duration_seconds": lo, "weight_kg": kg}
+                    for s in range(1, nsets + 1)]
+        return [{"set_number": s, "reps": EXERCISES[e][3], "weight_kg": EXERCISES[e][1]}
+                for s in range(1, EXERCISES[e][2] + 1)]
+
     for tname, names in TEMPLATES.items():
         body = {"name": tname, "exercises": [
-            {"exercise_id": ids.exercises[e], "order": i, "sets": [
-                {"set_number": s, "reps": EXERCISES[e][3], "weight_kg": EXERCISES[e][1]}
-                for s in range(1, EXERCISES[e][2] + 1)
-            ]}
+            {"exercise_id": ids.exercises[e], "order": i, "sets": template_sets(e)}
             for i, e in enumerate(names, 1)
         ]}
         ids.templates[tname] = (await api("POST", "/api/templates/strength", body))["id"]

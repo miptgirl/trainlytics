@@ -2,14 +2,23 @@ import { describe, it, expect } from 'vitest'
 import {
   addExercise,
   addSet,
+  buildAdaptSnapshot,
   buildStrengthPayload,
   deleteSet,
   insertSet,
   insertExercise,
   describeDraft,
   computeDiff,
+  findInvalidSet,
+  findInvalidSetDuration,
   findInvalidSetRpe,
+  inputKind,
+  isValidSetDuration,
+  lastSessionToFormSets,
   isValidSetRpe,
+  parseDuration,
+  setKind,
+  setRepsOrDuration,
   templateToFormValues,
   toTemplatePayload,
   parseSetRpe,
@@ -28,7 +37,14 @@ import {
 } from '../lib/strengthSession'
 import type { ExerciseEntryFormValues } from '../components/ExerciseEntryBlock'
 
-const set = (reps: string, weight: string, notes = '', done = false, rpe = '') => ({ reps, weight, notes, rpe, done })
+const set = (reps: string, weight: string, notes = '', done = false, rpe = '', duration = '') => ({
+  reps,
+  duration,
+  weight,
+  notes,
+  rpe,
+  done,
+})
 
 const values: StrengthFormValues = {
   title: 'Leg day',
@@ -59,8 +75,8 @@ describe('buildStrengthPayload', () => {
           exercise_id: 1,
           order: 1,
           sets: [
-            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null },
-            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null },
+            { set_number: 1, reps: 6, weight: 100, notes: 'felt ok', rpe: null, duration_seconds: null },
+            { set_number: 2, reps: 5, weight: 102.5, notes: 'tough', rpe: null, duration_seconds: null },
           ],
         },
       ],
@@ -83,9 +99,9 @@ describe('buildStrengthPayload', () => {
     })
     expect(body).toMatchObject({ title: null, calories: null, notes: null, duration_seconds: null })
     expect(body.exercises).toEqual([
-      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null, rpe: null }] },
+      { exercise_id: 9, order: 1, sets: [{ set_number: 1, reps: null, weight: null, notes: null, rpe: null, duration_seconds: null }] },
       // '0' is a non-empty string, so weight 0 is kept
-      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null, rpe: null }] },
+      { exercise_id: 2, order: 2, sets: [{ set_number: 1, reps: 8, weight: 0, notes: null, rpe: null, duration_seconds: null }] },
     ])
   })
 })
@@ -145,7 +161,7 @@ describe('per-set RPE', () => {
       id: 3,
       name: 'Leg day',
       exercises: [
-        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100 }] },
+        { exercise_id: 1, exercise_name: 'Squat', order: 1, sets: [{ set_number: 1, reps: 5, weight_kg: 100, duration_seconds: null }] },
       ],
     }
     const form = { ...values, exercises: [{ exercise_id: '1', sets: [set('5', '100', '', true, '9')] }] }
@@ -237,6 +253,198 @@ describe('set and exercise transforms', () => {
   })
 })
 
+describe('timed sets', () => {
+  const hold = (duration: string, weight = '', notes = '', done = false, rpe = '') =>
+    set('', weight, notes, done, rpe, duration)
+  const plankSnapshot = {
+    id: 3,
+    name: 'Core',
+    exercises: [
+      {
+        exercise_id: 7,
+        exercise_name: 'Plank',
+        order: 1,
+        sets: [
+          { set_number: 1, reps: null, weight_kg: null, duration_seconds: 45 },
+          { set_number: 2, reps: null, weight_kg: null, duration_seconds: 45 },
+        ],
+      },
+    ],
+  }
+
+  it('parseDuration reads whole seconds or m:ss, 1 s to a day', () => {
+    expect(parseDuration('90')).toBe(90)
+    expect(parseDuration(' 1:30 ')).toBe(90)
+    expect(parseDuration('45')).toBe(45)
+    expect(parseDuration('86400')).toBe(86400)
+    expect(parseDuration('1440:00')).toBe(86400)
+    for (const bad of ['', '  ', '0', '0:00', '1:3', '1:60', '90000', '86401', '45s', '1.5', '-5', ':30', undefined, null]) {
+      expect(parseDuration(bad)).toBeNull()
+    }
+    expect(isValidSetDuration('')).toBe(true)
+    expect(isValidSetDuration('1:30')).toBe(true)
+    expect(isValidSetDuration('0')).toBe(false)
+  })
+
+  it('a draft written before timed sets loads with the time empty, no version bump', () => {
+    const parsed = parseStrengthDraft({
+      version: STRENGTH_DRAFT_VERSION,
+      title: 'Old',
+      exercises: [{ exercise_id: '1', sets: [{ reps: '5', weight: '100', notes: '', rpe: '', done: false }] }],
+    })!
+    expect(parsed.values.exercises[0].sets[0]).toEqual(set('5', '100'))
+    const timed = parseStrengthDraft({ title: 'New', exercises: [{ exercise_id: '7', sets: [{ duration: '1:30' }] }] })!
+    expect(timed.values.exercises[0].sets[0].duration).toBe('1:30')
+  })
+
+  it('payloads send whole seconds or null, and never reps and a time together', () => {
+    const form: StrengthFormValues = {
+      ...values,
+      exercises: [{ exercise_id: '7', sets: [hold('45'), hold('1:30', '10', '', true, '8'), set('', '')] }],
+    }
+    expect(buildStrengthPayload(form).exercises[0].sets).toEqual([
+      { set_number: 1, reps: null, duration_seconds: 45, weight: null, notes: null, rpe: null },
+      { set_number: 2, reps: null, duration_seconds: 90, weight: 10, notes: null, rpe: 8 },
+      { set_number: 3, reps: null, duration_seconds: null, weight: null, notes: null, rpe: null },
+    ])
+    expect(toTemplatePayload(form).exercises[0].sets).toEqual([
+      { set_number: 1, reps: null, duration_seconds: 45, weight_kg: null },
+      { set_number: 2, reps: null, duration_seconds: 90, weight_kg: 10 },
+      { set_number: 3, reps: null, duration_seconds: null, weight_kg: null },
+    ])
+    expect(buildAdaptSnapshot(form, [{ id: 7, name: 'Plank' }], 'Core').exercises[0].sets[0]).toEqual({
+      reps: null,
+      duration_seconds: 45,
+      weight_kg: null,
+    })
+    // A hand-edited draft holding both reads as timed; only the time is sent
+    const both = { ...values, exercises: [{ exercise_id: '7', sets: [set('10', '', '', false, '', '45')] }] }
+    expect(buildStrengthPayload(both).exercises[0].sets[0]).toMatchObject({ reps: null, duration_seconds: 45 })
+  })
+
+  it('template prefill carries the planned time', () => {
+    expect(templateToFormValues(plankSnapshot).exercises[0].sets).toEqual([hold('45'), hold('45')])
+  })
+
+  it('template prefill follows each exercise\'s current measure, keeping weight', () => {
+    const switched = {
+      id: 3,
+      name: 'Mixed',
+      exercises: [
+        // Planned as (fake) reps, measured in time now
+        {
+          exercise_id: 7, exercise_name: 'Dead hang', measure: 'time' as const, order: 1,
+          sets: [{ set_number: 1, reps: 40, weight_kg: 10, duration_seconds: null }],
+        },
+        // Planned as a hold, measured in reps now
+        {
+          exercise_id: 2, exercise_name: 'Wall sit', measure: 'reps' as const, order: 2,
+          sets: [{ set_number: 1, reps: null, weight_kg: null, duration_seconds: 45 }],
+        },
+        // No measure (an older cached snapshot): as entered
+        { exercise_id: 1, exercise_name: 'Squat', order: 3, sets: [{ set_number: 1, reps: 5, weight_kg: 100 }] },
+      ],
+    }
+    const sets = templateToFormValues(switched).exercises.map((e) => e.sets)
+    expect(sets).toEqual([[set('', '10')], [set('', '')], [set('5', '100')]])
+  })
+
+  it('a template entered in the exercise\'s old measure is no change until a time is entered', () => {
+    const stale = {
+      id: 3,
+      name: 'Grip',
+      exercises: [
+        {
+          exercise_id: 7, exercise_name: 'Dead hang', measure: 'time' as const, order: 1,
+          sets: [{ set_number: 1, reps: 40, weight_kg: null, duration_seconds: null }],
+        },
+      ],
+    }
+    const map = new Map([[7, 'Dead hang']])
+    const untouched = templateToFormValues(stale)
+    expect(computeDiff(stale, untouched, map)).toEqual([])
+    const timed = { ...untouched, exercises: [{ exercise_id: '7', sets: [hold('45')] }] }
+    expect(computeDiff(stale, timed, map)).toEqual(['Changed time on Dead hang set 1'])
+    // The update then writes the time the user entered
+    expect(toTemplatePayload(timed).exercises[0].sets[0]).toEqual({
+      set_number: 1, reps: null, duration_seconds: 45, weight_kg: null,
+    })
+  })
+
+  it('last-session defaults the server matched to a timed exercise prefill times and no reps', () => {
+    const sets = lastSessionToFormSets({
+      sets: [
+        { set_number: 1, reps: null, weight: 10, duration_seconds: 45 },
+        { set_number: 2, reps: null, weight: null, duration_seconds: null },
+      ],
+    })
+    expect(sets).toEqual([hold('45', '10'), set('', '')])
+  })
+
+  it('addSet copies the last set\'s time, not its note, RPE or done flag', () => {
+    const list: ExerciseEntryFormValues[] = [{ exercise_id: '7', sets: [hold('60', '20', 'shaky', true, '9')] }]
+    expect(addSet(list, 0)[0].sets[1]).toEqual(hold('60', '20'))
+  })
+
+  it('reports a changed time against the template, and none for the same time typed as m:ss', () => {
+    const form = { ...values, exercises: [{ exercise_id: '7', sets: [hold('0:45'), hold('60')] }] }
+    expect(computeDiff(plankSnapshot, form, new Map([[7, 'Plank']]))).toEqual(['Changed time on Plank set 2'])
+  })
+
+  it('flags a time that would not be saved, naming exercise and set', () => {
+    const exercises: ExerciseEntryFormValues[] = [
+      { exercise_id: '1', sets: [set('5', '100')] },
+      { exercise_id: '7', sets: [hold('45'), hold('0')] },
+    ]
+    const names = new Map([['7', 'Plank']])
+    expect(findInvalidSetDuration(exercises, (id) => names.get(id))).toEqual({
+      exerciseIndex: 1,
+      setIndex: 1,
+      message: 'Plank, set 2: time "0" must be 1–86400 seconds (or m:ss).',
+    })
+    expect(findInvalidSetDuration([{ exercise_id: '7', sets: [hold('1:3')] }], () => undefined)?.message).toBe(
+      'Exercise 1, set 1: time "1:3" must be 1–86400 seconds (or m:ss).',
+    )
+    expect(findInvalidSetDuration(exercises.slice(0, 1), () => undefined)).toBeNull()
+    // RPE is checked first, then time
+    const both = [{ exercise_id: '7', sets: [hold('0', '', '', false, '11')] }]
+    expect(findInvalidSet(both, () => 'Plank')?.message).toMatch(/RPE "11"/)
+    expect(findInvalidSet([{ exercise_id: '7', sets: [hold('0')] }], () => 'Plank')?.message).toMatch(/time "0"/)
+  })
+
+  it('a set shows the input for the value it holds, else its exercise\'s measure', () => {
+    expect(setKind(hold('45'))).toBe('time')
+    expect(setKind(set('8', ''))).toBe('reps')
+    expect(setKind(set('', '20'))).toBeNull()
+    expect(inputKind(set('', ''), 'time')).toBe('time')
+    expect(inputKind(set('', ''), undefined)).toBe('reps')
+    // Logged while the exercise was timed, opened after it went back to reps
+    expect(inputKind(hold('45'), 'reps')).toBe('time')
+    expect(inputKind(set('8', ''), 'time')).toBe('reps')
+  })
+
+  it('editing reps clears the time and editing the time clears reps', () => {
+    const list: ExerciseEntryFormValues[] = [{ exercise_id: '7', sets: [hold('45', '20')] }]
+    const asReps = updateSet(list, 0, 0, setRepsOrDuration('reps', '8'))
+    expect(asReps[0].sets[0]).toEqual(set('8', '20'))
+    expect(updateSet(asReps, 0, 0, setRepsOrDuration('time', '30'))[0].sets[0]).toEqual(hold('30', '20'))
+  })
+
+  it('replaceExercise with the other measure clears the mismatched value and keeps weight, notes, RPE and done', () => {
+    const list: ExerciseEntryFormValues[] = [
+      { exercise_id: '2', sets: [set('8', '60', 'easy', true, '7'), set('8', '60')] },
+    ]
+    const plank = replaceExercise(list, 0, '7', undefined, 'time')
+    expect(plank[0]).toEqual({ exercise_id: '7', sets: [set('', '60', 'easy', true, '7'), set('', '60')] })
+    const back = replaceExercise([{ exercise_id: '7', sets: [hold('45', '', 'n', true, '8')] }], 0, '2', undefined, 'reps')
+    expect(back[0].sets).toEqual([set('', '', 'n', true, '8')])
+    // Same measure, unknown measure, or sets given for the new exercise: untouched
+    expect(replaceExercise(list, 0, '1', undefined, 'reps')[0].sets).toBe(list[0].sets)
+    expect(replaceExercise(list, 0, '1')[0].sets).toBe(list[0].sets)
+    expect(replaceExercise(list, 0, '7', [hold('45')], 'time')[0].sets).toEqual([hold('45')])
+  })
+})
+
 describe('strength draft schema', () => {
   const draft: StrengthDraft = {
     values,
@@ -302,8 +510,8 @@ describe('strength draft schema', () => {
       notes: 'from yesterday',
       wellbeing: 2,
       rpe: null,
-      // Drafts written before per-set RPE load with the field empty
-      exercises: [{ exercise_id: '2', sets: [{ reps: '10', weight: '50', notes: '', rpe: '', done: true }] }],
+      // Drafts written before per-set RPE and timed sets load with those fields empty
+      exercises: [{ exercise_id: '2', sets: [{ reps: '10', duration: '', weight: '50', notes: '', rpe: '', done: true }] }],
     })
     expect(parsed.templateId).toBeNull()
     expect(parsed.workout).toEqual({ currentExerciseIndex: 0, restEndsAt: null, startedAt: null, autoDurationSeconds: null })

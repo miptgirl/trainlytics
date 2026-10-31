@@ -17,6 +17,8 @@ from app.models import (
     StrengthSession,
     StrengthSet,
     StrengthTemplate,
+    StrengthTemplateExercise,
+    StrengthTemplateSet,
     UserSettings,
     WeeklyPlan,
     WorkoutSession,
@@ -123,7 +125,7 @@ async def test_seed_populates_resets_and_isolates(
     snap_first = await _snapshot(db_session)
 
     demo = DEMO_USERNAME
-    assert first["templates"] == 3 and first["exercises"] == 18 and first["cardio_types"] == 3
+    assert first["templates"] == 3 and first["exercises"] == 20 and first["cardio_types"] == 3
     assert first["strength_sessions"] > 20 and first["cardio_sessions"] > 15
     assert first["step_days"] > 60 and first["skipped_with_note"] >= 2
     assert await _count(db_session, WorkoutSession, WorkoutSession.user_id == demo) == (
@@ -169,6 +171,38 @@ async def test_seed_populates_resets_and_isolates(
     assert set(rpes) <= {6, 7, 8, 9}
     assert not any(n and "RPE" in n for _, n in demo_sets)
 
+    # Timed exercises log seconds, never reps; the rest log reps, never seconds
+    async with db_session() as db:
+        rows = (await db.execute(
+            select(Exercise.name, Exercise.measure, StrengthSet.reps,
+                   StrengthSet.duration_seconds, StrengthSet.weight)
+            .join(StrengthExerciseEntry, StrengthExerciseEntry.exercise_id == Exercise.id)
+            .join(StrengthSet, StrengthSet.exercise_entry_id == StrengthExerciseEntry.id)
+            .where(Exercise.user_id == demo)
+        )).all()
+    timed = [r for r in rows if r.measure == "time"]
+    assert {r.name for r in timed} == {"Plank", "Farmer's carry"}
+    assert all(r.reps is None and r.duration_seconds for r in timed)
+    reps_rows = [r for r in rows if r.measure == "reps"]
+    assert all(r.duration_seconds is None and r.reps is not None for r in reps_rows)
+    assert {r.weight for r in timed if r.name == "Plank"} == {None}
+    assert {r.weight for r in timed if r.name == "Farmer's carry"} == {24}
+    assert all(45 <= r.duration_seconds <= 75 for r in timed if r.name == "Plank")
+
+    # The Lower body template plans them in seconds too
+    tpl_ex, tpl_set = StrengthTemplateExercise, StrengthTemplateSet
+    async with db_session() as db:
+        planned = (await db.execute(
+            select(Exercise.name, tpl_set.reps, tpl_set.duration_seconds, tpl_set.weight_kg)
+            .join(tpl_ex, tpl_ex.exercise_id == Exercise.id)
+            .join(tpl_set, tpl_set.exercise_entry_id == tpl_ex.id)
+            .where(Exercise.user_id == demo, Exercise.measure == "time")
+            .order_by(Exercise.name, tpl_set.set_number)
+        )).all()
+    assert [tuple(r) for r in planned] == (
+        [("Farmer's carry", None, 30, 24)] * 3 + [("Plank", None, 45, None)] * 3
+    )
+
     second = await seed_demo(client, db_session, today=TODAY)
     assert second == first
     assert await _snapshot(db_session) == snap_first  # deterministic values
@@ -176,7 +210,7 @@ async def test_seed_populates_resets_and_isolates(
         second["strength_sessions"] + second["cardio_sessions"]
     )
     assert await _count(db_session, WeeklyPlan, WeeklyPlan.user_id == demo) == 13
-    assert await _count(db_session, Exercise, Exercise.user_id == demo) == 18
+    assert await _count(db_session, Exercise, Exercise.user_id == demo) == 20
 
     # Other user's rows untouched
     assert await _count(db_session, CardioActivityType,

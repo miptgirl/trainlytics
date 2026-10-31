@@ -1,4 +1,5 @@
 import { useSessionComparison } from '../../lib/planApi'
+import { formatHold } from '../../lib/workoutMode'
 
 interface Props {
   plannedSessionId: number
@@ -10,12 +11,27 @@ function fmt(val: number | null, unit: string): string {
   return `${val.toFixed(unit === 'kg' ? 0 : 1)} ${unit}`
 }
 
-function fmtSet(reps: number | null, weight: number | null): string {
+/** "8 × 60 kg"; a timed set shows its hold in the reps place ("45 s", "45 s × 20 kg"). */
+function fmtSet(reps: number | null, weight: number | null, duration?: number | null): string {
+  if (duration != null) return weight != null ? `${formatHold(duration)} × ${weight} kg` : formatHold(duration)
   if (reps == null && weight == null) return '—'
   const r = reps != null ? `${reps}` : '—'
   const w = weight != null ? `${weight} kg` : '—'
   return `${r} × ${w}`
 }
+
+type Row = {
+  planned_reps: number | null
+  planned_weight_kg: number | null
+  planned_duration_seconds?: number | null
+  actual_reps: number | null
+  actual_weight_kg: number | null
+  actual_duration_seconds?: number | null
+}
+
+// A row is a set when it has reps, a weight or a hold: a bodyweight plank has only the hold
+const isPlannedSet = (r: Row) => r.planned_reps != null || r.planned_weight_kg != null || r.planned_duration_seconds != null
+const isActualSet = (r: Row) => r.actual_reps != null || r.actual_weight_kg != null || r.actual_duration_seconds != null
 
 function fmtVol(setCount: number, vol: number): string {
   if (setCount === 0) return '—'
@@ -99,20 +115,14 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
   if (sessionType === 'strength' && data.strength) {
     const s = data.strength
 
-    const totalPlannedSets = s.exercises.reduce(
-      (acc, ex) => acc + ex.sets.filter(r => r.planned_reps != null || r.planned_weight_kg != null).length,
-      0
-    )
-    const totalActualSets = s.exercises.reduce(
-      (acc, ex) => acc + ex.sets.filter(r => r.actual_reps != null || r.actual_weight_kg != null).length,
-      0
-    )
+    const totalPlannedSets = s.exercises.reduce((acc, ex) => acc + ex.sets.filter(isPlannedSet).length, 0)
+    const totalActualSets = s.exercises.reduce((acc, ex) => acc + ex.sets.filter(isActualSet).length, 0)
 
     return (
       <div className="space-y-3">
         {s.exercises.map((ex, ei) => {
-          const plannedSets = ex.sets.filter(r => r.planned_reps != null || r.planned_weight_kg != null).length
-          const actualSets  = ex.sets.filter(r => r.actual_reps  != null || r.actual_weight_kg  != null).length
+          const plannedSets = ex.sets.filter(isPlannedSet).length
+          const actualSets = ex.sets.filter(isActualSet).length
 
           return (
             <div key={ei}>
@@ -135,8 +145,12 @@ export function SessionComparisonPanel({ plannedSessionId, sessionType }: Props)
                   {ex.sets.map((row, si) => (
                     <tr key={si}>
                       <td className="py-0.5 text-text-muted-strong">{si + 1}</td>
-                      <td className="text-right py-0.5 tabular-nums">{fmtSet(row.planned_reps, row.planned_weight_kg)}</td>
-                      <td className="text-right py-0.5 tabular-nums">{fmtSet(row.actual_reps, row.actual_weight_kg)}</td>
+                      <td className="text-right py-0.5 tabular-nums">
+                        {fmtSet(row.planned_reps, row.planned_weight_kg, row.planned_duration_seconds)}
+                      </td>
+                      <td className="text-right py-0.5 tabular-nums">
+                        {fmtSet(row.actual_reps, row.actual_weight_kg, row.actual_duration_seconds)}
+                      </td>
                       <td className="text-right py-0.5 text-text-muted-strong">—</td>
                     </tr>
                   ))}

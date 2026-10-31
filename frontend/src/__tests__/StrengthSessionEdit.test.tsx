@@ -35,7 +35,7 @@ const session = {
       exercise_id: 1,
       exercise_name: 'Squat',
       order: 1,
-      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }],
+      sets: [{ id: 1, set_number: 1, reps: 5, weight: 100, notes: null, rpe: null, duration_seconds: null }],
     },
   ],
 }
@@ -178,7 +178,114 @@ describe('Strength session edit form', () => {
     expect(path).toBe('/sessions/5')
     expect(payload).toMatchObject({ wellbeing: 4, rpe: 6 })
     expect(payload.exercises).toEqual([
-      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null }] },
+      { exercise_id: 1, order: 1, sets: [{ set_number: 1, reps: 5, weight: 100, notes: null, rpe: null, duration_seconds: null }] },
     ])
+  })
+
+  describe('timed sets', () => {
+    const plankSession = {
+      ...session,
+      exercises: [
+        {
+          id: 2,
+          exercise_id: 7,
+          exercise_name: 'Plank',
+          order: 1,
+          sets: [
+            { id: 3, set_number: 1, reps: null, weight: null, notes: null, rpe: null, duration_seconds: 45 },
+            { id: 4, set_number: 2, reps: null, weight: 10, notes: null, rpe: 8, duration_seconds: 90 },
+          ],
+        },
+      ],
+    }
+
+    beforeEach(() => {
+      mockGet.mockImplementation(async (path: string) => {
+        if (path === '/sessions/5') return plankSession as never
+        if (path === '/exercises') return [...exerciseList, { id: 7, name: 'Plank', measure: 'time' }] as never
+        if (path.endsWith('/replacements')) return [] as never
+        return { sets: [] } as never
+      })
+    })
+
+    it('shows holds in the table: 45 s, then m:ss from a minute up', async () => {
+      renderPage()
+      expect(await screen.findByText('45 s')).toBeInTheDocument()
+      expect(screen.getByText('1:30')).toBeInTheDocument()
+      expect(screen.getByText('Time')).toBeInTheDocument()
+    })
+
+    it('keeps duration_seconds in the PATCH body, edited or not', async () => {
+      const user = await openEdit()
+      const second = await screen.findByLabelText('Time in seconds for set 2')
+      expect(screen.getByLabelText('Time in seconds for set 1')).toHaveValue('45')
+      expect(second).toHaveValue('90')
+      await user.clear(second)
+      await user.type(second, '1:45')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+      const [, payload] = mockPatch.mock.calls[0] as [string, Record<string, unknown>]
+      expect(payload.exercises).toEqual([
+        {
+          exercise_id: 7,
+          order: 1,
+          sets: [
+            { set_number: 1, reps: null, duration_seconds: 45, weight: null, notes: null, rpe: null },
+            { set_number: 2, reps: null, duration_seconds: 105, weight: 10, notes: null, rpe: 8 },
+          ],
+        },
+      ])
+    })
+
+    it('a set emptied on Plank and switched to Squat shows Reps and saves the typed reps', async () => {
+      const onePlankSet = {
+        ...plankSession,
+        exercises: [{ ...plankSession.exercises[0], sets: [plankSession.exercises[0].sets[0]] }],
+      }
+      mockGet.mockImplementation(async (path: string) => {
+        if (path === '/sessions/5') return onePlankSet as never
+        if (path === '/exercises') return [...exerciseList, { id: 7, name: 'Plank', measure: 'time' }] as never
+        if (path.endsWith('/replacements')) return [] as never
+        return { sets: [] } as never
+      })
+      const user = await openEdit()
+      const time = await screen.findByLabelText('Time in seconds for set 1')
+      await user.clear(time)
+      await user.type(time, '45')
+      await user.clear(time)
+      // Nothing to convert, so the sets stay as they are: the input follows the new exercise alone
+      await user.click(screen.getByRole('button', { name: 'Plank' }))
+      await user.click(await screen.findByRole('button', { name: /all categories/i }))
+      await user.click(await screen.findByText('Legs'))
+      await user.click(screen.getByRole('button', { name: 'Squat' }))
+
+      await waitFor(() => expect(screen.getByText(/Exercise 1 — Squat/)).toBeInTheDocument())
+      expect(screen.queryByLabelText('Time in seconds for set 1')).not.toBeInTheDocument()
+      await user.type(screen.getByPlaceholderText('reps'), '8')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+
+      await waitFor(() => expect(mockPatch).toHaveBeenCalled())
+      const [, payload] = mockPatch.mock.calls[0] as [string, { exercises: unknown[] }]
+      expect(payload.exercises).toEqual([
+        {
+          exercise_id: 1,
+          order: 1,
+          sets: [{ set_number: 1, reps: 8, duration_seconds: null, weight: null, notes: null, rpe: null }],
+        },
+      ])
+    })
+
+    it('refuses a time of 0, naming the set, instead of saving the set empty', async () => {
+      const user = await openEdit()
+      const first = await screen.findByLabelText('Time in seconds for set 1')
+      await user.clear(first)
+      await user.type(first, '0')
+      await user.click(screen.getByRole('button', { name: 'Save Changes' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Plank, set 1: time "0" must be 1–86400 seconds (or m:ss).',
+      )
+      expect(mockPatch).not.toHaveBeenCalled()
+    })
   })
 })

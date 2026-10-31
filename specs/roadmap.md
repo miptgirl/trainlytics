@@ -16,7 +16,7 @@ This is the foundation everything else builds on. Auth comes first — all data 
 - [x] **Auth** — accounts defined via environment variables (no registration UI), login/logout, JWT access token + HTTP-only refresh token cookie; multiple accounts supported
 - [x] **Protected routes** — all API endpoints require auth; frontend redirects to login on 401
 - [x] **Cardio logging** — log a session with: activity type, date, total duration, notes; a session is composed of one or more segments (e.g. walk → run → walk), each with its own duration, distance, pace, and heart rate
-- [x] **Strength logging** — log a session with: date, exercises, sets × reps × weight, notes
+- [x] **Strength logging** — log a session with: date, exercises, sets × reps × weight (or seconds for timed exercises), notes
 - [x] **Workout history** — list of all logged sessions, filterable by type and date range
 - [x] **Session detail view** — full breakdown of a single logged workout
 - [x] **Edit / delete** a logged session
@@ -422,6 +422,13 @@ A user can tap "Review week" after a hard week, see AI-proposed adjustments to n
 ### Session RPE on 1–10 *(2026-10-07)* — see `specs/2026-10-07-rpe/`
 
 - [x] Session effort moves from the inverted 1–5 scale to standard RPE 1–10 (existing rows converted); pickers read easy → hard
+
+### Timed sets *(2026-10-31)* — see `specs/2026-10-31-timed-sets/`
+
+- [x] An exercise is measured in reps (default) or time (Settings › Exercises › "Measured in"); a set holds reps or `duration_seconds`, never both
+- [x] Workout mode: a Time stepper (seconds, ±5 s) for timed exercises; tabs and lists read `45s`, `45s×20`, `1:30`
+- [x] Log page, template editor and session edit swap Reps for Time per set; templates, template history, last-session defaults, plan-vs-actual, text export and AI context carry the hold
+- [x] Holds add no kg × reps volume and stay out of progression, PRs and volume-by-tag; a best-hold PR and time under load are follow-ups
 
 ---
 

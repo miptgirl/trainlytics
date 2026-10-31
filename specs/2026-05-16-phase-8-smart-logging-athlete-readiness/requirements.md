@@ -48,7 +48,7 @@ When adding a **new** exercise to a strength log form (not via a loaded template
 
 **Scope:** Applies only when adding exercises ad-hoc (not pre-filled from template). Template values are unchanged — the template remains the source of truth for template-based sessions.
 
-**Backend:** New endpoint `GET /exercises/{exercise_id}/last-session-defaults` returns `{ sets: [...{ reps, weight_kg }] }` from the most recent `StrengthExerciseEntry` for the current user with that exercise. Returns 404 or empty if no history exists.
+**Backend:** New endpoint `GET /exercises/{exercise_id}/last-session-defaults` returns `{ sets: [...{ reps, weight_kg }] }` (since 2026-10-31 also `duration_seconds`, see `specs/2026-10-31-timed-sets/`) from the most recent `StrengthExerciseEntry` for the current user with that exercise. Returns 404 or empty if no history exists.
 
 **Frontend:** After the user picks an exercise from the dropdown in the strength log form (non-template path), call the endpoint and pre-populate the sets. User can override freely before saving.
 

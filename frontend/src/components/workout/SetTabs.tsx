@@ -1,14 +1,21 @@
 import { useEffect, useId, useRef, useState, type Ref, type RefObject } from 'react'
 import type { SetFormValues } from '../ExerciseEntryBlock'
+// Nothing here may import lib/strengthSession or lib/api at runtime: the test setup imports this file
+// (COMPLETE_SET_TAP_DROPPED), which would load the real api module before a test can mock it
 import {
   boldTextWidth,
   currentSetIndex,
   formatSetList,
   formatSetShort,
+  inputKind,
   sanitizeDecimal,
+  sanitizeDurationInput,
+  setRepsOrDuration,
   setTabLabel,
+  stepDuration,
   stepValue,
   stepWeight,
+  type Measure,
   type WeightScale,
 } from '../../lib/workoutMode'
 import { CheckIcon, ChevronRightIcon, PlusIcon, TrashIcon } from './icons'
@@ -40,6 +47,7 @@ function Stepper({
   step,
   stepLabel,
   inputMode,
+  sanitize,
   setNumber,
   inputRef,
   onChange,
@@ -51,6 +59,11 @@ function Stepper({
   /** Names the step for screen readers ("by 1"). */
   stepLabel?: string
   inputMode: 'numeric' | 'decimal'
+  /**
+   * Cleans typed text, given the value before it; by default digits only
+   * (numeric) or a decimal. Returning `previous` ignores the keystroke.
+   */
+  sanitize?: (raw: string, previous: string) => string
   setNumber: number
   inputRef?: Ref<HTMLInputElement>
   onChange: (value: string) => void
@@ -59,7 +72,12 @@ function Stepper({
     'h-12 w-11 shrink-0 rounded-xl border border-border bg-surface text-[22px] font-medium text-text active:bg-primary-tint'
   const name = label.toLowerCase()
   const by = stepLabel ? ` ${stepLabel}` : ''
-  const clean = (raw: string) => (inputMode === 'numeric' ? raw.replace(/\D/g, '') : sanitizeDecimal(raw))
+  const clean = sanitize ?? ((raw: string) => (inputMode === 'numeric' ? raw.replace(/\D/g, '') : sanitizeDecimal(raw)))
+  const type = (raw: string) => {
+    const next = clean(raw, value)
+    // An ignored keystroke changes nothing (the controlled input shows `value` again)
+    if (next !== value) onChange(next)
+  }
   // A value too long even at 1rem (seven digits and more) scrolls inside the input, as any text field does
   const font = (STEPPER_FONTS.find(([px]) => boldTextWidth(value, px) <= STEPPER_INPUT_PX) ?? STEPPER_FONTS[2])[1]
   return (
@@ -82,7 +100,7 @@ function Stepper({
           type="text"
           inputMode={inputMode}
           value={value}
-          onChange={(e) => onChange(clean(e.target.value))}
+          onChange={(e) => type(e.target.value)}
           onFocus={(e) => e.currentTarget.select()}
           placeholder="0"
           aria-label={`${label} for set ${setNumber}`}
@@ -184,6 +202,7 @@ function SetEditor({
   repsRef,
   nextName,
   weightScale,
+  measure,
   onChange,
   onComplete,
   onCancel,
@@ -194,13 +213,15 @@ function SetEditor({
   setNumber: number
   /** Editing a done set (Cancel / Save) instead of logging one. */
   editing: boolean
-  /** The set was just added (One more set, Add a set): move focus to its Reps. */
+  /** The set was just added (One more set, Add a set): move focus to its Reps (or Time). */
   focusReps: boolean
-  /** The page's handle on the Reps input, for focus it moves after a remount. */
+  /** The page's handle on the Reps (or Time) input, for focus it moves after a remount. */
   repsRef?: RefObject<HTMLInputElement | null>
   /** Completing this set finishes the exercise and moves on to this one: Complete set says so. */
   nextName: string | null
   weightScale?: WeightScale | null
+  /** The exercise's measure: a set without a value yet shows Time for a timed exercise. */
+  measure?: Measure
   onChange: (patch: Partial<SetFormValues>) => void
   onComplete: () => void
   onCancel: () => void
@@ -211,6 +232,9 @@ function SetEditor({
   const showNote = noteOpen || set.notes !== ''
   const ownRepsRef = useRef<HTMLInputElement>(null)
   const reps = repsRef ?? ownRepsRef
+  // From the set's values and the measure alone, so clearing a legacy time flips it to the exercise's kind
+  const kind = inputKind(set, measure)
+  const timed = kind === 'time'
   // The button that added this set is gone; Reps is the next thing to type
   useEffect(() => {
     if (focusReps) reps.current?.focus()
@@ -258,15 +282,21 @@ function SetEditor({
         </button>
       </div>
       <div className="grid grid-cols-2 gap-3">
+        {/*
+          Reps, or Time for a timed set. Typing either one clears the other, so a set never holds both.
+          One Stepper whose binding switches, so the input keeps focus when clearing a value flips the kind
+        */}
         <Stepper
-          label="Reps"
-          value={set.reps}
-          step={stepReps}
-          stepLabel="by 1"
+          label={timed ? 'Time' : 'Reps'}
+          unit={timed ? 's' : undefined}
+          value={timed ? set.duration : set.reps}
+          step={timed ? stepDuration : stepReps}
+          stepLabel={timed ? 'by 5 s' : 'by 1'}
           inputMode="numeric"
+          sanitize={timed ? sanitizeDurationInput : undefined}
           setNumber={setNumber}
           inputRef={reps}
-          onChange={(value) => onChange({ reps: value })}
+          onChange={(value) => onChange(setRepsOrDuration(kind, value))}
         />
         <Stepper
           label="Weight"
@@ -526,6 +556,7 @@ function EmptyState({
 export function SetTabs({
   sets,
   weightScale,
+  measure,
   exerciseName,
   next,
   canRemoveExercise,
@@ -542,6 +573,8 @@ export function SetTabs({
   sets: SetFormValues[]
   /** The exercise's weight steps; null or undefined for the default 10 lb stack. */
   weightScale?: WeightScale | null
+  /** How the exercise is measured; undefined (reps) while the library loads. */
+  measure?: Measure
   /** Null for an entry without an exercise. */
   exerciseName: string | null
   /** Where Next goes once every set is done; null when nothing else is left (Finish workout instead). */
@@ -550,7 +583,7 @@ export function SetTabs({
   canRemoveExercise: boolean
   /** The empty state's Add a set button. */
   addSetRef?: Ref<HTMLButtonElement>
-  /** The open editor's Reps input. */
+  /** The open editor's Reps (or Time) input. */
   repsRef?: RefObject<HTMLInputElement | null>
   onUpdateSet: (setIndex: number, patch: Partial<SetFormValues>) => void
   onCompleteSet: (setIndex: number) => void
@@ -662,6 +695,7 @@ export function SetTabs({
           repsRef={repsRef}
           nextName={finishesExercise && next ? next.name : null}
           weightScale={weightScale}
+          measure={measure}
           onChange={(patch) => onUpdateSet(selected, patch)}
           onComplete={() => {
             setPicked(null)

@@ -29,6 +29,11 @@ class Exercise(Base):
     # Machine weight steps (see app/schemas/exercise.py); null: the default 10 lb stack
     # none_as_null: unset and cleared store SQL NULL, not the JSON literal null
     weight_scale: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
+    # 'reps' or 'time': which input the forms show for new sets. A default, not an
+    # invariant: each set's own reps / duration_seconds is what was logged
+    measure: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="reps", server_default="reps"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

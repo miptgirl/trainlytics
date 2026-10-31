@@ -33,12 +33,16 @@ class IncrementWeightScale(BaseModel):
 # null on an exercise means the default 10 lb stack (see the client's stepWeight)
 WeightScale = Annotated[StackWeightScale | IncrementWeightScale, Field(discriminator="kind")]
 
+# How new sets of an exercise are entered: counted reps or a held time in seconds
+Measure = Literal["reps", "time"]
+
 
 class ExerciseCreate(BaseModel):
     name: str
     notes: str | None = None
     type_ids: list[int] = []
     weight_scale: WeightScale | None = None
+    measure: Measure = "reps"
 
 
 class ExercisePatch(BaseModel):
@@ -47,6 +51,15 @@ class ExercisePatch(BaseModel):
     type_ids: list[int] | None = None
     # Omitted leaves the setting; null clears it
     weight_scale: WeightScale | None = None
+    # Omitted leaves it; there is no "unset" measure, so null is refused
+    measure: Measure | None = None
+
+    @field_validator("measure")
+    @classmethod
+    def validate_measure_not_null(cls, v: str | None) -> str:
+        if v is None:
+            raise ValueError("measure must be 'reps' or 'time'")
+        return v
 
 
 class ExerciseRef(BaseModel):
@@ -64,6 +77,7 @@ class ExerciseOut(BaseModel):
     name: str
     notes: str | None
     weight_scale: WeightScale | None = None
+    measure: Measure = "reps"
     created_at: datetime
     types: list[ExerciseTypeOut] = []
 
@@ -76,6 +90,7 @@ class SetDefault(BaseModel):
     set_number: int
     reps: int | None
     weight: float | None
+    duration_seconds: int | None = None
 
 
 class ExerciseDefaultsOut(BaseModel):

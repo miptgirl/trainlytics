@@ -31,7 +31,7 @@ Users can:
 - Log strength sessions with full workout breakdown:
   - exercises
   - sets
-  - reps
+  - reps, or a held time for timed exercises (planks, carries)
   - weights
   - progression over time
 - Save reusable workout templates for recurring strength sessions

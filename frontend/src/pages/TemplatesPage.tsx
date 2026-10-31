@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { Layout } from '../components/Layout'
 import {
   ExerciseEntryBlock,
@@ -10,6 +10,7 @@ import {
 } from '../components/ExerciseEntryBlock'
 import { emptyEntry } from '../components/exerciseEntryDefaults'
 import { api } from '../lib/api'
+import { findInvalidSetDuration, setAmounts } from '../lib/strengthSession'
 
 // ── API types ─────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ interface TemplateSet {
   set_number: number
   reps: number | null
   weight_kg: number | null
+  duration_seconds?: number | null
 }
 
 interface TemplateExercise {
@@ -54,6 +56,7 @@ function detailToFormValues(t: TemplateDetail): TemplateFormValues {
       exercise_id: String(entry.exercise_id),
       sets: entry.sets.map((s) => ({
         reps: s.reps != null ? String(s.reps) : '',
+        duration: s.duration_seconds != null ? String(s.duration_seconds) : '',
         weight: s.weight_kg != null ? String(s.weight_kg) : '',
         notes: '',
         rpe: '',
@@ -69,9 +72,10 @@ function toApiPayload(data: TemplateFormValues) {
     exercises: data.exercises.map((entry, i) => ({
       exercise_id: parseInt(entry.exercise_id, 10),
       order: i + 1,
+      // Reps or a duration, never both: only the value the set holds is sent
       sets: entry.sets.map((s, si) => ({
         set_number: si + 1,
-        reps: s.reps ? parseInt(s.reps, 10) : null,
+        ...setAmounts(s),
         weight_kg: s.weight ? parseFloat(s.weight) : null,
       })),
     })),
@@ -316,7 +320,18 @@ function TemplateForm({
   })
 
   const mutation = editId !== undefined ? updateMutation : createMutation
-  const onSubmit = (data: TemplateFormValues) => mutation.mutate(data)
+  // A time like "0" or "1:3" would be saved as an empty set: refuse it, naming the set. After a refused
+  // save the message follows the live values, so it clears once fixed
+  const [showSetError, setShowSetError] = useState(false)
+  const watchedExercises = useWatch({ control, name: 'exercises' })
+  const names = new Map(exercises.map((e) => [String(e.id), e.name]))
+  const invalidSet = (list: ExerciseEntryFormValues[] | undefined) => findInvalidSetDuration(list, (id) => names.get(id))
+  const setError = showSetError ? (invalidSet(watchedExercises)?.message ?? null) : null
+  const onSubmit = (data: TemplateFormValues) => {
+    const ok = invalidSet(data.exercises) === null
+    setShowSetError(!ok)
+    if (ok) mutation.mutate(data)
+  }
 
   return (
     <Layout>
@@ -386,7 +401,12 @@ function TemplateForm({
           </button>
         </div>
 
-        {mutation.isError && (
+        {setError && (
+          <p role="alert" className="text-sm text-error-text">
+            {setError}
+          </p>
+        )}
+        {mutation.isError && !setError && (
           <p className="text-sm text-error-text">Failed to save template. Please try again.</p>
         )}
 

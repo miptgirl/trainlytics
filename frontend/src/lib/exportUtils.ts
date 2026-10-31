@@ -6,6 +6,8 @@ export interface StrengthSet {
   reps: number | null
   weight: number | null
   rpe?: number | null
+  /** A timed set's hold; absent in sessions fetched before timed sets. */
+  duration_seconds?: number | null
 }
 
 export interface StrengthExerciseEntry {
@@ -100,9 +102,15 @@ export function formatStrengthSession(session: StrengthSession): string {
   for (const entry of session.exercises) {
     const lines = [`### ${entry.exercise_name}`]
     for (const set of entry.sets) {
+      const rpe = set.rpe != null ? ` @RPE ${set.rpe}` : ''
+      if (set.duration_seconds != null) {
+        // A hold: seconds first, then the load held or carried ("60 s × 10 kg"); bodyweight has none
+        const load = set.weight != null ? ` × ${set.weight} kg` : ''
+        lines.push(`- Set ${set.set_number}: ${set.duration_seconds} s${load}${rpe}`)
+        continue
+      }
       const w = set.weight != null ? `${set.weight} kg` : '—'
       const r = set.reps != null ? String(set.reps) : '—'
-      const rpe = set.rpe != null ? ` @RPE ${set.rpe}` : ''
       lines.push(`- Set ${set.set_number}: ${w} × ${r}${rpe}`)
     }
     sections.push(lines.join('\n'))

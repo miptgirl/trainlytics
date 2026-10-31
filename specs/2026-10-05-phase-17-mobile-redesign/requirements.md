@@ -8,7 +8,7 @@ Frontend only. No database migrations, no new or changed API endpoints. Everythi
 
 | Need | Existing source |
 |---|---|
-| Sets with reps, weight, note, order | `StrengthSetCreate` (`reps`, `weight`, `notes`, `order`) |
+| Sets with reps, weight, note, order | `StrengthSetCreate` (`reps`, `weight`, `notes`, `order`; `duration_seconds` since 2026-10-31) |
 | "Last time" numbers | `GET /exercises/{id}/last-session-defaults` |
 | Session note, wellbeing, RPE, duration, calories | strength session schema |
 | Start from a planned session | `PlannedSessionCard` → `/log?type=strength&templateId=…` |

@@ -23,7 +23,7 @@ const defaultSnapshot = {
     {
       exercise_id: 1,
       exercise_name: 'Squat',
-      sets: [{ reps: 5, weight_kg: 100 }],
+      sets: [{ reps: 5, weight_kg: 100, duration_seconds: null }],
     },
   ],
 }

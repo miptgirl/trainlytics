@@ -107,6 +107,7 @@ def _build_strength_out(ws: WorkoutSession) -> StrengthSessionOut:
                         weight=s.weight,
                         notes=s.notes,
                         rpe=s.rpe,
+                        duration_seconds=s.duration_seconds,
                     )
                     for s in entry.sets
                 ],

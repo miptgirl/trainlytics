@@ -35,7 +35,7 @@ This also unblocks future "how has my squat template evolved?" browsing — Phas
 - Three new read-only history tables:
   - `strength_template_history` — one row per version: `(id, template_id, version, created_at)`.
   - `strength_template_history_exercises` — exercises at that version: `(id, history_id, exercise_id, exercise_order)`.
-  - `strength_template_history_sets` — sets per exercise: `(id, history_exercise_id, set_order, reps, weight_kg)`.
+  - `strength_template_history_sets` — sets per exercise: `(id, history_exercise_id, set_order, reps, weight_kg)`; since 2026-10-31 also `duration_seconds` (see `specs/2026-10-31-timed-sets/`).
 - `planned_sessions` gains `template_version` (nullable integer). Populated at plan-creation time.
 - History rows are never edited — only created.
 
@@ -67,7 +67,7 @@ On a "Done" planned session card (Plan tab), a `▸ Compare planned vs. actual` 
 
 **Strength comparison:**
 - Per-exercise table. Exercises are matched between the history snapshot and the logged session by `exercise_id`.
-- For each exercise: set-by-set comparison (planned reps × weight vs. actual reps × weight), paired by set index; if set counts differ, the shorter side is padded with em-dashes.
+- For each exercise: set-by-set comparison (planned reps × weight vs. actual reps × weight, or seconds for timed sets), paired by set index; if set counts differ, the shorter side is padded with em-dashes.
 - Exercises appear in history snapshot order; exercises present only in the actual session are appended at the end.
 - Per-exercise volume (kg·reps) summary row beneath each exercise's sets.
 - Grand total volume row below all exercises.
