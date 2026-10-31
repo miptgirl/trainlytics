@@ -481,3 +481,17 @@ async def test_template_rejects_invalid_timed_set(db_session, auth_client: Async
         "name": "Core", "exercises": [{"exercise_id": ex_id, "order": 1, "sets": [bad_set]}],
     })
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_template_exercises_carry_the_current_measure(db_session, auth_client: AsyncClient):
+    """Template sets are stored as entered; each exercise says how it is measured now."""
+    ex_id = await _create_exercise(auth_client, "Wall sit")
+    create = await auth_client.post("/api/templates/strength", json=_template_payload(ex_id))
+    tmpl_id = create.json()["id"]
+    assert create.json()["exercises"][0]["measure"] == "reps"
+
+    await auth_client.patch(f"/api/exercises/{ex_id}", json={"measure": "time"})
+    got = (await auth_client.get(f"/api/templates/strength/{tmpl_id}")).json()
+    assert got["exercises"][0]["measure"] == "time"
+    assert [s["reps"] for s in got["exercises"][0]["sets"]] == [5, 5]

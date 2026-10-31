@@ -43,6 +43,11 @@ export interface TemplateSet {
 export interface TemplateExercise {
   exercise_id: number
   exercise_name: string
+  /**
+   * How the exercise is measured now (the sets are stored as entered); absent in
+   * snapshots built locally or cached before timed sets.
+   */
+  measure?: Measure
   order: number
   sets: TemplateSet[]
 }
@@ -232,6 +237,7 @@ export const emptyStrengthDefaults = (): StrengthFormValues => ({
   exercises: [emptyEntry()],
 })
 
+/** The form a template prefills; each exercise's sets follow its current measure (see setsForMeasure). */
 export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
   return {
     title: t.name,
@@ -243,14 +249,17 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
     notes: '',
     exercises: t.exercises.map((entry) => ({
       exercise_id: String(entry.exercise_id),
-      sets: entry.sets.map((s) => ({
-        reps: s.reps != null ? String(s.reps) : '',
-        duration: s.duration_seconds != null ? String(s.duration_seconds) : '',
-        weight: s.weight_kg != null ? String(s.weight_kg) : '',
-        notes: '',
-        rpe: '',
-        done: false,
-      })),
+      sets: setsForMeasure(
+        entry.sets.map((s) => ({
+          reps: s.reps != null ? String(s.reps) : '',
+          duration: s.duration_seconds != null ? String(s.duration_seconds) : '',
+          weight: s.weight_kg != null ? String(s.weight_kg) : '',
+          notes: '',
+          rpe: '',
+          done: false,
+        })),
+        entry.measure,
+      ),
     })),
   }
 }
@@ -259,6 +268,11 @@ export function templateToFormValues(t: TemplateSnapshot): StrengthFormValues {
 // Last-session defaults
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * `GET /exercises/:id/last-session-defaults`. The server matches the sets to the
+ * exercise's current measure (no reps for a timed exercise, no duration for a
+ * reps one), so the mappers below copy them as they come.
+ */
 export interface LastSessionDefaults {
   sets: Array<{
     set_number: number

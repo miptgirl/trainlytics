@@ -508,3 +508,34 @@ async def test_last_session_defaults_return_duration(
         {"set_number": 1, "reps": None, "weight": None, "duration_seconds": 45},
         {"set_number": 2, "reps": None, "weight": 10.0, "duration_seconds": 60},
     ]
+
+
+async def test_last_session_defaults_follow_the_current_measure(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """Switched to time, an exercise logged as (fake) reps prefills no reps; and the reverse."""
+    eid = (await auth_client.post("/api/exercises", json={"name": "Dead hang"})).json()["id"]
+    resp = await auth_client.post("/api/sessions/strength", json={
+        "date": "2026-10-29T07:00:00Z",
+        "exercises": [{"exercise_id": eid, "order": 1, "sets": [
+            {"set_number": 1, "reps": 40, "weight": 10.0},
+        ]}],
+    })
+    assert resp.status_code == 201, resp.text
+    await auth_client.patch(f"/api/exercises/{eid}", json={"measure": "time"})
+    sets = (await auth_client.get(f"/api/exercises/{eid}/last-session-defaults")).json()["sets"]
+    assert sets == [{"set_number": 1, "reps": None, "weight": 10.0, "duration_seconds": None}]
+
+    resp = await auth_client.post("/api/sessions/strength", json={
+        "date": "2026-10-30T07:00:00Z",
+        "exercises": [{"exercise_id": eid, "order": 1, "sets": [
+            {"set_number": 1, "duration_seconds": 45, "weight": 12.0},
+        ]}],
+    })
+    assert resp.status_code == 201, resp.text
+    await auth_client.patch(f"/api/exercises/{eid}", json={"measure": "reps"})
+    sets = (await auth_client.get(f"/api/exercises/{eid}/last-session-defaults")).json()["sets"]
+    assert sets == [{"set_number": 1, "reps": None, "weight": 12.0, "duration_seconds": None}]
+    # The logged sets themselves are untouched
+    session = (await auth_client.get(f"/api/sessions/{resp.json()['id']}")).json()
+    assert session["exercises"][0]["sets"][0]["duration_seconds"] == 45

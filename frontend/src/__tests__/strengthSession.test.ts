@@ -14,6 +14,7 @@ import {
   findInvalidSetRpe,
   inputKind,
   isValidSetDuration,
+  lastSessionToFormSets,
   isValidSetRpe,
   parseDuration,
   setKind,
@@ -323,6 +324,39 @@ describe('timed sets', () => {
 
   it('template prefill carries the planned time', () => {
     expect(templateToFormValues(plankSnapshot).exercises[0].sets).toEqual([hold('45'), hold('45')])
+  })
+
+  it('template prefill follows each exercise\'s current measure, keeping weight', () => {
+    const switched = {
+      id: 3,
+      name: 'Mixed',
+      exercises: [
+        // Planned as (fake) reps, measured in time now
+        {
+          exercise_id: 7, exercise_name: 'Dead hang', measure: 'time' as const, order: 1,
+          sets: [{ set_number: 1, reps: 40, weight_kg: 10, duration_seconds: null }],
+        },
+        // Planned as a hold, measured in reps now
+        {
+          exercise_id: 2, exercise_name: 'Wall sit', measure: 'reps' as const, order: 2,
+          sets: [{ set_number: 1, reps: null, weight_kg: null, duration_seconds: 45 }],
+        },
+        // No measure (an older cached snapshot): as entered
+        { exercise_id: 1, exercise_name: 'Squat', order: 3, sets: [{ set_number: 1, reps: 5, weight_kg: 100 }] },
+      ],
+    }
+    const sets = templateToFormValues(switched).exercises.map((e) => e.sets)
+    expect(sets).toEqual([[set('', '10')], [set('', '')], [set('5', '100')]])
+  })
+
+  it('last-session defaults the server matched to a timed exercise prefill times and no reps', () => {
+    const sets = lastSessionToFormSets({
+      sets: [
+        { set_number: 1, reps: null, weight: 10, duration_seconds: 45 },
+        { set_number: 2, reps: null, weight: null, duration_seconds: null },
+      ],
+    })
+    expect(sets).toEqual([hold('45', '10'), set('', '')])
   })
 
   it('addSet copies the last set\'s time, not its note, RPE or done flag', () => {

@@ -107,13 +107,16 @@ async def get_last_session_defaults(
     if not entry:
         return ExerciseDefaultsOut(sets=[])
 
+    # Defaults follow the exercise's current measure: an exercise switched from (fake)
+    # reps to time must not keep prefilling reps, nor a reps one old holds. Weight stays.
+    timed = exercise.measure == "time"
     return ExerciseDefaultsOut(
         sets=[
             SetDefault(
                 set_number=s.set_number,
-                reps=s.reps,
+                reps=None if timed else s.reps,
                 weight=s.weight,
-                duration_seconds=s.duration_seconds,
+                duration_seconds=s.duration_seconds if timed else None,
             )
             for s in entry.sets
         ]

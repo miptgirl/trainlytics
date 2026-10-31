@@ -17,6 +17,8 @@ from app.models import (
     StrengthSession,
     StrengthSet,
     StrengthTemplate,
+    StrengthTemplateExercise,
+    StrengthTemplateSet,
     UserSettings,
     WeeklyPlan,
     WorkoutSession,
@@ -186,6 +188,20 @@ async def test_seed_populates_resets_and_isolates(
     assert {r.weight for r in timed if r.name == "Plank"} == {None}
     assert {r.weight for r in timed if r.name == "Farmer's carry"} == {24}
     assert all(45 <= r.duration_seconds <= 75 for r in timed if r.name == "Plank")
+
+    # The Lower body template plans them in seconds too
+    tpl_ex, tpl_set = StrengthTemplateExercise, StrengthTemplateSet
+    async with db_session() as db:
+        planned = (await db.execute(
+            select(Exercise.name, tpl_set.reps, tpl_set.duration_seconds, tpl_set.weight_kg)
+            .join(tpl_ex, tpl_ex.exercise_id == Exercise.id)
+            .join(tpl_set, tpl_set.exercise_entry_id == tpl_ex.id)
+            .where(Exercise.user_id == demo, Exercise.measure == "time")
+            .order_by(Exercise.name, tpl_set.set_number)
+        )).all()
+    assert [tuple(r) for r in planned] == (
+        [("Farmer's carry", None, 30, 24)] * 3 + [("Plank", None, 45, None)] * 3
+    )
 
     second = await seed_demo(client, db_session, today=TODAY)
     assert second == first
