@@ -33,7 +33,7 @@ Deliver a working, secured fitness logging app. A user can log in, manage their 
 ### Strength Sessions
 - A session has: date, notes.
 - A session contains one or more **exercises** (chosen from the user's library).
-- Each exercise entry has one or more **sets**, each with: reps, weight (kg or lb — unit is a user preference), optional notes.
+- Each exercise entry has one or more **sets**, each with: reps, weight (kg or lb — unit is a user preference), optional notes. _Since 2026-10-31 a set may hold a `duration_seconds` instead of reps for timed exercises; see `specs/2026-10-31-timed-sets/`._
 
 ### Workout History
 - Lists all sessions (cardio + strength) in reverse chronological order.

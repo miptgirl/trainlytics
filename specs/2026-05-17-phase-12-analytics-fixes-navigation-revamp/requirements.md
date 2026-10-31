@@ -113,7 +113,7 @@ Add a summary card to the top of the Plan tab (below or replacing the existing c
 
 Card contents:
 - **Cardio**: planned total distance (km) and duration (min) vs. logged totals for the week; delta shown.
-- **Strength**: planned total exercise count and estimated volume (sets × reps × weight from template defaults) vs. logged totals; delta shown.
+- **Strength**: planned total exercise count and estimated volume (sets × reps × weight from template defaults) vs. logged totals; delta shown. Timed sets (`duration_seconds`, since 2026-10-31) add no volume.
 - Only "Done" sessions contribute to the logged side. "Planned" and "Skipped" sessions count on the planned side.
 
 Backend: new endpoint `GET /plan/weekly-summary?week_start=YYYY-MM-DD` returning planned and actual totals.

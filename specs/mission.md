@@ -19,7 +19,7 @@ Hybrid athletes — people who run, lift, cycle, and mix modalities — are left
 Three things set Trainlytics apart, and all three are equally core to the mission:
 
 **1. Hybrid training support**
-One place to log cardio (duration, distance, pace, HR zones) and strength (exercises, sets, reps, weights, progression) without compromise. The app adapts to the training style, not the other way around.
+One place to log cardio (duration, distance, pace, HR zones) and strength (exercises, sets, reps or held time, weights, progression) without compromise. The app adapts to the training style, not the other way around.
 
 **2. Data ownership, integrations, and AI coaching**
 Users own their data and can export structured session summaries for coaching or external tools. Trainlytics also pulls data in: Strava activities sync automatically, and an Apple Health export brings in workouts, sleep, HRV, resting HR, and body weight — giving the app a complete picture of the athlete, not just the sessions they log manually.

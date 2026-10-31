@@ -156,7 +156,7 @@ When opening the **strength log form** (with or without a template loaded), an *
 
 **Backend — `POST /ai/adapt-session`:**
 - Request body: `{ session_snapshot: object, user_message: string }`
-  - `session_snapshot` — the current in-progress session state as assembled on the frontend (exercises, sets, reps, weights, template name if any)
+  - `session_snapshot` — the current in-progress session state as assembled on the frontend (exercises, sets, reps or `duration_seconds`, weights, template name if any)
   - `user_message` — the user's free-text description
 - The backend fetches the user's recent training history (last 4 weeks) to provide context
 - Uses the replacement exercises defined in Phase 8 — the prompt tells the model which replacements are available for each exercise in the session
