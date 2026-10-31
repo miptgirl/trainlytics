@@ -208,13 +208,13 @@ export function findInvalidSet(
 /**
  * Sets kept by an entry that now points at an exercise measured in `measure`:
  * the mismatched value is cleared on every set (reps for a timed exercise, a
- * duration for a reps one); weight, notes, RPE and done stay. Unknown measure:
- * unchanged.
+ * duration for a reps one); weight, notes, RPE and done stay. Returns `sets`
+ * itself when nothing changes (unknown measure, or nothing to clear).
  */
 export function setsForMeasure(sets: SetFormValues[], measure?: Measure | null): SetFormValues[] {
   if (!measure) return sets
   const field = measure === 'time' ? 'reps' : 'duration'
-  return sets.map((s) => (s[field] ? { ...s, [field]: '' } : s))
+  return sets.some((s) => s[field]) ? sets.map((s) => (s[field] ? { ...s, [field]: '' } : s)) : sets
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

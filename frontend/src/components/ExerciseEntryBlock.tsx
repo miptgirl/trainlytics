@@ -562,7 +562,7 @@ export function ExerciseEntryBlock({
   function changeExercise(id: string) {
     const nextMeasure = exercises.find((e) => String(e.id) === id)?.measure
     const converted = setsForMeasure(setValues, nextMeasure)
-    if (converted.some((s, i) => s !== setValues[i])) replaceSets(converted)
+    if (converted !== setValues) replaceSets(converted)
     exerciseField.onChange(id)
   }
 
