@@ -113,6 +113,40 @@ def test_compact_sets_ignores_non_numeric_snapshot_rpe():
     assert compact_sets(sets) == "3×5@100kg, 5@100kg RPE8, 7×5@100kg"
 
 
+def test_compact_sets_timed_holds():
+    """Timed sets render seconds; a bodyweight hold has no @0kg, a loaded one keeps its weight."""
+    sets = [SimpleNamespace(reps=None, weight=None, duration_seconds=45)] * 3 + [
+        SimpleNamespace(reps=None, weight=20.0, duration_seconds=60),
+        SimpleNamespace(reps=None, weight=20.0, duration_seconds=60),
+    ]
+    assert compact_sets(sets) == "3×45s, 2×60s@20kg"
+    assert compact_sets([SimpleNamespace(reps=None, weight=None, duration_seconds=45)]) == "45s"
+
+
+def test_compact_sets_keeps_timed_and_reps_sets_apart():
+    sets = [
+        SimpleNamespace(reps=None, weight=None, duration_seconds=45),
+        SimpleNamespace(reps=None, weight=None, duration_seconds=45, rpe=8),
+        SimpleNamespace(reps=8, weight=None, duration_seconds=None),
+        SimpleNamespace(reps=None, weight=None, duration_seconds=None),
+    ]
+    # An empty set still reads 0@0kg, as before; it never merges with a hold
+    assert compact_sets(sets) == "45s, 45s RPE8, 8@0kg, 0@0kg"
+
+
+def test_compact_sets_snapshot_duration_is_validated():
+    """Adapt-session snapshot dicts carry duration_seconds; junk is ignored like junk rpe."""
+    sets = [
+        {"reps": None, "weight_kg": None, "duration_seconds": 45},
+        {"reps": None, "weight_kg": None, "duration_seconds": 45.0},
+        {"reps": 5, "weight_kg": 100.0, "duration_seconds": "45"},
+        {"reps": 5, "weight_kg": 100.0, "duration_seconds": 0},
+        {"reps": 5, "weight_kg": 100.0, "duration_seconds": True},
+        {"reps": 5, "weight_kg": 100.0, "duration_seconds": 10**400},
+    ]
+    assert compact_sets(sets) == "2×45s, 4×5@100kg"
+
+
 def test_session_summary_labels_session_rpe():
     """The session-level rating reads "session RPE=…/10", apart from per-set "RPE8"."""
     s = SimpleNamespace(reps=5, weight=100.0, rpe=8)

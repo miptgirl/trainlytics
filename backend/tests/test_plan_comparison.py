@@ -265,6 +265,67 @@ async def test_comparison_strength_set_count_mismatch(db_session, auth_client: A
     assert ex_out["sets"][3]["actual_weight_kg"] == pytest.approx(110.0)
 
 
+async def test_comparison_strength_timed_sets(db_session, auth_client: AsyncClient):
+    """Set rows carry planned and actual seconds; holds add no kg × reps volume."""
+    squat = await _create_exercise(auth_client, "Squat")
+    plank = await _create_exercise(auth_client, "Plank")
+    carry = await _create_exercise(auth_client, "Farmer's carry")
+    tmpl = await auth_client.post("/api/templates/strength", json={
+        "name": "Legs and core",
+        "exercises": [
+            {"exercise_id": squat, "order": 1,
+             "sets": [{"set_number": 1, "reps": 5, "weight_kg": 100.0}]},
+            {"exercise_id": plank, "order": 2, "sets": [
+                {"set_number": 1, "duration_seconds": 45},
+                {"set_number": 2, "duration_seconds": 45},
+            ]},
+        ],
+    })
+    assert tmpl.status_code == 201, tmpl.text
+    tmpl_id = tmpl.json()["id"]
+    planned = await _plan_strength(auth_client, THIS_MONDAY, tmpl_id)
+    resp = await auth_client.post("/api/sessions/strength", json={
+        "date": f"{THIS_MONDAY.isoformat()}T08:00:00Z",
+        "template_id": tmpl_id,
+        "exercises": [
+            {"exercise_id": squat, "order": 1,
+             "sets": [{"set_number": 1, "reps": 5, "weight": 100.0}]},
+            {"exercise_id": plank, "order": 2, "sets": [{"set_number": 1, "duration_seconds": 60}]},
+            {"exercise_id": carry, "order": 3, "sets": [
+                {"set_number": 1, "duration_seconds": 40, "weight": 24.0},
+            ]},
+        ],
+    })
+    assert resp.status_code == 201, resp.text
+
+    resp = await auth_client.get(f"/api/plan/sessions/{planned['id']}/comparison")
+    assert resp.status_code == 200
+    s = resp.json()["strength"]
+    by_name = {e["exercise_name"]: e for e in s["exercises"]}
+
+    plank_rows = by_name["Plank"]["sets"]
+    assert [(r["planned_duration_seconds"], r["actual_duration_seconds"]) for r in plank_rows] == [
+        (45, 60),
+        (45, None),
+    ]
+    assert all(r["planned_reps"] is None and r["actual_reps"] is None for r in plank_rows)
+    assert by_name["Plank"]["planned_volume"] == 0
+    assert by_name["Plank"]["actual_volume"] == 0
+
+    carry_row = by_name["Farmer's carry"]["sets"][0]
+    assert by_name["Farmer's carry"]["source"] == "actual_only"
+    assert carry_row["actual_duration_seconds"] == 40
+    assert carry_row["actual_weight_kg"] == pytest.approx(24.0)
+    assert carry_row["planned_duration_seconds"] is None
+    assert by_name["Farmer's carry"]["actual_volume"] == 0
+
+    squat_row = by_name["Squat"]["sets"][0]
+    assert squat_row["planned_duration_seconds"] is None
+    assert squat_row["actual_duration_seconds"] is None
+    assert s["planned_total_volume"] == pytest.approx(500.0)
+    assert s["actual_total_volume"] == pytest.approx(500.0)
+
+
 # ── error cases ───────────────────────────────────────────────────────────────
 
 async def test_comparison_not_done_returns_404(db_session, auth_client: AsyncClient):

@@ -1157,3 +1157,120 @@ async def test_scale_check_runs_after_ownership_and_validation(
     assert resp.status_code == 422
     resp = await auth_client.post("/api/sessions/cardio", json={**CARDIO_PAYLOAD, "rpe": 11})
     assert resp.status_code == 422
+
+
+# ── Timed sets ────────────────────────────────────────────────────────────────
+
+def _timed_payload(ex_id: int, sets: list[dict]) -> dict:
+    return {
+        "date": "2026-10-30T07:00:00Z",
+        "exercises": [{"exercise_id": ex_id, "order": 1, "sets": sets}],
+    }
+
+
+@pytest.mark.asyncio
+async def test_timed_set_round_trips(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    resp = await auth_client.post("/api/sessions/strength", json=_timed_payload(ex_id, [
+        {"set_number": 1, "duration_seconds": 45},
+        {"set_number": 2, "duration_seconds": 60, "weight": 10.0, "rpe": 8},
+    ]))
+    assert resp.status_code == 201, resp.text
+    sets = resp.json()["exercises"][0]["sets"]
+    assert [(s["reps"], s["duration_seconds"], s["weight"], s["rpe"]) for s in sets] == [
+        (None, 45, None, None),
+        (None, 60, 10.0, 8),
+    ]
+    got = (await auth_client.get(f"/api/sessions/{resp.json()['id']}")).json()
+    assert [s["duration_seconds"] for s in got["exercises"][0]["sets"]] == [45, 60]
+
+
+@pytest.mark.asyncio
+async def test_reps_sets_return_null_duration(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client)
+    resp = await auth_client.post("/api/sessions/strength", json=STRENGTH_PAYLOAD_FACTORY(ex_id))
+    assert all(s["duration_seconds"] is None for s in resp.json()["exercises"][0]["sets"])
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_set",
+    [
+        {"set_number": 1, "reps": 10, "duration_seconds": 45},
+        {"set_number": 1, "duration_seconds": 0},
+        {"set_number": 1, "duration_seconds": 86401},
+        {"set_number": 1, "duration_seconds": 45.5},
+    ],
+)
+async def test_create_rejects_invalid_timed_set(db_session, auth_client: AsyncClient, bad_set):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    resp = await auth_client.post("/api/sessions/strength", json=_timed_payload(ex_id, [bad_set]))
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_timed_set_accepts_one_second_to_a_day(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    resp = await auth_client.post("/api/sessions/strength", json=_timed_payload(ex_id, [
+        {"set_number": 1, "duration_seconds": 1},
+        {"set_number": 2, "duration_seconds": 86400},
+    ]))
+    assert resp.status_code == 201, resp.text
+
+
+@pytest.mark.asyncio
+async def test_patch_rejects_set_with_reps_and_duration(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    create = await auth_client.post("/api/sessions/strength", json=_timed_payload(ex_id, [
+        {"set_number": 1, "duration_seconds": 45},
+    ]))
+    resp = await auth_client.patch(f"/api/sessions/{create.json()['id']}", json={
+        "exercises": [{"exercise_id": ex_id, "order": 1, "sets": [
+            {"set_number": 1, "reps": 5, "duration_seconds": 45},
+        ]}],
+    })
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_history_volume_ignores_weighted_timed_set(db_session, auth_client: AsyncClient):
+    """A 60 s carry with 20 kg is not 1200 kg of volume: only weight × reps counts."""
+    bench = await _create_exercise(auth_client, "Bench Press")
+    carry = await _create_exercise(auth_client, "Farmer's carry")
+    resp = await auth_client.post("/api/sessions/strength", json={
+        "date": "2026-10-30T07:00:00Z",
+        "exercises": [
+            {"exercise_id": bench, "order": 1,
+             "sets": [{"set_number": 1, "reps": 5, "weight": 100.0}]},
+            {"exercise_id": carry, "order": 2, "sets": [
+                {"set_number": 1, "duration_seconds": 60, "weight": 20.0},
+            ]},
+        ],
+    })
+    assert resp.status_code == 201, resp.text
+    item = (await auth_client.get("/api/sessions")).json()["items"][0]
+    assert item["total_sets"] == 2
+    assert item["total_volume"] == 500.0
+
+
+@pytest.mark.asyncio
+async def test_patch_timed_session_keeps_duration(db_session, auth_client: AsyncClient):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    create = await auth_client.post("/api/sessions/strength", json=_timed_payload(ex_id, [
+        {"set_number": 1, "duration_seconds": 45},
+    ]))
+    session_id = create.json()["id"]
+
+    keep = await auth_client.patch(f"/api/sessions/{session_id}", json={"notes": "Edited"})
+    assert keep.json()["exercises"][0]["sets"][0]["duration_seconds"] == 45
+
+    # The edit page sends every set back; the rebuilt sets carry the (changed) duration
+    change = await auth_client.patch(f"/api/sessions/{session_id}", json={
+        "exercises": [{"exercise_id": ex_id, "order": 1, "sets": [
+            {"set_number": 1, "reps": None, "duration_seconds": 50, "weight": None},
+            {"set_number": 2, "duration_seconds": 40},
+        ]}],
+    })
+    assert change.status_code == 200, change.text
+    sets = change.json()["exercises"][0]["sets"]
+    assert [(s["reps"], s["duration_seconds"]) for s in sets] == [(None, 50), (None, 40)]

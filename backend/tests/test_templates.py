@@ -415,3 +415,69 @@ async def test_template_ignores_notes(db_session, auth_client: AsyncClient):
 
     resp = await auth_client.get("/api/templates/strength")
     assert "notes" not in resp.json()[0]
+
+
+# ── timed sets ────────────────────────────────────────────────────────────────
+
+async def _history_sets(db_session, tmpl_id: int, version: int) -> list:
+    hist, hist_ex, hist_set = (
+        StrengthTemplateHistory, StrengthTemplateHistoryExercise, StrengthTemplateHistorySet
+    )
+    async with db_session() as session:
+        result = await session.execute(
+            select(hist_set)
+            .join(hist_ex, hist_ex.id == hist_set.history_exercise_id)
+            .join(hist, hist.id == hist_ex.history_id)
+            .where(hist.template_id == tmpl_id, hist.version == version)
+            .order_by(hist_set.set_order)
+        )
+        return [(s.reps, s.duration_seconds, s.weight_kg) for s in result.scalars().all()]
+
+
+@pytest.mark.asyncio
+async def test_template_timed_sets_round_trip_and_reach_history(
+    db_session, auth_client: AsyncClient
+):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    create = await auth_client.post("/api/templates/strength", json={
+        "name": "Core",
+        "exercises": [{"exercise_id": ex_id, "order": 1, "sets": [
+            {"set_number": 1, "duration_seconds": 45},
+            {"set_number": 2, "duration_seconds": 60, "weight_kg": 10.0},
+        ]}],
+    })
+    assert create.status_code == 201, create.text
+    tmpl_id = create.json()["id"]
+    got = (await auth_client.get(f"/api/templates/strength/{tmpl_id}")).json()
+    sets = got["exercises"][0]["sets"]
+    assert [(s["reps"], s["duration_seconds"], s["weight_kg"]) for s in sets] == [
+        (None, 45, None),
+        (None, 60, 10.0),
+    ]
+    assert await _history_sets(db_session, tmpl_id, 1) == [(None, 45, None), (None, 60, 10.0)]
+
+    resp = await auth_client.patch(f"/api/templates/strength/{tmpl_id}", json={
+        "exercises": [{"exercise_id": ex_id, "order": 1,
+                       "sets": [{"set_number": 1, "duration_seconds": 90}]}],
+    })
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["exercises"][0]["sets"][0]["duration_seconds"] == 90
+    assert await _history_sets(db_session, tmpl_id, 2) == [(None, 90, None)]
+    assert await _history_sets(db_session, tmpl_id, 1) == [(None, 45, None), (None, 60, 10.0)]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bad_set",
+    [
+        {"set_number": 1, "reps": 5, "duration_seconds": 45},
+        {"set_number": 1, "duration_seconds": 0},
+        {"set_number": 1, "duration_seconds": 86401},
+    ],
+)
+async def test_template_rejects_invalid_timed_set(db_session, auth_client: AsyncClient, bad_set):
+    ex_id = await _create_exercise(auth_client, "Plank")
+    resp = await auth_client.post("/api/templates/strength", json={
+        "name": "Core", "exercises": [{"exercise_id": ex_id, "order": 1, "sets": [bad_set]}],
+    })
+    assert resp.status_code == 422

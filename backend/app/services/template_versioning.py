@@ -43,5 +43,6 @@ async def _write_template_history(db: AsyncSession, template: StrengthTemplate) 
                     set_order=s.set_number,
                     reps=s.reps,
                     weight_kg=s.weight_kg,
+                    duration_seconds=s.duration_seconds,
                 )
             )

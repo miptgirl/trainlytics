@@ -70,6 +70,7 @@ class StrengthTemplateSet(Base):
     set_number: Mapped[int] = mapped_column(Integer, nullable=False)
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float | None] = mapped_column(nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     exercise_entry: Mapped["StrengthTemplateExercise"] = relationship(
         "StrengthTemplateExercise", back_populates="sets"
@@ -131,6 +132,7 @@ class StrengthTemplateHistorySet(Base):
     set_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     reps: Mapped[int | None] = mapped_column(Integer, nullable=True)
     weight_kg: Mapped[float | None] = mapped_column(nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     exercise: Mapped["StrengthTemplateHistoryExercise"] = relationship(
         "StrengthTemplateHistoryExercise", back_populates="sets"

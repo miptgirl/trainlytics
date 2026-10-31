@@ -103,11 +103,13 @@ def build_athlete_context_block(row: UserSettings | None) -> str:
 # ── Set / segment compaction ──────────────────────────────────────────────────
 
 def compact_sets(sets: list[Any]) -> str:
-    """Collapse consecutive identical (reps, weight, rpe) sets into N×reps@weight notation.
+    """Collapse consecutive identical sets (reps, weight, rpe, duration) into N×reps@weight.
 
     Each element must have .reps and .weight attributes (or dict keys). An optional
     per-set ``rpe`` (attribute or key) keeps sets apart and renders as ``RPE8``;
-    elements without it (template sets, plan snapshots) compact as before.
+    elements without it (template sets, plan snapshots) compact as before. A set
+    with ``duration_seconds`` is a timed hold: ``3×45s``, ``2×60s@20kg`` (no
+    ``@0kg`` for a bodyweight hold), never merged with reps sets.
     """
     if not sets:
         return ""
@@ -129,24 +131,39 @@ def compact_sets(sets: list[Any]) -> str:
             return None
         return int(raw)
 
+    def _duration(s: Any) -> int | None:
+        if isinstance(s, dict):
+            raw = s.get("duration_seconds")
+        else:
+            raw = getattr(s, "duration_seconds", None)
+        # Snapshot JSON is unvalidated, as for rpe: whole seconds within the API's range only
+        if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+            return None
+        if not 1 <= raw <= 86400 or not float(raw).is_integer():
+            return None
+        return int(raw)
+
     def _key(s: Any) -> tuple:
-        return (_reps(s), _weight(s), _rpe(s))
+        return (_reps(s), _weight(s), _rpe(s), _duration(s))
 
     parts: list[str] = []
     i = 0
     while i < len(sets):
-        r, w, rpe = _key(sets[i])
+        key = _key(sets[i])
+        r, w, rpe, dur = key
         j = i + 1
-        while j < len(sets) and _key(sets[j]) == (r, w, rpe):
+        while j < len(sets) and _key(sets[j]) == key:
             j += 1
         count = j - i
-        w_str = f"{w:g}" if w is not None else "0"
-        r_str = str(r) if r is not None else "0"
         rpe_str = f" RPE{rpe}" if rpe is not None else ""
-        if count == 1:
-            parts.append(f"{r_str}@{w_str}kg{rpe_str}")
+        if dur is not None:
+            # Weight is the load held or carried; a bodyweight hold has none
+            body = f"{dur}s" + (f"@{w:g}kg" if w else "")
         else:
-            parts.append(f"{count}×{r_str}@{w_str}kg{rpe_str}")
+            w_str = f"{w:g}" if w is not None else "0"
+            r_str = str(r) if r is not None else "0"
+            body = f"{r_str}@{w_str}kg"
+        parts.append(f"{body}{rpe_str}" if count == 1 else f"{count}×{body}{rpe_str}")
         i = j
 
     return ", ".join(parts)

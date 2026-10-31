@@ -91,6 +91,9 @@ class SetComparisonRow(BaseModel):
     planned_weight_kg: float | None
     actual_reps: int | None
     actual_weight_kg: float | None
+    # Timed sets: the hold in seconds instead of reps
+    planned_duration_seconds: int | None = None
+    actual_duration_seconds: int | None = None
 
 
 class ExerciseComparison(BaseModel):

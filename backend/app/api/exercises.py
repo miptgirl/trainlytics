@@ -50,7 +50,9 @@ async def create_exercise(
 ) -> Exercise:
     types = await _resolve_types(body.type_ids, user, db)
     scale = body.weight_scale.model_dump() if body.weight_scale else None
-    exercise = Exercise(user_id=user, name=body.name, notes=body.notes, weight_scale=scale)
+    exercise = Exercise(
+        user_id=user, name=body.name, notes=body.notes, weight_scale=scale, measure=body.measure
+    )
     exercise.types = types
     db.add(exercise)
     await db.commit()
@@ -106,7 +108,15 @@ async def get_last_session_defaults(
         return ExerciseDefaultsOut(sets=[])
 
     return ExerciseDefaultsOut(
-        sets=[SetDefault(set_number=s.set_number, reps=s.reps, weight=s.weight) for s in entry.sets]
+        sets=[
+            SetDefault(
+                set_number=s.set_number,
+                reps=s.reps,
+                weight=s.weight,
+                duration_seconds=s.duration_seconds,
+            )
+            for s in entry.sets
+        ]
     )
 
 

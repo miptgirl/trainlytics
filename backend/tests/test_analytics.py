@@ -208,6 +208,38 @@ async def test_strength_volume_by_tag(auth_client: AsyncClient, db_session: None
     assert pytest.approx(100.0 * 5) in totals
 
 
+@pytest.mark.asyncio
+async def test_weighted_timed_sets_stay_out_of_strength_analytics(
+    auth_client: AsyncClient, db_session: None
+) -> None:
+    """A 60 s carry with 40 kg has no kg × reps: no progression point, no PR, no tag volume."""
+    grip_id = await _create_exercise_type(auth_client, "Grip")
+    carry_id = await _create_exercise(auth_client, "Farmer's carry", type_ids=[grip_id])
+    shrug_id = await _create_exercise(auth_client, "Shrug", type_ids=[grip_id])
+    date = (datetime.now(timezone.utc) - timedelta(days=3)).strftime("%Y-%m-%dT08:00:00Z")
+    await _create_strength_session(
+        auth_client,
+        date,
+        [
+            {"exercise_id": carry_id, "order": 1,
+             "sets": [{"set_number": 1, "duration_seconds": 60, "weight": 40.0}]},
+            {"exercise_id": shrug_id, "order": 2,
+             "sets": [{"set_number": 1, "reps": 10, "weight": 30.0}]},
+        ],
+    )
+
+    resp = await auth_client.get(f"/api/analytics/strength/progression?exercise_id={carry_id}")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+    records = [r for g in (await auth_client.get("/api/analytics/strength/records")).json()
+               for r in g["records"]]
+    assert {r["exercise_name"] for r in records} == {"Shrug"}
+
+    volume = (await auth_client.get("/api/analytics/strength/volume-by-tag?weeks=4")).json()
+    assert [p["total_volume"] for p in volume if p["tag"] == "Grip"] == [pytest.approx(300.0)]
+
+
 # ── 1.5  Cardio time split ────────────────────────────────────────────────────
 
 @pytest.mark.asyncio
