@@ -30,7 +30,10 @@ Out of scope for this change (each is a candidate follow-up):
 Cheapest to build, but `weight × reps` volume, PRs, volume-by-tag and plan-vs-actual would all silently count seconds as reps. Rejected.
 
 **Seconds, not `m:ss`, as the input**
-Holds are typically 20–180 s. Both the workout-mode stepper and the log-page grid take whole seconds on a numeric keyboard; the stepper moves by 5 s. Read-only surfaces show `45 s` under a minute and `1:30` from a minute up (`formatClock`). This is a judgement call and easy to revisit; the cardio `h:mm:ss` input (`TimeInput`) stays where it is.
+Holds are typically 20–180 s. Both the workout-mode stepper and the log-page grid take whole seconds on a numeric keyboard; the stepper moves by 5 s. Because read-only surfaces show `1:30` from a minute up, a typed `m:ss` is accepted too (`parseDuration` mirrors `parseRestInput`: `90` or `1:30` → 90), so a user who copies what they see does not get 130 s. Valid range 1–86400 s; `0`, a blank-after-typing or an out-of-range value blocks the save with a message naming the exercise and set, the way an invalid per-set RPE does. The cardio `h:mm:ss` input (`TimeInput`) stays where it is.
+
+**Which input a set shows, and converting between reps and time**
+A set with a duration shows the Time input; a set with reps shows the Reps input; a set with neither follows its exercise's `measure`. Editing the shown field clears the other one, so a set can never hold both. Switching an entry to an exercise with a different measure (workout-mode "Choose exercise", the log-page picker) clears the mismatched field on all of its sets and keeps weight, notes, RPE and done; "Add set" copies the last set's reps *or* duration, so it inherits the right kind. A set logged while its exercise was timed, opened after the exercise went back to reps, still shows its duration and stays editable.
 
 **Weight keeps its own meaning**
 A timed set's `weight` is the load held or carried; a bodyweight hold leaves it empty. Nothing is derived from `weight × duration`.
@@ -52,13 +55,15 @@ A timed set's `weight` is the load held or carried; a bodyweight hold leaves it 
 | Session detail page | Reps column shows `45 s` / `1:30` for a timed set (`—` when empty); the edit form behaves like the log page |
 | Add set, last-session defaults, template prefill | Copy `duration_seconds` the way reps are copied today |
 | Diff against template | "Changed time on Plank set 2" |
-| Plan vs actual | Set rows carry planned and actual duration; the comparison panel shows `45 s` in the reps cell; volume is unchanged (timed sets contribute 0) |
+| Plan vs actual | Set rows carry planned and actual duration; the comparison panel shows `45 s` in the reps cell and counts a row with only a duration as a real set (today it counts reps-or-weight); volume is unchanged (timed sets contribute 0) |
 | Text export | `Plank: 45 s, 60 s × 10 kg @RPE 8` style lines; reps lines unchanged |
 | AI context | `compact_sets` keeps timed sets apart from reps sets and renders `3×45s`, `2×60s@20kg`; bodyweight holds omit `@0kg` |
 | Adapt-session snapshot | Carries `duration_seconds` per set |
 | Demo seed | Two timed exercises ("Plank", "Farmer's carry") with a few sessions each |
 | Draft recovery | `duration` is part of the set draft; older drafts load with it empty (no draft version bump) |
-| Existing sets whose exercise changed measure | The editor shows whichever value the set holds; a new set follows the exercise's current measure |
+| Existing sets whose exercise changed measure | The editor shows whichever value the set holds; a new set follows the exercise's current measure (see *Which input a set shows*) |
+| Switching an entry to an exercise of the other measure | Reps (or duration) cleared on its sets; weight, notes, RPE, done kept |
+| Invalid duration | Save refused with "Plank, set 2: time "0" must be 1–86400 seconds (or m:ss)." |
 
 ---
 
